@@ -134,7 +134,7 @@ func (c *BitcoinClientContract) GetCandidateBlockHashes() ([]*chainhash.Hash, er
             blockHashes = append(blockHashes, blockHash)
         }
 
-        if blockHeader.BitsLeft() > 0 {
+        if blockHeader.RefsNum() > 0 {
             blockHeaders = append(blockHeaders, blockHeader.MustLoadRef())
         }
     }
