@@ -7,7 +7,7 @@ require (
 	github.com/btcsuite/btcd/chaincfg/chainhash v1.1.0
 	github.com/joho/godotenv v1.5.1
 	github.com/xssnick/tonutils-go v1.10.2
-	github.com/rsquad/ton-teleport-btc-periphery/lib v1.0.0
+	github.com/rsquad/ton-teleport-btc-periphery/lib v0.0.1
 )
 
 replace github.com/rsquad/ton-teleport-btc-periphery/lib => ../lib
