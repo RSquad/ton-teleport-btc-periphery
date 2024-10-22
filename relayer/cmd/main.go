@@ -5,6 +5,7 @@ import (
     "encoding/hex"
     "fmt"
     "log"
+    "net"
     "os"
     "os/signal"
     "syscall"
@@ -28,6 +29,8 @@ func main() {
     if err != nil {
         log.Fatalf("Failed to initialize app: %v", err)
     }
+
+    go startTCPHealthCheck(":3000")
 
     if err := run(app); err != nil {
         log.Fatalf("Application stopped with error: %v", err)
@@ -123,4 +126,23 @@ func startRelayer(app *App, relayerName string, interval time.Duration, ctx cont
     }()
 
     return nil
+}
+
+func startTCPHealthCheck(address string) {
+    listener, err := net.Listen("tcp", address)
+    if err != nil {
+        log.Fatalf("failed to start tcp health check server: %v", err)
+    }
+    defer listener.Close()
+
+    for {
+        conn, err := listener.Accept()
+        if err != nil {
+            log.Printf("failed to accept connection: %v", err)
+            continue
+        }
+
+        log.Println("health check received")
+        conn.Close()
+    }
 }
