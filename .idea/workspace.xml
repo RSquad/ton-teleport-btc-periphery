@@ -5,15 +5,16 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="a362a3b6-6f73-4d3a-81cb-62b13c43a9ec" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/go.mod" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/.gitignore" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/.name" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/codeStyles/codeStyleConfig.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/modules.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/relayer.iml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/go.mod" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/lib/go.mod" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/pkg/ton/bitcoin_client_contract.go" beforeDir="false" afterPath="$PROJECT_DIR$/lib/pkg/ton/bitcoin_client_contract.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/pkg/ton/teleport_contract.go" beforeDir="false" afterPath="$PROJECT_DIR$/lib/pkg/ton/teleport_contract.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/relayer/cmd/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/relayer/cmd/main.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/relayer/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/relayer/go.mod" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/relayer/internal/block_relayer/block_relayer.go" beforeDir="false" afterPath="$PROJECT_DIR$/relayer/internal/block_relayer/block_relayer.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/relayer/internal/pegout_relayer/pegout_relayer.go" beforeDir="false" afterPath="$PROJECT_DIR$/relayer/internal/pegout_relayer/pegout_relayer.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/relayer/internal/relayer_factory/relayer_factory.go" beforeDir="false" afterPath="$PROJECT_DIR$/relayer/internal/relayer_factory/relayer_factory.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -43,6 +44,8 @@
     "git-widget-placeholder": "develop",
     "go.import.settings.migrated": "true",
     "last_opened_file_path": "/Users/rn",
+    "node.js.detected.package.eslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
     "nodejs_package_manager_path": "npm",
     "settings.editor.selected.configurable": "go.vgo"
   }

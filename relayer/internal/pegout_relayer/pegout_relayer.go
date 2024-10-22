@@ -9,9 +9,9 @@ import (
     "github.com/btcsuite/btcd/chaincfg/chainhash"
     "github.com/btcsuite/btcd/wire"
 
-    "lib/pkg/bitcoin"
-    "lib/pkg/ton"
-    "lib/pkg/utils"
+    "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
+    "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton"
+    "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
 )
 
 type PegoutRelayer struct {

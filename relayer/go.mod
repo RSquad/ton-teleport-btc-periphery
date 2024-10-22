@@ -1,4 +1,4 @@
-module relayer
+module github.com/rsquad/ton-teleport-btc-periphery/relayer
 
 go 1.23.1
 
@@ -7,7 +7,10 @@ require (
 	github.com/btcsuite/btcd/chaincfg/chainhash v1.1.0
 	github.com/joho/godotenv v1.5.1
 	github.com/xssnick/tonutils-go v1.10.2
+	github.com/rsquad/ton-teleport-btc-periphery/lib v1.0.0
 )
+
+replace github.com/rsquad/ton-teleport-btc-periphery/lib => ../lib
 
 require (
 	github.com/sigurn/crc16 v0.0.0-20211026045750-20ab5afb07e3 // indirect
