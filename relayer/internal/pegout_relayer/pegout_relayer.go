@@ -42,7 +42,7 @@ func (c *PegoutRelayer) Relay() error {
     c.isRelaying = true
     defer func() { c.isRelaying = false }()
 
-    log.Println("pegout relay started")
+    log.Println("[PegoutRelayer] relay started")
 
     teleportContractStorage, err := c.teleportContract.GetStorage()
     if err != nil {
@@ -50,33 +50,33 @@ func (c *PegoutRelayer) Relay() error {
     }
 
     if teleportContractStorage.PegoutChainCounter == 0 {
-        log.Println("no pegout to relay")
+        log.Println("[PegoutRelayer] nothing to relay")
         return nil
     }
 
     blockHash, err := c.bitcoinClient.GetBlockHashByTxID(teleportContractStorage.LastPegoutTxID)
     if err != nil {
-        return fmt.Errorf("failed to get pegout tx block hash: %v", err)
+        return fmt.Errorf("[PegoutRelayer] failed to get pegout tx block hash: %w", err)
     }
 
     txProof, err := c.getTxProof(teleportContractStorage.LastPegoutTxID, blockHash)
     if err != nil {
-        return fmt.Errorf("failed to get pegout tx proof: %v", err)
+        return fmt.Errorf("[PegoutRelayer] failed to get pegout tx proof: %w", err)
     }
 
     merkleBlock, err := c.decodeTxProof(txProof)
     if err != nil {
-        return fmt.Errorf("failed to decode pegout tx proof: %v", err)
+        return fmt.Errorf("[PegoutRelayer] failed to decode pegout tx proof: %w", err)
     }
 
-    log.Printf("pegout tx found: txId=%v", teleportContractStorage.LastPegoutTxID.String())
+    log.Printf("[PegoutRelayer] sending pegout tx: txId=%v", teleportContractStorage.LastPegoutTxID.String())
 
     tx, _, err := c.teleportContract.SendPegoutProof(teleportContractStorage.LastPegoutTxID, blockHash, merkleBlock)
     if err != nil {
-        return fmt.Errorf("failed to send pegout tx proof: %v", err)
+        return fmt.Errorf("[PegoutRelayer] failed to send pegout tx proof: %w", err)
     }
 
-    log.Printf("pegout tx proof sent: txHash=%v", utils.BytesToHexString(tx.Hash))
+    log.Printf("[PegoutRelayer] pegout tx proof sent: tonTxHash=%v", utils.BytesToHexString(tx.Hash))
 
     return nil
 }

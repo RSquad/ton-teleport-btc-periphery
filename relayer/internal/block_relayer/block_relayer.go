@@ -32,28 +32,28 @@ func (c *BlockRelayer) Relay() error {
     c.isRelaying = true
     defer func() { c.isRelaying = false }()
 
-    log.Println("block relay started")
+    log.Println("[BlockRelayer] relay started")
 
     bitcoinHeight, err := c.bitcoinClient.RPCClient.GetBlockCount()
     if err != nil {
-        return fmt.Errorf("failed to get bitcoin height: %v", err)
+        return fmt.Errorf("[BlockRelayer] failed to get bitcoin height: %w", err)
     }
 
     lastConfirmedBlockHash, err := c.bitcoinClientContract.GetLastConfirmedBlockHash()
     if err != nil {
-        return fmt.Errorf("failed to get last confirmed block hash: %v", err)
+        return fmt.Errorf("[BlockRelayer] failed to get last confirmed block hash: %w", err)
     }
 
     lastConfirmedBlockHeight, err := c.bitcoinClient.GetBlockHeightByHash(lastConfirmedBlockHash)
     if err != nil {
-        return fmt.Errorf("failed to get last confirmed block height: %v", err)
+        return fmt.Errorf("[BlockRelayer] failed to get last confirmed block height: %w", err)
     }
 
     candidateBlocksCount := c.calcCandidateBlocksCount(bitcoinHeight, lastConfirmedBlockHeight)
 
     log.Printf(
-        "bitcoin client contract sync state: outOfSync=%d bitcoinHeight=%d lastConfirmedBlockHeight=%d",
-        bitcoinHeight-lastConfirmedBlockHeight-bitcoin.ConfirmationsNeeded,
+        "[BlockRelayer] bitcoin client contract sync state: outOfSync=%d bitcoinHeight=%d lastConfirmedBlockHeight=%d",
+        bitcoinHeight-lastConfirmedBlockHeight-bitcoin.ConfirmationsNeeded+1,
         bitcoinHeight,
         lastConfirmedBlockHeight,
     )
@@ -61,32 +61,32 @@ func (c *BlockRelayer) Relay() error {
     if candidateBlocksCount > 0 {
         registeredCandidateBlockHashes, err := c.bitcoinClientContract.GetCandidateBlockHashes()
         if err != nil {
-            return fmt.Errorf("failed to get registered candidate block hashes: %v", err)
+            return fmt.Errorf("[BlockRelayer] failed to get registered candidate block hashes: %w", err)
         }
 
         candidateBlockHashes, err := c.getCandidateBlockHashes(lastConfirmedBlockHeight, candidateBlocksCount)
         if err != nil {
-            return fmt.Errorf("failed to get candidate block hashes: %v", err)
+            return fmt.Errorf("[BlockRelayer] failed to get candidate block hashes: %w", err)
         }
 
         for _, candidateBlockHash := range candidateBlockHashes {
             if !bitcoin.SliceOfHashesContains(registeredCandidateBlockHashes, candidateBlockHash) {
                 candidateBlockHeaderToSend, err := c.bitcoinClient.RPCClient.GetBlockHeader(candidateBlockHash)
                 if err != nil {
-                    return fmt.Errorf("failed to get candidate block header: %v", err)
+                    return fmt.Errorf("[BlockRelayer] failed to get candidate block header: %w", err)
                 }
 
                 log.Printf(
-                    "new candidate block found: blockHash=%v",
+                    "[BlockRelayer] sending new candidate block header: blockHash=%v",
                     candidateBlockHeaderToSend.BlockHash().String(),
                 )
 
                 tx, _, err := c.bitcoinClientContract.SendCandidateBlockHeader(candidateBlockHeaderToSend)
                 if err != nil {
-                    return fmt.Errorf("failed to send candidate block header: %v", err)
+                    return fmt.Errorf("[BlockRelayer] failed to send candidate block header: %w", err)
                 }
 
-                log.Printf("candidate block header sent: txHash=%v", utils.BytesToHexString(tx.Hash))
+                log.Printf("[BlockRelayer] candidate block header sent: txHash=%v", utils.BytesToHexString(tx.Hash))
 
                 break
             }

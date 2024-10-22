@@ -48,6 +48,6 @@ func (c *RelayerFactory) CreateRelayer(relayerType string, sender *ton.WalletCon
         )
         return pegoutrelayer.NewPegoutRelayer(c.bitcoinClient, teleportContract)
     default:
-        return nil, fmt.Errorf("unknown relayer type: %s", relayerType)
+        return nil, fmt.Errorf("[RelayerFactory] unknown relayer type: %s", relayerType)
     }
 }
