@@ -1,6 +1,6 @@
 module github.com/rsquad/ton-teleport-btc-periphery/relayer
 
-go 1.23.1
+go 1.22
 
 require (
 	github.com/btcsuite/btcd v0.24.2
