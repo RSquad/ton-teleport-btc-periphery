@@ -105,11 +105,10 @@ func (c *BitcoinClientContract) GetCandidateBlockHashes() ([]*chainhash.Hash, er
 
     branch := storageSlice.MustLoadMaybeRef()
     for branch != nil {
-        blockHeader := branch.MustLoadSlice(blockHeaderBitLength)
+        branchCopy := *branch
+        blockHash := c.CalcBlockHashFromSlice(&branchCopy)
 
-        blockHash := chainhash.DoubleHashH(blockHeader)
-
-        blockHashes = append(blockHashes, &blockHash)
+        blockHashes = append(blockHashes, blockHash)
         blockHeaders = append(blockHeaders, branch)
 
         if storageSlice.BitsLeft() > 0 {
@@ -141,4 +140,11 @@ func (c *BitcoinClientContract) GetCandidateBlockHashes() ([]*chainhash.Hash, er
     }
 
     return blockHashes, nil
+}
+
+func (c *BitcoinClientContract) CalcBlockHashFromSlice(blockHeaderCell *cell.Slice) *chainhash.Hash {
+    blockHeader := blockHeaderCell.MustLoadSlice(blockHeaderBitLength)
+
+    hash := chainhash.DoubleHashH(blockHeader)
+    return &hash
 }
