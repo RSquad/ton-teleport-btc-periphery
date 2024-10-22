@@ -117,7 +117,7 @@ func (c *TeleportContract) GetStorage() (TeleportContractStorage, error) {
 
     lastPegoutTxIDInt := storage.MustInt(storageIndexLastPegoutTxID)
 
-    lastPegoutTxID, err := chainhash.NewHash(lastPegoutTxIDInt.Bytes())
+    lastPegoutTxID, err := chainhash.NewHash(utils.BytesPadTo(lastPegoutTxIDInt.Bytes(), 32))
     if err != nil {
         return TeleportContractStorage{}, err
     }
