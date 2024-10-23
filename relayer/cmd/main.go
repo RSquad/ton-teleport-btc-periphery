@@ -121,7 +121,7 @@ func startRelayer(app *App, relayerName string, interval time.Duration, ctx cont
                 return
             case <-ticker.C:
                 if err := relayer.Relay(); err != nil {
-                    log.Printf("[App] failed to relay %v: %w", relayerName, err)
+                    log.Printf("[App] failed to relay %v: %v", relayerName, err)
                 }
             }
         }
