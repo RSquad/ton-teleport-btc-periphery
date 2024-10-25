@@ -79,6 +79,20 @@ func (c *BitcoinClientContract) GetStorageCell() (*cell.Cell, error) {
 	return storage.MustCell(0), nil
 }
 
+func (c *BitcoinClientContract) GetConfirmationsNeeded() (int64, error) {
+	storageCell, err := c.GetStorageCell()
+	if err != nil {
+		return 0, err
+	}
+
+	storageSlice := storageCell.BeginParse()
+	storageSlice.MustLoadRef()
+	storageSlice.MustLoadSlice(256)
+	storageSlice.MustLoadBigUInt(32)
+
+	return storageSlice.MustLoadInt(4), nil
+}
+
 func (c *BitcoinClientContract) GetLastConfirmedBlockHash() (*chainhash.Hash, error) {
 	storageCell, err := c.GetStorageCell()
 	if err != nil {
@@ -96,7 +110,7 @@ func (c *BitcoinClientContract) GetCandidateBlockHashes() ([]*chainhash.Hash, er
 
 	storageSlice := storageCell.BeginParse()
 	storageSlice.MustLoadRef()
-	storageSlice.MustLoadSlice(256 + 32 + 32 + 32 + 256 + 2 + 32*medianTimeSpan)
+	storageSlice.MustLoadSlice(256 + 32 + 4 + 32 + 32 + 256 + 2 + 32*medianTimeSpan)
 
 	var (
 		blockHashes  []*chainhash.Hash

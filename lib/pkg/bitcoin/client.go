@@ -9,8 +9,6 @@ import (
 	"github.com/btcsuite/btcd/rpcclient"
 )
 
-const ConfirmationsNeeded = 6
-
 type Client struct {
 	RPCClient *rpcclient.Client
 }
