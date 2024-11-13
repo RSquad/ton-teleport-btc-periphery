@@ -1,22 +1,27 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"log"
 	"net"
 	"os"
+	"sync"
 
 	"github.com/xssnick/tonutils-go/address"
+	"github.com/xssnick/tonutils-go/tvm/cell"
+	"k8s.io/client-go/util/workqueue"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/config"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/log_listener"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/teleport_contract"
 )
 
 type App struct {
 	TonCenterV3Client           *ton.TonCenterV3Client
 	TeleportContractLogListener loglistener.LogListenerInterface
+	TeleportContractLogParser   *teleportcontract.LogParser
+	TeleportLogsQueue           *workqueue.Typed[*cell.Cell]
 }
 
 func main() {
@@ -45,9 +50,22 @@ func initialize() (*App, error) {
 	}
 
 	teleportContractAddr := address.MustParseAddr(os.Getenv("COMMON_TON_CONTRACT_TELEPORT_ADDR"))
-	teleportContractLogListener, err := loglistener.NewLogListener(tonCenterV3Client, teleportContractAddr)
+	teleportLogsQueue := workqueue.NewTyped[*cell.Cell]()
+	teleportContractLogListener, err := loglistener.NewLogListener(
+		tonCenterV3Client,
+		teleportContractAddr,
+		teleportLogsQueue,
+	)
 	if err != nil {
 		return nil, fmt.Errorf("[App] failed to create teleport contract log listener: %w", err)
+	}
+
+	teleportContractLogParser, err := teleportcontract.NewTeleportContractLogParser(
+		teleportLogsQueue,
+		[]*workqueue.Typed[*cell.Cell]{},
+	)
+	if err != nil {
+		return nil, fmt.Errorf("[App] failed to create teleport contract log parser: %w", err)
 	}
 
 	log.Println("[App] initialized")
@@ -55,24 +73,29 @@ func initialize() (*App, error) {
 	return &App{
 		TonCenterV3Client:           tonCenterV3Client,
 		TeleportContractLogListener: teleportContractLogListener,
+		TeleportContractLogParser:   teleportContractLogParser,
+		TeleportLogsQueue:           teleportLogsQueue,
 	}, nil
 }
 
 func run(app *App) error {
 	log.Println("[App] running...")
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	var wg sync.WaitGroup
 
-	done := make(chan error)
-
+	wg.Add(1)
 	go func() {
-		done <- app.TeleportContractLogListener.StartListen(ctx)
+		defer wg.Done()
+		app.TeleportContractLogListener.StartListen()
 	}()
 
-	if err := <-done; err != nil {
-		log.Printf("[App] LogListener stopped with error: %v", err)
-	}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		app.TeleportContractLogParser.StartParse()
+	}()
+
+	wg.Wait()
 
 	log.Println("[App] shutdown complete")
 	return nil
