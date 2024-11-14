@@ -2,8 +2,6 @@ module github.com/rsquad/ton-teleport-btc-periphery/indexer
 
 go 1.22.0
 
-toolchain go1.23.1
-
 require (
 	github.com/joho/godotenv v1.5.1
 	github.com/rsquad/ton-teleport-btc-periphery/lib v0.0.0-00010101000000-000000000000

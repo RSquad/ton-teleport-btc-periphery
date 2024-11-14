@@ -1,5 +1,7 @@
 #!/bin/bash
 
+mkdir -p ./pkg/ton/generated
+
 swagger generate client \
   --spec=./ton-center-v3-swagger.json \
   --target=./pkg/ton/generated \
