@@ -7,18 +7,21 @@ import (
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/bitcoin_client_contract"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
 )
 
 type BlockRelayer struct {
 	bitcoinClient         *bitcoin.Client
-	bitcoinClientContract *ton.BitcoinClientContract
+	bitcoinClientContract *bitcoinclientcontract.BitcoinClientContract
 	isRelaying            bool
 	confirmationsNeeded   int64
 }
 
-func NewBlockRelayer(bitcoinClient *bitcoin.Client, bitcoinClientContract *ton.BitcoinClientContract) (
+func NewBlockRelayer(
+	bitcoinClient *bitcoin.Client,
+	bitcoinClientContract *bitcoinclientcontract.BitcoinClientContract,
+) (
 	*BlockRelayer,
 	error,
 ) {
