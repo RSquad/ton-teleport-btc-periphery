@@ -5,11 +5,13 @@ go 1.22.0
 require (
 	github.com/btcsuite/btcd v0.24.2
 	github.com/btcsuite/btcd/chaincfg/chainhash v1.1.0
+	github.com/caarlos0/env/v11 v11.2.2
 	github.com/go-openapi/errors v0.22.0
 	github.com/go-openapi/runtime v0.28.0
 	github.com/go-openapi/strfmt v0.23.0
 	github.com/go-openapi/swag v0.23.0
 	github.com/go-openapi/validate v0.24.0
+	github.com/joho/godotenv v1.5.1
 	github.com/xssnick/tonutils-go v1.10.2
 	k8s.io/client-go v0.31.2
 )

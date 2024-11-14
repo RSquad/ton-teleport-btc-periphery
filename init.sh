@@ -1,6 +1,6 @@
 #!/bin/bash
 
-dirs=(./relayer)
+dirs=(./relayer ./oracle)
 
 for dir in "${dirs[@]}"; do
   if [ -d "$dir" ]; then

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"net"
-	"os"
 	"sync"
 
 	"github.com/xssnick/tonutils-go/address"
@@ -15,6 +14,7 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/log_listener"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/teleport_contract"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
 )
 
 type App struct {
@@ -42,14 +42,23 @@ func main() {
 func initialize() (*App, error) {
 	log.Println("[App] initializing...")
 
-	config.LoadEnv()
+	indexerConfig, err := utils.LoadConfig[config.IndexerConfig]()
+	if err != nil {
+		return nil, err
+	}
 
-	tonCenterV3Client, err := ton.NewTonCenterV3Client(false)
+	tonCenterV3Client, err := ton.NewTonCenterV3Client(
+		indexerConfig.TonCenterV3Host,
+		indexerConfig.TonCenterApiKey,
+		"/",
+		"https",
+		false,
+	)
 	if err != nil {
 		return nil, fmt.Errorf("[App] failed to create ton client: %w", err)
 	}
 
-	teleportContractAddr := address.MustParseAddr(os.Getenv("COMMON_TON_CONTRACT_TELEPORT_ADDR"))
+	teleportContractAddr := address.MustParseAddr(indexerConfig.TeleportContractAddr)
 	teleportLogsQueue := workqueue.NewTyped[*cell.Cell]()
 	teleportContractLogListener, err := loglistener.NewLogListener(
 		tonCenterV3Client,

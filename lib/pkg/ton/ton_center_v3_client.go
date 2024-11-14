@@ -1,8 +1,6 @@
 package ton
 
 import (
-	"os"
-
 	"github.com/go-openapi/runtime"
 	httptransport "github.com/go-openapi/runtime/client"
 	"github.com/go-openapi/strfmt"
@@ -15,27 +13,22 @@ type TonCenterV3Client struct {
 	Auth runtime.ClientAuthInfoWriter
 }
 
-func NewTonCenterV3Client(debug bool) (
+func NewTonCenterV3Client(host string, apiKey string, basePath string, scheme string, debug bool) (
 	*TonCenterV3Client,
 	error,
 ) {
-	host := os.Getenv("COMMON_TON_CENTER_V3_HOST")
 	if host == "" {
 		host = toncenterv3client.DefaultHost
 	}
 
-	basePath := os.Getenv("COMMON_TON_CENTER_V3_BASE_PATH")
 	if basePath == "" {
 		basePath = toncenterv3client.DefaultBasePath
 	}
 
-	scheme := os.Getenv("COMMON_TON_CENTER_V3_SCHEME")
 	schemes := toncenterv3client.DefaultSchemes
 	if scheme != "" {
 		schemes = []string{scheme}
 	}
-
-	apiKey := os.Getenv("COMMON_TON_CENTER_API_KEY")
 
 	transport := httptransport.New(host, basePath, schemes)
 

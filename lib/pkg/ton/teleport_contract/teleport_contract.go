@@ -15,7 +15,7 @@ import (
 	"github.com/xssnick/tonutils-go/ton/wallet"
 	"github.com/xssnick/tonutils-go/tvm/cell"
 
-	ton2 "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/jw_v4r2_contract"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
 )
 
@@ -24,10 +24,10 @@ const storageIndexPegoutChainCounter = 13
 const storageIndexLastPegoutTxID = 14
 
 type TeleportContract struct {
-	Address *address.Address
-	sender  *ton2.WalletContract
-	api     *ton.APIClient
-	ctx     context.Context
+	Addr   *address.Address
+	sender *jwv4r2contract.JWV4R2Contract
+	api    *ton.APIClient
+	ctx    context.Context
 }
 
 type Storage struct {
@@ -36,16 +36,16 @@ type Storage struct {
 }
 
 func New(
+	addr *address.Address,
 	api *ton.APIClient,
-	address *address.Address,
-	sender *ton2.WalletContract,
+	sender *jwv4r2contract.JWV4R2Contract,
 	ctx context.Context,
 ) *TeleportContract {
 	return &TeleportContract{
-		Address: address,
-		sender:  sender,
-		api:     api,
-		ctx:     ctx,
+		Addr:   addr,
+		sender: sender,
+		api:    api,
+		ctx:    ctx,
 	}
 }
 
@@ -98,7 +98,7 @@ func (c *TeleportContract) SendPegoutProof(
 		MustStoreBigUInt(blockHashUInt, 256).
 		MustStoreBigUInt(txIDUInt, 256).MustStoreRef(proofCell).EndCell()
 
-	message := wallet.SimpleMessage(c.Address, tlb.MustFromTON("0.1"), payload)
+	message := wallet.SimpleMessage(c.Addr, tlb.MustFromTON("0.1"), payload)
 
 	return c.sender.SendWaitTransaction(c.ctx, message)
 }
@@ -109,7 +109,7 @@ func (c *TeleportContract) GetStorage() (Storage, error) {
 		return Storage{}, err
 	}
 
-	storage, err := c.api.RunGetMethod(c.ctx, block, c.Address, "get_storage")
+	storage, err := c.api.RunGetMethod(c.ctx, block, c.Addr, "get_storage")
 	if err != nil {
 		return Storage{}, err
 	}

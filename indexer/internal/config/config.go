@@ -1,31 +1,11 @@
 package config
 
-import (
-	"fmt"
-	"log"
-	"os"
-
-	"github.com/joho/godotenv"
-)
-
-func LoadEnv() {
-	err := godotenv.Load()
-	if err != nil {
-		log.Println("Error loading .env file, falling back to default values")
-	}
-
-	checkEnv("COMMON_BITCOIN_RPC_HOST")
-	checkEnv("COMMON_BITCOIN_RPC_USER")
-	checkEnv("COMMON_BITCOIN_RPC_PASS")
-	checkEnv("COMMON_TON_CONFIG_URL")
-	checkEnv("COMMON_TON_CENTER_V3_HOST")
-	checkEnv("COMMON_TON_CONTRACT_TELEPORT_ADDR")
-}
-
-func checkEnv(name string) {
-	env := os.Getenv(name)
-	if env == "" {
-		err := fmt.Errorf("[Config] environment variable %s is not set", name)
-		panic(err)
-	}
+type IndexerConfig struct {
+	BitcoinRpcHost       string `env:"COMMON_BITCOIN_RPC_HOST,required"`
+	BitcoinRpcUser       string `env:"COMMON_BITCOIN_RPC_USER,required"`
+	BitcoinRpcPass       string `env:"COMMON_BITCOIN_RPC_PASS,required"`
+	TonConfigUrl         string `env:"COMMON_TON_CONFIG_URL,required"`
+	TonCenterV3Host      string `env:"COMMON_TON_CENTER_V3_HOST,required"`
+	TonCenterApiKey      string `env:"COMMON_TON_CENTER_API_KEY,required"`
+	TeleportContractAddr string `env:"COMMON_TON_CONTRACT_TELEPORT_ADDR,required"`
 }
