@@ -49,7 +49,7 @@ func initialize() (*App, error) {
 		log.Fatalf("[App] Failed to load env: %w", err)
 	}
 
-	tonClient, err := ton.NewClient()
+	tonClient, err := ton.NewClient(cfg.TonConfigUrl)
 	if err != nil {
 		return nil, fmt.Errorf("[App] failed to create ton client: %w", err)
 	}
