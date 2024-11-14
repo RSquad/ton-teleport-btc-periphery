@@ -45,22 +45,22 @@ func main() {
 func initialize() (*App, error) {
 	log.Println("[App] initializing...")
 
-	relayer, err := utils.LoadConfig[config.RelayerConfig]()
+	relayerConfig, err := utils.LoadConfig[config.RelayerConfig]()
 	if err != nil {
-		log.Fatalf("[App] Failed to load env: %w", err)
+		log.Fatalf("[App] Failed to load env: %v", err)
 	}
 
-	tonClient, err := tonclient.NewTonClient(relayer.TonConfigUrl)
+	tonClient, err := tonclient.NewTonClient(relayerConfig.TonConfigUrl)
 	if err != nil {
 		return nil, fmt.Errorf("[App] failed to create ton client: %w", err)
 	}
 
-	bitcoinClient, err := bitcoin.NewClient(relayer.BitcoinRpcHost, relayer.BitcoinRpcUser, relayer.BitcoinRpcPass)
+	bitcoinClient, err := bitcoin.NewClient(relayerConfig.BitcoinRpcHost, relayerConfig.BitcoinRpcUser, relayerConfig.BitcoinRpcPass)
 	if err != nil {
 		return nil, fmt.Errorf("[App] failed to create bitcoin client: %w", err)
 	}
 
-	jwV4R2Secret, err := hex.DecodeString(relayer.RelayerWallerV4Secret)
+	jwV4R2Secret, err := hex.DecodeString(relayerConfig.RelayerWallerV4Secret)
 	if err != nil {
 		return nil, fmt.Errorf("[App] failed to decode jwv4r2 secret: %w", err)
 	}
@@ -75,7 +75,7 @@ func initialize() (*App, error) {
 	log.Println("[App] initialized")
 
 	return &App{
-		Config:         relayer,
+		Config:         relayerConfig,
 		TonClient:      tonClient,
 		BitcoinClient:  bitcoinClient,
 		JWV4R2Contract: jwV4R2Contract,
