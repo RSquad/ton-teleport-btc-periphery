@@ -82,7 +82,6 @@ func (c *LogListener) fetchMsgs() ([]*toncenterv3models.Message, error) {
 		params,
 		c.tonCenterV3Client.Auth,
 	)
-
 	if err != nil {
 		return nil, err
 	}

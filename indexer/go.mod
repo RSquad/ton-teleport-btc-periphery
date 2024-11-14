@@ -2,8 +2,9 @@ module github.com/rsquad/ton-teleport-btc-periphery/indexer
 
 go 1.22.0
 
+replace github.com/rsquad/ton-teleport-btc-periphery/lib => ../lib
+
 require (
-	github.com/joho/godotenv v1.5.1
 	github.com/rsquad/ton-teleport-btc-periphery/lib v0.0.0-00010101000000-000000000000
 	github.com/xssnick/tonutils-go v1.10.2
 	k8s.io/client-go v0.31.2
@@ -12,14 +13,8 @@ require (
 require (
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2 // indirect
 	github.com/btcsuite/btcd v0.24.2 // indirect
-	github.com/btcsuite/btcd/btcec/v2 v2.1.3 // indirect
-	github.com/btcsuite/btcd/btcutil v1.1.5 // indirect
 	github.com/btcsuite/btcd/chaincfg/chainhash v1.1.0 // indirect
-	github.com/btcsuite/btclog v0.0.0-20170628155309-84c8d2346e9f // indirect
-	github.com/btcsuite/go-socks v0.0.0-20170105172521-4720035b7bfd // indirect
-	github.com/btcsuite/websocket v0.0.0-20150119174127-31079b680792 // indirect
-	github.com/decred/dcrd/crypto/blake256 v1.0.0 // indirect
-	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.0.1 // indirect
+	github.com/caarlos0/env/v11 v11.2.2 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-openapi/analysis v0.23.0 // indirect
@@ -33,6 +28,7 @@ require (
 	github.com/go-openapi/swag v0.23.0 // indirect
 	github.com/go-openapi/validate v0.24.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
+	github.com/joho/godotenv v1.5.1 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
@@ -53,5 +49,3 @@ require (
 	k8s.io/klog/v2 v2.130.1 // indirect
 	k8s.io/utils v0.0.0-20240711033017-18e509b52bc8 // indirect
 )
-
-replace github.com/rsquad/ton-teleport-btc-periphery/lib => ../lib

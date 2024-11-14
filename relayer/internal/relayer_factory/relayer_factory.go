@@ -16,47 +16,47 @@ import (
 )
 
 type Relayer interface {
-    Relay() error
+	Relay() error
 }
 
 type RelayerFactory struct {
-    bitcoinClient *bitcoin.Client
-    tonClient     *tonclient.TonClient
+	bitcoinClient *bitcoin.Client
+	tonClient     *tonclient.TonClient
 }
 
 func NewRelayerFactory(bitcoinClient *bitcoin.Client, tonClient *tonclient.TonClient) *RelayerFactory {
-    return &RelayerFactory{
-        bitcoinClient: bitcoinClient,
-        tonClient:     tonClient,
-    }
+	return &RelayerFactory{
+		bitcoinClient: bitcoinClient,
+		tonClient:     tonClient,
+	}
 }
 
 func (c *RelayerFactory) CreateRelayer(
-    relayerType string,
-    sender *jwv4r2contract.JWV4R2Contract,
-    contractAddress string,
+	relayerType string,
+	sender *jwv4r2contract.JWV4R2Contract,
+	contractAddress string,
 ) (
-    Relayer,
-    error,
+	Relayer,
+	error,
 ) {
-    switch relayerType {
-    case "block":
-        bitcoinClientContract := bitcoinclientcontract.NewBitcoinClientContract(
-            address.MustParseAddr(contractAddress),
-            c.tonClient,
-            sender,
-            context.Background(),
-        )
-        return blockrelayer.NewBlockRelayer(c.bitcoinClient, bitcoinClientContract)
-    case "pegout":
-        teleportContract := teleportcontract.New(
+	switch relayerType {
+	case "block":
+		bitcoinClientContract := bitcoinclientcontract.NewBitcoinClientContract(
 			address.MustParseAddr(contractAddress),
-            c.tonClient.API,
-            sender,
-            context.Background(),
-        )
-        return pegoutrelayer.NewPegoutRelayer(c.bitcoinClient, teleportContract)
-    default:
-        return nil, fmt.Errorf("[RelayerFactory] unknown relayer type: %s", relayerType)
-    }
+			c.tonClient,
+			sender,
+			context.Background(),
+		)
+		return blockrelayer.NewBlockRelayer(c.bitcoinClient, bitcoinClientContract)
+	case "pegout":
+		teleportContract := teleportcontract.New(
+			address.MustParseAddr(contractAddress),
+			c.tonClient.API,
+			sender,
+			context.Background(),
+		)
+		return pegoutrelayer.NewPegoutRelayer(c.bitcoinClient, teleportContract)
+	default:
+		return nil, fmt.Errorf("[RelayerFactory] unknown relayer type: %s", relayerType)
+	}
 }

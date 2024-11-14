@@ -14,12 +14,14 @@ import (
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
 	jwv4r2contract "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/jw_v4r2_contract"
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/ton_client"
+	tonclient "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/ton_client"
 )
 
-const medianTimeSpan = 11
-const blockHeaderBitLength = 80 * 8
-const opCodeNewBlock = 0x5eefbc61
+const (
+	medianTimeSpan       = 11
+	blockHeaderBitLength = 80 * 8
+	opCodeNewBlock       = 0x5eefbc61
+)
 
 type BitcoinClientContract struct {
 	Addr      *address.Address

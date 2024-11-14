@@ -26,5 +26,4 @@ func NewTonClient(configURL string) (*TonClient, error) {
 		Pool: pool,
 		API:  api,
 	}, nil
-
 }
