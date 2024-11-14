@@ -1,4 +1,4 @@
-package ton
+package coordinator_contract
 
 import (
 	"context"
@@ -7,7 +7,7 @@ import (
 )
 
 type CoordinatorContract struct {
-	address *address.Address
+	Address *address.Address
 	//sender  *WalletContract
 	api *ton.APIClient
 	ctx context.Context
@@ -19,7 +19,7 @@ func NewCoordinatorContract(
 	ctx context.Context,
 ) (*CoordinatorContract, error) {
 	return &CoordinatorContract{
-		address: address,
+		Address: address,
 		//sender:  sender,
 		api: api,
 		ctx: ctx,

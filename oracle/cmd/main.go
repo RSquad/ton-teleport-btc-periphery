@@ -3,10 +3,10 @@ package main
 import (
 	"context"
 	"fmt"
+	libconfig "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/config"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton"
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator_contract"
 	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/config"
-	ton_service "github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/ton"
 	"github.com/xssnick/tonutils-go/address"
 	"log"
 )
@@ -14,14 +14,13 @@ import (
 type App struct {
 	Config              config.OracleConfig
 	TonClient           *ton.Client
-	TonService          *ton_service.TonService
-	CoordinatorContract *ton.CoordinatorContract
+	CoordinatorContract *coordinator_contract.CoordinatorContract
 }
 
 func initialize() (*App, error) {
-	var cfg config.OracleConfig
 
-	if err := utils.LoadConfig(&cfg); err != nil {
+	cfg, err := libconfig.LoadConfig[config.OracleConfig]()
+	if err != nil {
 		log.Fatalf("[App] Failed to load env: %w", err)
 	}
 
@@ -30,19 +29,16 @@ func initialize() (*App, error) {
 		return nil, fmt.Errorf("[App] failed to create ton client: %w", err)
 	}
 
-	coordinatorContract, err := ton.NewCoordinatorContract(tonClient.API, address.MustParseAddr(cfg.Coordinator), context.Background())
+	coordinatorContract, err := coordinator_contract.NewCoordinatorContract(tonClient.API, address.MustParseAddr(cfg.Coordinator), context.Background())
 	if err != nil {
 		return nil, fmt.Errorf("[App] failed to create wallet contract: %w", err)
 	}
-
-	tonService := ton_service.NewTonService(cfg, tonClient, coordinatorContract)
 
 	log.Println("[App] initialized")
 
 	return &App{
 		Config:              cfg,
 		TonClient:           tonClient,
-		TonService:          tonService,
 		CoordinatorContract: coordinatorContract,
 	}, nil
 }

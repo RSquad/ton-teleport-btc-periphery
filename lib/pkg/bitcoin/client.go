@@ -2,8 +2,6 @@ package bitcoin
 
 import (
 	"encoding/json"
-	"os"
-
 	"github.com/btcsuite/btcd/btcjson"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/rpcclient"
@@ -13,11 +11,11 @@ type Client struct {
 	RPCClient *rpcclient.Client
 }
 
-func NewClient() (*Client, error) {
+func NewClient(host string, user string, pass string) (*Client, error) {
 	connCfg := &rpcclient.ConnConfig{
-		Host:         os.Getenv("COMMON_BITCOIN_RPC_HOST"),
-		User:         os.Getenv("COMMON_BITCOIN_RPC_USER"),
-		Pass:         os.Getenv("COMMON_BITCOIN_RPC_PASS"),
+		Host:         host,
+		User:         user,
+		Pass:         pass,
 		HTTPPostMode: true,
 		DisableTLS:   true,
 	}
