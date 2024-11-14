@@ -1,4 +1,4 @@
-package ton
+package bitcoinclientcontract
 
 import (
 	"context"
@@ -13,6 +13,8 @@ import (
 	"github.com/xssnick/tonutils-go/tvm/cell"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
+	jwv4r2contract "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/jw_v4r2_contract"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/ton_client"
 )
 
 const medianTimeSpan = 11
@@ -20,23 +22,20 @@ const blockHeaderBitLength = 80 * 8
 const opCodeNewBlock = 0x5eefbc61
 
 type BitcoinClientContract struct {
-	Address *address.Address
-	sender  *WalletContract
-	api     *ton.APIClient
-	ctx     context.Context
+	Addr      *address.Address
+	tonClient *tonclient.TonClient
+	sender    *jwv4r2contract.JWV4R2Contract
+	ctx       context.Context
 }
 
 func NewBitcoinClientContract(
-	api *ton.APIClient,
-	address *address.Address,
-	sender *WalletContract,
+	addr *address.Address,
+	tonClient *tonclient.TonClient,
+	sender *jwv4r2contract.JWV4R2Contract,
 	ctx context.Context,
 ) *BitcoinClientContract {
 	return &BitcoinClientContract{
-		Address: address,
-		sender:  sender,
-		api:     api,
-		ctx:     ctx,
+		addr, tonClient, sender, ctx,
 	}
 }
 
@@ -60,18 +59,18 @@ func (c *BitcoinClientContract) SendCandidateBlockHeader(candidateBlockHeader *w
 				EndCell(),
 		).EndCell()
 
-	message := wallet.SimpleMessage(c.Address, tlb.MustFromTON("0.1"), payload)
+	message := wallet.SimpleMessage(c.Addr, tlb.MustFromTON("0.1"), payload)
 
 	return c.sender.SendWaitTransaction(c.ctx, message)
 }
 
 func (c *BitcoinClientContract) GetStorageCell() (*cell.Cell, error) {
-	block, err := c.api.CurrentMasterchainInfo(c.ctx)
+	block, err := c.tonClient.API.CurrentMasterchainInfo(c.ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	storage, err := c.api.RunGetMethod(c.ctx, block, c.Address, "get_data_tree")
+	storage, err := c.tonClient.API.RunGetMethod(c.ctx, block, c.Addr, "get_data_tree")
 	if err != nil {
 		return nil, err
 	}

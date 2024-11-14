@@ -1,17 +1,18 @@
-package ton
+package tonclient
 
 import (
 	"context"
+
 	"github.com/xssnick/tonutils-go/liteclient"
 	"github.com/xssnick/tonutils-go/ton"
 )
 
-type Client struct {
+type TonClient struct {
 	Pool *liteclient.ConnectionPool
 	API  *ton.APIClient
 }
 
-func NewClient(configURL string) (*Client, error) {
+func NewTonClient(configURL string) (*TonClient, error) {
 	pool := liteclient.NewConnectionPool()
 
 	err := pool.AddConnectionsFromConfigUrl(context.Background(), configURL)
@@ -21,7 +22,7 @@ func NewClient(configURL string) (*Client, error) {
 
 	api := ton.NewAPIClient(pool)
 
-	return &Client{
+	return &TonClient{
 		Pool: pool,
 		API:  api,
 	}, nil
