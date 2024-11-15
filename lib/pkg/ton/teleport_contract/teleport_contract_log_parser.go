@@ -2,14 +2,11 @@ package teleportcontract
 
 import (
 	"fmt"
-	"log"
 	"math/big"
-	"time"
 
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/tvm/cell"
-	"k8s.io/client-go/util/workqueue"
 )
 
 const (
@@ -55,59 +52,19 @@ func (r *ReinitLog) GetLogID() uint32 {
 	return logIdReinit
 }
 
-type LogParser struct {
-	inQueue   *workqueue.Typed[*cell.Cell]
-	outQueues []*workqueue.Typed[*cell.Cell]
-}
+type LogParser struct{}
 
-func NewTeleportContractLogParser(
-	inQueue *workqueue.Typed[*cell.Cell],
-	outQueues []*workqueue.Typed[*cell.Cell],
-) (
+func NewTeleportContractLogParser() (
 	*LogParser,
 	error,
 ) {
-	return &LogParser{
-		inQueue, outQueues,
-	}, nil
+	return &LogParser{}, nil
 }
 
-func (c *LogParser) StartParse() {
-	log.Println("[LogParser] start parsing")
-	for {
-		if c.inQueue.Len() > 0 {
-			logCell, shutdown := c.inQueue.Get()
-			if shutdown {
-				break
-			}
-
-			parsedLog, err := c.parse(logCell)
-			if err != nil {
-				log.Println(fmt.Errorf("[LogParser] failed to parse log %v", logCell.ToBOC()))
-				c.inQueue.Done(logCell)
-				c.inQueue.Add(logCell)
-			} else {
-				switch typedParsedLog := parsedLog.(type) {
-				case *MintLog:
-					log.Println("Parsed MintLog:", typedParsedLog)
-				case *BurnLog:
-					log.Println("Parsed BurnLog:", typedParsedLog)
-				case *ReinitLog:
-					log.Println("Parsed ReinitLog:", typedParsedLog)
-				default:
-					log.Printf("[LogParser] unknown log type %T\n", typedParsedLog.GetLogID())
-				}
-			}
-		} else {
-			log.Println("[LogParser] in queue is empty, waiting for new logs")
-			time.Sleep(3 * time.Second)
-		}
-	}
-}
-
-func (c *LogParser) parse(logCell *cell.Cell) (LogInterface, error) {
+func (c *LogParser) Parse(logCell *cell.Cell) (LogInterface, error) {
 	logSlice := logCell.BeginParse()
 	logId := logSlice.MustLoadUInt(32)
+
 	switch logId {
 	case logIdMint:
 		mintLog, err := parseMintLog(logSlice)

@@ -8,4 +8,5 @@ type IndexerConfig struct {
 	TonCenterV3Host      string `env:"COMMON_TON_CENTER_V3_HOST,required"`
 	TonCenterApiKey      string `env:"COMMON_TON_CENTER_API_KEY,required"`
 	TeleportContractAddr string `env:"COMMON_TON_CONTRACT_TELEPORT_ADDR,required"`
+	DatabaseURL          string `env:"INDEXER_DATABASE_URL,required"`
 }
