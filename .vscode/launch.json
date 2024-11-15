@@ -1,0 +1,35 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Run Relayer",
+      "type": "go",
+      "request": "launch",
+      "mode": "auto",
+      "program": "${workspaceFolder}/relayer/cmd/main.go",
+      "cwd": "${workspaceFolder}",
+      "args": [],
+      "showLog": true
+    },
+    {
+      "name": "Run Indexer",
+      "type": "go",
+      "request": "launch",
+      "mode": "auto",
+      "program": "${workspaceFolder}/indexer/cmd/main.go",
+      "cwd": "${workspaceFolder}",
+      "args": [],
+      "showLog": true
+    },
+    {
+      "name": "Run Oracle",
+      "type": "go",
+      "request": "launch",
+      "mode": "auto",
+      "program": "${workspaceFolder}/oracle/cmd/main.go",
+      "cwd": "${workspaceFolder}",
+      "args": [],
+      "showLog": true
+    }
+  ]
+}

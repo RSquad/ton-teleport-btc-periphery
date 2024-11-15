@@ -5,7 +5,7 @@ import (
 
 	"github.com/xssnick/tonutils-go/address"
 
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/ton_client"
+	tonclient "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/ton_client"
 )
 
 type CoordinatorContract struct {

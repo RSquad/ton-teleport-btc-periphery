@@ -11,9 +11,9 @@ import (
 	"k8s.io/client-go/util/workqueue"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/config"
-	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/log_listener"
+	loglistener "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/log_listener"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton"
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/teleport_contract"
+	teleportcontract "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/teleport_contract"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
 )
 

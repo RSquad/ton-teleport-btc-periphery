@@ -1,0 +1,16 @@
+#!/bin/sh
+
+FILES=$(git diff --name-only --cached --diff-filter=ACM | grep '\.go$')
+
+if [ -n "$FILES" ]; then
+  echo "Formatting Go files..."
+  for file in $FILES; do
+    gofumpt -w "$file"
+
+    git add "$file"
+  done
+else
+  echo "No Go files to format."
+fi
+
+exit 0

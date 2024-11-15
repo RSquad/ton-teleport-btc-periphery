@@ -12,9 +12,11 @@ import (
 	"k8s.io/client-go/util/workqueue"
 )
 
-const logIdMint = 0x77a80ef3
-const logIdBurn = 0xca444ce6
-const logIdReinit = 0x84d432ba
+const (
+	logIdMint   = 0x77a80ef3
+	logIdBurn   = 0xca444ce6
+	logIdReinit = 0x84d432ba
+)
 
 type LogInterface interface {
 	GetLogID() uint32

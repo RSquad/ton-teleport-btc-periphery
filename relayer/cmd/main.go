@@ -12,11 +12,11 @@ import (
 	"time"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/jw_v4r2_contract"
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/ton_client"
+	jwv4r2contract "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/jw_v4r2_contract"
+	tonclient "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/ton_client"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
 	"github.com/rsquad/ton-teleport-btc-periphery/relayer/internal/config"
-	"github.com/rsquad/ton-teleport-btc-periphery/relayer/internal/relayer_factory"
+	relayerfactory "github.com/rsquad/ton-teleport-btc-periphery/relayer/internal/relayer_factory"
 )
 
 type App struct {
@@ -55,7 +55,11 @@ func initialize() (*App, error) {
 		return nil, fmt.Errorf("[App] failed to create ton client: %w", err)
 	}
 
-	bitcoinClient, err := bitcoin.NewClient(relayerConfig.BitcoinRpcHost, relayerConfig.BitcoinRpcUser, relayerConfig.BitcoinRpcPass)
+	bitcoinClient, err := bitcoin.NewClient(
+		relayerConfig.BitcoinRpcHost,
+		relayerConfig.BitcoinRpcUser,
+		relayerConfig.BitcoinRpcPass,
+	)
 	if err != nil {
 		return nil, fmt.Errorf("[App] failed to create bitcoin client: %w", err)
 	}
@@ -65,7 +69,11 @@ func initialize() (*App, error) {
 		return nil, fmt.Errorf("[App] failed to decode jwv4r2 secret: %w", err)
 	}
 
-	jwV4R2Contract, err := jwv4r2contract.NewJWV4R2Contract(tonClient.API, jwV4R2Secret, context.Background())
+	jwV4R2Contract, err := jwv4r2contract.NewJWV4R2Contract(
+		tonClient.API,
+		jwV4R2Secret,
+		context.Background(),
+	)
 	if err != nil {
 		return nil, fmt.Errorf("[App] failed to create jwv4r2 contract: %w", err)
 	}
@@ -75,11 +83,7 @@ func initialize() (*App, error) {
 	log.Println("[App] initialized")
 
 	return &App{
-		Config:         relayerConfig,
-		TonClient:      tonClient,
-		BitcoinClient:  bitcoinClient,
-		JWV4R2Contract: jwV4R2Contract,
-		RelayerFactory: relayerFactory,
+		Config: relayerConfig, TonClient: tonClient, BitcoinClient: bitcoinClient, JWV4R2Contract: jwV4R2Contract, RelayerFactory: relayerFactory,
 	}, nil
 }
 
@@ -116,7 +120,11 @@ func startRelayer(
 	interval time.Duration,
 	ctx context.Context,
 ) error {
-	relayer, err := app.RelayerFactory.CreateRelayer(relayerName, app.JWV4R2Contract, contractAddress)
+	relayer, err := app.RelayerFactory.CreateRelayer(
+		relayerName,
+		app.JWV4R2Contract,
+		contractAddress,
+	)
 	if err != nil {
 		return fmt.Errorf("[App] failed to create %v relayer: %w", relayerName, err)
 	}

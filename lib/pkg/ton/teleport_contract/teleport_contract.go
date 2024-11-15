@@ -15,13 +15,15 @@ import (
 	"github.com/xssnick/tonutils-go/ton/wallet"
 	"github.com/xssnick/tonutils-go/tvm/cell"
 
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/jw_v4r2_contract"
+	jwv4r2contract "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/jw_v4r2_contract"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
 )
 
-const opCodeConfirmPegoutTx = 0xbd0eaf09
-const storageIndexPegoutChainCounter = 13
-const storageIndexLastPegoutTxID = 14
+const (
+	opCodeConfirmPegoutTx          = 0xbd0eaf09
+	storageIndexPegoutChainCounter = 13
+	storageIndexLastPegoutTxID     = 14
+)
 
 type TeleportContract struct {
 	Addr   *address.Address

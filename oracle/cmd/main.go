@@ -18,7 +18,6 @@ type App struct {
 }
 
 func initialize() (*App, error) {
-
 	oracleConfig, err := utils.LoadConfig[config.OracleConfig]()
 	if err != nil {
 		return nil, err
