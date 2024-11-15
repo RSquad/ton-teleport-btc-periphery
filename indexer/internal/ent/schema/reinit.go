@@ -1,18 +1,37 @@
 package schema
 
-import "entgo.io/ent"
+import (
+	"entgo.io/ent"
+	"entgo.io/ent/schema/field"
+)
 
-// Reinit holds the schema definition for the Reinit entity.
 type Reinit struct {
 	ent.Schema
 }
 
-// Fields of the Reinit.
 func (Reinit) Fields() []ent.Field {
-	return nil
+	return []ent.Field{
+		field.Uint64("externalId").
+			Unique().
+			Immutable(),
+		field.Text("amount").
+			NotEmpty().
+			Immutable(),
+		field.Text("bitcoinTxId").
+			Unique().
+			NotEmpty().
+			Immutable(),
+		field.Text("bitcoinScript").
+			Immutable(),
+		field.Text("tonMsgHash").
+			Unique().
+			NotEmpty().
+			Immutable(),
+		field.Time("createdAt").
+			Immutable(),
+	}
 }
 
-// Edges of the Reinit.
 func (Reinit) Edges() []ent.Edge {
 	return nil
 }

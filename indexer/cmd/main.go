@@ -53,7 +53,6 @@ func initialize() (*App, error) {
 	if err != nil {
 		log.Fatalf("[App] failed to create repo: %v", err)
 	}
-	defer repo.Close()
 
 	if err := repo.Schema.Create(context.Background()); err != nil {
 		log.Fatalf("[App] failed creating repos schema: %v", err)
@@ -70,7 +69,12 @@ func initialize() (*App, error) {
 		return nil, fmt.Errorf("[App] failed to create ton client: %w", err)
 	}
 
-	logManager, err := logmanager.New(tonCenterV3Client, teleportContractAddr)
+	logManager, err := logmanager.New(
+		context.Background(),
+		repo,
+		tonCenterV3Client,
+		teleportContractAddr,
+	)
 	if err != nil {
 		return nil, fmt.Errorf("[App] failed to create log manager: %w", err)
 	}
@@ -86,6 +90,7 @@ func initialize() (*App, error) {
 
 func run(app *App) error {
 	log.Println("[App] running...")
+	defer app.Repo.Close()
 
 	var wg sync.WaitGroup
 

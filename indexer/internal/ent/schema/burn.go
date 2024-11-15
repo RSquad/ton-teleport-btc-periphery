@@ -1,18 +1,41 @@
 package schema
 
-import "entgo.io/ent"
+import (
+	"entgo.io/ent"
+	"entgo.io/ent/schema/field"
+)
 
-// Burn holds the schema definition for the Burn entity.
 type Burn struct {
 	ent.Schema
 }
 
-// Fields of the Burn.
 func (Burn) Fields() []ent.Field {
-	return nil
+	return []ent.Field{
+		field.Uint64("externalId").
+			Unique().
+			Immutable(),
+		field.Text("senderAddr").
+			NotEmpty().
+			Immutable(),
+		field.Text("amount").
+			NotEmpty().
+			Immutable(),
+		field.Text("bitcoinTxId").
+			Unique().
+			NotEmpty().
+			Immutable(),
+		field.Text("bitcoinScript").
+			NotEmpty().
+			Immutable(),
+		field.Text("tonMsgHash").
+			Unique().
+			NotEmpty().
+			Immutable(),
+		field.Time("createdAt").
+			Immutable(),
+	}
 }
 
-// Edges of the Burn.
 func (Burn) Edges() []ent.Edge {
 	return nil
 }

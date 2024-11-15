@@ -54,7 +54,7 @@ func (r *ReinitLog) GetLogID() uint32 {
 
 type LogParser struct{}
 
-func NewTeleportContractLogParser() (
+func NewLogParser() (
 	*LogParser,
 	error,
 ) {
