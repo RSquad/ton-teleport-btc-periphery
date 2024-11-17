@@ -53,6 +53,7 @@ func initialize() (*App, error) {
 	}
 
 	teleportContractAddr := address.MustParseAddr(indexerConfig.TeleportContractAddr)
+	coordinatorContractAddr := address.MustParseAddr(indexerConfig.CoordinatorContractAddr)
 
 	repo, err := ent.Open(dialect.Postgres, indexerConfig.DatabaseURL)
 	if err != nil {
@@ -82,6 +83,7 @@ func initialize() (*App, error) {
 		repo,
 		tonCenterV3Client,
 		teleportContractAddr,
+		coordinatorContractAddr,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("[App] failed to create log manager: %w", err)

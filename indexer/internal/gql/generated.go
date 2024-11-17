@@ -67,6 +67,24 @@ type ComplexityRoot struct {
 		Node   func(childComplexity int) int
 	}
 
+	InternalKey struct {
+		CompletedAt func(childComplexity int) int
+		ID          func(childComplexity int) int
+		Key         func(childComplexity int) int
+		TonMsg      func(childComplexity int) int
+	}
+
+	InternalKeyConnection struct {
+		Edges      func(childComplexity int) int
+		PageInfo   func(childComplexity int) int
+		TotalCount func(childComplexity int) int
+	}
+
+	InternalKeyEdge struct {
+		Cursor func(childComplexity int) int
+		Node   func(childComplexity int) int
+	}
+
 	Mint struct {
 		Amount       func(childComplexity int) int
 		BitcoinTxId  func(childComplexity int) int
@@ -94,12 +112,13 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		Burns   func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, where *generated.BurnWhereInput) int
-		Mints   func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, where *generated.MintWhereInput) int
-		Node    func(childComplexity int, id int) int
-		Nodes   func(childComplexity int, ids []int) int
-		Reinits func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, where *generated.ReinitWhereInput) int
-		TonMsgs func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, where *generated.TonMsgWhereInput) int
+		Burns        func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, where *generated.BurnWhereInput) int
+		InternalKeys func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, where *generated.InternalKeyWhereInput) int
+		Mints        func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, where *generated.MintWhereInput) int
+		Node         func(childComplexity int, id int) int
+		Nodes        func(childComplexity int, ids []int) int
+		Reinits      func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, where *generated.ReinitWhereInput) int
+		TonMsgs      func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, where *generated.TonMsgWhereInput) int
 	}
 
 	Reinit struct {
@@ -123,12 +142,13 @@ type ComplexityRoot struct {
 	}
 
 	TonMsg struct {
-		Burn      func(childComplexity int) int
-		CreatedAt func(childComplexity int) int
-		Hash      func(childComplexity int) int
-		ID        func(childComplexity int) int
-		Mint      func(childComplexity int) int
-		Reinit    func(childComplexity int) int
+		Burn        func(childComplexity int) int
+		CreatedAt   func(childComplexity int) int
+		Hash        func(childComplexity int) int
+		ID          func(childComplexity int) int
+		InternalKey func(childComplexity int) int
+		Mint        func(childComplexity int) int
+		Reinit      func(childComplexity int) int
 	}
 
 	TonMsgConnection struct {
@@ -147,6 +167,7 @@ type QueryResolver interface {
 	Node(ctx context.Context, id int) (generated.Noder, error)
 	Nodes(ctx context.Context, ids []int) ([]generated.Noder, error)
 	Burns(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, where *generated.BurnWhereInput) (*generated.BurnConnection, error)
+	InternalKeys(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, where *generated.InternalKeyWhereInput) (*generated.InternalKeyConnection, error)
 	Mints(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, where *generated.MintWhereInput) (*generated.MintConnection, error)
 	Reinits(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, where *generated.ReinitWhereInput) (*generated.ReinitConnection, error)
 	TonMsgs(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, where *generated.TonMsgWhereInput) (*generated.TonMsgConnection, error)
@@ -254,6 +275,69 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.BurnEdge.Node(childComplexity), true
+
+	case "InternalKey.completedat":
+		if e.complexity.InternalKey.CompletedAt == nil {
+			break
+		}
+
+		return e.complexity.InternalKey.CompletedAt(childComplexity), true
+
+	case "InternalKey.id":
+		if e.complexity.InternalKey.ID == nil {
+			break
+		}
+
+		return e.complexity.InternalKey.ID(childComplexity), true
+
+	case "InternalKey.key":
+		if e.complexity.InternalKey.Key == nil {
+			break
+		}
+
+		return e.complexity.InternalKey.Key(childComplexity), true
+
+	case "InternalKey.tonmsg":
+		if e.complexity.InternalKey.TonMsg == nil {
+			break
+		}
+
+		return e.complexity.InternalKey.TonMsg(childComplexity), true
+
+	case "InternalKeyConnection.edges":
+		if e.complexity.InternalKeyConnection.Edges == nil {
+			break
+		}
+
+		return e.complexity.InternalKeyConnection.Edges(childComplexity), true
+
+	case "InternalKeyConnection.pageInfo":
+		if e.complexity.InternalKeyConnection.PageInfo == nil {
+			break
+		}
+
+		return e.complexity.InternalKeyConnection.PageInfo(childComplexity), true
+
+	case "InternalKeyConnection.totalCount":
+		if e.complexity.InternalKeyConnection.TotalCount == nil {
+			break
+		}
+
+		return e.complexity.InternalKeyConnection.TotalCount(childComplexity), true
+
+	case "InternalKeyEdge.cursor":
+		if e.complexity.InternalKeyEdge.Cursor == nil {
+			break
+		}
+
+		return e.complexity.InternalKeyEdge.Cursor(childComplexity), true
+
+	case "InternalKeyEdge.node":
+		if e.complexity.InternalKeyEdge.Node == nil {
+			break
+		}
+
+		return e.complexity.InternalKeyEdge.Node(childComplexity), true
 
 	case "Mint.amount":
 		if e.complexity.Mint.Amount == nil {
@@ -364,6 +448,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Query.Burns(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["where"].(*generated.BurnWhereInput)), true
+
+	case "Query.internalKeys":
+		if e.complexity.Query.InternalKeys == nil {
+			break
+		}
+
+		args, err := ec.field_Query_internalKeys_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.InternalKeys(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["where"].(*generated.InternalKeyWhereInput)), true
 
 	case "Query.mints":
 		if e.complexity.Query.Mints == nil {
@@ -530,6 +626,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.TonMsg.ID(childComplexity), true
 
+	case "TonMsg.internalkey":
+		if e.complexity.TonMsg.InternalKey == nil {
+			break
+		}
+
+		return e.complexity.TonMsg.InternalKey(childComplexity), true
+
 	case "TonMsg.mint":
 		if e.complexity.TonMsg.Mint == nil {
 			break
@@ -589,9 +692,11 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
 		ec.unmarshalInputBurnWhereInput,
 		ec.unmarshalInputCreateBurnInput,
+		ec.unmarshalInputCreateInternalKeyInput,
 		ec.unmarshalInputCreateMintInput,
 		ec.unmarshalInputCreateReinitInput,
 		ec.unmarshalInputCreateTonMsgInput,
+		ec.unmarshalInputInternalKeyWhereInput,
 		ec.unmarshalInputMintWhereInput,
 		ec.unmarshalInputReinitWhereInput,
 		ec.unmarshalInputTonMsgWhereInput,
@@ -831,6 +936,15 @@ input CreateBurnInput {
   tonmsgID: ID!
 }
 """
+CreateInternalKeyInput is used for create InternalKey object.
+Input was generated by ent.
+"""
+input CreateInternalKeyInput {
+  key: String!
+  completedat: Time!
+  tonmsgID: ID!
+}
+"""
 CreateMintInput is used for create Mint object.
 Input was generated by ent.
 """
@@ -861,12 +975,101 @@ input CreateTonMsgInput {
   mintID: ID
   burnID: ID
   reinitID: ID
+  internalkeyID: ID
 }
 """
 Define a Relay Cursor type:
 https://relay.dev/graphql/connections.htm#sec-Cursor
 """
 scalar Cursor
+type InternalKey implements Node {
+  id: ID!
+  key: String!
+  completedat: Time! @goField(name: "CompletedAt", forceResolver: false)
+  tonmsg: TonMsg! @goField(name: "TonMsg", forceResolver: false)
+}
+"""
+A connection to a list of items.
+"""
+type InternalKeyConnection {
+  """
+  A list of edges.
+  """
+  edges: [InternalKeyEdge]
+  """
+  Information to aid in pagination.
+  """
+  pageInfo: PageInfo!
+  """
+  Identifies the total count of items in the connection.
+  """
+  totalCount: Int!
+}
+"""
+An edge in a connection.
+"""
+type InternalKeyEdge {
+  """
+  The item at the end of the edge.
+  """
+  node: InternalKey
+  """
+  A cursor for use in pagination.
+  """
+  cursor: Cursor!
+}
+"""
+InternalKeyWhereInput is used for filtering InternalKey objects.
+Input was generated by ent.
+"""
+input InternalKeyWhereInput {
+  not: InternalKeyWhereInput
+  and: [InternalKeyWhereInput!]
+  or: [InternalKeyWhereInput!]
+  """
+  id field predicates
+  """
+  id: ID
+  idNEQ: ID
+  idIn: [ID!]
+  idNotIn: [ID!]
+  idGT: ID
+  idGTE: ID
+  idLT: ID
+  idLTE: ID
+  """
+  key field predicates
+  """
+  key: String
+  keyNEQ: String
+  keyIn: [String!]
+  keyNotIn: [String!]
+  keyGT: String
+  keyGTE: String
+  keyLT: String
+  keyLTE: String
+  keyContains: String
+  keyHasPrefix: String
+  keyHasSuffix: String
+  keyEqualFold: String
+  keyContainsFold: String
+  """
+  completedAt field predicates
+  """
+  completedat: Time
+  completedatNEQ: Time
+  completedatIn: [Time!]
+  completedatNotIn: [Time!]
+  completedatGT: Time
+  completedatGTE: Time
+  completedatLT: Time
+  completedatLTE: Time
+  """
+  tonMsg edge predicates
+  """
+  hasTonMsg: Boolean
+  hasTonMsgWith: [TonMsgWhereInput!]
+}
 type Mint implements Node {
   id: ID!
   receiveraddr: String! @goField(name: "ReceiverAddr", forceResolver: false)
@@ -1067,6 +1270,32 @@ type Query {
     """
     where: BurnWhereInput
   ): BurnConnection!
+  internalKeys(
+    """
+    Returns the elements in the list that come after the specified cursor.
+    """
+    after: Cursor
+
+    """
+    Returns the first _n_ elements from the list.
+    """
+    first: Int
+
+    """
+    Returns the elements in the list that come before the specified cursor.
+    """
+    before: Cursor
+
+    """
+    Returns the last _n_ elements from the list.
+    """
+    last: Int
+
+    """
+    Filtering options for InternalKeys returned from the connection.
+    """
+    where: InternalKeyWhereInput
+  ): InternalKeyConnection!
   mints(
     """
     Returns the elements in the list that come after the specified cursor.
@@ -1279,6 +1508,7 @@ type TonMsg implements Node {
   mint: Mint
   burn: Burn
   reinit: Reinit
+  internalkey: InternalKey @goField(name: "InternalKey", forceResolver: false)
 }
 """
 A connection to a list of items.
@@ -1371,6 +1601,11 @@ input TonMsgWhereInput {
   """
   hasReinit: Boolean
   hasReinitWith: [ReinitWhereInput!]
+  """
+  internalKey edge predicates
+  """
+  hasInternalKey: Boolean
+  hasInternalKeyWith: [InternalKeyWhereInput!]
 }
 `, BuiltIn: false},
 }
@@ -1497,6 +1732,102 @@ func (ec *executionContext) field_Query_burns_argsWhere(
 	}
 
 	var zeroVal *generated.BurnWhereInput
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_internalKeys_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	arg0, err := ec.field_Query_internalKeys_argsAfter(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["after"] = arg0
+	arg1, err := ec.field_Query_internalKeys_argsFirst(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["first"] = arg1
+	arg2, err := ec.field_Query_internalKeys_argsBefore(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["before"] = arg2
+	arg3, err := ec.field_Query_internalKeys_argsLast(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["last"] = arg3
+	arg4, err := ec.field_Query_internalKeys_argsWhere(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["where"] = arg4
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_internalKeys_argsAfter(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (*entgql.Cursor[int], error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("after"))
+	if tmp, ok := rawArgs["after"]; ok {
+		return ec.unmarshalOCursor2ᚖentgoᚗioᚋcontribᚋentgqlᚐCursor(ctx, tmp)
+	}
+
+	var zeroVal *entgql.Cursor[int]
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_internalKeys_argsFirst(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (*int, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("first"))
+	if tmp, ok := rawArgs["first"]; ok {
+		return ec.unmarshalOInt2ᚖint(ctx, tmp)
+	}
+
+	var zeroVal *int
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_internalKeys_argsBefore(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (*entgql.Cursor[int], error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("before"))
+	if tmp, ok := rawArgs["before"]; ok {
+		return ec.unmarshalOCursor2ᚖentgoᚗioᚋcontribᚋentgqlᚐCursor(ctx, tmp)
+	}
+
+	var zeroVal *entgql.Cursor[int]
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_internalKeys_argsLast(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (*int, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("last"))
+	if tmp, ok := rawArgs["last"]; ok {
+		return ec.unmarshalOInt2ᚖint(ctx, tmp)
+	}
+
+	var zeroVal *int
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_internalKeys_argsWhere(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (*generated.InternalKeyWhereInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("where"))
+	if tmp, ok := rawArgs["where"]; ok {
+		return ec.unmarshalOInternalKeyWhereInput2ᚖgithubᚗcomᚋrsquadᚋtonᚑteleportᚑbtcᚑperipheryᚋindexerᚋinternalᚋentᚋgeneratedᚐInternalKeyWhereInput(ctx, tmp)
+	}
+
+	var zeroVal *generated.InternalKeyWhereInput
 	return zeroVal, nil
 }
 
@@ -2207,6 +2538,8 @@ func (ec *executionContext) fieldContext_Burn_tonmsg(_ context.Context, field gr
 				return ec.fieldContext_TonMsg_burn(ctx, field)
 			case "reinit":
 				return ec.fieldContext_TonMsg_reinit(ctx, field)
+			case "internalkey":
+				return ec.fieldContext_TonMsg_internalkey(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type TonMsg", field.Name)
 		},
@@ -2460,6 +2793,438 @@ func (ec *executionContext) fieldContext_BurnEdge_cursor(_ context.Context, fiel
 	return fc, nil
 }
 
+func (ec *executionContext) _InternalKey_id(ctx context.Context, field graphql.CollectedField, obj *generated.InternalKey) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_InternalKey_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNID2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_InternalKey_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "InternalKey",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _InternalKey_key(ctx context.Context, field graphql.CollectedField, obj *generated.InternalKey) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_InternalKey_key(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Key, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_InternalKey_key(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "InternalKey",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _InternalKey_completedat(ctx context.Context, field graphql.CollectedField, obj *generated.InternalKey) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_InternalKey_completedat(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CompletedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_InternalKey_completedat(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "InternalKey",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _InternalKey_tonmsg(ctx context.Context, field graphql.CollectedField, obj *generated.InternalKey) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_InternalKey_tonmsg(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TonMsg(ctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*generated.TonMsg)
+	fc.Result = res
+	return ec.marshalNTonMsg2ᚖgithubᚗcomᚋrsquadᚋtonᚑteleportᚑbtcᚑperipheryᚋindexerᚋinternalᚋentᚋgeneratedᚐTonMsg(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_InternalKey_tonmsg(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "InternalKey",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_TonMsg_id(ctx, field)
+			case "hash":
+				return ec.fieldContext_TonMsg_hash(ctx, field)
+			case "createdat":
+				return ec.fieldContext_TonMsg_createdat(ctx, field)
+			case "mint":
+				return ec.fieldContext_TonMsg_mint(ctx, field)
+			case "burn":
+				return ec.fieldContext_TonMsg_burn(ctx, field)
+			case "reinit":
+				return ec.fieldContext_TonMsg_reinit(ctx, field)
+			case "internalkey":
+				return ec.fieldContext_TonMsg_internalkey(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type TonMsg", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _InternalKeyConnection_edges(ctx context.Context, field graphql.CollectedField, obj *generated.InternalKeyConnection) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_InternalKeyConnection_edges(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Edges, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]*generated.InternalKeyEdge)
+	fc.Result = res
+	return ec.marshalOInternalKeyEdge2ᚕᚖgithubᚗcomᚋrsquadᚋtonᚑteleportᚑbtcᚑperipheryᚋindexerᚋinternalᚋentᚋgeneratedᚐInternalKeyEdge(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_InternalKeyConnection_edges(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "InternalKeyConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "node":
+				return ec.fieldContext_InternalKeyEdge_node(ctx, field)
+			case "cursor":
+				return ec.fieldContext_InternalKeyEdge_cursor(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type InternalKeyEdge", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _InternalKeyConnection_pageInfo(ctx context.Context, field graphql.CollectedField, obj *generated.InternalKeyConnection) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_InternalKeyConnection_pageInfo(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.PageInfo, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(entgql.PageInfo[int])
+	fc.Result = res
+	return ec.marshalNPageInfo2entgoᚗioᚋcontribᚋentgqlᚐPageInfo(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_InternalKeyConnection_pageInfo(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "InternalKeyConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "hasNextPage":
+				return ec.fieldContext_PageInfo_hasNextPage(ctx, field)
+			case "hasPreviousPage":
+				return ec.fieldContext_PageInfo_hasPreviousPage(ctx, field)
+			case "startCursor":
+				return ec.fieldContext_PageInfo_startCursor(ctx, field)
+			case "endCursor":
+				return ec.fieldContext_PageInfo_endCursor(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type PageInfo", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _InternalKeyConnection_totalCount(ctx context.Context, field graphql.CollectedField, obj *generated.InternalKeyConnection) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_InternalKeyConnection_totalCount(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TotalCount, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_InternalKeyConnection_totalCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "InternalKeyConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _InternalKeyEdge_node(ctx context.Context, field graphql.CollectedField, obj *generated.InternalKeyEdge) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_InternalKeyEdge_node(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Node, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*generated.InternalKey)
+	fc.Result = res
+	return ec.marshalOInternalKey2ᚖgithubᚗcomᚋrsquadᚋtonᚑteleportᚑbtcᚑperipheryᚋindexerᚋinternalᚋentᚋgeneratedᚐInternalKey(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_InternalKeyEdge_node(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "InternalKeyEdge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_InternalKey_id(ctx, field)
+			case "key":
+				return ec.fieldContext_InternalKey_key(ctx, field)
+			case "completedat":
+				return ec.fieldContext_InternalKey_completedat(ctx, field)
+			case "tonmsg":
+				return ec.fieldContext_InternalKey_tonmsg(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type InternalKey", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _InternalKeyEdge_cursor(ctx context.Context, field graphql.CollectedField, obj *generated.InternalKeyEdge) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_InternalKeyEdge_cursor(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Cursor, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(entgql.Cursor[int])
+	fc.Result = res
+	return ec.marshalNCursor2entgoᚗioᚋcontribᚋentgqlᚐCursor(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_InternalKeyEdge_cursor(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "InternalKeyEdge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Cursor does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Mint_id(ctx context.Context, field graphql.CollectedField, obj *generated.Mint) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Mint_id(ctx, field)
 	if err != nil {
@@ -2687,6 +3452,8 @@ func (ec *executionContext) fieldContext_Mint_tonmsg(_ context.Context, field gr
 				return ec.fieldContext_TonMsg_burn(ctx, field)
 			case "reinit":
 				return ec.fieldContext_TonMsg_reinit(ctx, field)
+			case "internalkey":
+				return ec.fieldContext_TonMsg_internalkey(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type TonMsg", field.Name)
 		},
@@ -3270,6 +4037,69 @@ func (ec *executionContext) fieldContext_Query_burns(ctx context.Context, field 
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Query_burns_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_internalKeys(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_internalKeys(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().InternalKeys(rctx, fc.Args["after"].(*entgql.Cursor[int]), fc.Args["first"].(*int), fc.Args["before"].(*entgql.Cursor[int]), fc.Args["last"].(*int), fc.Args["where"].(*generated.InternalKeyWhereInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*generated.InternalKeyConnection)
+	fc.Result = res
+	return ec.marshalNInternalKeyConnection2ᚖgithubᚗcomᚋrsquadᚋtonᚑteleportᚑbtcᚑperipheryᚋindexerᚋinternalᚋentᚋgeneratedᚐInternalKeyConnection(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_internalKeys(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "edges":
+				return ec.fieldContext_InternalKeyConnection_edges(ctx, field)
+			case "pageInfo":
+				return ec.fieldContext_InternalKeyConnection_pageInfo(ctx, field)
+			case "totalCount":
+				return ec.fieldContext_InternalKeyConnection_totalCount(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type InternalKeyConnection", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_internalKeys_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -3865,6 +4695,8 @@ func (ec *executionContext) fieldContext_Reinit_tonmsg(_ context.Context, field 
 				return ec.fieldContext_TonMsg_burn(ctx, field)
 			case "reinit":
 				return ec.fieldContext_TonMsg_reinit(ctx, field)
+			case "internalkey":
+				return ec.fieldContext_TonMsg_internalkey(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type TonMsg", field.Name)
 		},
@@ -4413,6 +5245,57 @@ func (ec *executionContext) fieldContext_TonMsg_reinit(_ context.Context, field 
 	return fc, nil
 }
 
+func (ec *executionContext) _TonMsg_internalkey(ctx context.Context, field graphql.CollectedField, obj *generated.TonMsg) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TonMsg_internalkey(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.InternalKey(ctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*generated.InternalKey)
+	fc.Result = res
+	return ec.marshalOInternalKey2ᚖgithubᚗcomᚋrsquadᚋtonᚑteleportᚑbtcᚑperipheryᚋindexerᚋinternalᚋentᚋgeneratedᚐInternalKey(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TonMsg_internalkey(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TonMsg",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_InternalKey_id(ctx, field)
+			case "key":
+				return ec.fieldContext_InternalKey_key(ctx, field)
+			case "completedat":
+				return ec.fieldContext_InternalKey_completedat(ctx, field)
+			case "tonmsg":
+				return ec.fieldContext_InternalKey_tonmsg(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type InternalKey", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _TonMsgConnection_edges(ctx context.Context, field graphql.CollectedField, obj *generated.TonMsgConnection) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_TonMsgConnection_edges(ctx, field)
 	if err != nil {
@@ -4606,6 +5489,8 @@ func (ec *executionContext) fieldContext_TonMsgEdge_node(_ context.Context, fiel
 				return ec.fieldContext_TonMsg_burn(ctx, field)
 			case "reinit":
 				return ec.fieldContext_TonMsg_reinit(ctx, field)
+			case "internalkey":
+				return ec.fieldContext_TonMsg_internalkey(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type TonMsg", field.Name)
 		},
@@ -7023,6 +7908,47 @@ func (ec *executionContext) unmarshalInputCreateBurnInput(ctx context.Context, o
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputCreateInternalKeyInput(ctx context.Context, obj interface{}) (generated.CreateInternalKeyInput, error) {
+	var it generated.CreateInternalKeyInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"key", "completedat", "tonmsgID"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "key":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("key"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Key = data
+		case "completedat":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("completedat"))
+			data, err := ec.unmarshalNTime2timeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CompletedAt = data
+		case "tonmsgID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tonmsgID"))
+			data, err := ec.unmarshalNID2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TonMsgID = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputCreateMintInput(ctx context.Context, obj interface{}) (generated.CreateMintInput, error) {
 	var it generated.CreateMintInput
 	asMap := map[string]interface{}{}
@@ -7133,7 +8059,7 @@ func (ec *executionContext) unmarshalInputCreateTonMsgInput(ctx context.Context,
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"hash", "createdat", "mintID", "burnID", "reinitID"}
+	fieldsInOrder := [...]string{"hash", "createdat", "mintID", "burnID", "reinitID", "internalkeyID"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -7175,6 +8101,271 @@ func (ec *executionContext) unmarshalInputCreateTonMsgInput(ctx context.Context,
 				return it, err
 			}
 			it.ReinitID = data
+		case "internalkeyID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("internalkeyID"))
+			data, err := ec.unmarshalOID2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.InternalKeyID = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputInternalKeyWhereInput(ctx context.Context, obj interface{}) (generated.InternalKeyWhereInput, error) {
+	var it generated.InternalKeyWhereInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "key", "keyNEQ", "keyIn", "keyNotIn", "keyGT", "keyGTE", "keyLT", "keyLTE", "keyContains", "keyHasPrefix", "keyHasSuffix", "keyEqualFold", "keyContainsFold", "completedat", "completedatNEQ", "completedatIn", "completedatNotIn", "completedatGT", "completedatGTE", "completedatLT", "completedatLTE", "hasTonMsg", "hasTonMsgWith"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "not":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("not"))
+			data, err := ec.unmarshalOInternalKeyWhereInput2ᚖgithubᚗcomᚋrsquadᚋtonᚑteleportᚑbtcᚑperipheryᚋindexerᚋinternalᚋentᚋgeneratedᚐInternalKeyWhereInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Not = data
+		case "and":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("and"))
+			data, err := ec.unmarshalOInternalKeyWhereInput2ᚕᚖgithubᚗcomᚋrsquadᚋtonᚑteleportᚑbtcᚑperipheryᚋindexerᚋinternalᚋentᚋgeneratedᚐInternalKeyWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.And = data
+		case "or":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("or"))
+			data, err := ec.unmarshalOInternalKeyWhereInput2ᚕᚖgithubᚗcomᚋrsquadᚋtonᚑteleportᚑbtcᚑperipheryᚋindexerᚋinternalᚋentᚋgeneratedᚐInternalKeyWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Or = data
+		case "id":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			data, err := ec.unmarshalOID2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ID = data
+		case "idNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idNEQ"))
+			data, err := ec.unmarshalOID2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IDNEQ = data
+		case "idIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idIn"))
+			data, err := ec.unmarshalOID2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IDIn = data
+		case "idNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idNotIn"))
+			data, err := ec.unmarshalOID2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IDNotIn = data
+		case "idGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idGT"))
+			data, err := ec.unmarshalOID2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IDGT = data
+		case "idGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idGTE"))
+			data, err := ec.unmarshalOID2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IDGTE = data
+		case "idLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idLT"))
+			data, err := ec.unmarshalOID2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IDLT = data
+		case "idLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idLTE"))
+			data, err := ec.unmarshalOID2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IDLTE = data
+		case "key":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("key"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Key = data
+		case "keyNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("keyNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.KeyNEQ = data
+		case "keyIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("keyIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.KeyIn = data
+		case "keyNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("keyNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.KeyNotIn = data
+		case "keyGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("keyGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.KeyGT = data
+		case "keyGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("keyGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.KeyGTE = data
+		case "keyLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("keyLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.KeyLT = data
+		case "keyLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("keyLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.KeyLTE = data
+		case "keyContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("keyContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.KeyContains = data
+		case "keyHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("keyHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.KeyHasPrefix = data
+		case "keyHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("keyHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.KeyHasSuffix = data
+		case "keyEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("keyEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.KeyEqualFold = data
+		case "keyContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("keyContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.KeyContainsFold = data
+		case "completedat":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("completedat"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CompletedAt = data
+		case "completedatNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("completedatNEQ"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CompletedAtNEQ = data
+		case "completedatIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("completedatIn"))
+			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CompletedAtIn = data
+		case "completedatNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("completedatNotIn"))
+			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CompletedAtNotIn = data
+		case "completedatGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("completedatGT"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CompletedAtGT = data
+		case "completedatGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("completedatGTE"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CompletedAtGTE = data
+		case "completedatLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("completedatLT"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CompletedAtLT = data
+		case "completedatLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("completedatLTE"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CompletedAtLTE = data
+		case "hasTonMsg":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasTonMsg"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HasTonMsg = data
+		case "hasTonMsgWith":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasTonMsgWith"))
+			data, err := ec.unmarshalOTonMsgWhereInput2ᚕᚖgithubᚗcomᚋrsquadᚋtonᚑteleportᚑbtcᚑperipheryᚋindexerᚋinternalᚋentᚋgeneratedᚐTonMsgWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HasTonMsgWith = data
 		}
 	}
 
@@ -8012,7 +9203,7 @@ func (ec *executionContext) unmarshalInputTonMsgWhereInput(ctx context.Context, 
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "hash", "hashNEQ", "hashIn", "hashNotIn", "hashGT", "hashGTE", "hashLT", "hashLTE", "hashContains", "hashHasPrefix", "hashHasSuffix", "hashEqualFold", "hashContainsFold", "createdat", "createdatNEQ", "createdatIn", "createdatNotIn", "createdatGT", "createdatGTE", "createdatLT", "createdatLTE", "hasMint", "hasMintWith", "hasBurn", "hasBurnWith", "hasReinit", "hasReinitWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "hash", "hashNEQ", "hashIn", "hashNotIn", "hashGT", "hashGTE", "hashLT", "hashLTE", "hashContains", "hashHasPrefix", "hashHasSuffix", "hashEqualFold", "hashContainsFold", "createdat", "createdatNEQ", "createdatIn", "createdatNotIn", "createdatGT", "createdatGTE", "createdatLT", "createdatLTE", "hasMint", "hasMintWith", "hasBurn", "hasBurnWith", "hasReinit", "hasReinitWith", "hasInternalKey", "hasInternalKeyWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -8285,6 +9476,20 @@ func (ec *executionContext) unmarshalInputTonMsgWhereInput(ctx context.Context, 
 				return it, err
 			}
 			it.HasReinitWith = data
+		case "hasInternalKey":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasInternalKey"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HasInternalKey = data
+		case "hasInternalKeyWith":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasInternalKeyWith"))
+			data, err := ec.unmarshalOInternalKeyWhereInput2ᚕᚖgithubᚗcomᚋrsquadᚋtonᚑteleportᚑbtcᚑperipheryᚋindexerᚋinternalᚋentᚋgeneratedᚐInternalKeyWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HasInternalKeyWith = data
 		}
 	}
 
@@ -8304,6 +9509,11 @@ func (ec *executionContext) _Node(ctx context.Context, sel ast.SelectionSet, obj
 			return graphql.Null
 		}
 		return ec._Burn(ctx, sel, obj)
+	case *generated.InternalKey:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._InternalKey(ctx, sel, obj)
 	case *generated.Mint:
 		if obj == nil {
 			return graphql.Null
@@ -8489,6 +9699,178 @@ func (ec *executionContext) _BurnEdge(ctx context.Context, sel ast.SelectionSet,
 			out.Values[i] = ec._BurnEdge_node(ctx, field, obj)
 		case "cursor":
 			out.Values[i] = ec._BurnEdge_cursor(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var internalKeyImplementors = []string{"InternalKey", "Node"}
+
+func (ec *executionContext) _InternalKey(ctx context.Context, sel ast.SelectionSet, obj *generated.InternalKey) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, internalKeyImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("InternalKey")
+		case "id":
+			out.Values[i] = ec._InternalKey_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "key":
+			out.Values[i] = ec._InternalKey_key(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "completedat":
+			out.Values[i] = ec._InternalKey_completedat(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "tonmsg":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._InternalKey_tonmsg(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var internalKeyConnectionImplementors = []string{"InternalKeyConnection"}
+
+func (ec *executionContext) _InternalKeyConnection(ctx context.Context, sel ast.SelectionSet, obj *generated.InternalKeyConnection) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, internalKeyConnectionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("InternalKeyConnection")
+		case "edges":
+			out.Values[i] = ec._InternalKeyConnection_edges(ctx, field, obj)
+		case "pageInfo":
+			out.Values[i] = ec._InternalKeyConnection_pageInfo(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "totalCount":
+			out.Values[i] = ec._InternalKeyConnection_totalCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var internalKeyEdgeImplementors = []string{"InternalKeyEdge"}
+
+func (ec *executionContext) _InternalKeyEdge(ctx context.Context, sel ast.SelectionSet, obj *generated.InternalKeyEdge) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, internalKeyEdgeImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("InternalKeyEdge")
+		case "node":
+			out.Values[i] = ec._InternalKeyEdge_node(ctx, field, obj)
+		case "cursor":
+			out.Values[i] = ec._InternalKeyEdge_cursor(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -8810,6 +10192,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_burns(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "internalKeys":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_internalKeys(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -9203,6 +10607,39 @@ func (ec *executionContext) _TonMsg(ctx context.Context, sel ast.SelectionSet, o
 					}
 				}()
 				res = ec._TonMsg_reinit(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "internalkey":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._TonMsg_internalkey(ctx, field, obj)
 				return res
 			}
 
@@ -9781,6 +11218,25 @@ func (ec *executionContext) marshalNInt2int64(ctx context.Context, sel ast.Selec
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) marshalNInternalKeyConnection2githubᚗcomᚋrsquadᚋtonᚑteleportᚑbtcᚑperipheryᚋindexerᚋinternalᚋentᚋgeneratedᚐInternalKeyConnection(ctx context.Context, sel ast.SelectionSet, v generated.InternalKeyConnection) graphql.Marshaler {
+	return ec._InternalKeyConnection(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNInternalKeyConnection2ᚖgithubᚗcomᚋrsquadᚋtonᚑteleportᚑbtcᚑperipheryᚋindexerᚋinternalᚋentᚋgeneratedᚐInternalKeyConnection(ctx context.Context, sel ast.SelectionSet, v *generated.InternalKeyConnection) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._InternalKeyConnection(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNInternalKeyWhereInput2ᚖgithubᚗcomᚋrsquadᚋtonᚑteleportᚑbtcᚑperipheryᚋindexerᚋinternalᚋentᚋgeneratedᚐInternalKeyWhereInput(ctx context.Context, v interface{}) (*generated.InternalKeyWhereInput, error) {
+	res, err := ec.unmarshalInputInternalKeyWhereInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalNMintConnection2githubᚗcomᚋrsquadᚋtonᚑteleportᚑbtcᚑperipheryᚋindexerᚋinternalᚋentᚋgeneratedᚐMintConnection(ctx context.Context, sel ast.SelectionSet, v generated.MintConnection) graphql.Marshaler {
@@ -10422,6 +11878,89 @@ func (ec *executionContext) marshalOInt2ᚖint64(ctx context.Context, sel ast.Se
 	}
 	res := graphql.MarshalInt64(*v)
 	return res
+}
+
+func (ec *executionContext) marshalOInternalKey2ᚖgithubᚗcomᚋrsquadᚋtonᚑteleportᚑbtcᚑperipheryᚋindexerᚋinternalᚋentᚋgeneratedᚐInternalKey(ctx context.Context, sel ast.SelectionSet, v *generated.InternalKey) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._InternalKey(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOInternalKeyEdge2ᚕᚖgithubᚗcomᚋrsquadᚋtonᚑteleportᚑbtcᚑperipheryᚋindexerᚋinternalᚋentᚋgeneratedᚐInternalKeyEdge(ctx context.Context, sel ast.SelectionSet, v []*generated.InternalKeyEdge) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalOInternalKeyEdge2ᚖgithubᚗcomᚋrsquadᚋtonᚑteleportᚑbtcᚑperipheryᚋindexerᚋinternalᚋentᚋgeneratedᚐInternalKeyEdge(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	return ret
+}
+
+func (ec *executionContext) marshalOInternalKeyEdge2ᚖgithubᚗcomᚋrsquadᚋtonᚑteleportᚑbtcᚑperipheryᚋindexerᚋinternalᚋentᚋgeneratedᚐInternalKeyEdge(ctx context.Context, sel ast.SelectionSet, v *generated.InternalKeyEdge) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._InternalKeyEdge(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOInternalKeyWhereInput2ᚕᚖgithubᚗcomᚋrsquadᚋtonᚑteleportᚑbtcᚑperipheryᚋindexerᚋinternalᚋentᚋgeneratedᚐInternalKeyWhereInputᚄ(ctx context.Context, v interface{}) ([]*generated.InternalKeyWhereInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []interface{}
+	if v != nil {
+		vSlice = graphql.CoerceList(v)
+	}
+	var err error
+	res := make([]*generated.InternalKeyWhereInput, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNInternalKeyWhereInput2ᚖgithubᚗcomᚋrsquadᚋtonᚑteleportᚑbtcᚑperipheryᚋindexerᚋinternalᚋentᚋgeneratedᚐInternalKeyWhereInput(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) unmarshalOInternalKeyWhereInput2ᚖgithubᚗcomᚋrsquadᚋtonᚑteleportᚑbtcᚑperipheryᚋindexerᚋinternalᚋentᚋgeneratedᚐInternalKeyWhereInput(ctx context.Context, v interface{}) (*generated.InternalKeyWhereInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputInternalKeyWhereInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalOMint2ᚖgithubᚗcomᚋrsquadᚋtonᚑteleportᚑbtcᚑperipheryᚋindexerᚋinternalᚋentᚋgeneratedᚐMint(ctx context.Context, sel ast.SelectionSet, v *generated.Mint) graphql.Marshaler {

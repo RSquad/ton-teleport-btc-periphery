@@ -27,6 +27,12 @@ func (r *queryResolver) Burns(ctx context.Context, after *entgql.Cursor[int], fi
 		Paginate(ctx, after, first, before, last, generated.WithBurnFilter(where.Filter))
 }
 
+// InternalKeys is the resolver for the internalKeys field.
+func (r *queryResolver) InternalKeys(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, where *generated.InternalKeyWhereInput) (*generated.InternalKeyConnection, error) {
+	return r.repo.InternalKey.Query().
+		Paginate(ctx, after, first, before, last, generated.WithInternalKeyFilter(where.Filter))
+}
+
 // Mints is the resolver for the mints field.
 func (r *queryResolver) Mints(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, where *generated.MintWhereInput) (*generated.MintConnection, error) {
 	return r.repo.Mint.Query().

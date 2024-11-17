@@ -8,35 +8,30 @@ import (
 	"entgo.io/ent/schema/field"
 )
 
-type TonMsg struct {
+type InternalKey struct {
 	ent.Schema
 }
 
-func (TonMsg) Fields() []ent.Field {
+func (InternalKey) Fields() []ent.Field {
 	return []ent.Field{
-		field.Text("hash").
-			Unique().
+		field.Text("key").
 			NotEmpty().
 			Immutable(),
-		field.Time("createdAt").
+		field.Time("completedAt").
 			Immutable(),
 	}
 }
 
-func (TonMsg) Edges() []ent.Edge {
+func (InternalKey) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.To("mint", Mint.Type).
-			Unique(),
-		edge.To("burn", Burn.Type).
-			Unique(),
-		edge.To("reinit", Reinit.Type).
-			Unique(),
-		edge.To("internalKey", InternalKey.Type).
-			Unique(),
+		edge.From("tonMsg", TonMsg.Type).
+			Ref("internalKey").
+			Unique().
+			Required(),
 	}
 }
 
-func (TonMsg) Annotations() []schema.Annotation {
+func (InternalKey) Annotations() []schema.Annotation {
 	return []schema.Annotation{
 		entgql.RelayConnection(),
 		entgql.QueryField(),

@@ -1,4 +1,4 @@
-package teleportcontract
+package loglistener
 
 import (
 	"encoding/base64"
@@ -23,7 +23,7 @@ type LogListener struct {
 	onLogReceived     func(*cell.Cell, string, time.Time)
 }
 
-func NewLogListener(
+func New(
 	tonCenterV3Client *ton.TonCenterV3Client,
 	listenAddr *address.Address,
 	onLogReceived func(*cell.Cell, string, time.Time),
@@ -41,7 +41,7 @@ func NewLogListener(
 }
 
 func (c *LogListener) StartListen() {
-	log.Println("[LogListener] listening started")
+	log.Printf("[LogListener] listening for %v started", c.listenAddr.String())
 	c.listen()
 }
 
