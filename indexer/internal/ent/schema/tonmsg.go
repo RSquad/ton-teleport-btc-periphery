@@ -8,37 +8,33 @@ import (
 	"entgo.io/ent/schema/field"
 )
 
-type Reinit struct {
+type TonMsg struct {
 	ent.Schema
 }
 
-func (Reinit) Fields() []ent.Field {
+func (TonMsg) Fields() []ent.Field {
 	return []ent.Field{
-		field.Int64("externalId").
-			Unique().
-			Immutable(),
-		field.Text("amount").
-			NotEmpty().
-			Immutable(),
-		field.Text("bitcoinTxId").
+		field.Text("hash").
 			Unique().
 			NotEmpty().
 			Immutable(),
-		field.Text("bitcoinScript").
+		field.Time("createdAt").
 			Immutable(),
 	}
 }
 
-func (Reinit) Edges() []ent.Edge {
+func (TonMsg) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("tonMsg", TonMsg.Type).
-			Ref("reinit").
-			Unique().
-			Required(),
+		edge.To("mint", Mint.Type).
+			Unique(),
+		edge.To("burn", Burn.Type).
+			Unique(),
+		edge.To("reinit", Reinit.Type).
+			Unique(),
 	}
 }
 
-func (Reinit) Annotations() []schema.Annotation {
+func (TonMsg) Annotations() []schema.Annotation {
 	return []schema.Annotation{
 		entgql.RelayConnection(),
 		entgql.QueryField(),

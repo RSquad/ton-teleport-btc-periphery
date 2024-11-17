@@ -50,11 +50,10 @@ type ComplexityRoot struct {
 		Amount        func(childComplexity int) int
 		BitcoinScript func(childComplexity int) int
 		BitcoinTxId   func(childComplexity int) int
-		CreatedAt     func(childComplexity int) int
 		ExternalId    func(childComplexity int) int
 		ID            func(childComplexity int) int
 		SenderAddr    func(childComplexity int) int
-		TonMsgHash    func(childComplexity int) int
+		TonMsg        func(childComplexity int) int
 	}
 
 	BurnConnection struct {
@@ -71,10 +70,9 @@ type ComplexityRoot struct {
 	Mint struct {
 		Amount       func(childComplexity int) int
 		BitcoinTxId  func(childComplexity int) int
-		CreatedAt    func(childComplexity int) int
 		ID           func(childComplexity int) int
 		ReceiverAddr func(childComplexity int) int
-		TonMsgHash   func(childComplexity int) int
+		TonMsg       func(childComplexity int) int
 	}
 
 	MintConnection struct {
@@ -101,16 +99,16 @@ type ComplexityRoot struct {
 		Node    func(childComplexity int, id int) int
 		Nodes   func(childComplexity int, ids []int) int
 		Reinits func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, where *generated.ReinitWhereInput) int
+		TonMsgs func(childComplexity int, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, where *generated.TonMsgWhereInput) int
 	}
 
 	Reinit struct {
 		Amount        func(childComplexity int) int
 		BitcoinScript func(childComplexity int) int
 		BitcoinTxId   func(childComplexity int) int
-		CreatedAt     func(childComplexity int) int
 		ExternalId    func(childComplexity int) int
 		ID            func(childComplexity int) int
-		TonMsgHash    func(childComplexity int) int
+		TonMsg        func(childComplexity int) int
 	}
 
 	ReinitConnection struct {
@@ -123,6 +121,26 @@ type ComplexityRoot struct {
 		Cursor func(childComplexity int) int
 		Node   func(childComplexity int) int
 	}
+
+	TonMsg struct {
+		Burn      func(childComplexity int) int
+		CreatedAt func(childComplexity int) int
+		Hash      func(childComplexity int) int
+		ID        func(childComplexity int) int
+		Mint      func(childComplexity int) int
+		Reinit    func(childComplexity int) int
+	}
+
+	TonMsgConnection struct {
+		Edges      func(childComplexity int) int
+		PageInfo   func(childComplexity int) int
+		TotalCount func(childComplexity int) int
+	}
+
+	TonMsgEdge struct {
+		Cursor func(childComplexity int) int
+		Node   func(childComplexity int) int
+	}
 }
 
 type QueryResolver interface {
@@ -131,6 +149,7 @@ type QueryResolver interface {
 	Burns(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, where *generated.BurnWhereInput) (*generated.BurnConnection, error)
 	Mints(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, where *generated.MintWhereInput) (*generated.MintConnection, error)
 	Reinits(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, where *generated.ReinitWhereInput) (*generated.ReinitConnection, error)
+	TonMsgs(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, where *generated.TonMsgWhereInput) (*generated.TonMsgConnection, error)
 }
 
 type executableSchema struct {
@@ -173,13 +192,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Burn.BitcoinTxId(childComplexity), true
 
-	case "Burn.createdat":
-		if e.complexity.Burn.CreatedAt == nil {
-			break
-		}
-
-		return e.complexity.Burn.CreatedAt(childComplexity), true
-
 	case "Burn.externalid":
 		if e.complexity.Burn.ExternalId == nil {
 			break
@@ -201,12 +213,12 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Burn.SenderAddr(childComplexity), true
 
-	case "Burn.tonmsghash":
-		if e.complexity.Burn.TonMsgHash == nil {
+	case "Burn.tonmsg":
+		if e.complexity.Burn.TonMsg == nil {
 			break
 		}
 
-		return e.complexity.Burn.TonMsgHash(childComplexity), true
+		return e.complexity.Burn.TonMsg(childComplexity), true
 
 	case "BurnConnection.edges":
 		if e.complexity.BurnConnection.Edges == nil {
@@ -257,13 +269,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mint.BitcoinTxId(childComplexity), true
 
-	case "Mint.createdat":
-		if e.complexity.Mint.CreatedAt == nil {
-			break
-		}
-
-		return e.complexity.Mint.CreatedAt(childComplexity), true
-
 	case "Mint.id":
 		if e.complexity.Mint.ID == nil {
 			break
@@ -278,12 +283,12 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mint.ReceiverAddr(childComplexity), true
 
-	case "Mint.tonmsghash":
-		if e.complexity.Mint.TonMsgHash == nil {
+	case "Mint.tonmsg":
+		if e.complexity.Mint.TonMsg == nil {
 			break
 		}
 
-		return e.complexity.Mint.TonMsgHash(childComplexity), true
+		return e.complexity.Mint.TonMsg(childComplexity), true
 
 	case "MintConnection.edges":
 		if e.complexity.MintConnection.Edges == nil {
@@ -408,6 +413,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.Reinits(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["where"].(*generated.ReinitWhereInput)), true
 
+	case "Query.tonMsgs":
+		if e.complexity.Query.TonMsgs == nil {
+			break
+		}
+
+		args, err := ec.field_Query_tonMsgs_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.TonMsgs(childComplexity, args["after"].(*entgql.Cursor[int]), args["first"].(*int), args["before"].(*entgql.Cursor[int]), args["last"].(*int), args["where"].(*generated.TonMsgWhereInput)), true
+
 	case "Reinit.amount":
 		if e.complexity.Reinit.Amount == nil {
 			break
@@ -429,13 +446,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Reinit.BitcoinTxId(childComplexity), true
 
-	case "Reinit.createdat":
-		if e.complexity.Reinit.CreatedAt == nil {
-			break
-		}
-
-		return e.complexity.Reinit.CreatedAt(childComplexity), true
-
 	case "Reinit.externalid":
 		if e.complexity.Reinit.ExternalId == nil {
 			break
@@ -450,12 +460,12 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Reinit.ID(childComplexity), true
 
-	case "Reinit.tonmsghash":
-		if e.complexity.Reinit.TonMsgHash == nil {
+	case "Reinit.tonmsg":
+		if e.complexity.Reinit.TonMsg == nil {
 			break
 		}
 
-		return e.complexity.Reinit.TonMsgHash(childComplexity), true
+		return e.complexity.Reinit.TonMsg(childComplexity), true
 
 	case "ReinitConnection.edges":
 		if e.complexity.ReinitConnection.Edges == nil {
@@ -492,6 +502,83 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.ReinitEdge.Node(childComplexity), true
 
+	case "TonMsg.burn":
+		if e.complexity.TonMsg.Burn == nil {
+			break
+		}
+
+		return e.complexity.TonMsg.Burn(childComplexity), true
+
+	case "TonMsg.createdat":
+		if e.complexity.TonMsg.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.TonMsg.CreatedAt(childComplexity), true
+
+	case "TonMsg.hash":
+		if e.complexity.TonMsg.Hash == nil {
+			break
+		}
+
+		return e.complexity.TonMsg.Hash(childComplexity), true
+
+	case "TonMsg.id":
+		if e.complexity.TonMsg.ID == nil {
+			break
+		}
+
+		return e.complexity.TonMsg.ID(childComplexity), true
+
+	case "TonMsg.mint":
+		if e.complexity.TonMsg.Mint == nil {
+			break
+		}
+
+		return e.complexity.TonMsg.Mint(childComplexity), true
+
+	case "TonMsg.reinit":
+		if e.complexity.TonMsg.Reinit == nil {
+			break
+		}
+
+		return e.complexity.TonMsg.Reinit(childComplexity), true
+
+	case "TonMsgConnection.edges":
+		if e.complexity.TonMsgConnection.Edges == nil {
+			break
+		}
+
+		return e.complexity.TonMsgConnection.Edges(childComplexity), true
+
+	case "TonMsgConnection.pageInfo":
+		if e.complexity.TonMsgConnection.PageInfo == nil {
+			break
+		}
+
+		return e.complexity.TonMsgConnection.PageInfo(childComplexity), true
+
+	case "TonMsgConnection.totalCount":
+		if e.complexity.TonMsgConnection.TotalCount == nil {
+			break
+		}
+
+		return e.complexity.TonMsgConnection.TotalCount(childComplexity), true
+
+	case "TonMsgEdge.cursor":
+		if e.complexity.TonMsgEdge.Cursor == nil {
+			break
+		}
+
+		return e.complexity.TonMsgEdge.Cursor(childComplexity), true
+
+	case "TonMsgEdge.node":
+		if e.complexity.TonMsgEdge.Node == nil {
+			break
+		}
+
+		return e.complexity.TonMsgEdge.Node(childComplexity), true
+
 	}
 	return 0, false
 }
@@ -504,8 +591,10 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputCreateBurnInput,
 		ec.unmarshalInputCreateMintInput,
 		ec.unmarshalInputCreateReinitInput,
+		ec.unmarshalInputCreateTonMsgInput,
 		ec.unmarshalInputMintWhereInput,
 		ec.unmarshalInputReinitWhereInput,
+		ec.unmarshalInputTonMsgWhereInput,
 	)
 	first := true
 
@@ -597,8 +686,7 @@ type Burn implements Node {
   amount: String!
   bitcointxid: String! @goField(name: "BitcoinTxId", forceResolver: false)
   bitcoinscript: String! @goField(name: "BitcoinScript", forceResolver: false)
-  tonmsghash: String! @goField(name: "TonMsgHash", forceResolver: false)
-  createdat: Time! @goField(name: "CreatedAt", forceResolver: false)
+  tonmsg: TonMsg! @goField(name: "TonMsg", forceResolver: false)
 }
 """
 A connection to a list of items.
@@ -725,32 +813,10 @@ input BurnWhereInput {
   bitcoinscriptEqualFold: String
   bitcoinscriptContainsFold: String
   """
-  tonMsgHash field predicates
+  tonMsg edge predicates
   """
-  tonmsghash: String
-  tonmsghashNEQ: String
-  tonmsghashIn: [String!]
-  tonmsghashNotIn: [String!]
-  tonmsghashGT: String
-  tonmsghashGTE: String
-  tonmsghashLT: String
-  tonmsghashLTE: String
-  tonmsghashContains: String
-  tonmsghashHasPrefix: String
-  tonmsghashHasSuffix: String
-  tonmsghashEqualFold: String
-  tonmsghashContainsFold: String
-  """
-  createdAt field predicates
-  """
-  createdat: Time
-  createdatNEQ: Time
-  createdatIn: [Time!]
-  createdatNotIn: [Time!]
-  createdatGT: Time
-  createdatGTE: Time
-  createdatLT: Time
-  createdatLTE: Time
+  hasTonMsg: Boolean
+  hasTonMsgWith: [TonMsgWhereInput!]
 }
 """
 CreateBurnInput is used for create Burn object.
@@ -762,8 +828,7 @@ input CreateBurnInput {
   amount: String!
   bitcointxid: String!
   bitcoinscript: String!
-  tonmsghash: String!
-  createdat: Time!
+  tonmsgID: ID!
 }
 """
 CreateMintInput is used for create Mint object.
@@ -773,8 +838,7 @@ input CreateMintInput {
   receiveraddr: String!
   amount: String!
   bitcointxid: String!
-  tonmsghash: String!
-  createdat: Time!
+  tonmsgID: ID!
 }
 """
 CreateReinitInput is used for create Reinit object.
@@ -785,8 +849,18 @@ input CreateReinitInput {
   amount: String!
   bitcointxid: String!
   bitcoinscript: String!
-  tonmsghash: String!
+  tonmsgID: ID!
+}
+"""
+CreateTonMsgInput is used for create TonMsg object.
+Input was generated by ent.
+"""
+input CreateTonMsgInput {
+  hash: String!
   createdat: Time!
+  mintID: ID
+  burnID: ID
+  reinitID: ID
 }
 """
 Define a Relay Cursor type:
@@ -798,8 +872,7 @@ type Mint implements Node {
   receiveraddr: String! @goField(name: "ReceiverAddr", forceResolver: false)
   amount: String!
   bitcointxid: String! @goField(name: "BitcoinTxId", forceResolver: false)
-  tonmsghash: String! @goField(name: "TonMsgHash", forceResolver: false)
-  createdat: Time! @goField(name: "CreatedAt", forceResolver: false)
+  tonmsg: TonMsg! @goField(name: "TonMsg", forceResolver: false)
 }
 """
 A connection to a list of items.
@@ -899,32 +972,10 @@ input MintWhereInput {
   bitcointxidEqualFold: String
   bitcointxidContainsFold: String
   """
-  tonMsgHash field predicates
+  tonMsg edge predicates
   """
-  tonmsghash: String
-  tonmsghashNEQ: String
-  tonmsghashIn: [String!]
-  tonmsghashNotIn: [String!]
-  tonmsghashGT: String
-  tonmsghashGTE: String
-  tonmsghashLT: String
-  tonmsghashLTE: String
-  tonmsghashContains: String
-  tonmsghashHasPrefix: String
-  tonmsghashHasSuffix: String
-  tonmsghashEqualFold: String
-  tonmsghashContainsFold: String
-  """
-  createdAt field predicates
-  """
-  createdat: Time
-  createdatNEQ: Time
-  createdatIn: [Time!]
-  createdatNotIn: [Time!]
-  createdatGT: Time
-  createdatGTE: Time
-  createdatLT: Time
-  createdatLTE: Time
+  hasTonMsg: Boolean
+  hasTonMsgWith: [TonMsgWhereInput!]
 }
 """
 An object with an ID.
@@ -1068,6 +1119,32 @@ type Query {
     """
     where: ReinitWhereInput
   ): ReinitConnection!
+  tonMsgs(
+    """
+    Returns the elements in the list that come after the specified cursor.
+    """
+    after: Cursor
+
+    """
+    Returns the first _n_ elements from the list.
+    """
+    first: Int
+
+    """
+    Returns the elements in the list that come before the specified cursor.
+    """
+    before: Cursor
+
+    """
+    Returns the last _n_ elements from the list.
+    """
+    last: Int
+
+    """
+    Filtering options for TonMsgs returned from the connection.
+    """
+    where: TonMsgWhereInput
+  ): TonMsgConnection!
 }
 type Reinit implements Node {
   id: ID!
@@ -1075,8 +1152,7 @@ type Reinit implements Node {
   amount: String!
   bitcointxid: String! @goField(name: "BitcoinTxId", forceResolver: false)
   bitcoinscript: String! @goField(name: "BitcoinScript", forceResolver: false)
-  tonmsghash: String! @goField(name: "TonMsgHash", forceResolver: false)
-  createdat: Time! @goField(name: "CreatedAt", forceResolver: false)
+  tonmsg: TonMsg! @goField(name: "TonMsg", forceResolver: false)
 }
 """
 A connection to a list of items.
@@ -1187,21 +1263,88 @@ input ReinitWhereInput {
   bitcoinscriptEqualFold: String
   bitcoinscriptContainsFold: String
   """
-  tonMsgHash field predicates
+  tonMsg edge predicates
   """
-  tonmsghash: String
-  tonmsghashNEQ: String
-  tonmsghashIn: [String!]
-  tonmsghashNotIn: [String!]
-  tonmsghashGT: String
-  tonmsghashGTE: String
-  tonmsghashLT: String
-  tonmsghashLTE: String
-  tonmsghashContains: String
-  tonmsghashHasPrefix: String
-  tonmsghashHasSuffix: String
-  tonmsghashEqualFold: String
-  tonmsghashContainsFold: String
+  hasTonMsg: Boolean
+  hasTonMsgWith: [TonMsgWhereInput!]
+}
+"""
+The builtin Time type
+"""
+scalar Time
+type TonMsg implements Node {
+  id: ID!
+  hash: String!
+  createdat: Time! @goField(name: "CreatedAt", forceResolver: false)
+  mint: Mint
+  burn: Burn
+  reinit: Reinit
+}
+"""
+A connection to a list of items.
+"""
+type TonMsgConnection {
+  """
+  A list of edges.
+  """
+  edges: [TonMsgEdge]
+  """
+  Information to aid in pagination.
+  """
+  pageInfo: PageInfo!
+  """
+  Identifies the total count of items in the connection.
+  """
+  totalCount: Int!
+}
+"""
+An edge in a connection.
+"""
+type TonMsgEdge {
+  """
+  The item at the end of the edge.
+  """
+  node: TonMsg
+  """
+  A cursor for use in pagination.
+  """
+  cursor: Cursor!
+}
+"""
+TonMsgWhereInput is used for filtering TonMsg objects.
+Input was generated by ent.
+"""
+input TonMsgWhereInput {
+  not: TonMsgWhereInput
+  and: [TonMsgWhereInput!]
+  or: [TonMsgWhereInput!]
+  """
+  id field predicates
+  """
+  id: ID
+  idNEQ: ID
+  idIn: [ID!]
+  idNotIn: [ID!]
+  idGT: ID
+  idGTE: ID
+  idLT: ID
+  idLTE: ID
+  """
+  hash field predicates
+  """
+  hash: String
+  hashNEQ: String
+  hashIn: [String!]
+  hashNotIn: [String!]
+  hashGT: String
+  hashGTE: String
+  hashLT: String
+  hashLTE: String
+  hashContains: String
+  hashHasPrefix: String
+  hashHasSuffix: String
+  hashEqualFold: String
+  hashContainsFold: String
   """
   createdAt field predicates
   """
@@ -1213,11 +1356,22 @@ input ReinitWhereInput {
   createdatGTE: Time
   createdatLT: Time
   createdatLTE: Time
+  """
+  mint edge predicates
+  """
+  hasMint: Boolean
+  hasMintWith: [MintWhereInput!]
+  """
+  burn edge predicates
+  """
+  hasBurn: Boolean
+  hasBurnWith: [BurnWhereInput!]
+  """
+  reinit edge predicates
+  """
+  hasReinit: Boolean
+  hasReinitWith: [ReinitWhereInput!]
 }
-"""
-The builtin Time type
-"""
-scalar Time
 `, BuiltIn: false},
 }
 var parsedSchema = gqlparser.MustLoadSchema(sources...)
@@ -1586,6 +1740,102 @@ func (ec *executionContext) field_Query_reinits_argsWhere(
 	return zeroVal, nil
 }
 
+func (ec *executionContext) field_Query_tonMsgs_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	arg0, err := ec.field_Query_tonMsgs_argsAfter(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["after"] = arg0
+	arg1, err := ec.field_Query_tonMsgs_argsFirst(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["first"] = arg1
+	arg2, err := ec.field_Query_tonMsgs_argsBefore(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["before"] = arg2
+	arg3, err := ec.field_Query_tonMsgs_argsLast(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["last"] = arg3
+	arg4, err := ec.field_Query_tonMsgs_argsWhere(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["where"] = arg4
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_tonMsgs_argsAfter(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (*entgql.Cursor[int], error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("after"))
+	if tmp, ok := rawArgs["after"]; ok {
+		return ec.unmarshalOCursor2ᚖentgoᚗioᚋcontribᚋentgqlᚐCursor(ctx, tmp)
+	}
+
+	var zeroVal *entgql.Cursor[int]
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_tonMsgs_argsFirst(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (*int, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("first"))
+	if tmp, ok := rawArgs["first"]; ok {
+		return ec.unmarshalOInt2ᚖint(ctx, tmp)
+	}
+
+	var zeroVal *int
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_tonMsgs_argsBefore(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (*entgql.Cursor[int], error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("before"))
+	if tmp, ok := rawArgs["before"]; ok {
+		return ec.unmarshalOCursor2ᚖentgoᚗioᚋcontribᚋentgqlᚐCursor(ctx, tmp)
+	}
+
+	var zeroVal *entgql.Cursor[int]
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_tonMsgs_argsLast(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (*int, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("last"))
+	if tmp, ok := rawArgs["last"]; ok {
+		return ec.unmarshalOInt2ᚖint(ctx, tmp)
+	}
+
+	var zeroVal *int
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_tonMsgs_argsWhere(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (*generated.TonMsgWhereInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("where"))
+	if tmp, ok := rawArgs["where"]; ok {
+		return ec.unmarshalOTonMsgWhereInput2ᚖgithubᚗcomᚋrsquadᚋtonᚑteleportᚑbtcᚑperipheryᚋindexerᚋinternalᚋentᚋgeneratedᚐTonMsgWhereInput(ctx, tmp)
+	}
+
+	var zeroVal *generated.TonMsgWhereInput
+	return zeroVal, nil
+}
+
 func (ec *executionContext) field___Type_enumValues_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -1906,8 +2156,8 @@ func (ec *executionContext) fieldContext_Burn_bitcoinscript(_ context.Context, f
 	return fc, nil
 }
 
-func (ec *executionContext) _Burn_tonmsghash(ctx context.Context, field graphql.CollectedField, obj *generated.Burn) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Burn_tonmsghash(ctx, field)
+func (ec *executionContext) _Burn_tonmsg(ctx context.Context, field graphql.CollectedField, obj *generated.Burn) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Burn_tonmsg(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -1920,7 +2170,7 @@ func (ec *executionContext) _Burn_tonmsghash(ctx context.Context, field graphql.
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.TonMsgHash, nil
+		return obj.TonMsg(ctx)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1932,63 +2182,33 @@ func (ec *executionContext) _Burn_tonmsghash(ctx context.Context, field graphql.
 		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(*generated.TonMsg)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalNTonMsg2ᚖgithubᚗcomᚋrsquadᚋtonᚑteleportᚑbtcᚑperipheryᚋindexerᚋinternalᚋentᚋgeneratedᚐTonMsg(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Burn_tonmsghash(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Burn_tonmsg(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Burn",
 		Field:      field,
-		IsMethod:   false,
+		IsMethod:   true,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Burn_createdat(ctx context.Context, field graphql.CollectedField, obj *generated.Burn) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Burn_createdat(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.CreatedAt, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(time.Time)
-	fc.Result = res
-	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Burn_createdat(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Burn",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Time does not have child fields")
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_TonMsg_id(ctx, field)
+			case "hash":
+				return ec.fieldContext_TonMsg_hash(ctx, field)
+			case "createdat":
+				return ec.fieldContext_TonMsg_createdat(ctx, field)
+			case "mint":
+				return ec.fieldContext_TonMsg_mint(ctx, field)
+			case "burn":
+				return ec.fieldContext_TonMsg_burn(ctx, field)
+			case "reinit":
+				return ec.fieldContext_TonMsg_reinit(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type TonMsg", field.Name)
 		},
 	}
 	return fc, nil
@@ -2187,10 +2407,8 @@ func (ec *executionContext) fieldContext_BurnEdge_node(_ context.Context, field 
 				return ec.fieldContext_Burn_bitcointxid(ctx, field)
 			case "bitcoinscript":
 				return ec.fieldContext_Burn_bitcoinscript(ctx, field)
-			case "tonmsghash":
-				return ec.fieldContext_Burn_tonmsghash(ctx, field)
-			case "createdat":
-				return ec.fieldContext_Burn_createdat(ctx, field)
+			case "tonmsg":
+				return ec.fieldContext_Burn_tonmsg(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Burn", field.Name)
 		},
@@ -2418,8 +2636,8 @@ func (ec *executionContext) fieldContext_Mint_bitcointxid(_ context.Context, fie
 	return fc, nil
 }
 
-func (ec *executionContext) _Mint_tonmsghash(ctx context.Context, field graphql.CollectedField, obj *generated.Mint) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Mint_tonmsghash(ctx, field)
+func (ec *executionContext) _Mint_tonmsg(ctx context.Context, field graphql.CollectedField, obj *generated.Mint) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mint_tonmsg(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -2432,7 +2650,7 @@ func (ec *executionContext) _Mint_tonmsghash(ctx context.Context, field graphql.
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.TonMsgHash, nil
+		return obj.TonMsg(ctx)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2444,63 +2662,33 @@ func (ec *executionContext) _Mint_tonmsghash(ctx context.Context, field graphql.
 		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(*generated.TonMsg)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalNTonMsg2ᚖgithubᚗcomᚋrsquadᚋtonᚑteleportᚑbtcᚑperipheryᚋindexerᚋinternalᚋentᚋgeneratedᚐTonMsg(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Mint_tonmsghash(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Mint_tonmsg(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Mint",
 		Field:      field,
-		IsMethod:   false,
+		IsMethod:   true,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Mint_createdat(ctx context.Context, field graphql.CollectedField, obj *generated.Mint) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Mint_createdat(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.CreatedAt, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(time.Time)
-	fc.Result = res
-	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Mint_createdat(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Mint",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Time does not have child fields")
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_TonMsg_id(ctx, field)
+			case "hash":
+				return ec.fieldContext_TonMsg_hash(ctx, field)
+			case "createdat":
+				return ec.fieldContext_TonMsg_createdat(ctx, field)
+			case "mint":
+				return ec.fieldContext_TonMsg_mint(ctx, field)
+			case "burn":
+				return ec.fieldContext_TonMsg_burn(ctx, field)
+			case "reinit":
+				return ec.fieldContext_TonMsg_reinit(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type TonMsg", field.Name)
 		},
 	}
 	return fc, nil
@@ -2695,10 +2883,8 @@ func (ec *executionContext) fieldContext_MintEdge_node(_ context.Context, field 
 				return ec.fieldContext_Mint_amount(ctx, field)
 			case "bitcointxid":
 				return ec.fieldContext_Mint_bitcointxid(ctx, field)
-			case "tonmsghash":
-				return ec.fieldContext_Mint_tonmsghash(ctx, field)
-			case "createdat":
-				return ec.fieldContext_Mint_createdat(ctx, field)
+			case "tonmsg":
+				return ec.fieldContext_Mint_tonmsg(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Mint", field.Name)
 		},
@@ -3216,6 +3402,69 @@ func (ec *executionContext) fieldContext_Query_reinits(ctx context.Context, fiel
 	return fc, nil
 }
 
+func (ec *executionContext) _Query_tonMsgs(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_tonMsgs(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().TonMsgs(rctx, fc.Args["after"].(*entgql.Cursor[int]), fc.Args["first"].(*int), fc.Args["before"].(*entgql.Cursor[int]), fc.Args["last"].(*int), fc.Args["where"].(*generated.TonMsgWhereInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*generated.TonMsgConnection)
+	fc.Result = res
+	return ec.marshalNTonMsgConnection2ᚖgithubᚗcomᚋrsquadᚋtonᚑteleportᚑbtcᚑperipheryᚋindexerᚋinternalᚋentᚋgeneratedᚐTonMsgConnection(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_tonMsgs(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "edges":
+				return ec.fieldContext_TonMsgConnection_edges(ctx, field)
+			case "pageInfo":
+				return ec.fieldContext_TonMsgConnection_pageInfo(ctx, field)
+			case "totalCount":
+				return ec.fieldContext_TonMsgConnection_totalCount(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type TonMsgConnection", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_tonMsgs_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Query___type(ctx, field)
 	if err != nil {
@@ -3565,8 +3814,8 @@ func (ec *executionContext) fieldContext_Reinit_bitcoinscript(_ context.Context,
 	return fc, nil
 }
 
-func (ec *executionContext) _Reinit_tonmsghash(ctx context.Context, field graphql.CollectedField, obj *generated.Reinit) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Reinit_tonmsghash(ctx, field)
+func (ec *executionContext) _Reinit_tonmsg(ctx context.Context, field graphql.CollectedField, obj *generated.Reinit) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Reinit_tonmsg(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -3579,7 +3828,7 @@ func (ec *executionContext) _Reinit_tonmsghash(ctx context.Context, field graphq
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.TonMsgHash, nil
+		return obj.TonMsg(ctx)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3591,63 +3840,33 @@ func (ec *executionContext) _Reinit_tonmsghash(ctx context.Context, field graphq
 		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(*generated.TonMsg)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalNTonMsg2ᚖgithubᚗcomᚋrsquadᚋtonᚑteleportᚑbtcᚑperipheryᚋindexerᚋinternalᚋentᚋgeneratedᚐTonMsg(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Reinit_tonmsghash(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Reinit_tonmsg(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Reinit",
 		Field:      field,
-		IsMethod:   false,
+		IsMethod:   true,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Reinit_createdat(ctx context.Context, field graphql.CollectedField, obj *generated.Reinit) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Reinit_createdat(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.CreatedAt, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(time.Time)
-	fc.Result = res
-	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Reinit_createdat(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Reinit",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Time does not have child fields")
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_TonMsg_id(ctx, field)
+			case "hash":
+				return ec.fieldContext_TonMsg_hash(ctx, field)
+			case "createdat":
+				return ec.fieldContext_TonMsg_createdat(ctx, field)
+			case "mint":
+				return ec.fieldContext_TonMsg_mint(ctx, field)
+			case "burn":
+				return ec.fieldContext_TonMsg_burn(ctx, field)
+			case "reinit":
+				return ec.fieldContext_TonMsg_reinit(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type TonMsg", field.Name)
 		},
 	}
 	return fc, nil
@@ -3844,10 +4063,8 @@ func (ec *executionContext) fieldContext_ReinitEdge_node(_ context.Context, fiel
 				return ec.fieldContext_Reinit_bitcointxid(ctx, field)
 			case "bitcoinscript":
 				return ec.fieldContext_Reinit_bitcoinscript(ctx, field)
-			case "tonmsghash":
-				return ec.fieldContext_Reinit_tonmsghash(ctx, field)
-			case "createdat":
-				return ec.fieldContext_Reinit_createdat(ctx, field)
+			case "tonmsg":
+				return ec.fieldContext_Reinit_tonmsg(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Reinit", field.Name)
 		},
@@ -3889,6 +4106,547 @@ func (ec *executionContext) _ReinitEdge_cursor(ctx context.Context, field graphq
 func (ec *executionContext) fieldContext_ReinitEdge_cursor(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "ReinitEdge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Cursor does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TonMsg_id(ctx context.Context, field graphql.CollectedField, obj *generated.TonMsg) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TonMsg_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNID2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TonMsg_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TonMsg",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TonMsg_hash(ctx context.Context, field graphql.CollectedField, obj *generated.TonMsg) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TonMsg_hash(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Hash, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TonMsg_hash(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TonMsg",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TonMsg_createdat(ctx context.Context, field graphql.CollectedField, obj *generated.TonMsg) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TonMsg_createdat(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CreatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TonMsg_createdat(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TonMsg",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TonMsg_mint(ctx context.Context, field graphql.CollectedField, obj *generated.TonMsg) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TonMsg_mint(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Mint(ctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*generated.Mint)
+	fc.Result = res
+	return ec.marshalOMint2ᚖgithubᚗcomᚋrsquadᚋtonᚑteleportᚑbtcᚑperipheryᚋindexerᚋinternalᚋentᚋgeneratedᚐMint(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TonMsg_mint(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TonMsg",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Mint_id(ctx, field)
+			case "receiveraddr":
+				return ec.fieldContext_Mint_receiveraddr(ctx, field)
+			case "amount":
+				return ec.fieldContext_Mint_amount(ctx, field)
+			case "bitcointxid":
+				return ec.fieldContext_Mint_bitcointxid(ctx, field)
+			case "tonmsg":
+				return ec.fieldContext_Mint_tonmsg(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Mint", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TonMsg_burn(ctx context.Context, field graphql.CollectedField, obj *generated.TonMsg) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TonMsg_burn(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Burn(ctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*generated.Burn)
+	fc.Result = res
+	return ec.marshalOBurn2ᚖgithubᚗcomᚋrsquadᚋtonᚑteleportᚑbtcᚑperipheryᚋindexerᚋinternalᚋentᚋgeneratedᚐBurn(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TonMsg_burn(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TonMsg",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Burn_id(ctx, field)
+			case "externalid":
+				return ec.fieldContext_Burn_externalid(ctx, field)
+			case "senderaddr":
+				return ec.fieldContext_Burn_senderaddr(ctx, field)
+			case "amount":
+				return ec.fieldContext_Burn_amount(ctx, field)
+			case "bitcointxid":
+				return ec.fieldContext_Burn_bitcointxid(ctx, field)
+			case "bitcoinscript":
+				return ec.fieldContext_Burn_bitcoinscript(ctx, field)
+			case "tonmsg":
+				return ec.fieldContext_Burn_tonmsg(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Burn", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TonMsg_reinit(ctx context.Context, field graphql.CollectedField, obj *generated.TonMsg) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TonMsg_reinit(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Reinit(ctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*generated.Reinit)
+	fc.Result = res
+	return ec.marshalOReinit2ᚖgithubᚗcomᚋrsquadᚋtonᚑteleportᚑbtcᚑperipheryᚋindexerᚋinternalᚋentᚋgeneratedᚐReinit(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TonMsg_reinit(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TonMsg",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Reinit_id(ctx, field)
+			case "externalid":
+				return ec.fieldContext_Reinit_externalid(ctx, field)
+			case "amount":
+				return ec.fieldContext_Reinit_amount(ctx, field)
+			case "bitcointxid":
+				return ec.fieldContext_Reinit_bitcointxid(ctx, field)
+			case "bitcoinscript":
+				return ec.fieldContext_Reinit_bitcoinscript(ctx, field)
+			case "tonmsg":
+				return ec.fieldContext_Reinit_tonmsg(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Reinit", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TonMsgConnection_edges(ctx context.Context, field graphql.CollectedField, obj *generated.TonMsgConnection) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TonMsgConnection_edges(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Edges, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]*generated.TonMsgEdge)
+	fc.Result = res
+	return ec.marshalOTonMsgEdge2ᚕᚖgithubᚗcomᚋrsquadᚋtonᚑteleportᚑbtcᚑperipheryᚋindexerᚋinternalᚋentᚋgeneratedᚐTonMsgEdge(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TonMsgConnection_edges(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TonMsgConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "node":
+				return ec.fieldContext_TonMsgEdge_node(ctx, field)
+			case "cursor":
+				return ec.fieldContext_TonMsgEdge_cursor(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type TonMsgEdge", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TonMsgConnection_pageInfo(ctx context.Context, field graphql.CollectedField, obj *generated.TonMsgConnection) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TonMsgConnection_pageInfo(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.PageInfo, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(entgql.PageInfo[int])
+	fc.Result = res
+	return ec.marshalNPageInfo2entgoᚗioᚋcontribᚋentgqlᚐPageInfo(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TonMsgConnection_pageInfo(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TonMsgConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "hasNextPage":
+				return ec.fieldContext_PageInfo_hasNextPage(ctx, field)
+			case "hasPreviousPage":
+				return ec.fieldContext_PageInfo_hasPreviousPage(ctx, field)
+			case "startCursor":
+				return ec.fieldContext_PageInfo_startCursor(ctx, field)
+			case "endCursor":
+				return ec.fieldContext_PageInfo_endCursor(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type PageInfo", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TonMsgConnection_totalCount(ctx context.Context, field graphql.CollectedField, obj *generated.TonMsgConnection) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TonMsgConnection_totalCount(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TotalCount, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TonMsgConnection_totalCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TonMsgConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TonMsgEdge_node(ctx context.Context, field graphql.CollectedField, obj *generated.TonMsgEdge) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TonMsgEdge_node(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Node, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*generated.TonMsg)
+	fc.Result = res
+	return ec.marshalOTonMsg2ᚖgithubᚗcomᚋrsquadᚋtonᚑteleportᚑbtcᚑperipheryᚋindexerᚋinternalᚋentᚋgeneratedᚐTonMsg(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TonMsgEdge_node(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TonMsgEdge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_TonMsg_id(ctx, field)
+			case "hash":
+				return ec.fieldContext_TonMsg_hash(ctx, field)
+			case "createdat":
+				return ec.fieldContext_TonMsg_createdat(ctx, field)
+			case "mint":
+				return ec.fieldContext_TonMsg_mint(ctx, field)
+			case "burn":
+				return ec.fieldContext_TonMsg_burn(ctx, field)
+			case "reinit":
+				return ec.fieldContext_TonMsg_reinit(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type TonMsg", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TonMsgEdge_cursor(ctx context.Context, field graphql.CollectedField, obj *generated.TonMsgEdge) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TonMsgEdge_cursor(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Cursor, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(entgql.Cursor[int])
+	fc.Result = res
+	return ec.marshalNCursor2entgoᚗioᚋcontribᚋentgqlᚐCursor(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TonMsgEdge_cursor(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TonMsgEdge",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -5679,7 +6437,7 @@ func (ec *executionContext) unmarshalInputBurnWhereInput(ctx context.Context, ob
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "externalid", "externalidNEQ", "externalidIn", "externalidNotIn", "externalidGT", "externalidGTE", "externalidLT", "externalidLTE", "senderaddr", "senderaddrNEQ", "senderaddrIn", "senderaddrNotIn", "senderaddrGT", "senderaddrGTE", "senderaddrLT", "senderaddrLTE", "senderaddrContains", "senderaddrHasPrefix", "senderaddrHasSuffix", "senderaddrEqualFold", "senderaddrContainsFold", "amount", "amountNEQ", "amountIn", "amountNotIn", "amountGT", "amountGTE", "amountLT", "amountLTE", "amountContains", "amountHasPrefix", "amountHasSuffix", "amountEqualFold", "amountContainsFold", "bitcointxid", "bitcointxidNEQ", "bitcointxidIn", "bitcointxidNotIn", "bitcointxidGT", "bitcointxidGTE", "bitcointxidLT", "bitcointxidLTE", "bitcointxidContains", "bitcointxidHasPrefix", "bitcointxidHasSuffix", "bitcointxidEqualFold", "bitcointxidContainsFold", "bitcoinscript", "bitcoinscriptNEQ", "bitcoinscriptIn", "bitcoinscriptNotIn", "bitcoinscriptGT", "bitcoinscriptGTE", "bitcoinscriptLT", "bitcoinscriptLTE", "bitcoinscriptContains", "bitcoinscriptHasPrefix", "bitcoinscriptHasSuffix", "bitcoinscriptEqualFold", "bitcoinscriptContainsFold", "tonmsghash", "tonmsghashNEQ", "tonmsghashIn", "tonmsghashNotIn", "tonmsghashGT", "tonmsghashGTE", "tonmsghashLT", "tonmsghashLTE", "tonmsghashContains", "tonmsghashHasPrefix", "tonmsghashHasSuffix", "tonmsghashEqualFold", "tonmsghashContainsFold", "createdat", "createdatNEQ", "createdatIn", "createdatNotIn", "createdatGT", "createdatGTE", "createdatLT", "createdatLTE"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "externalid", "externalidNEQ", "externalidIn", "externalidNotIn", "externalidGT", "externalidGTE", "externalidLT", "externalidLTE", "senderaddr", "senderaddrNEQ", "senderaddrIn", "senderaddrNotIn", "senderaddrGT", "senderaddrGTE", "senderaddrLT", "senderaddrLTE", "senderaddrContains", "senderaddrHasPrefix", "senderaddrHasSuffix", "senderaddrEqualFold", "senderaddrContainsFold", "amount", "amountNEQ", "amountIn", "amountNotIn", "amountGT", "amountGTE", "amountLT", "amountLTE", "amountContains", "amountHasPrefix", "amountHasSuffix", "amountEqualFold", "amountContainsFold", "bitcointxid", "bitcointxidNEQ", "bitcointxidIn", "bitcointxidNotIn", "bitcointxidGT", "bitcointxidGTE", "bitcointxidLT", "bitcointxidLTE", "bitcointxidContains", "bitcointxidHasPrefix", "bitcointxidHasSuffix", "bitcointxidEqualFold", "bitcointxidContainsFold", "bitcoinscript", "bitcoinscriptNEQ", "bitcoinscriptIn", "bitcoinscriptNotIn", "bitcoinscriptGT", "bitcoinscriptGTE", "bitcoinscriptLT", "bitcoinscriptLTE", "bitcoinscriptContains", "bitcoinscriptHasPrefix", "bitcoinscriptHasSuffix", "bitcoinscriptEqualFold", "bitcoinscriptContainsFold", "hasTonMsg", "hasTonMsgWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -6183,153 +6941,20 @@ func (ec *executionContext) unmarshalInputBurnWhereInput(ctx context.Context, ob
 				return it, err
 			}
 			it.BitcoinScriptContainsFold = data
-		case "tonmsghash":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tonmsghash"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+		case "hasTonMsg":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasTonMsg"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.TonMsgHash = data
-		case "tonmsghashNEQ":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tonmsghashNEQ"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			it.HasTonMsg = data
+		case "hasTonMsgWith":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasTonMsgWith"))
+			data, err := ec.unmarshalOTonMsgWhereInput2ᚕᚖgithubᚗcomᚋrsquadᚋtonᚑteleportᚑbtcᚑperipheryᚋindexerᚋinternalᚋentᚋgeneratedᚐTonMsgWhereInputᚄ(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.TonMsgHashNEQ = data
-		case "tonmsghashIn":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tonmsghashIn"))
-			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.TonMsgHashIn = data
-		case "tonmsghashNotIn":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tonmsghashNotIn"))
-			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.TonMsgHashNotIn = data
-		case "tonmsghashGT":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tonmsghashGT"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.TonMsgHashGT = data
-		case "tonmsghashGTE":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tonmsghashGTE"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.TonMsgHashGTE = data
-		case "tonmsghashLT":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tonmsghashLT"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.TonMsgHashLT = data
-		case "tonmsghashLTE":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tonmsghashLTE"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.TonMsgHashLTE = data
-		case "tonmsghashContains":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tonmsghashContains"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.TonMsgHashContains = data
-		case "tonmsghashHasPrefix":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tonmsghashHasPrefix"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.TonMsgHashHasPrefix = data
-		case "tonmsghashHasSuffix":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tonmsghashHasSuffix"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.TonMsgHashHasSuffix = data
-		case "tonmsghashEqualFold":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tonmsghashEqualFold"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.TonMsgHashEqualFold = data
-		case "tonmsghashContainsFold":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tonmsghashContainsFold"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.TonMsgHashContainsFold = data
-		case "createdat":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdat"))
-			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.CreatedAt = data
-		case "createdatNEQ":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdatNEQ"))
-			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.CreatedAtNEQ = data
-		case "createdatIn":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdatIn"))
-			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.CreatedAtIn = data
-		case "createdatNotIn":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdatNotIn"))
-			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.CreatedAtNotIn = data
-		case "createdatGT":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdatGT"))
-			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.CreatedAtGT = data
-		case "createdatGTE":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdatGTE"))
-			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.CreatedAtGTE = data
-		case "createdatLT":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdatLT"))
-			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.CreatedAtLT = data
-		case "createdatLTE":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdatLTE"))
-			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.CreatedAtLTE = data
+			it.HasTonMsgWith = data
 		}
 	}
 
@@ -6343,7 +6968,7 @@ func (ec *executionContext) unmarshalInputCreateBurnInput(ctx context.Context, o
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"externalid", "senderaddr", "amount", "bitcointxid", "bitcoinscript", "tonmsghash", "createdat"}
+	fieldsInOrder := [...]string{"externalid", "senderaddr", "amount", "bitcointxid", "bitcoinscript", "tonmsgID"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -6385,20 +7010,13 @@ func (ec *executionContext) unmarshalInputCreateBurnInput(ctx context.Context, o
 				return it, err
 			}
 			it.BitcoinScript = data
-		case "tonmsghash":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tonmsghash"))
-			data, err := ec.unmarshalNString2string(ctx, v)
+		case "tonmsgID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tonmsgID"))
+			data, err := ec.unmarshalNID2int(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.TonMsgHash = data
-		case "createdat":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdat"))
-			data, err := ec.unmarshalNTime2timeᚐTime(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.CreatedAt = data
+			it.TonMsgID = data
 		}
 	}
 
@@ -6412,7 +7030,7 @@ func (ec *executionContext) unmarshalInputCreateMintInput(ctx context.Context, o
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"receiveraddr", "amount", "bitcointxid", "tonmsghash", "createdat"}
+	fieldsInOrder := [...]string{"receiveraddr", "amount", "bitcointxid", "tonmsgID"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -6440,20 +7058,13 @@ func (ec *executionContext) unmarshalInputCreateMintInput(ctx context.Context, o
 				return it, err
 			}
 			it.BitcoinTxId = data
-		case "tonmsghash":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tonmsghash"))
-			data, err := ec.unmarshalNString2string(ctx, v)
+		case "tonmsgID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tonmsgID"))
+			data, err := ec.unmarshalNID2int(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.TonMsgHash = data
-		case "createdat":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdat"))
-			data, err := ec.unmarshalNTime2timeᚐTime(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.CreatedAt = data
+			it.TonMsgID = data
 		}
 	}
 
@@ -6467,7 +7078,7 @@ func (ec *executionContext) unmarshalInputCreateReinitInput(ctx context.Context,
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"externalid", "amount", "bitcointxid", "bitcoinscript", "tonmsghash", "createdat"}
+	fieldsInOrder := [...]string{"externalid", "amount", "bitcointxid", "bitcoinscript", "tonmsgID"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -6502,13 +7113,40 @@ func (ec *executionContext) unmarshalInputCreateReinitInput(ctx context.Context,
 				return it, err
 			}
 			it.BitcoinScript = data
-		case "tonmsghash":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tonmsghash"))
+		case "tonmsgID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tonmsgID"))
+			data, err := ec.unmarshalNID2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TonMsgID = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputCreateTonMsgInput(ctx context.Context, obj interface{}) (generated.CreateTonMsgInput, error) {
+	var it generated.CreateTonMsgInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"hash", "createdat", "mintID", "burnID", "reinitID"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "hash":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hash"))
 			data, err := ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.TonMsgHash = data
+			it.Hash = data
 		case "createdat":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdat"))
 			data, err := ec.unmarshalNTime2timeᚐTime(ctx, v)
@@ -6516,6 +7154,27 @@ func (ec *executionContext) unmarshalInputCreateReinitInput(ctx context.Context,
 				return it, err
 			}
 			it.CreatedAt = data
+		case "mintID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("mintID"))
+			data, err := ec.unmarshalOID2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.MintID = data
+		case "burnID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("burnID"))
+			data, err := ec.unmarshalOID2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.BurnID = data
+		case "reinitID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("reinitID"))
+			data, err := ec.unmarshalOID2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ReinitID = data
 		}
 	}
 
@@ -6529,7 +7188,7 @@ func (ec *executionContext) unmarshalInputMintWhereInput(ctx context.Context, ob
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "receiveraddr", "receiveraddrNEQ", "receiveraddrIn", "receiveraddrNotIn", "receiveraddrGT", "receiveraddrGTE", "receiveraddrLT", "receiveraddrLTE", "receiveraddrContains", "receiveraddrHasPrefix", "receiveraddrHasSuffix", "receiveraddrEqualFold", "receiveraddrContainsFold", "amount", "amountNEQ", "amountIn", "amountNotIn", "amountGT", "amountGTE", "amountLT", "amountLTE", "amountContains", "amountHasPrefix", "amountHasSuffix", "amountEqualFold", "amountContainsFold", "bitcointxid", "bitcointxidNEQ", "bitcointxidIn", "bitcointxidNotIn", "bitcointxidGT", "bitcointxidGTE", "bitcointxidLT", "bitcointxidLTE", "bitcointxidContains", "bitcointxidHasPrefix", "bitcointxidHasSuffix", "bitcointxidEqualFold", "bitcointxidContainsFold", "tonmsghash", "tonmsghashNEQ", "tonmsghashIn", "tonmsghashNotIn", "tonmsghashGT", "tonmsghashGTE", "tonmsghashLT", "tonmsghashLTE", "tonmsghashContains", "tonmsghashHasPrefix", "tonmsghashHasSuffix", "tonmsghashEqualFold", "tonmsghashContainsFold", "createdat", "createdatNEQ", "createdatIn", "createdatNotIn", "createdatGT", "createdatGTE", "createdatLT", "createdatLTE"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "receiveraddr", "receiveraddrNEQ", "receiveraddrIn", "receiveraddrNotIn", "receiveraddrGT", "receiveraddrGTE", "receiveraddrLT", "receiveraddrLTE", "receiveraddrContains", "receiveraddrHasPrefix", "receiveraddrHasSuffix", "receiveraddrEqualFold", "receiveraddrContainsFold", "amount", "amountNEQ", "amountIn", "amountNotIn", "amountGT", "amountGTE", "amountLT", "amountLTE", "amountContains", "amountHasPrefix", "amountHasSuffix", "amountEqualFold", "amountContainsFold", "bitcointxid", "bitcointxidNEQ", "bitcointxidIn", "bitcointxidNotIn", "bitcointxidGT", "bitcointxidGTE", "bitcointxidLT", "bitcointxidLTE", "bitcointxidContains", "bitcointxidHasPrefix", "bitcointxidHasSuffix", "bitcointxidEqualFold", "bitcointxidContainsFold", "hasTonMsg", "hasTonMsgWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -6886,153 +7545,20 @@ func (ec *executionContext) unmarshalInputMintWhereInput(ctx context.Context, ob
 				return it, err
 			}
 			it.BitcoinTxIdContainsFold = data
-		case "tonmsghash":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tonmsghash"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+		case "hasTonMsg":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasTonMsg"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.TonMsgHash = data
-		case "tonmsghashNEQ":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tonmsghashNEQ"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			it.HasTonMsg = data
+		case "hasTonMsgWith":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasTonMsgWith"))
+			data, err := ec.unmarshalOTonMsgWhereInput2ᚕᚖgithubᚗcomᚋrsquadᚋtonᚑteleportᚑbtcᚑperipheryᚋindexerᚋinternalᚋentᚋgeneratedᚐTonMsgWhereInputᚄ(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.TonMsgHashNEQ = data
-		case "tonmsghashIn":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tonmsghashIn"))
-			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.TonMsgHashIn = data
-		case "tonmsghashNotIn":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tonmsghashNotIn"))
-			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.TonMsgHashNotIn = data
-		case "tonmsghashGT":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tonmsghashGT"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.TonMsgHashGT = data
-		case "tonmsghashGTE":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tonmsghashGTE"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.TonMsgHashGTE = data
-		case "tonmsghashLT":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tonmsghashLT"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.TonMsgHashLT = data
-		case "tonmsghashLTE":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tonmsghashLTE"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.TonMsgHashLTE = data
-		case "tonmsghashContains":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tonmsghashContains"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.TonMsgHashContains = data
-		case "tonmsghashHasPrefix":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tonmsghashHasPrefix"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.TonMsgHashHasPrefix = data
-		case "tonmsghashHasSuffix":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tonmsghashHasSuffix"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.TonMsgHashHasSuffix = data
-		case "tonmsghashEqualFold":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tonmsghashEqualFold"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.TonMsgHashEqualFold = data
-		case "tonmsghashContainsFold":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tonmsghashContainsFold"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.TonMsgHashContainsFold = data
-		case "createdat":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdat"))
-			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.CreatedAt = data
-		case "createdatNEQ":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdatNEQ"))
-			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.CreatedAtNEQ = data
-		case "createdatIn":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdatIn"))
-			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.CreatedAtIn = data
-		case "createdatNotIn":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdatNotIn"))
-			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.CreatedAtNotIn = data
-		case "createdatGT":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdatGT"))
-			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.CreatedAtGT = data
-		case "createdatGTE":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdatGTE"))
-			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.CreatedAtGTE = data
-		case "createdatLT":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdatLT"))
-			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.CreatedAtLT = data
-		case "createdatLTE":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdatLTE"))
-			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.CreatedAtLTE = data
+			it.HasTonMsgWith = data
 		}
 	}
 
@@ -7046,7 +7572,7 @@ func (ec *executionContext) unmarshalInputReinitWhereInput(ctx context.Context, 
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "externalid", "externalidNEQ", "externalidIn", "externalidNotIn", "externalidGT", "externalidGTE", "externalidLT", "externalidLTE", "amount", "amountNEQ", "amountIn", "amountNotIn", "amountGT", "amountGTE", "amountLT", "amountLTE", "amountContains", "amountHasPrefix", "amountHasSuffix", "amountEqualFold", "amountContainsFold", "bitcointxid", "bitcointxidNEQ", "bitcointxidIn", "bitcointxidNotIn", "bitcointxidGT", "bitcointxidGTE", "bitcointxidLT", "bitcointxidLTE", "bitcointxidContains", "bitcointxidHasPrefix", "bitcointxidHasSuffix", "bitcointxidEqualFold", "bitcointxidContainsFold", "bitcoinscript", "bitcoinscriptNEQ", "bitcoinscriptIn", "bitcoinscriptNotIn", "bitcoinscriptGT", "bitcoinscriptGTE", "bitcoinscriptLT", "bitcoinscriptLTE", "bitcoinscriptContains", "bitcoinscriptHasPrefix", "bitcoinscriptHasSuffix", "bitcoinscriptEqualFold", "bitcoinscriptContainsFold", "tonmsghash", "tonmsghashNEQ", "tonmsghashIn", "tonmsghashNotIn", "tonmsghashGT", "tonmsghashGTE", "tonmsghashLT", "tonmsghashLTE", "tonmsghashContains", "tonmsghashHasPrefix", "tonmsghashHasSuffix", "tonmsghashEqualFold", "tonmsghashContainsFold", "createdat", "createdatNEQ", "createdatIn", "createdatNotIn", "createdatGT", "createdatGTE", "createdatLT", "createdatLTE"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "externalid", "externalidNEQ", "externalidIn", "externalidNotIn", "externalidGT", "externalidGTE", "externalidLT", "externalidLTE", "amount", "amountNEQ", "amountIn", "amountNotIn", "amountGT", "amountGTE", "amountLT", "amountLTE", "amountContains", "amountHasPrefix", "amountHasSuffix", "amountEqualFold", "amountContainsFold", "bitcointxid", "bitcointxidNEQ", "bitcointxidIn", "bitcointxidNotIn", "bitcointxidGT", "bitcointxidGTE", "bitcointxidLT", "bitcointxidLTE", "bitcointxidContains", "bitcointxidHasPrefix", "bitcointxidHasSuffix", "bitcointxidEqualFold", "bitcointxidContainsFold", "bitcoinscript", "bitcoinscriptNEQ", "bitcoinscriptIn", "bitcoinscriptNotIn", "bitcoinscriptGT", "bitcoinscriptGTE", "bitcoinscriptLT", "bitcoinscriptLTE", "bitcoinscriptContains", "bitcoinscriptHasPrefix", "bitcoinscriptHasSuffix", "bitcoinscriptEqualFold", "bitcoinscriptContainsFold", "hasTonMsg", "hasTonMsgWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -7459,97 +7985,208 @@ func (ec *executionContext) unmarshalInputReinitWhereInput(ctx context.Context, 
 				return it, err
 			}
 			it.BitcoinScriptContainsFold = data
-		case "tonmsghash":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tonmsghash"))
+		case "hasTonMsg":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasTonMsg"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HasTonMsg = data
+		case "hasTonMsgWith":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasTonMsgWith"))
+			data, err := ec.unmarshalOTonMsgWhereInput2ᚕᚖgithubᚗcomᚋrsquadᚋtonᚑteleportᚑbtcᚑperipheryᚋindexerᚋinternalᚋentᚋgeneratedᚐTonMsgWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HasTonMsgWith = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputTonMsgWhereInput(ctx context.Context, obj interface{}) (generated.TonMsgWhereInput, error) {
+	var it generated.TonMsgWhereInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "hash", "hashNEQ", "hashIn", "hashNotIn", "hashGT", "hashGTE", "hashLT", "hashLTE", "hashContains", "hashHasPrefix", "hashHasSuffix", "hashEqualFold", "hashContainsFold", "createdat", "createdatNEQ", "createdatIn", "createdatNotIn", "createdatGT", "createdatGTE", "createdatLT", "createdatLTE", "hasMint", "hasMintWith", "hasBurn", "hasBurnWith", "hasReinit", "hasReinitWith"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "not":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("not"))
+			data, err := ec.unmarshalOTonMsgWhereInput2ᚖgithubᚗcomᚋrsquadᚋtonᚑteleportᚑbtcᚑperipheryᚋindexerᚋinternalᚋentᚋgeneratedᚐTonMsgWhereInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Not = data
+		case "and":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("and"))
+			data, err := ec.unmarshalOTonMsgWhereInput2ᚕᚖgithubᚗcomᚋrsquadᚋtonᚑteleportᚑbtcᚑperipheryᚋindexerᚋinternalᚋentᚋgeneratedᚐTonMsgWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.And = data
+		case "or":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("or"))
+			data, err := ec.unmarshalOTonMsgWhereInput2ᚕᚖgithubᚗcomᚋrsquadᚋtonᚑteleportᚑbtcᚑperipheryᚋindexerᚋinternalᚋentᚋgeneratedᚐTonMsgWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Or = data
+		case "id":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			data, err := ec.unmarshalOID2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ID = data
+		case "idNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idNEQ"))
+			data, err := ec.unmarshalOID2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IDNEQ = data
+		case "idIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idIn"))
+			data, err := ec.unmarshalOID2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IDIn = data
+		case "idNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idNotIn"))
+			data, err := ec.unmarshalOID2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IDNotIn = data
+		case "idGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idGT"))
+			data, err := ec.unmarshalOID2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IDGT = data
+		case "idGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idGTE"))
+			data, err := ec.unmarshalOID2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IDGTE = data
+		case "idLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idLT"))
+			data, err := ec.unmarshalOID2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IDLT = data
+		case "idLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idLTE"))
+			data, err := ec.unmarshalOID2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IDLTE = data
+		case "hash":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hash"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.TonMsgHash = data
-		case "tonmsghashNEQ":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tonmsghashNEQ"))
+			it.Hash = data
+		case "hashNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hashNEQ"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.TonMsgHashNEQ = data
-		case "tonmsghashIn":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tonmsghashIn"))
+			it.HashNEQ = data
+		case "hashIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hashIn"))
 			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.TonMsgHashIn = data
-		case "tonmsghashNotIn":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tonmsghashNotIn"))
+			it.HashIn = data
+		case "hashNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hashNotIn"))
 			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.TonMsgHashNotIn = data
-		case "tonmsghashGT":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tonmsghashGT"))
+			it.HashNotIn = data
+		case "hashGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hashGT"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.TonMsgHashGT = data
-		case "tonmsghashGTE":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tonmsghashGTE"))
+			it.HashGT = data
+		case "hashGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hashGTE"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.TonMsgHashGTE = data
-		case "tonmsghashLT":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tonmsghashLT"))
+			it.HashGTE = data
+		case "hashLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hashLT"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.TonMsgHashLT = data
-		case "tonmsghashLTE":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tonmsghashLTE"))
+			it.HashLT = data
+		case "hashLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hashLTE"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.TonMsgHashLTE = data
-		case "tonmsghashContains":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tonmsghashContains"))
+			it.HashLTE = data
+		case "hashContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hashContains"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.TonMsgHashContains = data
-		case "tonmsghashHasPrefix":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tonmsghashHasPrefix"))
+			it.HashContains = data
+		case "hashHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hashHasPrefix"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.TonMsgHashHasPrefix = data
-		case "tonmsghashHasSuffix":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tonmsghashHasSuffix"))
+			it.HashHasPrefix = data
+		case "hashHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hashHasSuffix"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.TonMsgHashHasSuffix = data
-		case "tonmsghashEqualFold":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tonmsghashEqualFold"))
+			it.HashHasSuffix = data
+		case "hashEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hashEqualFold"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.TonMsgHashEqualFold = data
-		case "tonmsghashContainsFold":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tonmsghashContainsFold"))
+			it.HashEqualFold = data
+		case "hashContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hashContainsFold"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.TonMsgHashContainsFold = data
+			it.HashContainsFold = data
 		case "createdat":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdat"))
 			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
@@ -7606,6 +8243,48 @@ func (ec *executionContext) unmarshalInputReinitWhereInput(ctx context.Context, 
 				return it, err
 			}
 			it.CreatedAtLTE = data
+		case "hasMint":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasMint"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HasMint = data
+		case "hasMintWith":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasMintWith"))
+			data, err := ec.unmarshalOMintWhereInput2ᚕᚖgithubᚗcomᚋrsquadᚋtonᚑteleportᚑbtcᚑperipheryᚋindexerᚋinternalᚋentᚋgeneratedᚐMintWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HasMintWith = data
+		case "hasBurn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasBurn"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HasBurn = data
+		case "hasBurnWith":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasBurnWith"))
+			data, err := ec.unmarshalOBurnWhereInput2ᚕᚖgithubᚗcomᚋrsquadᚋtonᚑteleportᚑbtcᚑperipheryᚋindexerᚋinternalᚋentᚋgeneratedᚐBurnWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HasBurnWith = data
+		case "hasReinit":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasReinit"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HasReinit = data
+		case "hasReinitWith":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasReinitWith"))
+			data, err := ec.unmarshalOReinitWhereInput2ᚕᚖgithubᚗcomᚋrsquadᚋtonᚑteleportᚑbtcᚑperipheryᚋindexerᚋinternalᚋentᚋgeneratedᚐReinitWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HasReinitWith = data
 		}
 	}
 
@@ -7635,6 +8314,11 @@ func (ec *executionContext) _Node(ctx context.Context, sel ast.SelectionSet, obj
 			return graphql.Null
 		}
 		return ec._Reinit(ctx, sel, obj)
+	case *generated.TonMsg:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._TonMsg(ctx, sel, obj)
 	default:
 		panic(fmt.Errorf("unexpected type %T", obj))
 	}
@@ -7658,43 +8342,69 @@ func (ec *executionContext) _Burn(ctx context.Context, sel ast.SelectionSet, obj
 		case "id":
 			out.Values[i] = ec._Burn_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "externalid":
 			out.Values[i] = ec._Burn_externalid(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "senderaddr":
 			out.Values[i] = ec._Burn_senderaddr(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "amount":
 			out.Values[i] = ec._Burn_amount(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "bitcointxid":
 			out.Values[i] = ec._Burn_bitcointxid(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "bitcoinscript":
 			out.Values[i] = ec._Burn_bitcoinscript(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
-		case "tonmsghash":
-			out.Values[i] = ec._Burn_tonmsghash(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
+		case "tonmsg":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Burn_tonmsg(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
 			}
-		case "createdat":
-			out.Values[i] = ec._Burn_createdat(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
 			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -7819,33 +8529,59 @@ func (ec *executionContext) _Mint(ctx context.Context, sel ast.SelectionSet, obj
 		case "id":
 			out.Values[i] = ec._Mint_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "receiveraddr":
 			out.Values[i] = ec._Mint_receiveraddr(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "amount":
 			out.Values[i] = ec._Mint_amount(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "bitcointxid":
 			out.Values[i] = ec._Mint_bitcointxid(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
-		case "tonmsghash":
-			out.Values[i] = ec._Mint_tonmsghash(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
+		case "tonmsg":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Mint_tonmsg(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
 			}
-		case "createdat":
-			out.Values[i] = ec._Mint_createdat(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
 			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -8130,6 +8866,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "tonMsgs":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_tonMsgs(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "__type":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Query___type(ctx, field)
@@ -8175,38 +8933,64 @@ func (ec *executionContext) _Reinit(ctx context.Context, sel ast.SelectionSet, o
 		case "id":
 			out.Values[i] = ec._Reinit_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "externalid":
 			out.Values[i] = ec._Reinit_externalid(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "amount":
 			out.Values[i] = ec._Reinit_amount(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "bitcointxid":
 			out.Values[i] = ec._Reinit_bitcointxid(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "bitcoinscript":
 			out.Values[i] = ec._Reinit_bitcoinscript(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
-		case "tonmsghash":
-			out.Values[i] = ec._Reinit_tonmsghash(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
+		case "tonmsg":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Reinit_tonmsg(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
 			}
-		case "createdat":
-			out.Values[i] = ec._Reinit_createdat(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
 			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -8291,6 +9075,241 @@ func (ec *executionContext) _ReinitEdge(ctx context.Context, sel ast.SelectionSe
 			out.Values[i] = ec._ReinitEdge_node(ctx, field, obj)
 		case "cursor":
 			out.Values[i] = ec._ReinitEdge_cursor(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var tonMsgImplementors = []string{"TonMsg", "Node"}
+
+func (ec *executionContext) _TonMsg(ctx context.Context, sel ast.SelectionSet, obj *generated.TonMsg) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, tonMsgImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("TonMsg")
+		case "id":
+			out.Values[i] = ec._TonMsg_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "hash":
+			out.Values[i] = ec._TonMsg_hash(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "createdat":
+			out.Values[i] = ec._TonMsg_createdat(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "mint":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._TonMsg_mint(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "burn":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._TonMsg_burn(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "reinit":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._TonMsg_reinit(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var tonMsgConnectionImplementors = []string{"TonMsgConnection"}
+
+func (ec *executionContext) _TonMsgConnection(ctx context.Context, sel ast.SelectionSet, obj *generated.TonMsgConnection) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, tonMsgConnectionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("TonMsgConnection")
+		case "edges":
+			out.Values[i] = ec._TonMsgConnection_edges(ctx, field, obj)
+		case "pageInfo":
+			out.Values[i] = ec._TonMsgConnection_pageInfo(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "totalCount":
+			out.Values[i] = ec._TonMsgConnection_totalCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var tonMsgEdgeImplementors = []string{"TonMsgEdge"}
+
+func (ec *executionContext) _TonMsgEdge(ctx context.Context, sel ast.SelectionSet, obj *generated.TonMsgEdge) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, tonMsgEdgeImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("TonMsgEdge")
+		case "node":
+			out.Values[i] = ec._TonMsgEdge_node(ctx, field, obj)
+		case "cursor":
+			out.Values[i] = ec._TonMsgEdge_cursor(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -8872,6 +9891,35 @@ func (ec *executionContext) marshalNTime2timeᚐTime(ctx context.Context, sel as
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) marshalNTonMsg2ᚖgithubᚗcomᚋrsquadᚋtonᚑteleportᚑbtcᚑperipheryᚋindexerᚋinternalᚋentᚋgeneratedᚐTonMsg(ctx context.Context, sel ast.SelectionSet, v *generated.TonMsg) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._TonMsg(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNTonMsgConnection2githubᚗcomᚋrsquadᚋtonᚑteleportᚑbtcᚑperipheryᚋindexerᚋinternalᚋentᚋgeneratedᚐTonMsgConnection(ctx context.Context, sel ast.SelectionSet, v generated.TonMsgConnection) graphql.Marshaler {
+	return ec._TonMsgConnection(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNTonMsgConnection2ᚖgithubᚗcomᚋrsquadᚋtonᚑteleportᚑbtcᚑperipheryᚋindexerᚋinternalᚋentᚋgeneratedᚐTonMsgConnection(ctx context.Context, sel ast.SelectionSet, v *generated.TonMsgConnection) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._TonMsgConnection(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNTonMsgWhereInput2ᚖgithubᚗcomᚋrsquadᚋtonᚑteleportᚑbtcᚑperipheryᚋindexerᚋinternalᚋentᚋgeneratedᚐTonMsgWhereInput(ctx context.Context, v interface{}) (*generated.TonMsgWhereInput, error) {
+	res, err := ec.unmarshalInputTonMsgWhereInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalN__Directive2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐDirective(ctx context.Context, sel ast.SelectionSet, v introspection.Directive) graphql.Marshaler {
@@ -9655,6 +10703,89 @@ func (ec *executionContext) marshalOTime2ᚖtimeᚐTime(ctx context.Context, sel
 	}
 	res := graphql.MarshalTime(*v)
 	return res
+}
+
+func (ec *executionContext) marshalOTonMsg2ᚖgithubᚗcomᚋrsquadᚋtonᚑteleportᚑbtcᚑperipheryᚋindexerᚋinternalᚋentᚋgeneratedᚐTonMsg(ctx context.Context, sel ast.SelectionSet, v *generated.TonMsg) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._TonMsg(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOTonMsgEdge2ᚕᚖgithubᚗcomᚋrsquadᚋtonᚑteleportᚑbtcᚑperipheryᚋindexerᚋinternalᚋentᚋgeneratedᚐTonMsgEdge(ctx context.Context, sel ast.SelectionSet, v []*generated.TonMsgEdge) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalOTonMsgEdge2ᚖgithubᚗcomᚋrsquadᚋtonᚑteleportᚑbtcᚑperipheryᚋindexerᚋinternalᚋentᚋgeneratedᚐTonMsgEdge(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	return ret
+}
+
+func (ec *executionContext) marshalOTonMsgEdge2ᚖgithubᚗcomᚋrsquadᚋtonᚑteleportᚑbtcᚑperipheryᚋindexerᚋinternalᚋentᚋgeneratedᚐTonMsgEdge(ctx context.Context, sel ast.SelectionSet, v *generated.TonMsgEdge) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._TonMsgEdge(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOTonMsgWhereInput2ᚕᚖgithubᚗcomᚋrsquadᚋtonᚑteleportᚑbtcᚑperipheryᚋindexerᚋinternalᚋentᚋgeneratedᚐTonMsgWhereInputᚄ(ctx context.Context, v interface{}) ([]*generated.TonMsgWhereInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []interface{}
+	if v != nil {
+		vSlice = graphql.CoerceList(v)
+	}
+	var err error
+	res := make([]*generated.TonMsgWhereInput, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNTonMsgWhereInput2ᚖgithubᚗcomᚋrsquadᚋtonᚑteleportᚑbtcᚑperipheryᚋindexerᚋinternalᚋentᚋgeneratedᚐTonMsgWhereInput(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) unmarshalOTonMsgWhereInput2ᚖgithubᚗcomᚋrsquadᚋtonᚑteleportᚑbtcᚑperipheryᚋindexerᚋinternalᚋentᚋgeneratedᚐTonMsgWhereInput(ctx context.Context, v interface{}) (*generated.TonMsgWhereInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputTonMsgWhereInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalO__EnumValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐEnumValueᚄ(ctx context.Context, sel ast.SelectionSet, v []introspection.EnumValue) graphql.Marshaler {

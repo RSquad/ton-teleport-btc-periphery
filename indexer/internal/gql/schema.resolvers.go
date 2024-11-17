@@ -24,105 +24,28 @@ func (r *queryResolver) Nodes(ctx context.Context, ids []int) ([]generated.Noder
 // Burns is the resolver for the burns field.
 func (r *queryResolver) Burns(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, where *generated.BurnWhereInput) (*generated.BurnConnection, error) {
 	return r.repo.Burn.Query().
-		Paginate(ctx, after, first, before, last)
+		Paginate(ctx, after, first, before, last, generated.WithBurnFilter(where.Filter))
 }
 
 // Mints is the resolver for the mints field.
 func (r *queryResolver) Mints(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, where *generated.MintWhereInput) (*generated.MintConnection, error) {
 	return r.repo.Mint.Query().
-		Paginate(ctx, after, first, before, last)
+		Paginate(ctx, after, first, before, last, generated.WithMintFilter(where.Filter))
 }
 
 // Reinits is the resolver for the reinits field.
 func (r *queryResolver) Reinits(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, where *generated.ReinitWhereInput) (*generated.ReinitConnection, error) {
 	return r.repo.Reinit.Query().
-		Paginate(ctx, after, first, before, last)
+		Paginate(ctx, after, first, before, last, generated.WithReinitFilter(where.Filter))
+}
+
+// TonMsgs is the resolver for the tonMsgs field.
+func (r *queryResolver) TonMsgs(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, where *generated.TonMsgWhereInput) (*generated.TonMsgConnection, error) {
+	return r.repo.TonMsg.Query().
+		Paginate(ctx, after, first, before, last, generated.WithTonMsgFilter(where.Filter))
 }
 
 // Query returns QueryResolver implementation.
 func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 
 type queryResolver struct{ *Resolver }
-
-// !!! WARNING !!!
-// The code below was going to be deleted when updating resolvers. It has been copied here so you have
-// one last chance to move it out of harms way if you want. There are two reasons this happens:
-//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
-//    it when you're done.
-//  - You have helper methods in this file. Move them out to keep these resolver files clean.
-/*
-	func (r *burnResolver) ExternalId(ctx context.Context, obj *generated.Burn) (int, error) {
-	panic(fmt.Errorf("not implemented: ExternalId - externalid"))
-}
-func (r *reinitResolver) ExternalId(ctx context.Context, obj *generated.Reinit) (int, error) {
-	panic(fmt.Errorf("not implemented: ExternalId - externalid"))
-}
-func (r *burnWhereInputResolver) Externalid(ctx context.Context, obj *generated.BurnWhereInput, data *int) error {
-	panic(fmt.Errorf("not implemented: Externalid - externalid"))
-}
-func (r *burnWhereInputResolver) ExternalidNeq(ctx context.Context, obj *generated.BurnWhereInput, data *int) error {
-	panic(fmt.Errorf("not implemented: ExternalidNeq - externalidNEQ"))
-}
-func (r *burnWhereInputResolver) ExternalidIn(ctx context.Context, obj *generated.BurnWhereInput, data []int) error {
-	panic(fmt.Errorf("not implemented: ExternalidIn - externalidIn"))
-}
-func (r *burnWhereInputResolver) ExternalidNotIn(ctx context.Context, obj *generated.BurnWhereInput, data []int) error {
-	panic(fmt.Errorf("not implemented: ExternalidNotIn - externalidNotIn"))
-}
-func (r *burnWhereInputResolver) ExternalidGt(ctx context.Context, obj *generated.BurnWhereInput, data *int) error {
-	panic(fmt.Errorf("not implemented: ExternalidGt - externalidGT"))
-}
-func (r *burnWhereInputResolver) ExternalidGte(ctx context.Context, obj *generated.BurnWhereInput, data *int) error {
-	panic(fmt.Errorf("not implemented: ExternalidGte - externalidGTE"))
-}
-func (r *burnWhereInputResolver) ExternalidLt(ctx context.Context, obj *generated.BurnWhereInput, data *int) error {
-	panic(fmt.Errorf("not implemented: ExternalidLt - externalidLT"))
-}
-func (r *burnWhereInputResolver) ExternalidLte(ctx context.Context, obj *generated.BurnWhereInput, data *int) error {
-	panic(fmt.Errorf("not implemented: ExternalidLte - externalidLTE"))
-}
-func (r *createBurnInputResolver) Externalid(ctx context.Context, obj *generated.CreateBurnInput, data int) error {
-	panic(fmt.Errorf("not implemented: Externalid - externalid"))
-}
-func (r *createReinitInputResolver) Externalid(ctx context.Context, obj *generated.CreateReinitInput, data int) error {
-	panic(fmt.Errorf("not implemented: Externalid - externalid"))
-}
-func (r *reinitWhereInputResolver) Externalid(ctx context.Context, obj *generated.ReinitWhereInput, data *int) error {
-	panic(fmt.Errorf("not implemented: Externalid - externalid"))
-}
-func (r *reinitWhereInputResolver) ExternalidNeq(ctx context.Context, obj *generated.ReinitWhereInput, data *int) error {
-	panic(fmt.Errorf("not implemented: ExternalidNeq - externalidNEQ"))
-}
-func (r *reinitWhereInputResolver) ExternalidIn(ctx context.Context, obj *generated.ReinitWhereInput, data []int) error {
-	panic(fmt.Errorf("not implemented: ExternalidIn - externalidIn"))
-}
-func (r *reinitWhereInputResolver) ExternalidNotIn(ctx context.Context, obj *generated.ReinitWhereInput, data []int) error {
-	panic(fmt.Errorf("not implemented: ExternalidNotIn - externalidNotIn"))
-}
-func (r *reinitWhereInputResolver) ExternalidGt(ctx context.Context, obj *generated.ReinitWhereInput, data *int) error {
-	panic(fmt.Errorf("not implemented: ExternalidGt - externalidGT"))
-}
-func (r *reinitWhereInputResolver) ExternalidGte(ctx context.Context, obj *generated.ReinitWhereInput, data *int) error {
-	panic(fmt.Errorf("not implemented: ExternalidGte - externalidGTE"))
-}
-func (r *reinitWhereInputResolver) ExternalidLt(ctx context.Context, obj *generated.ReinitWhereInput, data *int) error {
-	panic(fmt.Errorf("not implemented: ExternalidLt - externalidLT"))
-}
-func (r *reinitWhereInputResolver) ExternalidLte(ctx context.Context, obj *generated.ReinitWhereInput, data *int) error {
-	panic(fmt.Errorf("not implemented: ExternalidLte - externalidLTE"))
-}
-func (r *Resolver) Burn() BurnResolver { return &burnResolver{r} }
-func (r *Resolver) Reinit() ReinitResolver { return &reinitResolver{r} }
-func (r *Resolver) BurnWhereInput() BurnWhereInputResolver { return &burnWhereInputResolver{r} }
-func (r *Resolver) CreateBurnInput() CreateBurnInputResolver { return &createBurnInputResolver{r} }
-func (r *Resolver) CreateReinitInput() CreateReinitInputResolver {
-	return &createReinitInputResolver{r}
-}
-func (r *Resolver) ReinitWhereInput() ReinitWhereInputResolver { return &reinitWhereInputResolver{r} }
-type burnResolver struct{ *Resolver }
-type reinitResolver struct{ *Resolver }
-type burnWhereInputResolver struct{ *Resolver }
-type createBurnInputResolver struct{ *Resolver }
-type createReinitInputResolver struct{ *Resolver }
-type reinitWhereInputResolver struct{ *Resolver }
-*/

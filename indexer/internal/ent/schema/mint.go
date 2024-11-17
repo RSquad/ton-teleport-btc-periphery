@@ -4,6 +4,7 @@ import (
 	"entgo.io/contrib/entgql"
 	"entgo.io/ent"
 	"entgo.io/ent/schema"
+	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 )
 
@@ -23,17 +24,16 @@ func (Mint) Fields() []ent.Field {
 			Unique().
 			NotEmpty().
 			Immutable(),
-		field.Text("tonMsgHash").
-			Unique().
-			NotEmpty().
-			Immutable(),
-		field.Time("createdAt").
-			Immutable(),
 	}
 }
 
 func (Mint) Edges() []ent.Edge {
-	return nil
+	return []ent.Edge{
+		edge.From("tonMsg", TonMsg.Type).
+			Ref("mint").
+			Unique().
+			Required(),
+	}
 }
 
 func (Mint) Annotations() []schema.Annotation {
