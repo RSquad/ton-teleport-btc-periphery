@@ -1,7 +1,9 @@
 package schema
 
 import (
+	"entgo.io/contrib/entgql"
 	"entgo.io/ent"
+	"entgo.io/ent/schema"
 	"entgo.io/ent/schema/field"
 )
 
@@ -11,7 +13,7 @@ type Burn struct {
 
 func (Burn) Fields() []ent.Field {
 	return []ent.Field{
-		field.Uint64("externalId").
+		field.Int64("externalId").
 			Unique().
 			Immutable(),
 		field.Text("senderAddr").
@@ -38,4 +40,12 @@ func (Burn) Fields() []ent.Field {
 
 func (Burn) Edges() []ent.Edge {
 	return nil
+}
+
+func (Burn) Annotations() []schema.Annotation {
+	return []schema.Annotation{
+		entgql.RelayConnection(),
+		entgql.QueryField(),
+		entgql.Mutations(entgql.MutationCreate()),
+	}
 }

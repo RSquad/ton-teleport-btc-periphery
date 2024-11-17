@@ -7,10 +7,10 @@ import (
 	"log"
 	"time"
 
-	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated/ent"
-	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated/ent/burn"
-	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated/ent/mint"
-	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated/ent/reinit"
+	ent "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated"
+	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated/burn"
+	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated/mint"
+	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated/reinit"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton"
 	teleportcontract "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/teleport_contract"
 	"github.com/xssnick/tonutils-go/address"
@@ -106,7 +106,7 @@ func (c *LogManager) onLogReceived(logCell *cell.Cell, tonMsgHash string, create
 		}
 
 		_, err = c.repo.Burn.Create().
-			SetExternalId(uint64(typedParsedLog.ID)).
+			SetExternalId(int64(typedParsedLog.ID)).
 			SetSenderAddr(typedParsedLog.SenderAddr.String()).
 			SetAmount(typedParsedLog.Amount.String()).
 			SetBitcoinTxId(typedParsedLog.BitcoinTxID.String()).
@@ -132,7 +132,7 @@ func (c *LogManager) onLogReceived(logCell *cell.Cell, tonMsgHash string, create
 		}
 
 		_, err = c.repo.Reinit.Create().
-			SetExternalId(uint64(typedParsedLog.ID)).
+			SetExternalId(int64(typedParsedLog.ID)).
 			SetAmount(typedParsedLog.Amount.String()).
 			SetBitcoinTxId(typedParsedLog.BitcoinTxID.String()).
 			SetBitcoinScript(hex.EncodeToString(typedParsedLog.BitcoinScript)).

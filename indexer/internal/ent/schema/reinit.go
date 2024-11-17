@@ -1,7 +1,9 @@
 package schema
 
 import (
+	"entgo.io/contrib/entgql"
 	"entgo.io/ent"
+	"entgo.io/ent/schema"
 	"entgo.io/ent/schema/field"
 )
 
@@ -11,7 +13,7 @@ type Reinit struct {
 
 func (Reinit) Fields() []ent.Field {
 	return []ent.Field{
-		field.Uint64("externalId").
+		field.Int64("externalId").
 			Unique().
 			Immutable(),
 		field.Text("amount").
@@ -34,4 +36,12 @@ func (Reinit) Fields() []ent.Field {
 
 func (Reinit) Edges() []ent.Edge {
 	return nil
+}
+
+func (Reinit) Annotations() []schema.Annotation {
+	return []schema.Annotation{
+		entgql.RelayConnection(),
+		entgql.QueryField(),
+		entgql.Mutations(entgql.MutationCreate()),
+	}
 }

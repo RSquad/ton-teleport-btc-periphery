@@ -5,13 +5,18 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"net/http"
 	"sync"
 
 	"entgo.io/ent/dialect"
 
+	"github.com/99designs/gqlgen/graphql/handler"
+	"github.com/99designs/gqlgen/graphql/playground"
 	_ "github.com/lib/pq"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/config"
-	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated/ent"
+	ent "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated"
+	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated/migrate"
+	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/gql"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/logmanager"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
@@ -54,7 +59,10 @@ func initialize() (*App, error) {
 		log.Fatalf("[App] failed to create repo: %v", err)
 	}
 
-	if err := repo.Schema.Create(context.Background()); err != nil {
+	if err := repo.Schema.Create(
+		context.Background(),
+		migrate.WithGlobalUniqueID(true),
+	); err != nil {
 		log.Fatalf("[App] failed creating repos schema: %v", err)
 	}
 
@@ -93,6 +101,20 @@ func run(app *App) error {
 	defer app.Repo.Close()
 
 	var wg sync.WaitGroup
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		srv := handler.NewDefaultServer(gql.NewSchema(app.Repo))
+		http.Handle("/",
+			playground.ApolloSandboxHandler("Indexer", "/query"),
+		)
+		http.Handle("/query", srv)
+		log.Println("listening on :3001")
+		if err := http.ListenAndServe(":3001", nil); err != nil {
+			log.Printf("http server terminated: %v", err)
+		}
+	}()
 
 	wg.Add(1)
 	go func() {
