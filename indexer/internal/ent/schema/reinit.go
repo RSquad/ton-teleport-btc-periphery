@@ -14,7 +14,7 @@ type Reinit struct {
 
 func (Reinit) Fields() []ent.Field {
 	return []ent.Field{
-		field.Int64("externalId").
+		field.Int64("externalID").
 			Unique().
 			Immutable(),
 		field.Text("amount").
@@ -32,6 +32,10 @@ func (Reinit) Fields() []ent.Field {
 func (Reinit) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("tonMsg", TonMsg.Type).
+			Ref("reinit").
+			Unique().
+			Required(),
+		edge.From("pegout", Pegout.Type).
 			Ref("reinit").
 			Unique().
 			Required(),

@@ -19,6 +19,8 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/gql"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/logmanager"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/teleportcontract"
+	tonclient "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/ton_client"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
 	"github.com/xssnick/tonutils-go/address"
 )
@@ -52,7 +54,14 @@ func initialize() (*App, error) {
 		return nil, err
 	}
 
+	tonClient, err := tonclient.NewTonClient(indexerConfig.TonConfigUrl)
+	if err != nil {
+		return nil, fmt.Errorf("[App] failed to create ton client: %w", err)
+	}
+
 	teleportContractAddr := address.MustParseAddr(indexerConfig.TeleportContractAddr)
+	teleportContract := teleportcontract.New(teleportContractAddr, tonClient.API, nil, context.Background())
+
 	coordinatorContractAddr := address.MustParseAddr(indexerConfig.CoordinatorContractAddr)
 
 	repo, err := ent.Open(dialect.Postgres, indexerConfig.DatabaseURL)
@@ -82,7 +91,7 @@ func initialize() (*App, error) {
 		context.Background(),
 		repo,
 		tonCenterV3Client,
-		teleportContractAddr,
+		teleportContract,
 		coordinatorContractAddr,
 	)
 	if err != nil {

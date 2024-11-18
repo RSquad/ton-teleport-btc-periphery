@@ -19,38 +19,42 @@ type LogInterface interface {
 	GetLogID() uint32
 }
 
+type LogWithPegoutInterface interface {
+	LogInterface
+	GetID() uint32
+	GetAmount() *big.Int
+	GetBitcoinScript() []byte
+}
+
+type LogWithPegout struct {
+	ID            uint32
+	Amount        *big.Int
+	BitcoinScript []byte
+}
+
 type MintLog struct {
 	Amount       *big.Int
 	ReceiverAddr *address.Address
 	BitcoinTxID  *chainhash.Hash
 }
 
-func (m *MintLog) GetLogID() uint32 {
-	return logIdMint
-}
-
 type BurnLog struct {
-	ID            uint32
-	Amount        *big.Int
-	SenderAddr    *address.Address
-	BitcoinTxID   *chainhash.Hash
-	BitcoinScript []byte
-}
-
-func (b *BurnLog) GetLogID() uint32 {
-	return logIdBurn
+	LogWithPegout
+	BitcoinTxID *chainhash.Hash
+	SenderAddr  *address.Address
 }
 
 type ReinitLog struct {
-	ID            uint32
-	Amount        *big.Int
-	BitcoinTxID   *chainhash.Hash
-	BitcoinScript []byte
+	LogWithPegout
+	BitcoinTxID *chainhash.Hash
 }
 
-func (r *ReinitLog) GetLogID() uint32 {
-	return logIdReinit
-}
+func (l *LogWithPegout) GetID() uint32            { return l.ID }
+func (l *LogWithPegout) GetAmount() *big.Int      { return l.Amount }
+func (l *LogWithPegout) GetBitcoinScript() []byte { return l.BitcoinScript }
+func (l *MintLog) GetLogID() uint32               { return logIdMint }
+func (l *BurnLog) GetLogID() uint32               { return logIdBurn }
+func (l *ReinitLog) GetLogID() uint32             { return logIdReinit }
 
 type LogParser struct{}
 
@@ -103,7 +107,7 @@ func parseBurnLog(logSlice *cell.Slice) (*BurnLog, error) {
 	bitcoinScriptSlice := logSlice.MustLoadRef()
 	bitcoinScript := bitcoinScriptSlice.MustLoadSlice(uint(bitcoinScriptSlice.MustLoadUInt(8)))
 	return &BurnLog{
-		id, amount, senderAddr, bitcoinTxID, bitcoinScript,
+		LogWithPegout{id, amount, bitcoinScript}, bitcoinTxID, senderAddr,
 	}, nil
 }
 
@@ -120,6 +124,6 @@ func parseReinitLog(logSlice *cell.Slice) (*ReinitLog, error) {
 		bitcoinScript = bitcoinScriptSlice.MustLoadSlice(bitcoinScriptSlice.BitsLeft())
 	}
 	return &ReinitLog{
-		id, amount, bitcoinTxID, bitcoinScript,
+		LogWithPegout{id, amount, bitcoinScript}, bitcoinTxID,
 	}, nil
 }

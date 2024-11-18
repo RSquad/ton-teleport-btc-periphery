@@ -23,16 +23,18 @@ const (
 	opCodeConfirmPegoutTx          = 0xbd0eaf09
 	storageIndexPegoutChainCounter = 13
 	storageIndexLastPegoutTxID     = 14
+	storageIndexPegoutContractCode = 7
 )
 
 type TeleportContract struct {
 	Addr   *address.Address
 	sender *jwv4r2contract.JWV4R2Contract
-	api    *ton.APIClient
+	API    *ton.APIClient
 	ctx    context.Context
 }
 
 type Storage struct {
+	PegoutContractCode *cell.Cell
 	PegoutChainCounter uint64
 	LastPegoutTxID     *chainhash.Hash
 }
@@ -43,12 +45,7 @@ func New(
 	sender *jwv4r2contract.JWV4R2Contract,
 	ctx context.Context,
 ) *TeleportContract {
-	return &TeleportContract{
-		Addr:   addr,
-		sender: sender,
-		api:    api,
-		ctx:    ctx,
-	}
+	return &TeleportContract{addr, sender, api, ctx}
 }
 
 func (c *TeleportContract) SendPegoutProof(
@@ -106,19 +103,19 @@ func (c *TeleportContract) SendPegoutProof(
 }
 
 func (c *TeleportContract) GetStorage() (Storage, error) {
-	block, err := c.api.CurrentMasterchainInfo(c.ctx)
+	block, err := c.API.CurrentMasterchainInfo(c.ctx)
 	if err != nil {
 		return Storage{}, err
 	}
 
-	storage, err := c.api.RunGetMethod(c.ctx, block, c.Addr, "get_storage")
+	storage, err := c.API.RunGetMethod(c.ctx, block, c.Addr, "get_storage")
 	if err != nil {
 		return Storage{}, err
 	}
 
 	pegoutChainCounter := storage.MustInt(storageIndexPegoutChainCounter)
-
 	lastPegoutTxIDInt := storage.MustInt(storageIndexLastPegoutTxID)
+	pegoutContractCode := storage.MustCell(storageIndexPegoutContractCode)
 
 	lastPegoutTxID, err := chainhash.NewHash(utils.BytesPadTo(lastPegoutTxIDInt.Bytes(), 32))
 	if err != nil {
@@ -126,6 +123,7 @@ func (c *TeleportContract) GetStorage() (Storage, error) {
 	}
 
 	return Storage{
+		PegoutContractCode: pegoutContractCode,
 		PegoutChainCounter: pegoutChainCounter.Uint64(),
 		LastPegoutTxID:     lastPegoutTxID,
 	}, nil
