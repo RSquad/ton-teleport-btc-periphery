@@ -2,6 +2,7 @@ package coordinatorcontract
 
 import (
 	"context"
+	"fmt"
 	"math/big"
 	"time"
 
@@ -137,42 +138,18 @@ func (c *CoordinatorContract) GetDKG() (*DKG, error) {
 func (c *CoordinatorContract) parseDkg(dkgCell *cell.Slice) (*DKG, error) {
 	state, _ := dkgCell.LoadUInt(2)
 
-	dictCell := dkgCell.MustLoadDict(16)
-	vsetDict, _ := dictCell.LoadAll()
-	vset := make(map[uint64][]byte)
-
-	for _, kv := range vsetDict {
-		key := kv.Key.MustLoadUInt(16)
-		value, _ := ValidatorDescrValueParse(kv.Value)
-		vset[key] = value
+	vset, err := dictParse[uint64, []byte](dkgCell, 16, loadUintKey, validatorDescrValueParse)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to parse dictionary: %w", err)
 	}
 
 	maxSigners, _ := dkgCell.LoadUInt(16)
 
-	r1PackageParams, _ := PackageParse(dkgCell)
-	r1PackageCell := dkgCell.MustLoadDict(256)
-	r1PackageDict, _ := r1PackageCell.LoadAll()
+	r1PackageParams, _ := packageParse(dkgCell)
+	r1Package, err := dictParse[[32]byte, [][]byte](dkgCell, 256, loadBytesKey, packageValueParse)
 
-	r1Package := make(map[[32]byte][][]byte)
-
-	for _, kv := range r1PackageDict {
-		key := kv.Key.MustLoadSlice(256)
-		value, _ := packageValueParse(kv.Value)
-		r1Package[[32]byte(key)] = value
-	}
-
-	r2PackageParams, _ := PackageParse(dkgCell)
-
-	r2PackageCell := dkgCell.MustLoadDict(256)
-	r2PackageDict, _ := r2PackageCell.LoadAll()
-
-	r2Package := make(map[[32]byte]map[[32]byte][][]byte)
-
-	for _, kv := range r2PackageDict {
-		key := kv.Key.MustLoadSlice(256)
-		value, _ := packageDictionaryValueParse(kv.Value)
-		r2Package[[32]byte(key)] = value
-	}
+	r2PackageParams, _ := packageParse(dkgCell)
+	r2Package, err := dictParse[[32]byte, map[[32]byte][][]byte](dkgCell, 256, loadBytesKey, packageDictionaryValueParse)
 
 	cfgHash, _ := dkgCell.LoadSlice(256)
 	attempts := dkgCell.MustLoadUInt(8)

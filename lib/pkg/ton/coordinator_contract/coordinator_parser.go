@@ -13,17 +13,13 @@ type DkgPackageParams struct {
 	count uint64
 }
 
-func DictParse[K comparable, V any](dictCell *cell.Slice, keySize uint,
+func dictParse[K comparable, V any](dictCell *cell.Slice, keySize uint,
 	parseKey func(*cell.Slice) (K, error),
 	parseValue func(*cell.Slice) (V, error),
 ) (map[K]V, error) {
-	if dictCell == nil {
-		panic("dictCell is nil")
-	}
-
 	dictionary := dictCell.MustLoadDict(keySize)
 	if dictionary == nil {
-		panic("failed to create dictionary from dictCell")
+		return nil, fmt.Errorf("failed to create dictionary from dictCell")
 	}
 
 	dict, err := dictionary.LoadAll()
@@ -49,7 +45,17 @@ func DictParse[K comparable, V any](dictCell *cell.Slice, keySize uint,
 	return result, nil
 }
 
-func PackageParse(dkg *cell.Slice) (DkgPackageParams, error) {
+func loadUintKey(key *cell.Slice) (uint64, error) {
+	return key.LoadUInt(16)
+}
+
+func loadBytesKey(key *cell.Slice) ([32]byte, error) {
+	k, err := key.LoadSlice(256)
+
+	return [32]byte(k), err
+}
+
+func packageParse(dkg *cell.Slice) (DkgPackageParams, error) {
 	mask, _ := dkg.LoadBigUInt(256)
 	count, _ := dkg.LoadUInt(16)
 
@@ -59,7 +65,7 @@ func PackageParse(dkg *cell.Slice) (DkgPackageParams, error) {
 	}, nil
 }
 
-func ValidatorDescrValueParse(slice *cell.Slice) ([]byte, error) {
+func validatorDescrValueParse(slice *cell.Slice) ([]byte, error) {
 	tag, _ := slice.LoadUInt(8)
 	if (tag &^ 0x20) != 0x53 {
 		panic("Invalid Validator Descr tag")
