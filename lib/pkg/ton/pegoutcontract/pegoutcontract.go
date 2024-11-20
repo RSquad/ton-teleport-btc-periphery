@@ -23,18 +23,20 @@ type StateInit struct {
 }
 
 type InitData struct {
-	ID                   int32
+	ID                   uint32
 	Amount               *big.Int
 	BitcoinScript        []byte
 	TeleportContractAddr *address.Address
 }
 
 func InitDataToCell(initData InitData) *cell.Cell {
+	bitcoinScriptLen := len(initData.BitcoinScript)
 	return cell.BeginCell().
 		MustStoreUInt(0, 1).
 		MustStoreUInt(uint64(initData.ID), 32).
 		MustStoreUInt(initData.Amount.Uint64(), 64).
-		MustStoreSlice(initData.BitcoinScript, uint(len(initData.BitcoinScript))*8).
+		MustStoreUInt(uint64(bitcoinScriptLen), 8).
+		MustStoreSlice(initData.BitcoinScript, uint(bitcoinScriptLen)*8).
 		MustStoreAddr(initData.TeleportContractAddr).
 		EndCell()
 }

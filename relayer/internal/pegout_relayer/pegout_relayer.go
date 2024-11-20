@@ -11,7 +11,6 @@ import (
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/teleportcontract"
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
 )
 
 type PegoutRelayer struct {
@@ -76,7 +75,7 @@ func (c *PegoutRelayer) Relay() error {
 		return fmt.Errorf("[PegoutRelayer] failed to send pegout tx proof: %w", err)
 	}
 
-	log.Printf("[PegoutRelayer] pegout tx proof sent: tonTxHash=%v", utils.BytesToHexString(tx.Hash))
+	log.Printf("[PegoutRelayer] pegout tx proof sent: tonTxHash=%s", hex.EncodeToString(tx.Hash))
 
 	return nil
 }

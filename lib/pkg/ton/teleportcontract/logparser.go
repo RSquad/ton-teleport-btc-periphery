@@ -105,7 +105,7 @@ func parseBurnLog(logSlice *cell.Slice) (*BurnLog, error) {
 	}
 	senderAddr := logSlice.MustLoadAddr()
 	bitcoinScriptSlice := logSlice.MustLoadRef()
-	bitcoinScript := bitcoinScriptSlice.MustLoadSlice(uint(bitcoinScriptSlice.MustLoadUInt(8)))
+	bitcoinScript := bitcoinScriptSlice.MustLoadSlice(uint(bitcoinScriptSlice.MustLoadUInt(8) * 8))
 	return &BurnLog{
 		LogWithPegout{id, amount, bitcoinScript}, bitcoinTxID, senderAddr,
 	}, nil

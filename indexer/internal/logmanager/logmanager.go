@@ -113,32 +113,31 @@ func (c *LogManager) onLogReceived(logCell *cell.Cell, msgHash string, msgCreate
 	case *coordinatorcontract.DKGCompletedLog:
 		c.saveInternalKey(tonMsg, typedParsedLog)
 	default:
-		log.Printf("%T", parsedLog)
 		log.Printf("[LogManager] unknown log type %T\n", typedParsedLog.GetLogID())
 	}
 }
 
 func (c *LogManager) saveMint(tonMsg *ent.TonMsg, typedParsedLog *teleportcontract.MintLog) {
 	_, err := c.repo.Mint.Create().
-		SetReceiverAddr(typedParsedLog.ReceiverAddr.String()).
+		SetReceiverAddr(ton.AddrToRawString(typedParsedLog.ReceiverAddr)).
 		SetAmount(typedParsedLog.Amount.String()).
 		SetBitcoinTxId(typedParsedLog.BitcoinTxID.String()).
 		SetTonMsg(tonMsg).
 		Save(c.ctx)
 	if err != nil {
-		log.Printf("[LogManager] failed to save mint: %v", err)
+		log.Printf("[LogManager] failed to save mint: %v %v %v", err, typedParsedLog, tonMsg)
 	}
 }
 
 func (c *LogManager) saveBurn(tonMsg *ent.TonMsg, typedParsedLog *teleportcontract.BurnLog) {
 	pegout, err := c.savePegout(typedParsedLog)
 	if err != nil {
-		log.Printf("[LogManager] failed to save pegout: %v", err)
+		log.Printf("[LogManager] failed to save pegout: %v %v %v", err, typedParsedLog, tonMsg)
 		return
 	}
 	_, err = c.repo.Burn.Create().
 		SetExternalID(int64(typedParsedLog.ID)).
-		SetSenderAddr(typedParsedLog.SenderAddr.String()).
+		SetSenderAddr(ton.AddrToRawString(typedParsedLog.SenderAddr)).
 		SetAmount(typedParsedLog.Amount.String()).
 		SetBitcoinTxId(typedParsedLog.BitcoinTxID.String()).
 		SetBitcoinScript(hex.EncodeToString(typedParsedLog.BitcoinScript)).
@@ -146,14 +145,14 @@ func (c *LogManager) saveBurn(tonMsg *ent.TonMsg, typedParsedLog *teleportcontra
 		SetPegout(pegout).
 		Save(c.ctx)
 	if err != nil {
-		log.Printf("[LogManager] failed to save burn: %v", err)
+		log.Printf("[LogManager] failed to save burn: %v %v %v", err, typedParsedLog, tonMsg)
 	}
 }
 
 func (c *LogManager) saveReinit(tonMsg *ent.TonMsg, typedParsedLog *teleportcontract.ReinitLog) {
 	pegout, err := c.savePegout(typedParsedLog)
 	if err != nil {
-		log.Printf("[LogManager] failed to save pegout: %v", err)
+		log.Printf("[LogManager] failed to save pegout: %v %v %v", err, typedParsedLog, tonMsg)
 		return
 	}
 	_, err = c.repo.Reinit.Create().
@@ -165,7 +164,7 @@ func (c *LogManager) saveReinit(tonMsg *ent.TonMsg, typedParsedLog *teleportcont
 		SetPegout(pegout).
 		Save(c.ctx)
 	if err != nil {
-		log.Printf("[LogManager] failed to save reinit: %v", err)
+		log.Printf("[LogManager] failed to save reinit: %v %v %v", err, typedParsedLog, tonMsg)
 	}
 }
 
@@ -176,7 +175,7 @@ func (c *LogManager) saveInternalKey(tonMsg *ent.TonMsg, typedParsedLog *coordin
 		SetTonMsg(tonMsg).
 		Save(c.ctx)
 	if err != nil {
-		log.Printf("[LogManager] failed to save internal key: %v", err)
+		log.Printf("[LogManager] failed to save internal key: %v %v %v", err, typedParsedLog, tonMsg)
 	}
 }
 
@@ -188,14 +187,16 @@ func (c *LogManager) savePegout(parsedLog teleportcontract.LogWithPegoutInterfac
 
 	pegoutContractCode := teleportContractStorage.PegoutContractCode
 
+	initData := &pegoutcontract.InitData{
+		ID:                   uint32(parsedLog.GetID()),
+		Amount:               parsedLog.GetAmount(),
+		BitcoinScript:        parsedLog.GetBitcoinScript(),
+		TeleportContractAddr: c.teleportContract.Addr,
+	}
+
 	pegoutContract, err := pegoutcontract.NewFromStateInit(&pegoutcontract.StateInit{
-		Code: pegoutContractCode,
-		InitData: &pegoutcontract.InitData{
-			ID:                   int32(parsedLog.GetID()),
-			Amount:               parsedLog.GetAmount(),
-			BitcoinScript:        parsedLog.GetBitcoinScript(),
-			TeleportContractAddr: c.teleportContract.Addr,
-		},
+		Code:     pegoutContractCode,
+		InitData: initData,
 	}, c.teleportContract.API, c.ctx)
 	if err != nil {
 		return nil, err
@@ -203,7 +204,7 @@ func (c *LogManager) savePegout(parsedLog teleportcontract.LogWithPegoutInterfac
 
 	pegout, err := c.repo.Pegout.Create().
 		SetExternalID(int64(parsedLog.GetID())).
-		SetAddr(pegoutContract.Addr.String()).
+		SetAddr(ton.AddrToRawString(pegoutContract.Addr)).
 		Save(c.ctx)
 	if err != nil {
 		log.Printf("[LogManager] failed to save ton msg: %v", err)
