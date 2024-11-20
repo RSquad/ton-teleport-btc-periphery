@@ -31,12 +31,12 @@ type CoordinatorContract struct {
 type R1Package struct {
 	mask     uint64
 	count    uint64
-	packages map[int][][]byte
+	packages map[[32]byte][][]byte
 }
 type R2Package struct {
 	mask     uint64
 	count    uint64
-	packages map[int]map[int][][]byte
+	packages map[[32]byte]map[[32]byte][][]byte
 }
 type R3Package struct {
 	mask       *big.Int
@@ -117,64 +117,64 @@ func (c *CoordinatorContract) GetStandaloneMode() (bool, error) {
 	return modeResult.MustInt(0).Int64() != 0, nil
 }
 
-func (c *CoordinatorContract) GetDKG() (DKG, error) {
+func (c *CoordinatorContract) GetDKG() (*DKG, error) {
 	block, err := c.tonClient.API.CurrentMasterchainInfo(c.ctx)
 	if err != nil {
-		return DKG{}, err
+		return nil, err
 	}
 	dkgResult, err := c.tonClient.API.RunGetMethod(c.ctx, block, c.Address, "get_dkg")
 	if err != nil {
-		return DKG{}, err
+		return nil, err
 	}
 
 	dkg, err := c.parseDkg(dkgResult.MustCell(0).BeginParse())
 	if err != nil {
-		return DKG{}, err
+		return nil, err
 	}
 	return dkg, nil
 }
 
-func (c *CoordinatorContract) parseDkg(dkgCell *cell.Slice) (DKG, error) {
+func (c *CoordinatorContract) parseDkg(dkgCell *cell.Slice) (*DKG, error) {
 	state, _ := dkgCell.LoadUInt(2)
+
 	dictCell := dkgCell.MustLoadDict(16)
 	vsetDict, _ := dictCell.LoadAll()
-
 	vset := make(map[uint64][]byte)
 
 	for _, kv := range vsetDict {
-		key, _ := kv.Key.LoadUInt(16)
+		key := kv.Key.MustLoadUInt(16)
 		value, _ := ValidatorDescrValueParse(kv.Value)
 		vset[key] = value
 	}
 
 	maxSigners, _ := dkgCell.LoadUInt(16)
-	r1PackageParams, _ := PackageParse(dkgCell)
 
-	r1PackageCell := dkgCell.MustLoadDict(16)
+	r1PackageParams, _ := PackageParse(dkgCell)
+	r1PackageCell := dkgCell.MustLoadDict(256)
 	r1PackageDict, _ := r1PackageCell.LoadAll()
 
-	r1Package := make(map[int][][]byte)
+	r1Package := make(map[[32]byte][][]byte)
 
-	for i, kv := range r1PackageDict {
-		//_, err := kv.Key.LoadUInt(32)
+	for _, kv := range r1PackageDict {
+		key := kv.Key.MustLoadSlice(256)
 		value, _ := packageValueParse(kv.Value)
-		r1Package[i] = value
+		r1Package[[32]byte(key)] = value
 	}
 
 	r2PackageParams, _ := PackageParse(dkgCell)
 
-	r2PackageCell := dkgCell.MustLoadDict(16)
+	r2PackageCell := dkgCell.MustLoadDict(256)
 	r2PackageDict, _ := r2PackageCell.LoadAll()
 
-	r2Package := make(map[int]map[int][][]byte)
+	r2Package := make(map[[32]byte]map[[32]byte][][]byte)
 
-	for i, kv := range r2PackageDict {
-		//_, err := kv.Key.LoadSlice(32)
+	for _, kv := range r2PackageDict {
+		key := kv.Key.MustLoadSlice(256)
 		value, _ := packageDictionaryValueParse(kv.Value)
-		r2Package[i] = value
+		r2Package[[32]byte(key)] = value
 	}
 
-	cfgHash, _ := dkgCell.LoadSlice(32)
+	cfgHash, _ := dkgCell.LoadSlice(256)
 	attempts := dkgCell.MustLoadUInt(8)
 	until := dkgCell.MustLoadUInt(32)
 
@@ -186,12 +186,12 @@ func (c *CoordinatorContract) parseDkg(dkgCell *cell.Slice) (DKG, error) {
 	pubkeyData := PubkeyData{}
 	if pubkeyPackage != nil {
 		r3pubkeyPackage, _ := writeCellsToBuffer(pubkeyPackage)
-		r3InternalKey := packagesSlice.MustLoadSlice(32)
+		r3InternalKey := packagesSlice.MustLoadSlice(256)
 		pubkeyData.pubkeyPackage = r3pubkeyPackage
 		pubkeyData.internalKey = r3InternalKey
 	}
 
-	return DKG{
+	return &DKG{
 		maxSigners: maxSigners,
 		state:      state,
 		vset:       vset,
@@ -216,19 +216,19 @@ func (c *CoordinatorContract) parseDkg(dkgCell *cell.Slice) (DKG, error) {
 	}, nil
 }
 
-func (c *CoordinatorContract) GetPrevDKG() (DKG, error) {
+func (c *CoordinatorContract) GetPrevDKG() (*DKG, error) {
 	block, err := c.tonClient.API.CurrentMasterchainInfo(c.ctx)
 	if err != nil {
-		return DKG{}, err
+		return nil, err
 	}
 	dkgResult, err := c.tonClient.API.RunGetMethod(c.ctx, block, c.Address, "get_prev_dkg")
 	if err != nil {
-		return DKG{}, err
+		return nil, err
 	}
 
 	dkg, err := c.parseDkg(dkgResult.MustCell(0).BeginParse())
 	if err != nil {
-		return DKG{}, err
+		return nil, err
 	}
 	return dkg, nil
 }
@@ -251,7 +251,6 @@ func (c *CoordinatorContract) sendStartDKG(lifetime int64) error {
 func (c *CoordinatorContract) buildExternalMessage(signBody *cell.Cell) (*tlb.ExternalMessage, error) {
 	body := cell.
 		BeginCell().
-		//.storeBuffer(signature, 64)
 		MustStoreRef(signBody).
 		EndCell()
 
@@ -274,8 +273,7 @@ func (c *CoordinatorContract) sendRound1(opts R1Options) error {
 		MustStoreRef(cell.
 			BeginCell().
 			MustStoreBinarySnake(opts.identifier).
-			//	.storeBuffer(opts.identifier, 32)
-			//	.storeRef(splitBufferToCells(opts.round1Package))
+			MustStoreSlice(opts.identifier, 32).
 			EndCell()).
 		EndCell()
 	_, err := c.buildExternalMessage(signBody)
@@ -296,9 +294,8 @@ func (c *CoordinatorContract) sendRound2(opts R2Options) error {
 		MustStoreUInt(opts.validatorIdx, 16).
 		MustStoreRef(cell.
 			BeginCell().
-			//.storeBuffer(opts.fromIdentifier, 32)
-			//	.storeBuffer(opts.toIdentifier, 32)
-			//	.storeRef(splitBufferToCells(opts.round2Package))
+			MustStoreSlice(opts.fromIdentifier, 32).
+			MustStoreSlice(opts.toIdentifier, 32).
 			EndCell(),
 		).
 		EndCell()
@@ -320,9 +317,8 @@ func (c *CoordinatorContract) sendPubkeyPackage(opts PubKeyOptions) error {
 		MustStoreUInt(opts.validatorIdx, 16).
 		MustStoreRef(cell.
 			BeginCell().
-			//.storeBuffer(opts.identifier, 32)
-			//  .storeBuffer(opts.internalKeyXY.subarray(1, 65), 64)
-			//  .storeRef(splitBufferToCells(opts.pubkeyPackage))
+			MustStoreSlice(opts.identifier, 32).
+			MustStoreSlice(opts.internalKey, 64).
 			EndCell(),
 		).
 		EndCell()
@@ -344,9 +340,8 @@ func (c *CoordinatorContract) sendCommitments(opts CommitmentsOptions) error {
 		MustStoreUInt(opts.validatorIdx, 16).
 		MustStoreRef(cell.
 			BeginCell().
-			//.storeBuffer(opts.identifier, 32)
+			MustStoreSlice(opts.identifier, 32).
 			MustStoreUInt(opts.pegoutId, 64).
-			//.storeRef(splitBufferToCells(opts.commitments))
 			EndCell(),
 		).
 		EndCell()

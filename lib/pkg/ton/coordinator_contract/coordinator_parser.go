@@ -1,7 +1,7 @@
 package coordinatorcontract
 
 import (
-	"log"
+	"fmt"
 
 	"github.com/xssnick/tonutils-go/tvm/cell"
 )
@@ -11,6 +11,42 @@ const Ed25519PubkeyTag = 0x8e81278a
 type DkgPackageParams struct {
 	mask  uint64
 	count uint64
+}
+
+func DictParse[K comparable, V any](dictCell *cell.Slice, keySize uint,
+	parseKey func(*cell.Slice) (K, error),
+	parseValue func(*cell.Slice) (V, error),
+) (map[K]V, error) {
+	if dictCell == nil {
+		panic("dictCell is nil")
+	}
+
+	dictionary := dictCell.MustLoadDict(keySize)
+	if dictionary == nil {
+		panic("failed to create dictionary from dictCell")
+	}
+
+	dict, err := dictionary.LoadAll()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load all key-value pairs from dictionary: %w", err)
+	}
+
+	result := make(map[K]V, len(dict))
+
+	for _, kv := range dict {
+		key, err := parseKey(kv.Key)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse key: %w", err)
+		}
+		value, err := parseValue(kv.Value)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse value for key %v: %w", key, err)
+		}
+
+		result[key] = value
+	}
+
+	return result, nil
 }
 
 func PackageParse(dkg *cell.Slice) (DkgPackageParams, error) {
@@ -32,26 +68,25 @@ func ValidatorDescrValueParse(slice *cell.Slice) ([]byte, error) {
 	if pubkeyTag != Ed25519PubkeyTag {
 		panic("Invalid PublicKey tag")
 	}
-	return slice.LoadSlice(32)
+	return slice.LoadSlice(256)
 }
 
 func packageValueParse(slice *cell.Slice) ([][]byte, error) {
 	return writeCellsToBuffer(slice.MustLoadRef())
 }
 
-func packageDictionaryValueParse(slice *cell.Slice) (map[int][][]byte, error) {
+func packageDictionaryValueParse(slice *cell.Slice) (map[[32]byte][][]byte, error) {
 	slice.MustLoadUInt(256)
 
-	cellDict := slice.MustLoadDict(16)
+	cellDict := slice.MustLoadDict(256)
 	dict, _ := cellDict.LoadAll()
 
-	res := make(map[int][][]byte)
+	res := make(map[[32]byte][][]byte)
 
-	for i, kv := range dict {
-		key, _ := kv.Key.LoadSlice(32)
+	for _, kv := range dict {
+		key := kv.Key.MustLoadSlice(256)
 		value, _ := packageValueParse(kv.Value)
-		log.Printf("i = %i key = %v value = %v", i, key, value)
-		res[i] = value
+		res[[32]byte(key)] = value
 	}
 	return res, nil
 }
