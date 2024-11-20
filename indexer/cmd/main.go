@@ -1,27 +1,36 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net"
+	"net/http"
 	"sync"
 
-	"github.com/xssnick/tonutils-go/address"
-	"github.com/xssnick/tonutils-go/tvm/cell"
-	"k8s.io/client-go/util/workqueue"
+	"entgo.io/ent/dialect"
 
+	"github.com/99designs/gqlgen/graphql/handler"
+	"github.com/99designs/gqlgen/graphql/playground"
+	_ "github.com/lib/pq"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/config"
-	loglistener "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/log_listener"
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton"
-	teleportcontract "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/teleport_contract"
+	ent "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated"
+	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated/migrate"
+	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/gql"
+	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/logmanager"
+	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/pegoutmanager"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/teleportcontract"
+	tonclient "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/ton_client"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/toncenterv3"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
+	"github.com/xssnick/tonutils-go/address"
 )
 
 type App struct {
-	TonCenterV3Client           *ton.TonCenterV3Client
-	TeleportContractLogListener loglistener.LogListenerInterface
-	TeleportContractLogParser   *teleportcontract.LogParser
-	TeleportLogsQueue           *workqueue.Typed[*cell.Cell]
+	TonCenterV3Client *toncenterv3.Client
+	Repo              *ent.Client
+	LogManager        *logmanager.LogManager
+	PegoutManager     *pegoutmanager.PegoutManager
 }
 
 func main() {
@@ -47,7 +56,29 @@ func initialize() (*App, error) {
 		return nil, err
 	}
 
-	tonCenterV3Client, err := ton.NewTonCenterV3Client(
+	tonClient, err := tonclient.NewTonClient(indexerConfig.TonConfigUrl)
+	if err != nil {
+		return nil, fmt.Errorf("[App] failed to create ton client: %w", err)
+	}
+
+	teleportContractAddr := address.MustParseAddr(indexerConfig.TeleportContractAddr)
+	teleportContract := teleportcontract.New(teleportContractAddr, tonClient.API, nil, context.Background())
+
+	coordinatorContractAddr := address.MustParseAddr(indexerConfig.CoordinatorContractAddr)
+
+	repo, err := ent.Open(dialect.Postgres, indexerConfig.DatabaseURL)
+	if err != nil {
+		log.Fatalf("[App] failed to create repo: %v", err)
+	}
+
+	if err := repo.Schema.Create(
+		context.Background(),
+		migrate.WithGlobalUniqueID(true),
+	); err != nil {
+		log.Fatalf("[App] failed creating repos schema: %v", err)
+	}
+
+	tonCenterV3Client, err := toncenterv3.NewClient(
 		indexerConfig.TonCenterV3Host,
 		indexerConfig.TonCenterApiKey,
 		"/",
@@ -58,50 +89,68 @@ func initialize() (*App, error) {
 		return nil, fmt.Errorf("[App] failed to create ton client: %w", err)
 	}
 
-	teleportContractAddr := address.MustParseAddr(indexerConfig.TeleportContractAddr)
-	teleportLogsQueue := workqueue.NewTyped[*cell.Cell]()
-	teleportContractLogListener, err := loglistener.NewLogListener(
+	logManager, err := logmanager.New(
+		context.Background(),
+		repo,
 		tonCenterV3Client,
-		teleportContractAddr,
-		teleportLogsQueue,
+		teleportContract,
+		coordinatorContractAddr,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("[App] failed to create teleport contract log listener: %w", err)
+		return nil, fmt.Errorf("[App] failed to create log manager: %w", err)
 	}
 
-	teleportContractLogParser, err := teleportcontract.NewTeleportContractLogParser(
-		teleportLogsQueue,
-		[]*workqueue.Typed[*cell.Cell]{},
+	pegoutManager, err := pegoutmanager.New(
+		context.Background(),
+		repo,
+		tonClient,
+		tonCenterV3Client,
+		teleportContract,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("[App] failed to create teleport contract log parser: %w", err)
+		return nil, fmt.Errorf("[App] failed to create pegout manager: %w", err)
 	}
 
 	log.Println("[App] initialized")
 
 	return &App{
-		TonCenterV3Client:           tonCenterV3Client,
-		TeleportContractLogListener: teleportContractLogListener,
-		TeleportContractLogParser:   teleportContractLogParser,
-		TeleportLogsQueue:           teleportLogsQueue,
+		TonCenterV3Client: tonCenterV3Client,
+		Repo:              repo,
+		LogManager:        logManager,
+		PegoutManager:     pegoutManager,
 	}, nil
 }
 
 func run(app *App) error {
 	log.Println("[App] running...")
+	defer app.Repo.Close()
 
 	var wg sync.WaitGroup
 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		app.TeleportContractLogListener.StartListen()
+		srv := handler.NewDefaultServer(gql.NewSchema(app.Repo))
+		http.Handle("/",
+			playground.ApolloSandboxHandler("Indexer", "/query"),
+		)
+		http.Handle("/query", srv)
+		log.Println("listening on :3001")
+		if err := http.ListenAndServe(":3001", nil); err != nil {
+			log.Printf("http server terminated: %v", err)
+		}
 	}()
 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		app.TeleportContractLogParser.StartParse()
+		app.LogManager.Run()
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		app.PegoutManager.Run()
 	}()
 
 	wg.Wait()

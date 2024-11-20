@@ -7,12 +7,12 @@ import (
 	"github.com/xssnick/tonutils-go/address"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/bitcoin_client_contract"
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/jw_v4r2_contract"
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/teleport_contract"
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/ton_client"
-	"github.com/rsquad/ton-teleport-btc-periphery/relayer/internal/block_relayer"
-	"github.com/rsquad/ton-teleport-btc-periphery/relayer/internal/pegout_relayer"
+	bitcoinclientcontract "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/bitcoin_client_contract"
+	jwv4r2contract "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/jw_v4r2_contract"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/teleportcontract"
+	tonclient "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/ton_client"
+	blockrelayer "github.com/rsquad/ton-teleport-btc-periphery/relayer/internal/block_relayer"
+	pegoutrelayer "github.com/rsquad/ton-teleport-btc-periphery/relayer/internal/pegout_relayer"
 )
 
 type Relayer interface {

@@ -6,8 +6,8 @@ import (
 
 	"github.com/xssnick/tonutils-go/address"
 
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator_contract"
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/ton_client"
+	coordinatorcontract "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator_contract"
+	tonclient "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/ton_client"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
 	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/config"
 )
@@ -28,14 +28,11 @@ func initialize() (*App, error) {
 		return nil, err
 	}
 
-	coordinatorContract, err := coordinatorcontract.NewCoordinatorContract(
+	coordinatorContract := coordinatorcontract.New(
 		address.MustParseAddr(oracleConfig.CoordinatorContractAddr),
 		tonClient,
 		context.Background(),
 	)
-	if err != nil {
-		return nil, err
-	}
 
 	log.Println("[App] initialized")
 
