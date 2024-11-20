@@ -198,19 +198,19 @@ func (c *CoordinatorContract) GetPrevDKG() (*DKG, error) {
 	if err != nil {
 		return nil, err
 	}
-	dkgResult, err := c.tonClient.API.RunGetMethod(c.ctx, block, c.Address, "get_prev_dkg")
+	result, err := c.tonClient.API.RunGetMethod(c.ctx, block, c.Address, "get_prev_dkg")
 	if err != nil {
 		return nil, err
 	}
 
-	dkg, err := c.parseDkg(dkgResult.MustCell(0).BeginParse())
+	dkg, err := c.parseDkg(result.MustCell(0).BeginParse())
 	if err != nil {
 		return nil, err
 	}
 	return dkg, nil
 }
 
-func (c *CoordinatorContract) sendStartDKG(lifetime int64) error {
+func (c *CoordinatorContract) SendStartDKG(lifetime int64) error {
 	floorTime := uint64(time.Now().Unix() + lifetime)
 	signBody := cell.
 		BeginCell().
@@ -327,6 +327,39 @@ func (c *CoordinatorContract) sendCommitments(opts CommitmentsOptions) error {
 		panic(err)
 	}
 	return nil
+}
+
+func (c *CoordinatorContract) GetSigningShares(pegoutTxId *big.Int) (map[[32]byte]*cell.Cell, error) {
+	block, err := c.tonClient.API.CurrentMasterchainInfo(c.ctx)
+	if err != nil {
+		return nil, err
+	}
+	result, err := c.tonClient.API.RunGetMethod(c.ctx, block, c.Address, "get_signature_shares", pegoutTxId)
+	if err != nil {
+		return nil, err
+	}
+	slice := result.MustCell(0).BeginParse()
+	shares, err := dictParse[[32]byte, *cell.Cell](slice, 16, loadBytesKey, loadCellFromValue)
+
+	return shares, nil
+}
+
+func (c *CoordinatorContract) GetUnsignedPegouts() (map[uint64]TPegoutRecord, error) {
+	block, err := c.tonClient.API.CurrentMasterchainInfo(c.ctx)
+	if err != nil {
+		return nil, err
+	}
+	result, err := c.tonClient.API.RunGetMethod(c.ctx, block, c.Address, "get_pegout_records")
+	if err != nil {
+		return nil, err
+	}
+	if result == nil {
+		return nil, nil
+	}
+	slice := result.MustCell(0).BeginParse()
+	pegouts, err := dictParse[uint64, TPegoutRecord](slice, 16, loadPegoutRecordKey, loadPegoutRecordValue)
+
+	return pegouts, nil
 }
 
 func (c *CoordinatorContract) sendSigningShare() error { return nil }

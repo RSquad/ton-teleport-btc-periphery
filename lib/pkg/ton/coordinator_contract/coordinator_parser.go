@@ -3,6 +3,8 @@ package coordinatorcontract
 import (
 	"fmt"
 
+	"github.com/xssnick/tonutils-go/address"
+
 	"github.com/xssnick/tonutils-go/tvm/cell"
 )
 
@@ -11,6 +13,15 @@ const Ed25519PubkeyTag = 0x8e81278a
 type DkgPackageParams struct {
 	mask  uint64
 	count uint64
+}
+
+type TPegoutRecord struct {
+	internalKey    [32]byte
+	pegoutAddress  *address.Address
+	commitments    map[[32]byte][][]byte
+	signingShares  map[[32]byte]*cell.Cell
+	commitmentMask []byte
+	signSharesMask []byte
 }
 
 func dictParse[K comparable, V any](dictCell *cell.Slice, keySize uint,
@@ -53,6 +64,37 @@ func loadBytesKey(key *cell.Slice) ([32]byte, error) {
 	k, err := key.LoadSlice(256)
 
 	return [32]byte(k), err
+}
+
+func loadCellFromValue(value *cell.Slice) (*cell.Cell, error) {
+	return value.ToCell()
+}
+
+func loadPegoutRecordKey(key *cell.Slice) (uint64, error) {
+	return key.LoadUInt(64)
+}
+
+func loadPegoutRecordValue(value *cell.Slice) (TPegoutRecord, error) {
+	slice := value.MustLoadRef()
+	commitmentMask := slice.MustLoadSlice(32)
+	slice.MustLoadUInt(16)
+	commitmentsDict, _ := dictParse[[32]byte, [][]byte](slice, 16, loadBytesKey, packageValueParse)
+
+	signSharesMask := slice.MustLoadSlice(32)
+	slice.MustLoadUInt(16)
+
+	signingSharesDict, _ := dictParse[[32]byte, *cell.Cell](slice, 16, loadBytesKey, loadCellFromValue)
+	pegoutAddress := slice.MustLoadAddr()
+	internalKey := slice.MustLoadRef().MustLoadSlice(256)
+
+	return TPegoutRecord{
+		commitmentMask: commitmentMask,
+		commitments:    commitmentsDict,
+		signSharesMask: signSharesMask,
+		signingShares:  signingSharesDict,
+		pegoutAddress:  pegoutAddress,
+		internalKey:    [32]byte(internalKey),
+	}, nil
 }
 
 func packageParse(dkg *cell.Slice) (DkgPackageParams, error) {
