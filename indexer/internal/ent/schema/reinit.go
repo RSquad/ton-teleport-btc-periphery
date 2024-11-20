@@ -21,7 +21,6 @@ func (Reinit) Fields() []ent.Field {
 			NotEmpty().
 			Immutable(),
 		field.Text("bitcoinTxId").
-			Unique().
 			NotEmpty().
 			Immutable(),
 		field.Text("bitcoinScript").

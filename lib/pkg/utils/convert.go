@@ -1,4 +1,4 @@
-package ton
+package utils
 
 import (
 	"encoding/hex"

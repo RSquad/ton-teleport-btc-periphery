@@ -9,11 +9,12 @@ import (
 
 	ent "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated/tonmsg"
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton"
 	coordinatorcontract "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator_contract"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/loglistener"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/pegoutcontract"
 	teleportcontract "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/teleportcontract"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/toncenterv3"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
 	"github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/tvm/cell"
 )
@@ -31,7 +32,7 @@ type LogManager struct {
 func New(
 	ctx context.Context,
 	repo *ent.Client,
-	tonCenterV3Client *ton.TonCenterV3Client,
+	tonCenterV3Client *toncenterv3.Client,
 	teleportContract *teleportcontract.TeleportContract,
 	coordinatorContractAddr *address.Address,
 ) (
@@ -119,7 +120,7 @@ func (c *LogManager) onLogReceived(logCell *cell.Cell, msgHash string, msgCreate
 
 func (c *LogManager) saveMint(tonMsg *ent.TonMsg, typedParsedLog *teleportcontract.MintLog) {
 	_, err := c.repo.Mint.Create().
-		SetReceiverAddr(ton.AddrToRawString(typedParsedLog.ReceiverAddr)).
+		SetReceiverAddr(utils.AddrToRawString(typedParsedLog.ReceiverAddr)).
 		SetAmount(typedParsedLog.Amount.String()).
 		SetBitcoinTxId(typedParsedLog.BitcoinTxID.String()).
 		SetTonMsg(tonMsg).
@@ -137,7 +138,7 @@ func (c *LogManager) saveBurn(tonMsg *ent.TonMsg, typedParsedLog *teleportcontra
 	}
 	_, err = c.repo.Burn.Create().
 		SetExternalID(int64(typedParsedLog.ID)).
-		SetSenderAddr(ton.AddrToRawString(typedParsedLog.SenderAddr)).
+		SetSenderAddr(utils.AddrToRawString(typedParsedLog.SenderAddr)).
 		SetAmount(typedParsedLog.Amount.String()).
 		SetBitcoinTxId(typedParsedLog.BitcoinTxID.String()).
 		SetBitcoinScript(hex.EncodeToString(typedParsedLog.BitcoinScript)).
@@ -204,7 +205,7 @@ func (c *LogManager) savePegout(parsedLog teleportcontract.LogWithPegoutInterfac
 
 	pegout, err := c.repo.Pegout.Create().
 		SetExternalID(int64(parsedLog.GetID())).
-		SetAddr(ton.AddrToRawString(pegoutContract.Addr)).
+		SetAddr(utils.AddrToRawString(pegoutContract.Addr)).
 		Save(c.ctx)
 	if err != nil {
 		log.Printf("[LogManager] failed to save ton msg: %v", err)

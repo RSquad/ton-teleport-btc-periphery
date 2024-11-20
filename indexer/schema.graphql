@@ -514,7 +514,7 @@ type PegoutEdge {
 PegoutStatus is enum for the field status
 """
 enum PegoutStatus @goModel(model: "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated/pegout.Status") {
-  COMMITING
+  COMMITTING
   SIGNING
   AGGREGATING
   COMPLETED

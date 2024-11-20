@@ -18,17 +18,19 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated/migrate"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/gql"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/logmanager"
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton"
+	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/pegoutmanager"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/teleportcontract"
 	tonclient "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/ton_client"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/toncenterv3"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
 	"github.com/xssnick/tonutils-go/address"
 )
 
 type App struct {
-	TonCenterV3Client *ton.TonCenterV3Client
+	TonCenterV3Client *toncenterv3.Client
 	Repo              *ent.Client
 	LogManager        *logmanager.LogManager
+	PegoutManager     *pegoutmanager.PegoutManager
 }
 
 func main() {
@@ -76,7 +78,7 @@ func initialize() (*App, error) {
 		log.Fatalf("[App] failed creating repos schema: %v", err)
 	}
 
-	tonCenterV3Client, err := ton.NewTonCenterV3Client(
+	tonCenterV3Client, err := toncenterv3.NewClient(
 		indexerConfig.TonCenterV3Host,
 		indexerConfig.TonCenterApiKey,
 		"/",
@@ -98,12 +100,24 @@ func initialize() (*App, error) {
 		return nil, fmt.Errorf("[App] failed to create log manager: %w", err)
 	}
 
+	pegoutManager, err := pegoutmanager.New(
+		context.Background(),
+		repo,
+		tonClient,
+		tonCenterV3Client,
+		teleportContract,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("[App] failed to create pegout manager: %w", err)
+	}
+
 	log.Println("[App] initialized")
 
 	return &App{
 		TonCenterV3Client: tonCenterV3Client,
 		Repo:              repo,
 		LogManager:        logManager,
+		PegoutManager:     pegoutManager,
 	}, nil
 }
 
@@ -131,6 +145,12 @@ func run(app *App) error {
 	go func() {
 		defer wg.Done()
 		app.LogManager.Run()
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		app.PegoutManager.Run()
 	}()
 
 	wg.Wait()

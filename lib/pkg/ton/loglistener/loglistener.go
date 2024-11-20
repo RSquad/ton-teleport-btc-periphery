@@ -10,13 +10,13 @@ import (
 	"github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/tvm/cell"
 
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/generated/toncenterv3client/blockchain"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/generated/toncenterv3models"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/toncenterv3"
 )
 
 type LogListener struct {
-	tonCenterV3Client *ton.TonCenterV3Client
+	tonCenterV3Client *toncenterv3.Client
 	listenAddr        *address.Address
 	offset            int64
 	limit             int64
@@ -24,7 +24,7 @@ type LogListener struct {
 }
 
 func New(
-	tonCenterV3Client *ton.TonCenterV3Client,
+	tonCenterV3Client *toncenterv3.Client,
 	listenAddr *address.Address,
 	onLogReceived func(*cell.Cell, string, time.Time),
 ) (

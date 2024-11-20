@@ -22,12 +22,12 @@ func (Pegout) Fields() []ent.Field {
 			Immutable(),
 		field.Enum("status").
 			NamedValues(
-				"Commiting", "COMMITING",
+				"Committing", "COMMITTING",
 				"Signing", "SIGNING",
 				"Aggregating", "AGGREGATING",
 				"Completed", "COMPLETED",
 			).
-			Default("COMMITING"),
+			Default("COMMITTING"),
 		field.Int("commitsAmount").
 			Default(0),
 		field.Int("sharesAmount").

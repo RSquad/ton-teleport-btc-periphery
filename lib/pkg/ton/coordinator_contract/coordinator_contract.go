@@ -9,19 +9,19 @@ import (
 )
 
 type CoordinatorContract struct {
-	Address   *address.Address
+	Addr      *address.Address
 	tonClient *tonclient.TonClient
 	ctx       context.Context
 }
 
-func NewCoordinatorContract(
-	address *address.Address,
+func New(
+	addr *address.Address,
 	tonClient *tonclient.TonClient,
 	ctx context.Context,
-) (*CoordinatorContract, error) {
+) *CoordinatorContract {
 	return &CoordinatorContract{
-		Address:   address,
+		Addr:      addr,
 		tonClient: tonClient,
 		ctx:       ctx,
-	}, nil
+	}
 }
