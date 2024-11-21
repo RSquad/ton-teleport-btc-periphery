@@ -2,11 +2,10 @@ package coordinatorcontract
 
 import (
 	"context"
-	"fmt"
 	"math/big"
 	"time"
 
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/dict_parser"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/dict"
 
 	jwv4r2contract "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/jw_v4r2_contract"
 	"github.com/xssnick/tonutils-go/tlb"
@@ -18,11 +17,11 @@ import (
 )
 
 const (
-	OpCodeDKGStart          = 0xe16b89c0
-	CoordinatorRound1       = 0x0000eaea
-	CoordinatorRound2       = 0x0000bb50
-	CoordinatorRound3       = 0x00008bc6
-	PegOutTxSendCommitments = 0x58e40000
+	OpCodeDKGStart                = 0xe16b89c0
+	OpCodeCoordinatorRound1       = 0x0000eaea
+	OpCodeCoordinatorRound2       = 0x0000bb50
+	OpCodeCoordinatorRound3       = 0x00008bc6
+	OpCodePegOutTxSendCommitments = 0x58e40000
 )
 
 type CoordinatorContract struct {
@@ -34,12 +33,12 @@ type CoordinatorContract struct {
 type R1Package struct {
 	mask     uint64
 	count    uint64
-	packages map[[32]byte][][]byte
+	packages map[dict.R1PackageKey]dict.R1PackageValue
 }
 type R2Package struct {
 	mask     uint64
 	count    uint64
-	packages map[[32]byte]map[[32]byte][][]byte
+	packages map[dict.R2PackageKey]dict.R2PackageValue
 }
 type R3Package struct {
 	mask       *big.Int
@@ -141,28 +140,19 @@ func (c *CoordinatorContract) parseDkg(dkgCell *cell.Slice) (*DKG, error) {
 	state, _ := dkgCell.LoadUInt(2)
 
 	dictionary := dkgCell.MustLoadDict(16)
-	if dictionary == nil {
-		return nil, fmt.Errorf("failed to create dict_parser from dictCell")
-	}
 
-	dict, err := dictionary.LoadAll()
-	if err != nil {
-		return nil, fmt.Errorf("failed to load all key-value pairs from dict_parser: %w", err)
-	}
-
-	vsetParser := dict_parser.VsetDictParser{}
-	vset, err := vsetParser.BuildParse(dict).Parse()
-	if err != nil {
-		return nil, fmt.Errorf("Failed to parse dict_parser: %w", err)
-	}
+	vsetDict := dict.VSetDict{}
+	vset := vsetDict.NewDict(dictionary).Get()
 
 	maxSigners, _ := dkgCell.LoadUInt(16)
 
 	r1PackageParams, _ := packageParse(dkgCell)
-	r1Package, err := dictParse[[32]byte, [][]byte](dkgCell, 256, loadBytesKey, packageValueParse)
+	r1PackageDict := dict.R1PackageDict{}
+	r1Package := r1PackageDict.NewDict(dkgCell.MustLoadDict(256)).Get()
 
 	r2PackageParams, _ := packageParse(dkgCell)
-	r2Package, err := dictParse[[32]byte, map[[32]byte][][]byte](dkgCell, 256, loadBytesKey, packageDictionaryValueParse)
+	r2PackageDict := dict.R2PackageDict{}
+	r2Package := r2PackageDict.NewDict(dkgCell.MustLoadDict(256)).Get()
 
 	cfgHash, _ := dkgCell.LoadSlice(256)
 	attempts := dkgCell.MustLoadUInt(8)
@@ -257,7 +247,7 @@ func (c *CoordinatorContract) sendRound1(opts R1Options) error {
 	}
 	floorTime := uint64(time.Now().Unix() + opts.lifetime)
 	signBody := cell.BeginCell().
-		MustStoreUInt(CoordinatorRound1, 32).
+		MustStoreUInt(OpCodeCoordinatorRound1, 32).
 		MustStoreUInt(floorTime, 32).
 		MustStoreUInt(opts.validatorIdx, 16).
 		MustStoreRef(cell.
@@ -279,7 +269,7 @@ func (c *CoordinatorContract) sendRound2(opts R2Options) error {
 	}
 	floorTime := uint64(time.Now().Unix() + opts.lifetime)
 	signBody := cell.BeginCell().
-		MustStoreUInt(CoordinatorRound2, 32).
+		MustStoreUInt(OpCodeCoordinatorRound2, 32).
 		MustStoreUInt(floorTime, 32).
 		MustStoreUInt(opts.validatorIdx, 16).
 		MustStoreRef(cell.
@@ -302,7 +292,7 @@ func (c *CoordinatorContract) sendPubkeyPackage(opts PubKeyOptions) error {
 	}
 	floorTime := uint64(time.Now().Unix() + opts.lifetime)
 	signBody := cell.BeginCell().
-		MustStoreUInt(CoordinatorRound3, 32).
+		MustStoreUInt(OpCodeCoordinatorRound3, 32).
 		MustStoreUInt(floorTime, 32).
 		MustStoreUInt(opts.validatorIdx, 16).
 		MustStoreRef(cell.
@@ -325,7 +315,7 @@ func (c *CoordinatorContract) sendCommitments(opts CommitmentsOptions) error {
 	}
 	floorTime := uint64(time.Now().Unix() + opts.lifetime)
 	signBody := cell.BeginCell().
-		MustStoreUInt(PegOutTxSendCommitments, 32).
+		MustStoreUInt(OpCodePegOutTxSendCommitments, 32).
 		MustStoreUInt(floorTime, 32).
 		MustStoreUInt(opts.validatorIdx, 16).
 		MustStoreRef(cell.
@@ -342,7 +332,7 @@ func (c *CoordinatorContract) sendCommitments(opts CommitmentsOptions) error {
 	return nil
 }
 
-func (c *CoordinatorContract) GetSigningShares(pegoutTxId *big.Int) (map[[32]byte]*cell.Cell, error) {
+func (c *CoordinatorContract) GetSigningShares(pegoutTxId *big.Int) (map[dict.SigningSharesKey]dict.SigningSharesValue, error) {
 	block, err := c.tonClient.API.CurrentMasterchainInfo(c.ctx)
 	if err != nil {
 		return nil, err
@@ -352,12 +342,14 @@ func (c *CoordinatorContract) GetSigningShares(pegoutTxId *big.Int) (map[[32]byt
 		return nil, err
 	}
 	slice := result.MustCell(0).BeginParse()
-	shares, err := dictParse[[32]byte, *cell.Cell](slice, 16, loadBytesKey, loadCellFromValue)
+
+	signingSharesDict := dict.SigningSharesDict{}
+	shares := signingSharesDict.NewDict(slice.MustLoadDict(256)).Get()
 
 	return shares, nil
 }
 
-func (c *CoordinatorContract) GetUnsignedPegouts() (map[uint64]TPegoutRecord, error) {
+func (c *CoordinatorContract) GetUnsignedPegouts() (map[dict.UnsignedPegoutsKey]dict.UnsignedPegoutsValue, error) {
 	block, err := c.tonClient.API.CurrentMasterchainInfo(c.ctx)
 	if err != nil {
 		return nil, err
@@ -370,7 +362,8 @@ func (c *CoordinatorContract) GetUnsignedPegouts() (map[uint64]TPegoutRecord, er
 		return nil, nil
 	}
 	slice := result.MustCell(0).BeginParse()
-	pegouts, err := dictParse[uint64, TPegoutRecord](slice, 16, loadPegoutRecordKey, loadPegoutRecordValue)
+	unsignedPegoutsDict := dict.UnsignedPegoutsDict{}
+	pegouts := unsignedPegoutsDict.NewDict(slice.MustLoadDict(16)).Get()
 
 	return pegouts, nil
 }
