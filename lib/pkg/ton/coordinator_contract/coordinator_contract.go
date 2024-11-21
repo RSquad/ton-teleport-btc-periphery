@@ -6,6 +6,8 @@ import (
 	"math/big"
 	"time"
 
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/dict_parser"
+
 	jwv4r2contract "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/jw_v4r2_contract"
 	"github.com/xssnick/tonutils-go/tlb"
 	"github.com/xssnick/tonutils-go/tvm/cell"
@@ -110,12 +112,12 @@ func (c *CoordinatorContract) GetStandaloneMode() (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	modeResult, err := c.tonClient.API.RunGetMethod(c.ctx, block, c.Address, "get_standalone_mode")
+	result, err := c.tonClient.API.RunGetMethod(c.ctx, block, c.Address, "get_standalone_mode")
 	if err != nil {
 		return false, err
 	}
 
-	return modeResult.MustInt(0).Int64() != 0, nil
+	return result.MustInt(0).Int64() != 0, nil
 }
 
 func (c *CoordinatorContract) GetDKG() (*DKG, error) {
@@ -123,12 +125,12 @@ func (c *CoordinatorContract) GetDKG() (*DKG, error) {
 	if err != nil {
 		return nil, err
 	}
-	dkgResult, err := c.tonClient.API.RunGetMethod(c.ctx, block, c.Address, "get_dkg")
+	result, err := c.tonClient.API.RunGetMethod(c.ctx, block, c.Address, "get_dkg")
 	if err != nil {
 		return nil, err
 	}
 
-	dkg, err := c.parseDkg(dkgResult.MustCell(0).BeginParse())
+	dkg, err := c.parseDkg(result.MustCell(0).BeginParse())
 	if err != nil {
 		return nil, err
 	}
@@ -138,9 +140,20 @@ func (c *CoordinatorContract) GetDKG() (*DKG, error) {
 func (c *CoordinatorContract) parseDkg(dkgCell *cell.Slice) (*DKG, error) {
 	state, _ := dkgCell.LoadUInt(2)
 
-	vset, err := dictParse[uint64, []byte](dkgCell, 16, loadUintKey, validatorDescrValueParse)
+	dictionary := dkgCell.MustLoadDict(16)
+	if dictionary == nil {
+		return nil, fmt.Errorf("failed to create dict_parser from dictCell")
+	}
+
+	dict, err := dictionary.LoadAll()
 	if err != nil {
-		return nil, fmt.Errorf("Failed to parse dictionary: %w", err)
+		return nil, fmt.Errorf("failed to load all key-value pairs from dict_parser: %w", err)
+	}
+
+	vsetParser := dict_parser.VsetDictParser{}
+	vset, err := vsetParser.BuildParse(dict).Parse()
+	if err != nil {
+		return nil, fmt.Errorf("Failed to parse dict_parser: %w", err)
 	}
 
 	maxSigners, _ := dkgCell.LoadUInt(16)

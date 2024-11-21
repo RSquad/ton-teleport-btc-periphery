@@ -30,12 +30,12 @@ func dictParse[K comparable, V any](dictCell *cell.Slice, keySize uint,
 ) (map[K]V, error) {
 	dictionary := dictCell.MustLoadDict(keySize)
 	if dictionary == nil {
-		return nil, fmt.Errorf("failed to create dictionary from dictCell")
+		return nil, fmt.Errorf("failed to create dict_parser from dictCell")
 	}
 
 	dict, err := dictionary.LoadAll()
 	if err != nil {
-		return nil, fmt.Errorf("failed to load all key-value pairs from dictionary: %w", err)
+		return nil, fmt.Errorf("failed to load all key-value pairs from dict_parser: %w", err)
 	}
 
 	result := make(map[K]V, len(dict))
