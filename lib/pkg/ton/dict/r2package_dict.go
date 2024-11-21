@@ -17,7 +17,7 @@ func (b *R2PackageDict) NewDict(cellDictionary *cell.Dictionary) *Dict[R2Package
 		parseValue:     b.parseValue,
 		cellDictionary: cellDictionary,
 	}
-	return dict
+	return &Dict[R2PackageKey, R2PackageValue]{dictionary: dict.Parse()}
 }
 
 func (b *R2PackageDict) parseKey(key *cell.Slice) R2PackageKey {
@@ -35,7 +35,7 @@ func (b *R2PackageDict) parseValue(value *cell.Slice) R2PackageValue {
 
 	for _, kv := range dict {
 		key := kv.Key.MustLoadSlice(256)
-		res[R2PackageKey(key)] = writeCellsToBuffer(kv.Value.MustLoadRef())
+		res[R2PackageKey(key)] = WriteCellsToBuffer(kv.Value.MustLoadRef())
 	}
 
 	return res

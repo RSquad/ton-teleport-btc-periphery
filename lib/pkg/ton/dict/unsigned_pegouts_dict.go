@@ -27,7 +27,7 @@ func (b *UnsignedPegoutsDict) NewDict(cellDictionary *cell.Dictionary) *Dict[Uns
 		parseValue:     b.parseValue,
 		cellDictionary: cellDictionary,
 	}
-	return dict
+	return &Dict[UnsignedPegoutsKey, UnsignedPegoutsValue]{dictionary: dict.Parse()}
 }
 
 func (b *UnsignedPegoutsDict) parseKey(key *cell.Slice) UnsignedPegoutsKey {

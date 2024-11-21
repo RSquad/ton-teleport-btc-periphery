@@ -1,8 +1,6 @@
 package dict
 
 import (
-	"fmt"
-
 	"github.com/xssnick/tonutils-go/tvm/cell"
 )
 
@@ -23,10 +21,10 @@ type Dict[K comparable, V any] struct {
 	dictionary     map[K]V
 }
 
-func (p *Dict[K, V]) Parse() (map[K]V, error) {
+func (p *Dict[K, V]) Parse() map[K]V {
 	dictKV, err := p.cellDictionary.LoadAll()
 	if err != nil {
-		return nil, fmt.Errorf("failed to load all key-value pairs from dict: %w", err)
+		return nil
 	}
 
 	dict := make(map[K]V, len(dictKV))
@@ -38,7 +36,7 @@ func (p *Dict[K, V]) Parse() (map[K]V, error) {
 		dict[key] = value
 	}
 	p.dictionary = dict
-	return p.dictionary, nil
+	return p.dictionary
 }
 
 func (p *Dict[K, V]) Get() map[K]V {
@@ -49,7 +47,7 @@ func (p *Dict[K, V]) GetByKey(key K) V {
 	return p.dictionary[key]
 }
 
-func writeCellsToBuffer(cell *cell.Slice) [][]byte {
+func WriteCellsToBuffer(cell *cell.Slice) [][]byte {
 	var cellBytes [][]byte
 
 	loadedBytes, _ := cell.LoadSlice(cell.BitsLeft() / 8)

@@ -17,7 +17,7 @@ func (b *SigningSharesDict) NewDict(cellDictionary *cell.Dictionary) *Dict[Signi
 		parseValue:     b.parseValue,
 		cellDictionary: cellDictionary,
 	}
-	return dict
+	return &Dict[SigningSharesKey, SigningSharesValue]{dictionary: dict.Parse()}
 }
 
 func (b *SigningSharesDict) parseKey(key *cell.Slice) SigningSharesKey {

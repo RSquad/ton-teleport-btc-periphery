@@ -14,7 +14,7 @@ func (b *VSetDict) NewDict(cellDictionary *cell.Dictionary) *Dict[uint64, []byte
 		parseValue:     b.parseValue,
 		cellDictionary: cellDictionary,
 	}
-	return dict
+	return &Dict[uint64, []byte]{dictionary: dict.Parse()}
 }
 
 func (b VSetDict) parseKey(key *cell.Slice) uint64 {

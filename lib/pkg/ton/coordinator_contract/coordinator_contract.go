@@ -165,7 +165,7 @@ func (c *CoordinatorContract) parseDkg(dkgCell *cell.Slice) (*DKG, error) {
 	pubkeyPackage := packagesSlice.MustLoadMaybeRef()
 	pubkeyData := PubkeyData{}
 	if pubkeyPackage != nil {
-		r3pubkeyPackage, _ := writeCellsToBuffer(pubkeyPackage)
+		r3pubkeyPackage := dict.WriteCellsToBuffer(pubkeyPackage)
 		r3InternalKey := packagesSlice.MustLoadSlice(256)
 		pubkeyData.pubkeyPackage = r3pubkeyPackage
 		pubkeyData.internalKey = r3InternalKey

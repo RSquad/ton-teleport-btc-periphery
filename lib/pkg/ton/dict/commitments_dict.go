@@ -17,7 +17,7 @@ func (b *CommitmentsDict) NewDict(cellDictionary *cell.Dictionary) *Dict[Commitm
 		parseValue:     b.parseValue,
 		cellDictionary: cellDictionary,
 	}
-	return dict
+	return &Dict[CommitmentsKey, CommitmentsValue]{dictionary: dict.Parse()}
 }
 
 func (b *CommitmentsDict) parseKey(key *cell.Slice) CommitmentsKey {
@@ -27,5 +27,5 @@ func (b *CommitmentsDict) parseKey(key *cell.Slice) CommitmentsKey {
 }
 
 func (b *CommitmentsDict) parseValue(value *cell.Slice) CommitmentsValue {
-	return writeCellsToBuffer(value.MustLoadRef())
+	return WriteCellsToBuffer(value.MustLoadRef())
 }

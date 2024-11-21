@@ -17,7 +17,7 @@ func (b *R1PackageDict) NewDict(cellDictionary *cell.Dictionary) *Dict[R1Package
 		parseValue:     b.parseValue,
 		cellDictionary: cellDictionary,
 	}
-	return dict
+	return &Dict[R1PackageKey, R1PackageValue]{dictionary: dict.Parse()}
 }
 
 func (b *R1PackageDict) parseKey(key *cell.Slice) R1PackageKey {
@@ -27,5 +27,5 @@ func (b *R1PackageDict) parseKey(key *cell.Slice) R1PackageKey {
 }
 
 func (b *R1PackageDict) parseValue(value *cell.Slice) R1PackageValue {
-	return writeCellsToBuffer(value.MustLoadRef())
+	return WriteCellsToBuffer(value.MustLoadRef())
 }
