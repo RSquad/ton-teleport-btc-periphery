@@ -1,6 +1,6 @@
 module github.com/rsquad/ton-teleport-btc-periphery/relayer
 
-go 1.23.1
+go 1.22
 
 replace github.com/rsquad/ton-teleport-btc-periphery/lib => ../lib
 
