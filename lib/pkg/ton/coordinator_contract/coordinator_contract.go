@@ -5,6 +5,8 @@ import (
 	"math/big"
 	"time"
 
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
+
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/dict"
 
 	jwv4r2contract "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/jw_v4r2_contract"
@@ -64,30 +66,33 @@ type DkgPackage struct {
 	params   DkgPackageParams
 	packages uint64
 }
-type R1Options struct {
-	lifetime      int64
-	validatorIdx  uint64
-	identifier    []byte
-	round1Package []byte
-}
+type (
+	Identifier []byte
+	R1Options  struct {
+		lifetime      uint64
+		validatorIdx  uint16
+		identifier    Identifier
+		round1Package []byte
+	}
+)
 type R2Options struct {
-	lifetime       int64
-	validatorIdx   uint64
-	fromIdentifier []byte
-	toIdentifier   []byte
+	lifetime       uint64
+	validatorIdx   uint16
+	fromIdentifier Identifier
+	toIdentifier   Identifier
 	round2Package  []byte
 }
 type PubKeyOptions struct {
-	lifetime      int64
-	validatorIdx  uint64
+	lifetime      uint64
+	validatorIdx  uint16
 	pubkeyPackage []byte
 	internalKey   []byte
-	identifier    []byte
+	identifier    Identifier
 }
 type CommitmentsOptions struct {
-	lifetime     int64
-	validatorIdx uint64
-	identifier   []byte
+	lifetime     uint64
+	validatorIdx uint16
+	identifier   Identifier
 	commitments  []byte
 	pegoutId     uint64
 }
@@ -106,7 +111,7 @@ func NewCoordinatorContract(
 	}, nil
 }
 
-func (c *CoordinatorContract) GetStandaloneMode() (bool, error) {
+func (c *CoordinatorContract) GetIsStandalone() (bool, error) {
 	block, err := c.tonClient.API.CurrentMasterchainInfo(c.ctx)
 	if err != nil {
 		return false, err
@@ -241,19 +246,19 @@ func (c *CoordinatorContract) buildExternalMessage(signBody *cell.Cell) (*tlb.Ex
 	return msg, nil
 }
 
-func (c *CoordinatorContract) sendRound1(opts R1Options) error {
+func (c *CoordinatorContract) SendRound1(opts R1Options) error {
 	if len(opts.identifier) != 32 {
 		panic("identifier must be 32 bytes length")
 	}
-	floorTime := uint64(time.Now().Unix() + opts.lifetime)
+	floorTime := uint64(time.Now().Unix() + int64(opts.lifetime))
 	signBody := cell.BeginCell().
 		MustStoreUInt(OpCodeCoordinatorRound1, 32).
 		MustStoreUInt(floorTime, 32).
-		MustStoreUInt(opts.validatorIdx, 16).
+		MustStoreUInt(uint64(opts.validatorIdx), 16).
 		MustStoreRef(cell.
 			BeginCell().
-			MustStoreBinarySnake(opts.identifier).
 			MustStoreSlice(opts.identifier, 32).
+			MustStoreRef(utils.SplitBytesToCells(opts.round1Package)).
 			EndCell()).
 		EndCell()
 	_, err := c.buildExternalMessage(signBody)
@@ -263,19 +268,20 @@ func (c *CoordinatorContract) sendRound1(opts R1Options) error {
 	return nil
 }
 
-func (c *CoordinatorContract) sendRound2(opts R2Options) error {
+func (c *CoordinatorContract) SendRound2(opts R2Options) error {
 	if len(opts.fromIdentifier) != 32 || len(opts.toIdentifier) != 32 {
 		panic("identifier must be 32 bytes length")
 	}
-	floorTime := uint64(time.Now().Unix() + opts.lifetime)
+	floorTime := uint64(time.Now().Unix() + int64(opts.lifetime))
 	signBody := cell.BeginCell().
 		MustStoreUInt(OpCodeCoordinatorRound2, 32).
 		MustStoreUInt(floorTime, 32).
-		MustStoreUInt(opts.validatorIdx, 16).
+		MustStoreUInt(uint64(opts.validatorIdx), 16).
 		MustStoreRef(cell.
 			BeginCell().
 			MustStoreSlice(opts.fromIdentifier, 32).
 			MustStoreSlice(opts.toIdentifier, 32).
+			MustStoreRef(utils.SplitBytesToCells(opts.round2Package)).
 			EndCell(),
 		).
 		EndCell()
@@ -286,19 +292,20 @@ func (c *CoordinatorContract) sendRound2(opts R2Options) error {
 	return nil
 }
 
-func (c *CoordinatorContract) sendPubkeyPackage(opts PubKeyOptions) error {
+func (c *CoordinatorContract) SendPubKeyPackage(opts PubKeyOptions) error {
 	if len(opts.internalKey) != 32 {
 		panic("Internal key must be 65 bytes and has prefix 0x04")
 	}
-	floorTime := uint64(time.Now().Unix() + opts.lifetime)
+	floorTime := uint64(time.Now().Unix() + int64(opts.lifetime))
 	signBody := cell.BeginCell().
 		MustStoreUInt(OpCodeCoordinatorRound3, 32).
 		MustStoreUInt(floorTime, 32).
-		MustStoreUInt(opts.validatorIdx, 16).
+		MustStoreUInt(uint64(opts.validatorIdx), 16).
 		MustStoreRef(cell.
 			BeginCell().
 			MustStoreSlice(opts.identifier, 32).
 			MustStoreSlice(opts.internalKey, 64).
+			MustStoreRef(utils.SplitBytesToCells(opts.pubkeyPackage)).
 			EndCell(),
 		).
 		EndCell()
@@ -309,19 +316,20 @@ func (c *CoordinatorContract) sendPubkeyPackage(opts PubKeyOptions) error {
 	return nil
 }
 
-func (c *CoordinatorContract) sendCommitments(opts CommitmentsOptions) error {
+func (c *CoordinatorContract) SendCommitments(opts CommitmentsOptions) error {
 	if len(opts.identifier) != 32 {
 		panic("identifier must be 32 bytes length")
 	}
-	floorTime := uint64(time.Now().Unix() + opts.lifetime)
+	floorTime := uint64(time.Now().Unix() + int64(opts.lifetime))
 	signBody := cell.BeginCell().
 		MustStoreUInt(OpCodePegOutTxSendCommitments, 32).
 		MustStoreUInt(floorTime, 32).
-		MustStoreUInt(opts.validatorIdx, 16).
+		MustStoreUInt(uint64(opts.validatorIdx), 16).
 		MustStoreRef(cell.
 			BeginCell().
 			MustStoreSlice(opts.identifier, 32).
 			MustStoreUInt(opts.pegoutId, 64).
+			MustStoreRef(utils.SplitBytesToCells(opts.commitments)).
 			EndCell(),
 		).
 		EndCell()
