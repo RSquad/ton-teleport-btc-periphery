@@ -1,4 +1,4 @@
-package ton
+package toncenterv3
 
 import (
 	"github.com/go-openapi/runtime"
@@ -8,13 +8,13 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/generated/toncenterv3client"
 )
 
-type TonCenterV3Client struct {
+type Client struct {
 	API  *toncenterv3client.TonCenterV3
 	Auth runtime.ClientAuthInfoWriter
 }
 
-func NewTonCenterV3Client(host string, apiKey string, basePath string, scheme string, debug bool) (
-	*TonCenterV3Client,
+func NewClient(host string, apiKey string, basePath string, scheme string, debug bool) (
+	*Client,
 	error,
 ) {
 	if host == "" {
@@ -32,7 +32,7 @@ func NewTonCenterV3Client(host string, apiKey string, basePath string, scheme st
 
 	transport := httptransport.New(host, basePath, schemes)
 
-	if debug == true {
+	if debug {
 		transport.SetDebug(true)
 	}
 
@@ -44,7 +44,7 @@ func NewTonCenterV3Client(host string, apiKey string, basePath string, scheme st
 
 	api := toncenterv3client.New(transport, strfmt.Default)
 
-	return &TonCenterV3Client{
+	return &Client{
 		API:  api,
 		Auth: auth,
 	}, nil

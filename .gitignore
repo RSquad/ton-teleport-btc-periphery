@@ -1,4 +1,5 @@
 .env
+.db
 
 *.exe
 *.exe~
@@ -9,6 +10,7 @@
 
 /build/
 generated/
+generated.go
 
 *.log
 *.out

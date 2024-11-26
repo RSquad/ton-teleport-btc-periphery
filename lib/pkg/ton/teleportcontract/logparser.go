@@ -2,14 +2,11 @@ package teleportcontract
 
 import (
 	"fmt"
-	"log"
 	"math/big"
-	"time"
 
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/tvm/cell"
-	"k8s.io/client-go/util/workqueue"
 )
 
 const (
@@ -22,92 +19,56 @@ type LogInterface interface {
 	GetLogID() uint32
 }
 
+type LogWithPegoutInterface interface {
+	LogInterface
+	GetID() uint32
+	GetAmount() *big.Int
+	GetBitcoinScript() []byte
+}
+
+type LogWithPegout struct {
+	ID            uint32
+	Amount        *big.Int
+	BitcoinScript []byte
+}
+
 type MintLog struct {
 	Amount       *big.Int
 	ReceiverAddr *address.Address
 	BitcoinTxID  *chainhash.Hash
 }
 
-func (m *MintLog) GetLogID() uint32 {
-	return logIdMint
-}
-
 type BurnLog struct {
-	ID            uint32
-	Amount        *big.Int
-	SenderAddr    *address.Address
-	BitcoinTxID   *chainhash.Hash
-	BitcoinScript []byte
-}
-
-func (b *BurnLog) GetLogID() uint32 {
-	return logIdBurn
+	LogWithPegout
+	BitcoinTxID *chainhash.Hash
+	SenderAddr  *address.Address
 }
 
 type ReinitLog struct {
-	ID            uint32
-	Amount        *big.Int
-	BitcoinTxID   *chainhash.Hash
-	BitcoinScript []byte
+	LogWithPegout
+	BitcoinTxID *chainhash.Hash
 }
 
-func (r *ReinitLog) GetLogID() uint32 {
-	return logIdReinit
-}
+func (l *LogWithPegout) GetID() uint32            { return l.ID }
+func (l *LogWithPegout) GetAmount() *big.Int      { return l.Amount }
+func (l *LogWithPegout) GetBitcoinScript() []byte { return l.BitcoinScript }
+func (l *MintLog) GetLogID() uint32               { return logIdMint }
+func (l *BurnLog) GetLogID() uint32               { return logIdBurn }
+func (l *ReinitLog) GetLogID() uint32             { return logIdReinit }
 
-type LogParser struct {
-	inQueue   *workqueue.Typed[*cell.Cell]
-	outQueues []*workqueue.Typed[*cell.Cell]
-}
+type LogParser struct{}
 
-func NewTeleportContractLogParser(
-	inQueue *workqueue.Typed[*cell.Cell],
-	outQueues []*workqueue.Typed[*cell.Cell],
-) (
+func NewLogParser() (
 	*LogParser,
 	error,
 ) {
-	return &LogParser{
-		inQueue, outQueues,
-	}, nil
+	return &LogParser{}, nil
 }
 
-func (c *LogParser) StartParse() {
-	log.Println("[LogParser] start parsing")
-	for {
-		if c.inQueue.Len() > 0 {
-			logCell, shutdown := c.inQueue.Get()
-			if shutdown {
-				break
-			}
-
-			parsedLog, err := c.parse(logCell)
-			if err != nil {
-				log.Println(fmt.Errorf("[LogParser] failed to parse log %v", logCell.ToBOC()))
-				c.inQueue.Done(logCell)
-				c.inQueue.Add(logCell)
-			} else {
-				switch typedParsedLog := parsedLog.(type) {
-				case *MintLog:
-					log.Println("Parsed MintLog:", typedParsedLog)
-				case *BurnLog:
-					log.Println("Parsed BurnLog:", typedParsedLog)
-				case *ReinitLog:
-					log.Println("Parsed ReinitLog:", typedParsedLog)
-				default:
-					log.Printf("[LogParser] unknown log type %T\n", typedParsedLog.GetLogID())
-				}
-			}
-		} else {
-			log.Println("[LogParser] in queue is empty, waiting for new logs")
-			time.Sleep(3 * time.Second)
-		}
-	}
-}
-
-func (c *LogParser) parse(logCell *cell.Cell) (LogInterface, error) {
+func (c *LogParser) Parse(logCell *cell.Cell) (LogInterface, error) {
 	logSlice := logCell.BeginParse()
 	logId := logSlice.MustLoadUInt(32)
+
 	switch logId {
 	case logIdMint:
 		mintLog, err := parseMintLog(logSlice)
@@ -144,9 +105,9 @@ func parseBurnLog(logSlice *cell.Slice) (*BurnLog, error) {
 	}
 	senderAddr := logSlice.MustLoadAddr()
 	bitcoinScriptSlice := logSlice.MustLoadRef()
-	bitcoinScript := bitcoinScriptSlice.MustLoadSlice(uint(bitcoinScriptSlice.MustLoadUInt(8)))
+	bitcoinScript := bitcoinScriptSlice.MustLoadSlice(uint(bitcoinScriptSlice.MustLoadUInt(8) * 8))
 	return &BurnLog{
-		id, amount, senderAddr, bitcoinTxID, bitcoinScript,
+		LogWithPegout{id, amount, bitcoinScript}, bitcoinTxID, senderAddr,
 	}, nil
 }
 
@@ -163,6 +124,6 @@ func parseReinitLog(logSlice *cell.Slice) (*ReinitLog, error) {
 		bitcoinScript = bitcoinScriptSlice.MustLoadSlice(bitcoinScriptSlice.BitsLeft())
 	}
 	return &ReinitLog{
-		id, amount, bitcoinTxID, bitcoinScript,
+		LogWithPegout{id, amount, bitcoinScript}, bitcoinTxID,
 	}, nil
 }

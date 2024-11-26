@@ -27,7 +27,7 @@ const (
 )
 
 type CoordinatorContract struct {
-	Address   *address.Address
+	Addr      *address.Address
 	tonClient *tonclient.TonClient
 	sender    *jwv4r2contract.JWV4R2Contract
 	ctx       context.Context
@@ -97,18 +97,18 @@ type CommitmentsOptions struct {
 	pegoutId     uint64
 }
 
-func NewCoordinatorContract(
-	address *address.Address,
+func New(
+	addr *address.Address,
 	tonClient *tonclient.TonClient,
 	sender *jwv4r2contract.JWV4R2Contract,
 	ctx context.Context,
-) (*CoordinatorContract, error) {
+) *CoordinatorContract {
 	return &CoordinatorContract{
-		Address:   address,
+		Addr:      addr,
 		tonClient: tonClient,
 		sender:    sender,
 		ctx:       ctx,
-	}, nil
+	}
 }
 
 func (c *CoordinatorContract) GetIsStandalone() (bool, error) {

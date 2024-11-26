@@ -1,6 +1,6 @@
 module github.com/rsquad/ton-teleport-btc-periphery/relayer
 
-go 1.22.0
+go 1.22
 
 replace github.com/rsquad/ton-teleport-btc-periphery/lib => ../lib
 
@@ -20,15 +20,10 @@ require (
 	github.com/caarlos0/env/v11 v11.2.2 // indirect
 	github.com/decred/dcrd/crypto/blake256 v1.0.0 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.0.1 // indirect
-	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/joho/godotenv v1.5.1 // indirect
 	github.com/oasisprotocol/curve25519-voi v0.0.0-20220328075252-7dd334e3daae // indirect
 	github.com/sigurn/crc16 v0.0.0-20211026045750-20ab5afb07e3 // indirect
+	github.com/stretchr/testify v1.9.0 // indirect
 	golang.org/x/crypto v0.17.0 // indirect
 	golang.org/x/sys v0.21.0 // indirect
-	golang.org/x/time v0.3.0 // indirect
-	k8s.io/apimachinery v0.31.2 // indirect
-	k8s.io/client-go v0.31.2 // indirect
-	k8s.io/klog/v2 v2.130.1 // indirect
-	k8s.io/utils v0.0.0-20240711033017-18e509b52bc8 // indirect
 )

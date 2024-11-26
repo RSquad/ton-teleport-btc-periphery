@@ -1,13 +1,14 @@
 package blockrelayer
 
 import (
+	"encoding/hex"
 	"fmt"
 	"log"
 
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/bitcoin_client_contract"
+	bitcoinclientcontract "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/bitcoin_client_contract"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
 )
 
@@ -99,7 +100,7 @@ func (c *BlockRelayer) Relay() error {
 					return fmt.Errorf("[BlockRelayer] failed to send candidate block header: %w", err)
 				}
 
-				log.Printf("[BlockRelayer] candidate block header sent: txHash=%v", utils.BytesToHexString(tx.Hash))
+				log.Printf("[BlockRelayer] candidate block header sent: txHash=%s", hex.EncodeToString(tx.Hash))
 
 				break
 			}

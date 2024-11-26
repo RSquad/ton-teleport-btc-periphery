@@ -4,48 +4,44 @@ import (
 	"encoding/base64"
 	"fmt"
 	"log"
+	"strconv"
 	"time"
 
 	"github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/tvm/cell"
-	"k8s.io/client-go/util/workqueue"
 
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/generated/toncenterv3client/blockchain"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/generated/toncenterv3models"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/toncenterv3"
 )
 
-type LogListenerInterface interface {
-	StartListen()
-}
-
 type LogListener struct {
-	tonCenterV3Client *ton.TonCenterV3Client
+	tonCenterV3Client *toncenterv3.Client
 	listenAddr        *address.Address
 	offset            int64
 	limit             int64
-	outQueue          *workqueue.Typed[*cell.Cell]
+	onLogReceived     func(*cell.Cell, string, time.Time)
 }
 
-func NewLogListener(
-	tonCenterV3Client *ton.TonCenterV3Client,
+func New(
+	tonCenterV3Client *toncenterv3.Client,
 	listenAddr *address.Address,
-	outQueue *workqueue.Typed[*cell.Cell],
+	onLogReceived func(*cell.Cell, string, time.Time),
 ) (
-	LogListenerInterface,
+	*LogListener,
 	error,
 ) {
 	return &LogListener{
-		tonCenterV3Client: tonCenterV3Client,
-		listenAddr:        listenAddr,
-		offset:            0,
-		limit:             1000,
-		outQueue:          outQueue,
+		tonCenterV3Client,
+		listenAddr,
+		0,
+		128,
+		onLogReceived,
 	}, nil
 }
 
 func (c *LogListener) StartListen() {
-	log.Println("[LogListener] listening started")
+	log.Printf("[LogListener] listening for %v started", c.listenAddr.String())
 	c.listen()
 }
 
@@ -95,7 +91,13 @@ func (c *LogListener) processMsgs(msgs []*toncenterv3models.Message) {
 		if err != nil {
 			continue
 		}
-		c.outQueue.Add(logCell)
+		unixTime, err := strconv.ParseInt(msg.CreatedAt, 10, 64)
+		if err != nil {
+			log.Printf("[LogListener] failed to parse msg creation time: %v", err)
+			continue
+		}
+		createdAt := time.Unix(unixTime, 0)
+		c.onLogReceived(logCell, msg.MessageContent.Hash, createdAt)
 	}
 }
 
