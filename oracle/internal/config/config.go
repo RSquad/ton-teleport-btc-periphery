@@ -10,4 +10,5 @@ type OracleConfig struct {
 	ValidatorServerAddress     string `env:"ORACLE_VALIDATOR_SERVER_ADDRESS"`
 	ServerPublicKeyPath        string `env:"ORACLE_SERVER_PUBLIC_KEY_PATH"`
 	ClientPrivateKeyPath       string `env:"ORACLE_CLIENT_PRIVATE_KEY_PATH"`
+	OracleWalletSecret         string `env:"ORACLE_WALLET_SECRET"`
 }
