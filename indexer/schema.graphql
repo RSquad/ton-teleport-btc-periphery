@@ -185,10 +185,7 @@ input CreatePegoutInput {
   externalid: Int!
   addr: String!
   status: PegoutStatus
-  commitsamount: Int
-  sharesamount: Int
   bitcointxraw: String
-  signature: String
   bitcointxid: String
   isbitcointxsent: Boolean
   burnID: ID
@@ -471,10 +468,7 @@ type Pegout implements Node {
   externalid: Int! @goField(name: "ExternalID", forceResolver: false)
   addr: String!
   status: PegoutStatus!
-  commitsamount: Int! @goField(name: "CommitsAmount", forceResolver: false)
-  sharesamount: Int! @goField(name: "SharesAmount", forceResolver: false)
   bitcointxraw: String! @goField(name: "BitcoinTxRaw", forceResolver: false)
-  signature: String!
   bitcointxid: String! @goField(name: "BitcoinTxId", forceResolver: false)
   isbitcointxsent: Boolean! @goField(name: "IsBitcoinTxSent", forceResolver: false)
   burn: Burn
@@ -514,9 +508,7 @@ type PegoutEdge {
 PegoutStatus is enum for the field status
 """
 enum PegoutStatus @goModel(model: "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated/pegout.Status") {
-  COMMITTING
   SIGNING
-  AGGREGATING
   COMPLETED
 }
 """
@@ -573,28 +565,6 @@ input PegoutWhereInput {
   statusIn: [PegoutStatus!]
   statusNotIn: [PegoutStatus!]
   """
-  commitsAmount field predicates
-  """
-  commitsamount: Int
-  commitsamountNEQ: Int
-  commitsamountIn: [Int!]
-  commitsamountNotIn: [Int!]
-  commitsamountGT: Int
-  commitsamountGTE: Int
-  commitsamountLT: Int
-  commitsamountLTE: Int
-  """
-  sharesAmount field predicates
-  """
-  sharesamount: Int
-  sharesamountNEQ: Int
-  sharesamountIn: [Int!]
-  sharesamountNotIn: [Int!]
-  sharesamountGT: Int
-  sharesamountGTE: Int
-  sharesamountLT: Int
-  sharesamountLTE: Int
-  """
   bitcoinTxRaw field predicates
   """
   bitcointxraw: String
@@ -610,22 +580,6 @@ input PegoutWhereInput {
   bitcointxrawHasSuffix: String
   bitcointxrawEqualFold: String
   bitcointxrawContainsFold: String
-  """
-  signature field predicates
-  """
-  signature: String
-  signatureNEQ: String
-  signatureIn: [String!]
-  signatureNotIn: [String!]
-  signatureGT: String
-  signatureGTE: String
-  signatureLT: String
-  signatureLTE: String
-  signatureContains: String
-  signatureHasPrefix: String
-  signatureHasSuffix: String
-  signatureEqualFold: String
-  signatureContainsFold: String
   """
   bitcoinTxId field predicates
   """

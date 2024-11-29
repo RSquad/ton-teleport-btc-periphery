@@ -2,6 +2,8 @@ package bitcoin
 
 import (
 	"bytes"
+	"encoding/hex"
+	"fmt"
 
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/wire"
@@ -20,4 +22,13 @@ func BlockHeaderToBytes(header *wire.BlockHeader) ([]byte, error) {
 	var buf bytes.Buffer
 	err := header.Serialize(&buf)
 	return buf.Bytes(), err
+}
+
+func TxToHex(tx *wire.MsgTx) (string, error) {
+	var buf bytes.Buffer
+	err := tx.Serialize(&buf)
+	if err != nil {
+		return "", fmt.Errorf("failed to serialize transaction: %w", err)
+	}
+	return hex.EncodeToString(buf.Bytes()), nil
 }

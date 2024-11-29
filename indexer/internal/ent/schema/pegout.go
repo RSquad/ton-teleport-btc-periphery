@@ -22,19 +22,11 @@ func (Pegout) Fields() []ent.Field {
 			Immutable(),
 		field.Enum("status").
 			NamedValues(
-				"Committing", "COMMITTING",
 				"Signing", "SIGNING",
-				"Aggregating", "AGGREGATING",
 				"Completed", "COMPLETED",
 			).
-			Default("COMMITTING"),
-		field.Int("commitsAmount").
-			Default(0),
-		field.Int("sharesAmount").
-			Default(0),
+			Default("SIGNING"),
 		field.Text("bitcoinTxRaw").
-			Default(""),
-		field.Text("signature").
 			Default(""),
 		field.Text("bitcoinTxId").
 			Default(""),

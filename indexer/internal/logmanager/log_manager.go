@@ -9,7 +9,7 @@ import (
 
 	ent "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated/tonmsg"
-	coordinatorcontract "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator_contract"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinatorcontract"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/loglistener"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/pegoutcontract"
 	teleportcontract "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/teleportcontract"
@@ -27,6 +27,7 @@ type LogManager struct {
 	teleportContractLogListener    *loglistener.LogListener
 	coordinatorContractLogParser   *coordinatorcontract.LogParser
 	coordinatorContractLogListener *loglistener.LogListener
+	pegoutContractCode             *cell.Cell
 }
 
 func New(
@@ -39,10 +40,18 @@ func New(
 	*LogManager,
 	error,
 ) {
+	teleportContractStorage, err := teleportContract.GetStorage()
+	if err != nil {
+		return nil, err
+	}
+
+	pegoutContractCode := teleportContractStorage.PegoutContractCode
+
 	logManager := &LogManager{
-		ctx:              ctx,
-		repo:             repo,
-		teleportContract: teleportContract,
+		ctx:                ctx,
+		repo:               repo,
+		teleportContract:   teleportContract,
+		pegoutContractCode: pegoutContractCode,
 	}
 
 	teleportContractLogParser, err := teleportcontract.NewLogParser()
@@ -181,13 +190,6 @@ func (c *LogManager) saveInternalKey(tonMsg *ent.TonMsg, typedParsedLog *coordin
 }
 
 func (c *LogManager) savePegout(parsedLog teleportcontract.LogWithPegoutInterface) (*ent.Pegout, error) {
-	teleportContractStorage, err := c.teleportContract.GetStorage()
-	if err != nil {
-		return nil, err
-	}
-
-	pegoutContractCode := teleportContractStorage.PegoutContractCode
-
 	initData := &pegoutcontract.InitData{
 		ID:                   uint32(parsedLog.GetID()),
 		Amount:               parsedLog.GetAmount(),
@@ -196,9 +198,9 @@ func (c *LogManager) savePegout(parsedLog teleportcontract.LogWithPegoutInterfac
 	}
 
 	pegoutContract, err := pegoutcontract.NewFromStateInit(&pegoutcontract.StateInit{
-		Code:     pegoutContractCode,
+		Code:     c.pegoutContractCode,
 		InitData: initData,
-	}, c.teleportContract.API, c.ctx)
+	}, c.teleportContract.TonClient, c.ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -219,11 +221,7 @@ func (c *LogManager) checkMsgExists(msgHash string) (bool, error) {
 		Where(tonmsg.Hash(msgHash)).
 		Exist(c.ctx)
 	if err != nil {
-		log.Printf("[LogManager] failed to check ton msg existence: %v", err)
 		return false, err
-	}
-	if exists {
-		log.Printf("[LogManager] msg with hash %s already exists, skipping", msgHash)
 	}
 	return exists, nil
 }

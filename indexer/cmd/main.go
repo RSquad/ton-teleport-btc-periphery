@@ -62,7 +62,7 @@ func initialize() (*App, error) {
 	}
 
 	teleportContractAddr := address.MustParseAddr(indexerConfig.TeleportContractAddr)
-	teleportContract := teleportcontract.New(teleportContractAddr, tonClient.API, nil, context.Background())
+	teleportContract := teleportcontract.New(teleportContractAddr, tonClient, nil, context.Background())
 
 	coordinatorContractAddr := address.MustParseAddr(indexerConfig.CoordinatorContractAddr)
 

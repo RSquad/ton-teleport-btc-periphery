@@ -11,11 +11,12 @@ import (
 
 	jwv4r2contract "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/jw_v4r2_contract"
 	"github.com/xssnick/tonutils-go/tlb"
+	"github.com/xssnick/tonutils-go/ton"
 	"github.com/xssnick/tonutils-go/tvm/cell"
 
 	"github.com/xssnick/tonutils-go/address"
 
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/ton_client"
+	tonclient "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/ton_client"
 )
 
 const (
@@ -116,7 +117,7 @@ func (c *CoordinatorContract) GetIsStandalone() (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	result, err := c.tonClient.API.RunGetMethod(c.ctx, block, c.Address, "get_standalone_mode")
+	result, err := c.tonClient.API.RunGetMethod(c.ctx, block, c.Addr, "get_standalone_mode")
 	if err != nil {
 		return false, err
 	}
@@ -129,7 +130,7 @@ func (c *CoordinatorContract) GetDKG() (*DKG, error) {
 	if err != nil {
 		return nil, err
 	}
-	result, err := c.tonClient.API.RunGetMethod(c.ctx, block, c.Address, "get_dkg")
+	result, err := c.tonClient.API.RunGetMethod(c.ctx, block, c.Addr, "get_dkg")
 	if err != nil {
 		return nil, err
 	}
@@ -206,7 +207,7 @@ func (c *CoordinatorContract) GetPrevDKG() (*DKG, error) {
 	if err != nil {
 		return nil, err
 	}
-	result, err := c.tonClient.API.RunGetMethod(c.ctx, block, c.Address, "get_prev_dkg")
+	result, err := c.tonClient.API.RunGetMethod(c.ctx, block, c.Addr, "get_prev_dkg")
 	if err != nil {
 		return nil, err
 	}
@@ -240,7 +241,7 @@ func (c *CoordinatorContract) buildExternalMessage(signBody *cell.Cell) (*tlb.Ex
 		EndCell()
 
 	msg := &tlb.ExternalMessage{
-		DstAddr: c.Address,
+		DstAddr: c.Addr,
 		Body:    body,
 	}
 	return msg, nil
@@ -345,7 +346,7 @@ func (c *CoordinatorContract) GetSigningShares(pegoutTxId *big.Int) (map[dict.Si
 	if err != nil {
 		return nil, err
 	}
-	result, err := c.tonClient.API.RunGetMethod(c.ctx, block, c.Address, "get_signature_shares", pegoutTxId)
+	result, err := c.tonClient.API.RunGetMethod(c.ctx, block, c.Addr, "get_signature_shares", pegoutTxId)
 	if err != nil {
 		return nil, err
 	}
@@ -357,23 +358,24 @@ func (c *CoordinatorContract) GetSigningShares(pegoutTxId *big.Int) (map[dict.Si
 	return shares, nil
 }
 
-func (c *CoordinatorContract) GetUnsignedPegouts() (map[dict.UnsignedPegoutsKey]dict.UnsignedPegoutsValue, error) {
-	block, err := c.tonClient.API.CurrentMasterchainInfo(c.ctx)
-	if err != nil {
-		return nil, err
-	}
-	result, err := c.tonClient.API.RunGetMethod(c.ctx, block, c.Address, "get_pegout_records")
+func (c *CoordinatorContract) GetUnsignedPegouts(block *ton.BlockIDExt) (*cell.Dictionary, error) {
+	result, err := c.tonClient.API.RunGetMethod(c.ctx, block, c.Addr, "get_pegout_records")
 	if err != nil {
 		return nil, err
 	}
 	if result == nil {
 		return nil, nil
 	}
-	slice := result.MustCell(0).BeginParse()
-	unsignedPegoutsDict := dict.UnsignedPegoutsDict{}
-	pegouts := unsignedPegoutsDict.NewDict(slice.MustLoadDict(16)).Get()
+	resultCell, err := result.Cell(0)
+	if err != nil {
+		return nil, err
+	}
 
-	return pegouts, nil
+	resultSlice := resultCell.BeginParse()
+
+	unsignedPegoutsDict := resultSlice.MustLoadDict(64)
+
+	return unsignedPegoutsDict, nil
 }
 
 func (c *CoordinatorContract) sendSigningShare() error { return nil }
