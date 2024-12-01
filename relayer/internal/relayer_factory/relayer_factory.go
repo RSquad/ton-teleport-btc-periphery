@@ -51,7 +51,7 @@ func (c *RelayerFactory) CreateRelayer(
 	case "pegout":
 		teleportContract := teleportcontract.New(
 			address.MustParseAddr(contractAddress),
-			c.tonClient.API,
+			c.tonClient,
 			sender,
 			context.Background(),
 		)

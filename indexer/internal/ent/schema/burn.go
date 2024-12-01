@@ -14,22 +14,21 @@ type Burn struct {
 
 func (Burn) Fields() []ent.Field {
 	return []ent.Field{
-		field.Int64("externalID").
+		field.Int64("externalId").
 			Unique().
-			Immutable(),
+			Immutable().
+			Annotations(entgql.MapsTo("externalId")),
 		field.Text("senderAddr").
 			NotEmpty().
-			Immutable(),
+			Immutable().
+			Annotations(entgql.MapsTo("senderAddr")),
 		field.Text("amount").
-			NotEmpty().
-			Immutable(),
-		field.Text("bitcoinTxId").
-			Unique().
 			NotEmpty().
 			Immutable(),
 		field.Text("bitcoinScript").
 			NotEmpty().
-			Immutable(),
+			Immutable().
+			Annotations(entgql.MapsTo("bitcoinScript")),
 	}
 }
 
@@ -38,7 +37,8 @@ func (Burn) Edges() []ent.Edge {
 		edge.From("tonMsg", TonMsg.Type).
 			Ref("burn").
 			Unique().
-			Required(),
+			Required().
+			Annotations(entgql.MapsTo("tonMsg")),
 		edge.From("pegout", Pegout.Type).
 			Ref("burn").
 			Unique().

@@ -14,17 +14,20 @@ type Reinit struct {
 
 func (Reinit) Fields() []ent.Field {
 	return []ent.Field{
-		field.Int64("externalID").
+		field.Int64("externalId").
 			Unique().
-			Immutable(),
+			Immutable().
+			Annotations(entgql.MapsTo("externalId")),
 		field.Text("amount").
 			NotEmpty().
 			Immutable(),
 		field.Text("bitcoinTxId").
 			NotEmpty().
-			Immutable(),
+			Immutable().
+			Annotations(entgql.MapsTo("bitcoinTxId")),
 		field.Text("bitcoinScript").
-			Immutable(),
+			Immutable().
+			Annotations(entgql.MapsTo("bitcoinScript")),
 	}
 }
 
@@ -33,7 +36,8 @@ func (Reinit) Edges() []ent.Edge {
 		edge.From("tonMsg", TonMsg.Type).
 			Ref("reinit").
 			Unique().
-			Required(),
+			Required().
+			Annotations(entgql.MapsTo("tonMsg")),
 		edge.From("pegout", Pegout.Type).
 			Ref("reinit").
 			Unique().

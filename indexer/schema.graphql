@@ -2,12 +2,11 @@ directive @goField(forceResolver: Boolean, name: String, omittable: Boolean) on 
 directive @goModel(model: String, models: [String!], forceGenerate: Boolean) on OBJECT | INPUT_OBJECT | SCALAR | ENUM | INTERFACE | UNION
 type Burn implements Node {
   id: ID!
-  externalid: Int! @goField(name: "ExternalID", forceResolver: false)
-  senderaddr: String! @goField(name: "SenderAddr", forceResolver: false)
+  externalId: Int!
+  senderAddr: String!
   amount: String!
-  bitcointxid: String! @goField(name: "BitcoinTxId", forceResolver: false)
-  bitcoinscript: String! @goField(name: "BitcoinScript", forceResolver: false)
-  tonmsg: TonMsg! @goField(name: "TonMsg", forceResolver: false)
+  bitcoinScript: String!
+  tonMsg: TonMsg!
   pegout: Pegout!
 }
 """
@@ -60,7 +59,7 @@ input BurnWhereInput {
   idLT: ID
   idLTE: ID
   """
-  externalID field predicates
+  externalId field predicates
   """
   externalid: Int
   externalidNEQ: Int
@@ -103,22 +102,6 @@ input BurnWhereInput {
   amountEqualFold: String
   amountContainsFold: String
   """
-  bitcoinTxId field predicates
-  """
-  bitcointxid: String
-  bitcointxidNEQ: String
-  bitcointxidIn: [String!]
-  bitcointxidNotIn: [String!]
-  bitcointxidGT: String
-  bitcointxidGTE: String
-  bitcointxidLT: String
-  bitcointxidLTE: String
-  bitcointxidContains: String
-  bitcointxidHasPrefix: String
-  bitcointxidHasSuffix: String
-  bitcointxidEqualFold: String
-  bitcointxidContainsFold: String
-  """
   bitcoinScript field predicates
   """
   bitcoinscript: String
@@ -153,7 +136,6 @@ input CreateBurnInput {
   externalid: Int!
   senderaddr: String!
   amount: String!
-  bitcointxid: String!
   bitcoinscript: String!
   tonmsgID: ID!
   pegoutID: ID!
@@ -185,12 +167,9 @@ input CreatePegoutInput {
   externalid: Int!
   addr: String!
   status: PegoutStatus
-  commitsamount: Int
-  sharesamount: Int
   bitcointxraw: String
-  signature: String
   bitcointxid: String
-  isbitcointxsent: Boolean
+  bitcoinblockhash: String
   burnID: ID
   reinitID: ID
 }
@@ -226,8 +205,8 @@ scalar Cursor
 type InternalKey implements Node {
   id: ID!
   key: String!
-  completedat: Time! @goField(name: "CompletedAt", forceResolver: false)
-  tonmsg: TonMsg! @goField(name: "TonMsg", forceResolver: false)
+  completedAt: Time!
+  tonMsg: TonMsg!
 }
 """
 A connection to a list of items.
@@ -313,10 +292,10 @@ input InternalKeyWhereInput {
 }
 type Mint implements Node {
   id: ID!
-  receiveraddr: String! @goField(name: "ReceiverAddr", forceResolver: false)
+  receiverAddr: String!
   amount: String!
-  bitcointxid: String! @goField(name: "BitcoinTxId", forceResolver: false)
-  tonmsg: TonMsg! @goField(name: "TonMsg", forceResolver: false)
+  bitcoinTxId: String!
+  tonMsg: TonMsg!
 }
 """
 A connection to a list of items.
@@ -468,15 +447,12 @@ type PageInfo {
 }
 type Pegout implements Node {
   id: ID!
-  externalid: Int! @goField(name: "ExternalID", forceResolver: false)
+  externalId: Int!
   addr: String!
   status: PegoutStatus!
-  commitsamount: Int! @goField(name: "CommitsAmount", forceResolver: false)
-  sharesamount: Int! @goField(name: "SharesAmount", forceResolver: false)
-  bitcointxraw: String! @goField(name: "BitcoinTxRaw", forceResolver: false)
-  signature: String!
-  bitcointxid: String! @goField(name: "BitcoinTxId", forceResolver: false)
-  isbitcointxsent: Boolean! @goField(name: "IsBitcoinTxSent", forceResolver: false)
+  bitcoinTxRaw: String!
+  bitcoinTxId: String!
+  bitcoinBlockHash: String!
   burn: Burn
   reinit: Reinit
 }
@@ -514,10 +490,9 @@ type PegoutEdge {
 PegoutStatus is enum for the field status
 """
 enum PegoutStatus @goModel(model: "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated/pegout.Status") {
-  COMMITTING
   SIGNING
-  AGGREGATING
-  COMPLETED
+  SIGNED
+  CONFIRMED
 }
 """
 PegoutWhereInput is used for filtering Pegout objects.
@@ -539,7 +514,7 @@ input PegoutWhereInput {
   idLT: ID
   idLTE: ID
   """
-  externalID field predicates
+  externalId field predicates
   """
   externalid: Int
   externalidNEQ: Int
@@ -573,28 +548,6 @@ input PegoutWhereInput {
   statusIn: [PegoutStatus!]
   statusNotIn: [PegoutStatus!]
   """
-  commitsAmount field predicates
-  """
-  commitsamount: Int
-  commitsamountNEQ: Int
-  commitsamountIn: [Int!]
-  commitsamountNotIn: [Int!]
-  commitsamountGT: Int
-  commitsamountGTE: Int
-  commitsamountLT: Int
-  commitsamountLTE: Int
-  """
-  sharesAmount field predicates
-  """
-  sharesamount: Int
-  sharesamountNEQ: Int
-  sharesamountIn: [Int!]
-  sharesamountNotIn: [Int!]
-  sharesamountGT: Int
-  sharesamountGTE: Int
-  sharesamountLT: Int
-  sharesamountLTE: Int
-  """
   bitcoinTxRaw field predicates
   """
   bitcointxraw: String
@@ -610,22 +563,6 @@ input PegoutWhereInput {
   bitcointxrawHasSuffix: String
   bitcointxrawEqualFold: String
   bitcointxrawContainsFold: String
-  """
-  signature field predicates
-  """
-  signature: String
-  signatureNEQ: String
-  signatureIn: [String!]
-  signatureNotIn: [String!]
-  signatureGT: String
-  signatureGTE: String
-  signatureLT: String
-  signatureLTE: String
-  signatureContains: String
-  signatureHasPrefix: String
-  signatureHasSuffix: String
-  signatureEqualFold: String
-  signatureContainsFold: String
   """
   bitcoinTxId field predicates
   """
@@ -643,10 +580,21 @@ input PegoutWhereInput {
   bitcointxidEqualFold: String
   bitcointxidContainsFold: String
   """
-  isBitcoinTxSent field predicates
+  bitcoinBlockHash field predicates
   """
-  isbitcointxsent: Boolean
-  isbitcointxsentNEQ: Boolean
+  bitcoinblockhash: String
+  bitcoinblockhashNEQ: String
+  bitcoinblockhashIn: [String!]
+  bitcoinblockhashNotIn: [String!]
+  bitcoinblockhashGT: String
+  bitcoinblockhashGTE: String
+  bitcoinblockhashLT: String
+  bitcoinblockhashLTE: String
+  bitcoinblockhashContains: String
+  bitcoinblockhashHasPrefix: String
+  bitcoinblockhashHasSuffix: String
+  bitcoinblockhashEqualFold: String
+  bitcoinblockhashContainsFold: String
   """
   burn edge predicates
   """
@@ -836,11 +784,11 @@ type Query {
 }
 type Reinit implements Node {
   id: ID!
-  externalid: Int! @goField(name: "ExternalID", forceResolver: false)
+  externalId: Int!
   amount: String!
-  bitcointxid: String! @goField(name: "BitcoinTxId", forceResolver: false)
-  bitcoinscript: String! @goField(name: "BitcoinScript", forceResolver: false)
-  tonmsg: TonMsg! @goField(name: "TonMsg", forceResolver: false)
+  bitcoinTxId: String!
+  bitcoinScript: String!
+  tonMsg: TonMsg!
   pegout: Pegout!
 }
 """
@@ -893,7 +841,7 @@ input ReinitWhereInput {
   idLT: ID
   idLTE: ID
   """
-  externalID field predicates
+  externalId field predicates
   """
   externalid: Int
   externalidNEQ: Int
@@ -969,11 +917,11 @@ scalar Time
 type TonMsg implements Node {
   id: ID!
   hash: String!
-  createdat: Time! @goField(name: "CreatedAt", forceResolver: false)
+  createdAt: Time!
   mint: Mint
   burn: Burn
   reinit: Reinit
-  internalkey: InternalKey @goField(name: "InternalKey", forceResolver: false)
+  internalKey: InternalKey
 }
 """
 A connection to a list of items.

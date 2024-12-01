@@ -16,6 +16,7 @@ import (
 	"github.com/xssnick/tonutils-go/tvm/cell"
 
 	jwv4r2contract "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/jw_v4r2_contract"
+	tonclient "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/ton_client"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
 )
 
@@ -27,10 +28,10 @@ const (
 )
 
 type TeleportContract struct {
-	Addr   *address.Address
-	sender *jwv4r2contract.JWV4R2Contract
-	API    *ton.APIClient
-	ctx    context.Context
+	Addr      *address.Address
+	TonClient *tonclient.TonClient
+	sender    *jwv4r2contract.JWV4R2Contract
+	ctx       context.Context
 }
 
 type Storage struct {
@@ -41,11 +42,11 @@ type Storage struct {
 
 func New(
 	addr *address.Address,
-	api *ton.APIClient,
+	tonClient *tonclient.TonClient,
 	sender *jwv4r2contract.JWV4R2Contract,
 	ctx context.Context,
 ) *TeleportContract {
-	return &TeleportContract{addr, sender, api, ctx}
+	return &TeleportContract{addr, tonClient, sender, ctx}
 }
 
 func (c *TeleportContract) SendPegoutProof(
@@ -103,12 +104,12 @@ func (c *TeleportContract) SendPegoutProof(
 }
 
 func (c *TeleportContract) GetStorage() (Storage, error) {
-	block, err := c.API.CurrentMasterchainInfo(c.ctx)
+	block, err := c.TonClient.API.CurrentMasterchainInfo(c.ctx)
 	if err != nil {
 		return Storage{}, err
 	}
 
-	storage, err := c.API.RunGetMethod(c.ctx, block, c.Addr, "get_storage")
+	storage, err := c.TonClient.API.RunGetMethod(c.ctx, block, c.Addr, "get_storage")
 	if err != nil {
 		return Storage{}, err
 	}

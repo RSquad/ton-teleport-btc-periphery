@@ -1,60 +1,57 @@
 package dict
 
 import (
+	"math/big"
+
 	"github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/tvm/cell"
 )
 
 type (
-	UnsignedPegoutsKey   uint64
-	UnsignedPegoutsValue struct {
-		internalKey    [32]byte
-		pegoutAddress  *address.Address
-		commitments    map[CommitmentsKey]CommitmentsValue
-		signingShares  map[SigningSharesKey]SigningSharesValue
-		commitmentMask []byte
-		signSharesMask []byte
+	UnsignedPegout struct {
+		internalKey        []byte
+		pegoutContractAddr *address.Address
+		Commitments        *cell.Dictionary
+		commitmentsMask    []byte
+		SigningShares      *cell.Dictionary
+		signingSharesMask  []byte
 	}
 )
 
 type UnsignedPegoutsDict struct {
-	Dict[UnsignedPegoutsKey, UnsignedPegoutsValue]
+	dictCell *cell.Dictionary
 }
 
-func (b *UnsignedPegoutsDict) NewDict(cellDictionary *cell.Dictionary) *Dict[UnsignedPegoutsKey, UnsignedPegoutsValue] {
-	dict := &Dict[UnsignedPegoutsKey, UnsignedPegoutsValue]{
-		parseKey:       b.parseKey,
-		parseValue:     b.parseValue,
-		cellDictionary: cellDictionary,
+func NewUnsignedPegoutsDict(dictCell *cell.Dictionary) *UnsignedPegoutsDict {
+	return &UnsignedPegoutsDict{
+		dictCell,
 	}
-	return &Dict[UnsignedPegoutsKey, UnsignedPegoutsValue]{dictionary: dict.Parse()}
 }
 
-func (b *UnsignedPegoutsDict) parseKey(key *cell.Slice) UnsignedPegoutsKey {
-	return UnsignedPegoutsKey(key.MustLoadUInt(64))
-}
+func (c *UnsignedPegoutsDict) Get(key *big.Int) *UnsignedPegout {
+	if c.dictCell == nil {
+		return nil
+	}
+	valueSlice, err := c.dictCell.LoadValueByIntKey(key)
+	if err != nil {
+		return nil
+	}
 
-func (b *UnsignedPegoutsDict) parseValue(value *cell.Slice) UnsignedPegoutsValue {
-	slice := value.MustLoadRef()
-	commitmentMask := slice.MustLoadSlice(32)
-	slice.MustLoadUInt(16)
-	commitmentsDict := CommitmentsDict{}
-	commitments := commitmentsDict.NewDict(slice.MustLoadDict(16)).Get()
+	commitmentsMask := valueSlice.MustLoadSlice(256)
+	valueSlice.MustLoadUInt(16)
+	commitmentsDict := valueSlice.MustLoadDict(256)
+	signingSharesMask := valueSlice.MustLoadSlice(256)
+	valueSlice.MustLoadUInt(16)
+	signingSharesDict := valueSlice.MustLoadDict(256)
+	pegoutContractAddr := valueSlice.MustLoadAddr()
+	internalKey := valueSlice.MustLoadRef().MustLoadSlice(256)
 
-	signSharesMask := slice.MustLoadSlice(32)
-	slice.MustLoadUInt(16)
-
-	signingSharesDict := SigningSharesDict{}
-	signingShares := signingSharesDict.NewDict(slice.MustLoadDict(16)).Get()
-	pegoutAddress := slice.MustLoadAddr()
-	internalKey := slice.MustLoadRef().MustLoadSlice(256)
-
-	return UnsignedPegoutsValue{
-		commitmentMask: commitmentMask,
-		commitments:    commitments,
-		signSharesMask: signSharesMask,
-		signingShares:  signingShares,
-		pegoutAddress:  pegoutAddress,
-		internalKey:    [32]byte(internalKey),
+	return &UnsignedPegout{
+		internalKey:        internalKey,
+		pegoutContractAddr: pegoutContractAddr,
+		Commitments:        commitmentsDict,
+		SigningShares:      signingSharesDict,
+		commitmentsMask:    commitmentsMask,
+		signingSharesMask:  signingSharesMask,
 	}
 }

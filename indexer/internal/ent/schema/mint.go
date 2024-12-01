@@ -16,14 +16,16 @@ func (Mint) Fields() []ent.Field {
 	return []ent.Field{
 		field.Text("receiverAddr").
 			NotEmpty().
-			Immutable(),
+			Immutable().
+			Annotations(entgql.MapsTo("receiverAddr")),
 		field.Text("amount").
 			NotEmpty().
 			Immutable(),
 		field.Text("bitcoinTxId").
 			Unique().
 			NotEmpty().
-			Immutable(),
+			Immutable().
+			Annotations(entgql.MapsTo("bitcoinTxId")),
 	}
 }
 
@@ -32,7 +34,8 @@ func (Mint) Edges() []ent.Edge {
 		edge.From("tonMsg", TonMsg.Type).
 			Ref("mint").
 			Unique().
-			Required(),
+			Required().
+			Annotations(entgql.MapsTo("tonMsg")),
 	}
 }
 
