@@ -14,6 +14,8 @@ RUN go mod download
 COPY indexer/ ./indexer/
 COPY lib/ ./lib/
 
+RUN go install github.com/go-swagger/go-swagger/cmd/swagger@latest
+
 RUN cd ./lib && ./gen-ton-center-v3-client.sh && cd ..
 RUN cd ./indexer && go generate . && cd ..
 
