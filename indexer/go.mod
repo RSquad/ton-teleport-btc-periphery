@@ -1,15 +1,13 @@
 module github.com/rsquad/ton-teleport-btc-periphery/indexer
 
-go 1.23.0
-
-toolchain go1.23.1
+go 1.22.5
 
 replace github.com/rsquad/ton-teleport-btc-periphery/lib => ../lib
 
 require (
-	entgo.io/contrib v0.6.0
-	entgo.io/ent v0.14.1
-	github.com/99designs/gqlgen v0.17.56
+	entgo.io/contrib v0.5.0
+	entgo.io/ent v0.13.1
+	github.com/99designs/gqlgen v0.17.43
 	github.com/btcsuite/btcd v0.24.2
 	github.com/btcsuite/btcd/btcutil/psbt v1.1.9
 	github.com/btcsuite/btcd/chaincfg/chainhash v1.1.0
@@ -50,7 +48,6 @@ require (
 	github.com/go-openapi/strfmt v0.23.0 // indirect
 	github.com/go-openapi/swag v0.23.0 // indirect
 	github.com/go-openapi/validate v0.24.0 // indirect
-	github.com/go-viper/mapstructure/v2 v2.2.1 // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gorilla/websocket v1.5.0 // indirect
