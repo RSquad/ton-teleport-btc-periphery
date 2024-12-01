@@ -142,8 +142,8 @@ func run(app *App) error {
 		srv := handler.NewDefaultServer(gql.NewSchema(app.Repo))
 
 		mux := http.NewServeMux()
-		mux.Handle("/", playground.ApolloSandboxHandler("Indexer", "/graphql"))
-		mux.Handle("/graphql", srv)
+		mux.Handle("/indexer/graphql", srv)
+		mux.Handle("/", playground.ApolloSandboxHandler("Indexer", "/indexer/graphql"))
 
 		c := cors.New(cors.Options{
 			AllowedOrigins:   []string{"*"},
