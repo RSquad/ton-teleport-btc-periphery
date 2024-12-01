@@ -35,7 +35,7 @@ func New(
 		tonCenterV3Client,
 		listenAddr,
 		0,
-		128,
+		1000,
 		onLogReceived,
 	}, nil
 }

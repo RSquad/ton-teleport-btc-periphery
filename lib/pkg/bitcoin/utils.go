@@ -32,3 +32,19 @@ func TxToHex(tx *wire.MsgTx) (string, error) {
 	}
 	return hex.EncodeToString(buf.Bytes()), nil
 }
+
+func HexToTx(txHex string, version int32) (*wire.MsgTx, error) {
+	txBytes, err := hex.DecodeString(txHex)
+	if err != nil {
+		return nil, err
+	}
+
+	tx := wire.NewMsgTx(version)
+
+	err = tx.Deserialize(bytes.NewReader(txBytes))
+	if err != nil {
+		return nil, err
+	}
+
+	return tx, nil
+}

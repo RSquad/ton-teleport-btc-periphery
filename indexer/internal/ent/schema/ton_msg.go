@@ -19,7 +19,8 @@ func (TonMsg) Fields() []ent.Field {
 			NotEmpty().
 			Immutable(),
 		field.Time("createdAt").
-			Immutable(),
+			Immutable().
+			Annotations(entgql.MapsTo("createdAt")),
 	}
 }
 
@@ -32,7 +33,8 @@ func (TonMsg) Edges() []ent.Edge {
 		edge.To("reinit", Reinit.Type).
 			Unique(),
 		edge.To("internalKey", InternalKey.Type).
-			Unique(),
+			Unique().
+			Annotations(entgql.MapsTo("internalKey")),
 	}
 }
 

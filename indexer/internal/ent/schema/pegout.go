@@ -14,24 +14,29 @@ type Pegout struct {
 
 func (Pegout) Fields() []ent.Field {
 	return []ent.Field{
-		field.Int64("externalID").
+		field.Int64("externalId").
 			Unique().
-			Immutable(),
+			Immutable().
+			Annotations(entgql.MapsTo("externalId")),
 		field.Text("addr").
 			NotEmpty().
 			Immutable(),
 		field.Enum("status").
 			NamedValues(
 				"Signing", "SIGNING",
-				"Completed", "COMPLETED",
+				"Signed", "SIGNED",
+				"Confirmed", "CONFIRMED",
 			).
 			Default("SIGNING"),
 		field.Text("bitcoinTxRaw").
-			Default(""),
+			Default("").
+			Annotations(entgql.MapsTo("bitcoinTxRaw")),
 		field.Text("bitcoinTxId").
-			Default(""),
-		field.Bool("isBitcoinTxSent").
-			Default(false),
+			Default("").
+			Annotations(entgql.MapsTo("bitcoinTxId")),
+		field.Text("bitcoinBlockHash").
+			Default("").
+			Annotations(entgql.MapsTo("bitcoinBlockHash")),
 	}
 }
 

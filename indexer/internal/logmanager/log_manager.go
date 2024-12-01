@@ -146,10 +146,9 @@ func (c *LogManager) saveBurn(tonMsg *ent.TonMsg, typedParsedLog *teleportcontra
 		return
 	}
 	_, err = c.repo.Burn.Create().
-		SetExternalID(int64(typedParsedLog.ID)).
+		SetExternalId(int64(typedParsedLog.ID)).
 		SetSenderAddr(utils.AddrToRawString(typedParsedLog.SenderAddr)).
 		SetAmount(typedParsedLog.Amount.String()).
-		SetBitcoinTxId(typedParsedLog.BitcoinTxID.String()).
 		SetBitcoinScript(hex.EncodeToString(typedParsedLog.BitcoinScript)).
 		SetTonMsg(tonMsg).
 		SetPegout(pegout).
@@ -166,7 +165,7 @@ func (c *LogManager) saveReinit(tonMsg *ent.TonMsg, typedParsedLog *teleportcont
 		return
 	}
 	_, err = c.repo.Reinit.Create().
-		SetExternalID(int64(typedParsedLog.ID)).
+		SetExternalId(int64(typedParsedLog.ID)).
 		SetAmount(typedParsedLog.Amount.String()).
 		SetBitcoinTxId(typedParsedLog.BitcoinTxID.String()).
 		SetBitcoinScript(hex.EncodeToString(typedParsedLog.BitcoinScript)).
@@ -206,7 +205,7 @@ func (c *LogManager) savePegout(parsedLog teleportcontract.LogWithPegoutInterfac
 	}
 
 	pegout, err := c.repo.Pegout.Create().
-		SetExternalID(int64(parsedLog.GetID())).
+		SetExternalId(int64(parsedLog.GetID())).
 		SetAddr(utils.AddrToRawString(pegoutContract.Addr)).
 		Save(c.ctx)
 	if err != nil {

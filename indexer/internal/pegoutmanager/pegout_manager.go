@@ -1,6 +1,7 @@
 package pegoutmanager
 
 import (
+	"bytes"
 	"context"
 	"encoding/hex"
 	"fmt"
@@ -28,14 +29,16 @@ import (
 type PegoutManager struct {
 	ctx               context.Context
 	repo              *ent.Client
-	teleportContract  *teleportcontract.TeleportContract
+	bitcoinClient     *bitcoin.Client
 	tonClient         *tonclient.TonClient
 	tonCenterV3Client *toncenterv3.Client
+	teleportContract  *teleportcontract.TeleportContract
 }
 
 func New(
 	ctx context.Context,
 	repo *ent.Client,
+	bitcoinClient *bitcoin.Client,
 	tonClient *tonclient.TonClient,
 	tonCenterV3Client *toncenterv3.Client,
 	teleportContract *teleportcontract.TeleportContract,
@@ -46,9 +49,10 @@ func New(
 	pegoutManager := &PegoutManager{
 		ctx:               ctx,
 		repo:              repo,
-		teleportContract:  teleportContract,
+		bitcoinClient:     bitcoinClient,
 		tonClient:         tonClient,
 		tonCenterV3Client: tonCenterV3Client,
+		teleportContract:  teleportContract,
 	}
 
 	return pegoutManager, nil
@@ -66,8 +70,8 @@ func (pm *PegoutManager) Run() {
 
 func (c *PegoutManager) processPegouts() error {
 	pegouts, err := c.repo.Pegout.Query().
-		Where(entpegout.StatusNEQ(entpegout.StatusCompleted)).
-		Limit(128).
+		Where(entpegout.StatusNEQ(entpegout.StatusConfirmed)).
+		Limit(512).
 		All(c.ctx)
 	if err != nil || len(pegouts) == 0 {
 		return err
@@ -100,6 +104,8 @@ func (c *PegoutManager) processPegout(
 	switch pegout.Status {
 	case entpegout.StatusSigning:
 		return c.handleSigningPegout(block, pegout)
+	case entpegout.StatusSigned:
+		return c.handleSignedPegout(pegout)
 	}
 	return nil
 }
@@ -138,13 +144,45 @@ func (c *PegoutManager) handleSigningPegout(
 	}
 
 	err = c.repo.Pegout.Update().
-		SetStatus(entpegout.StatusCompleted).
+		SetStatus(entpegout.StatusSigned).
 		SetBitcoinTxRaw(txHex).
 		SetBitcoinTxId(pegoutTx.TxID()).
 		Where(entpegout.ID(pegout.ID)).
 		Exec(c.ctx)
 	if err != nil {
 		return fmt.Errorf("failed to update pegout: %w", err)
+	}
+
+	return nil
+}
+
+func (c *PegoutManager) handleSignedPegout(
+	pegout *ent.Pegout,
+) error {
+	txHash, err := chainhash.NewHashFromStr(pegout.BitcoinTxId)
+	if err != nil {
+		return fmt.Errorf("failed to parse tx hash: %w", err)
+	}
+	txVerbose, err := c.bitcoinClient.RPCClient.GetRawTransactionVerbose(txHash)
+	if err == nil {
+		err = c.repo.Pegout.Update().
+			SetStatus(entpegout.StatusConfirmed).
+			SetBitcoinBlockHash(txVerbose.BlockHash).
+			Where(entpegout.ID(pegout.ID)).
+			Exec(c.ctx)
+		if err != nil {
+			return fmt.Errorf("failed to update pegout: %w", err)
+		}
+		return nil
+	}
+
+	tx, err := bitcoin.HexToTx(pegout.BitcoinTxRaw, 2)
+	if err != nil {
+		return fmt.Errorf("failed to serialize pegout tx: %w", err)
+	}
+	_, err = c.bitcoinClient.RPCClient.SendRawTransaction(tx, false)
+	if err != nil {
+		return fmt.Errorf("failed to send pegout tx: %w", err)
 	}
 
 	return nil
@@ -163,18 +201,20 @@ func (c *PegoutManager) buildPegoutTx(txParts *pegoutcontract.TxParts) (*wire.Ms
 	}
 
 	inputTxIDs := make([]string, 0, len(*txParts.Inputs))
-	for key := range *txParts.Inputs {
-		inputTxIDs = append(inputTxIDs, key)
+	for txid := range *txParts.Inputs {
+		inputTxIDs = append(inputTxIDs, txid)
 	}
 	sort.Slice(inputTxIDs, func(i, j int) bool {
-		return inputTxIDs[i] > inputTxIDs[j]
+		txidIBytes, errI := hex.DecodeString(inputTxIDs[i])
+		txidJBytes, errJ := hex.DecodeString(inputTxIDs[j])
+		if errI != nil || errJ != nil {
+			return false
+		}
+		return bytes.Compare(txidIBytes, txidJBytes) < 0
 	})
 
-	for _, inputTxID := range inputTxIDs {
-		input, ok := (*txParts.Inputs)[inputTxID]
-		if !ok {
-			return nil, fmt.Errorf("missing input: %v", inputTxID)
-		}
+	for i, inputTxID := range inputTxIDs {
+		input := (*txParts.Inputs)[inputTxID]
 		keyBytes, err := hex.DecodeString(inputTxID)
 		keyBytes = utils.BytesPadTo(keyBytes, 32)
 		if err != nil {
@@ -201,19 +241,12 @@ func (c *PegoutManager) buildPegoutTx(txParts *pegoutcontract.TxParts) (*wire.Ms
 		if len(input.BitcoinMerkleRoot) > 0 {
 			pInput.TaprootMerkleRoot = input.BitcoinMerkleRoot
 		}
+		signature := (*txParts.Signatures)[strconv.Itoa(i)]
+		pInput.TaprootKeySpendSig = signature
 		packet.Inputs = append(packet.Inputs, pInput)
 	}
 
-	for i := range inputTxIDs {
-		signature, ok := (*txParts.Signatures)[strconv.Itoa(i)]
-		if !ok {
-			return nil, fmt.Errorf("missing signature for input index %d", i)
-		}
-		packet.Inputs[i].TaprootKeySpendSig = signature
-	}
-
-	err = psbt.MaybeFinalizeAll(packet)
-	if err != nil {
+	if err := psbt.MaybeFinalizeAll(packet); err != nil {
 		return nil, fmt.Errorf("failed to finalize inputs: %w", err)
 	}
 

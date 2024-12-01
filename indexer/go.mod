@@ -15,6 +15,7 @@ require (
 	github.com/btcsuite/btcd/chaincfg/chainhash v1.1.0
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/lib/pq v1.10.9
+	github.com/rs/cors v1.11.1
 	github.com/rsquad/ton-teleport-btc-periphery/lib v0.0.0-00010101000000-000000000000
 	github.com/vektah/gqlparser/v2 v2.5.19
 	github.com/xssnick/tonutils-go v1.10.2
