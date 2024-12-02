@@ -39,14 +39,14 @@ func (c *RelayerFactory) CreateRelayer(
 	Relayer,
 	error,
 ) {
+	bitcoinClientContract := bitcoinclientcontract.NewBitcoinClientContract(
+		address.MustParseAddr(contractAddress),
+		c.tonClient,
+		sender,
+		context.Background(),
+	)
 	switch relayerType {
 	case "block":
-		bitcoinClientContract := bitcoinclientcontract.NewBitcoinClientContract(
-			address.MustParseAddr(contractAddress),
-			c.tonClient,
-			sender,
-			context.Background(),
-		)
 		return blockrelayer.NewBlockRelayer(c.bitcoinClient, bitcoinClientContract)
 	case "pegout":
 		teleportContract := teleportcontract.New(
@@ -55,7 +55,7 @@ func (c *RelayerFactory) CreateRelayer(
 			sender,
 			context.Background(),
 		)
-		return pegoutrelayer.NewPegoutRelayer(c.bitcoinClient, teleportContract)
+		return pegoutrelayer.NewPegoutRelayer(c.bitcoinClient, teleportContract, bitcoinClientContract)
 	default:
 		return nil, fmt.Errorf("[RelayerFactory] unknown relayer type: %s", relayerType)
 	}

@@ -10,26 +10,30 @@ import (
 	"github.com/btcsuite/btcd/wire"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
+	bitcoinclientcontract "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/bitcoin_client_contract"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/teleportcontract"
 )
 
 type PegoutRelayer struct {
-	bitcoinClient    *bitcoin.Client
-	teleportContract *teleportcontract.TeleportContract
-	isRelaying       bool
+	bitcoinClient         *bitcoin.Client
+	teleportContract      *teleportcontract.TeleportContract
+	bitcoinClientContract *bitcoinclientcontract.BitcoinClientContract
+	isRelaying            bool
 }
 
 func NewPegoutRelayer(
 	bitcoinClient *bitcoin.Client,
 	teleportContract *teleportcontract.TeleportContract,
+	bitcoinClientContract *bitcoinclientcontract.BitcoinClientContract,
 ) (
 	*PegoutRelayer,
 	error,
 ) {
 	return &PegoutRelayer{
-		bitcoinClient:    bitcoinClient,
-		teleportContract: teleportContract,
-		isRelaying:       false,
+		bitcoinClient:         bitcoinClient,
+		teleportContract:      teleportContract,
+		bitcoinClientContract: bitcoinClientContract,
+		isRelaying:            false,
 	}, nil
 }
 
@@ -58,24 +62,50 @@ func (c *PegoutRelayer) Relay() error {
 		return fmt.Errorf("[PegoutRelayer] failed to get pegout tx block hash: %w", err)
 	}
 
-	txProof, err := c.getTxProof(teleportContractStorage.LastPegoutTxID, blockHash)
+	blockHeight, err := c.bitcoinClient.GetBlockHeightByHash(blockHash)
 	if err != nil {
-		return fmt.Errorf("[PegoutRelayer] failed to get pegout tx proof: %w", err)
+		return fmt.Errorf("[PegoutRelayer] failed to get pegout tx block height: %w", err)
 	}
 
-	merkleBlock, err := c.decodeTxProof(txProof)
+	lastConfirmedBlockHash, err := c.bitcoinClientContract.GetLastConfirmedBlockHash()
 	if err != nil {
-		return fmt.Errorf("[PegoutRelayer] failed to decode pegout tx proof: %w", err)
+		return fmt.Errorf("[PegoutRelayer] failed to get bitcoin client contract last confirmed block hash: %w", err)
 	}
 
-	log.Printf("[PegoutRelayer] sending pegout tx: txId=%v", teleportContractStorage.LastPegoutTxID.String())
-
-	tx, _, err := c.teleportContract.SendPegoutProof(teleportContractStorage.LastPegoutTxID, blockHash, merkleBlock)
+	lastConfirmedBlockHeight, err := c.bitcoinClient.GetBlockHeightByHash(lastConfirmedBlockHash)
 	if err != nil {
-		return fmt.Errorf("[PegoutRelayer] failed to send pegout tx proof: %w", err)
+		return fmt.Errorf("[PegoutRelayer] failed to get bitcoin client contract last confirmed block height: %w", err)
 	}
 
-	log.Printf("[PegoutRelayer] pegout tx proof sent: tonTxHash=%s", hex.EncodeToString(tx.Hash))
+	confirmationsNeeded, err := c.bitcoinClientContract.GetConfirmationsNeeded()
+	if err != nil {
+		return fmt.Errorf("[PegoutRelayer] failed to get bitcoin client contract confirmations needed: %w", err)
+	}
+
+	if blockHeight-lastConfirmedBlockHeight > confirmationsNeeded {
+		txProof, err := c.getTxProof(teleportContractStorage.LastPegoutTxID, blockHash)
+		if err != nil {
+			return fmt.Errorf("[PegoutRelayer] failed to get pegout tx proof: %w", err)
+		}
+
+		merkleBlock, err := c.decodeTxProof(txProof)
+		if err != nil {
+			return fmt.Errorf("[PegoutRelayer] failed to decode pegout tx proof: %w", err)
+		}
+
+		log.Printf("[PegoutRelayer] sending pegout tx: txId=%v", teleportContractStorage.LastPegoutTxID.String())
+
+		tx, _, err := c.teleportContract.SendPegoutProof(teleportContractStorage.LastPegoutTxID, blockHash, merkleBlock)
+		if err != nil {
+			return fmt.Errorf("[PegoutRelayer] failed to send pegout tx proof: %w", err)
+		}
+
+		log.Printf("[PegoutRelayer] pegout tx proof sent: tonTxHash=%s", hex.EncodeToString(tx.Hash))
+
+		return nil
+	}
+
+	log.Println("[PegoutRelayer] nothing to relay")
 
 	return nil
 }

@@ -101,7 +101,7 @@ func run(app *App) error {
 	}
 
 	time.Sleep(5 * time.Second)
-	if err := startRelayer(app, "pegout", app.Config.TeleportContractAddr, 20*time.Second, ctx); err != nil {
+	if err := startRelayer(app, "pegout", app.Config.TeleportContractAddr, 10*time.Second, ctx); err != nil {
 		return fmt.Errorf("[App] failed to start pegout relayer: %w", err)
 	}
 
