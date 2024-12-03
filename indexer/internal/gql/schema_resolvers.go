@@ -6,58 +6,57 @@ package gql
 
 import (
 	"context"
-
-	"entgo.io/contrib/entgql"
-	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated"
+	"fmt"
+	"math/big"
 )
 
-// Node is the resolver for the node field.
-func (r *queryResolver) Node(ctx context.Context, id int) (generated.Noder, error) {
-	return r.repo.Noder(ctx, id)
+// Statistics is the resolver for the statistics field.
+func (r *queryResolver) Statistics(ctx context.Context) (*Statistics, error) {
+	mints, err := r.repo.Mint.Query().All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	totalMintAmount := big.NewInt(0)
+	uniqueMintReceivers := make(map[string]struct{})
+	for _, mint := range mints {
+		amount := new(big.Int)
+		amount, ok := amount.SetString(mint.Amount, 10)
+		if !ok {
+			return nil, fmt.Errorf("invalid amount: %s", mint.Amount)
+		}
+		totalMintAmount.Add(totalMintAmount, amount)
+		uniqueMintReceivers[mint.ReceiverAddr] = struct{}{}
+	}
+
+	uniqueMintReceiversCount := len(uniqueMintReceivers)
+
+	burns, err := r.repo.Burn.Query().All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	totalBurnAmount := big.NewInt(0)
+	uniqueBurnSenders := make(map[string]struct{})
+	for _, burn := range burns {
+		amount := new(big.Int)
+		amount, ok := amount.SetString(burn.Amount, 10)
+		if !ok {
+			return nil, fmt.Errorf("invalid amount: %s", burn.Amount)
+		}
+		totalBurnAmount.Add(totalBurnAmount, amount)
+		uniqueBurnSenders[burn.SenderAddr] = struct{}{}
+	}
+
+	uniqueBurnSendersCount := len(uniqueBurnSenders)
+
+	return &Statistics{
+		TotalMints:               len(mints),
+		TotalBurns:               len(burns),
+		TotalTgBTCMinted:         totalMintAmount.String(),
+		TotalTgBTCBurned:         totalBurnAmount.String(),
+		TgBTCAmount:              totalMintAmount.Sub(totalMintAmount, totalBurnAmount).String(),
+		UniqueMintReceiversCount: uniqueMintReceiversCount,
+		UniqueBurnSendersCount:   uniqueBurnSendersCount,
+	}, nil
 }
-
-// Nodes is the resolver for the nodes field.
-func (r *queryResolver) Nodes(ctx context.Context, ids []int) ([]generated.Noder, error) {
-	return r.repo.Noders(ctx, ids)
-}
-
-// Burns is the resolver for the burns field.
-func (r *queryResolver) Burns(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, where *generated.BurnWhereInput) (*generated.BurnConnection, error) {
-	return r.repo.Burn.Query().
-		Paginate(ctx, after, first, before, last, generated.WithBurnFilter(where.Filter))
-}
-
-// InternalKeys is the resolver for the internalKeys field.
-func (r *queryResolver) InternalKeys(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, where *generated.InternalKeyWhereInput) (*generated.InternalKeyConnection, error) {
-	return r.repo.InternalKey.Query().
-		Paginate(ctx, after, first, before, last, generated.WithInternalKeyFilter(where.Filter))
-}
-
-// Mints is the resolver for the mints field.
-func (r *queryResolver) Mints(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, where *generated.MintWhereInput) (*generated.MintConnection, error) {
-	return r.repo.Mint.Query().
-		Paginate(ctx, after, first, before, last, generated.WithMintFilter(where.Filter))
-}
-
-// Pegouts is the resolver for the pegouts field.
-func (r *queryResolver) Pegouts(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, where *generated.PegoutWhereInput) (*generated.PegoutConnection, error) {
-	return r.repo.Pegout.Query().
-		Paginate(ctx, after, first, before, last, generated.WithPegoutFilter(where.Filter))
-}
-
-// Reinits is the resolver for the reinits field.
-func (r *queryResolver) Reinits(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, where *generated.ReinitWhereInput) (*generated.ReinitConnection, error) {
-	return r.repo.Reinit.Query().
-		Paginate(ctx, after, first, before, last, generated.WithReinitFilter(where.Filter))
-}
-
-// TonMsgs is the resolver for the tonMsgs field.
-func (r *queryResolver) TonMsgs(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, where *generated.TonMsgWhereInput) (*generated.TonMsgConnection, error) {
-	return r.repo.TonMsg.Query().
-		Paginate(ctx, after, first, before, last, generated.WithTonMsgFilter(where.Filter))
-}
-
-// Query returns QueryResolver implementation.
-func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
-
-type queryResolver struct{ *Resolver }

@@ -1,6 +1,6 @@
 schema:
+  - ./ent.graphql
   - ./schema.graphql
-
 exec:
   filename: internal/gql/generated.go
   package: gql
@@ -10,6 +10,10 @@ resolver:
   dir: internal/gql
   package: gql
   filename_template: "{name}_resolvers.go"
+
+model:
+  filename: internal/gql/models.go
+  package: gql
 
 call_argument_directives_with_null: true
 
