@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/binary"
 	"math/big"
-	"math/rand/v2"
 
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/wire"
@@ -58,8 +57,6 @@ func (c *TeleportContract) SendPegoutProof(
 	*ton.BlockIDExt,
 	error,
 ) {
-	queryID := rand.Uint64()
-
 	blockHashUInt := new(big.Int).SetBytes(blockHash.CloneBytes())
 	txIDUInt := new(big.Int).SetBytes(txID.CloneBytes())
 
@@ -94,7 +91,6 @@ func (c *TeleportContract) SendPegoutProof(
 
 	payload := cell.BeginCell().
 		MustStoreUInt(opCodeConfirmPegoutTx, 32).
-		MustStoreUInt(queryID, 64).
 		MustStoreBigUInt(blockHashUInt, 256).
 		MustStoreBigUInt(txIDUInt, 256).MustStoreRef(proofCell).EndCell()
 
