@@ -1,7 +1,12 @@
 package utils
 
-import "encoding/hex"
+import (
+	"encoding/hex"
+	"fmt"
 
-func BytesToHexString(b []byte) string {
-    return hex.EncodeToString(b)
+	"github.com/xssnick/tonutils-go/address"
+)
+
+func AddrToRawString(addr *address.Address) string {
+	return fmt.Sprintf("%d:%s", addr.Workchain(), hex.EncodeToString(addr.Data()))
 }

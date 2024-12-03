@@ -1,0 +1,13 @@
+extend type Query {
+  statistics: Statistics!
+}
+
+type Statistics {
+  totalMints: Int!
+  totalBurns: Int!
+  totalTgBTCMinted: String!
+  totalTgBTCBurned: String!
+  tgBTCAmount: String!
+  uniqueMintReceiversCount: Int!
+  uniqueBurnSendersCount: Int!
+}

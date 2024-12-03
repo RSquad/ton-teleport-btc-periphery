@@ -1,53 +1,62 @@
 package relayerfactory
 
 import (
-    "context"
-    "fmt"
-    "os"
+	"context"
+	"fmt"
 
-    "github.com/xssnick/tonutils-go/address"
+	"github.com/xssnick/tonutils-go/address"
 
-    "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
-    "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton"
-    "github.com/rsquad/ton-teleport-btc-periphery/relayer/internal/block_relayer"
-    "github.com/rsquad/ton-teleport-btc-periphery/relayer/internal/pegout_relayer"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
+	bitcoinclientcontract "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/bitcoin_client_contract"
+	jwv4r2contract "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/jw_v4r2_contract"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/teleportcontract"
+	tonclient "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/ton_client"
+	blockrelayer "github.com/rsquad/ton-teleport-btc-periphery/relayer/internal/block_relayer"
+	pegoutrelayer "github.com/rsquad/ton-teleport-btc-periphery/relayer/internal/pegout_relayer"
 )
 
 type Relayer interface {
-    Relay() error
+	Relay() error
 }
 
 type RelayerFactory struct {
-    bitcoinClient *bitcoin.Client
-    tonClient     *ton.Client
+	bitcoinClient *bitcoin.Client
+	tonClient     *tonclient.TonClient
 }
 
-func NewRelayerFactory(bitcoinClient *bitcoin.Client, tonClient *ton.Client) *RelayerFactory {
-    return &RelayerFactory{
-        bitcoinClient: bitcoinClient,
-        tonClient:     tonClient,
-    }
+func NewRelayerFactory(bitcoinClient *bitcoin.Client, tonClient *tonclient.TonClient) *RelayerFactory {
+	return &RelayerFactory{
+		bitcoinClient: bitcoinClient,
+		tonClient:     tonClient,
+	}
 }
 
-func (c *RelayerFactory) CreateRelayer(relayerType string, sender *ton.WalletContract) (Relayer, error) {
-    switch relayerType {
-    case "block":
-        bitcoinClientContract := ton.NewBitcoinClientContract(
-            c.tonClient.API,
-            address.MustParseAddr(os.Getenv("COMMON_TON_CONTRACT_BITCLIENT_ADDR")),
-            sender,
-            context.Background(),
-        )
-        return blockrelayer.NewBlockRelayer(c.bitcoinClient, bitcoinClientContract)
-    case "pegout":
-        teleportContract := ton.NewTeleportContract(
-            c.tonClient.API,
-            address.MustParseAddr(os.Getenv("COMMON_TON_CONTRACT_TELEPORT_ADDR")),
-            sender,
-            context.Background(),
-        )
-        return pegoutrelayer.NewPegoutRelayer(c.bitcoinClient, teleportContract)
-    default:
-        return nil, fmt.Errorf("[RelayerFactory] unknown relayer type: %s", relayerType)
-    }
+func (c *RelayerFactory) CreateRelayer(
+	relayerType string,
+	sender *jwv4r2contract.JWV4R2Contract,
+	contractAddress string,
+) (
+	Relayer,
+	error,
+) {
+	bitcoinClientContract := bitcoinclientcontract.NewBitcoinClientContract(
+		address.MustParseAddr(contractAddress),
+		c.tonClient,
+		sender,
+		context.Background(),
+	)
+	switch relayerType {
+	case "block":
+		return blockrelayer.NewBlockRelayer(c.bitcoinClient, bitcoinClientContract)
+	case "pegout":
+		teleportContract := teleportcontract.New(
+			address.MustParseAddr(contractAddress),
+			c.tonClient,
+			sender,
+			context.Background(),
+		)
+		return pegoutrelayer.NewPegoutRelayer(c.bitcoinClient, teleportContract, bitcoinClientContract)
+	default:
+		return nil, fmt.Errorf("[RelayerFactory] unknown relayer type: %s", relayerType)
+	}
 }

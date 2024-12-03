@@ -1,0 +1,29 @@
+schema:
+  - ./ent.graphql
+  - ./schema.graphql
+exec:
+  filename: internal/gql/generated.go
+  package: gql
+
+resolver:
+  layout: follow-schema
+  dir: internal/gql
+  package: gql
+  filename_template: "{name}_resolvers.go"
+
+model:
+  filename: internal/gql/models.go
+  package: gql
+
+call_argument_directives_with_null: true
+
+autobind:
+  - "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated"
+
+models:
+  ID:
+    model:
+      - github.com/99designs/gqlgen/graphql.IntID
+  Node:
+    model:
+      - github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated.Noder
