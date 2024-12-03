@@ -19,7 +19,7 @@ func parseTxPartsSignatureValue(valueSlice *cell.Slice) ([]byte, error) {
 		return nil, errors.New("valueSlice is nil")
 	}
 
-	signatureBytes := valueSlice.MustLoadSlice(64 * 8)
+	signatureBytes := valueSlice.MustLoadSlice(65 * 8)
 	return signatureBytes, nil
 }
 
