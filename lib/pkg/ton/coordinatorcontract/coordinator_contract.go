@@ -5,18 +5,14 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
-
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/dict"
-
 	jwv4r2contract "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/jw_v4r2_contract"
+	tonclient "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/ton_client"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
+	"github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/tlb"
 	"github.com/xssnick/tonutils-go/ton"
 	"github.com/xssnick/tonutils-go/tvm/cell"
-
-	"github.com/xssnick/tonutils-go/address"
-
-	tonclient "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/ton_client"
 )
 
 const (
@@ -36,12 +32,12 @@ type CoordinatorContract struct {
 type R1Package struct {
 	mask     uint64
 	count    uint64
-	packages map[dict.R1PackageKey]dict.R1PackageValue
+	packages dict.R1Packages
 }
 type R2Package struct {
 	mask     uint64
 	count    uint64
-	packages map[dict.R2PackageKey]dict.R2PackageValue
+	packages dict.R2Packages
 }
 type R3Package struct {
 	mask       *big.Int
@@ -55,7 +51,7 @@ type PubkeyData struct {
 type DKG struct {
 	state      uint64
 	maxSigners uint64
-	vset       map[uint64][]byte
+	vsets      dict.VSets
 	r1Packages R1Package
 	r2Packages R2Package
 	r3Package  R3Package
@@ -76,6 +72,7 @@ type (
 		round1Package []byte
 	}
 )
+
 type R2Options struct {
 	lifetime       uint64
 	validatorIdx   uint16
@@ -145,20 +142,28 @@ func (c *CoordinatorContract) GetDKG() (*DKG, error) {
 func (c *CoordinatorContract) parseDkg(dkgCell *cell.Slice) (*DKG, error) {
 	state, _ := dkgCell.LoadUInt(2)
 
-	dictionary := dkgCell.MustLoadDict(16)
-
-	vsetDict := dict.VSetDict{}
-	vset := vsetDict.NewDict(dictionary).Get()
+	vSetsDictCell := dkgCell.MustLoadDict(16)
+	vSets, err := dict.NewVSetsFromDictCell(vSetsDictCell)
+	if err != nil {
+		return nil, err
+	}
 
 	maxSigners, _ := dkgCell.LoadUInt(16)
 
 	r1PackageParams, _ := packageParse(dkgCell)
-	r1PackageDict := dict.R1PackageDict{}
-	r1Package := r1PackageDict.NewDict(dkgCell.MustLoadDict(256)).Get()
+
+	r1PackageDict := dkgCell.MustLoadDict(256)
+	r1Packages, err := dict.NewR1PackageFromDictCell(r1PackageDict)
+	if err != nil {
+		return nil, err
+	}
 
 	r2PackageParams, _ := packageParse(dkgCell)
-	r2PackageDict := dict.R2PackageDict{}
-	r2Package := r2PackageDict.NewDict(dkgCell.MustLoadDict(256)).Get()
+	r2PackageDict := dkgCell.MustLoadDict(256)
+	r2Packages, err := dict.NewR2PackageFromDictCell(r2PackageDict)
+	if err != nil {
+		return nil, err
+	}
 
 	cfgHash, _ := dkgCell.LoadSlice(256)
 	attempts := dkgCell.MustLoadUInt(8)
@@ -180,16 +185,16 @@ func (c *CoordinatorContract) parseDkg(dkgCell *cell.Slice) (*DKG, error) {
 	return &DKG{
 		maxSigners: maxSigners,
 		state:      state,
-		vset:       vset,
+		vsets:      *vSets,
 		r1Packages: R1Package{
 			count:    r1PackageParams.count,
 			mask:     r1PackageParams.mask,
-			packages: r1Package,
+			packages: *r1Packages,
 		},
 		r2Packages: R2Package{
 			count:    r2PackageParams.count,
 			mask:     r2PackageParams.mask,
-			packages: r2Package,
+			packages: *r2Packages,
 		},
 		r3Package: R3Package{
 			mask:       validatorsMask,
@@ -341,7 +346,7 @@ func (c *CoordinatorContract) SendCommitments(opts CommitmentsOptions) error {
 	return nil
 }
 
-func (c *CoordinatorContract) GetSigningShares(pegoutTxId *big.Int) (map[dict.SigningSharesKey]dict.SigningSharesValue, error) {
+func (c *CoordinatorContract) GetSigningShares(pegoutTxId *big.Int) (*dict.SigningShares, error) {
 	block, err := c.tonClient.API.CurrentMasterchainInfo(c.ctx)
 	if err != nil {
 		return nil, err
@@ -352,13 +357,16 @@ func (c *CoordinatorContract) GetSigningShares(pegoutTxId *big.Int) (map[dict.Si
 	}
 	slice := result.MustCell(0).BeginParse()
 
-	signingSharesDict := dict.SigningSharesDict{}
-	shares := signingSharesDict.NewDict(slice.MustLoadDict(256)).Get()
+	signingSharesDict := slice.MustLoadDict(256)
+	shares, err := dict.NewSigningSharesFromDictCell(signingSharesDict)
+	if err != nil {
+		return nil, err
+	}
 
 	return shares, nil
 }
 
-func (c *CoordinatorContract) GetUnsignedPegouts(block *ton.BlockIDExt) (*cell.Dictionary, error) {
+func (c *CoordinatorContract) GetUnsignedPegOuts(block *ton.BlockIDExt) (*cell.Dictionary, error) {
 	result, err := c.tonClient.API.RunGetMethod(c.ctx, block, c.Addr, "get_pegout_records")
 	if err != nil {
 		return nil, err
