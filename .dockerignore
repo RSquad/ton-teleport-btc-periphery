@@ -1,0 +1,56 @@
+# Ignore environment files
+.env
+
+# Ignore build and generated files
+/build/
+generated/
+generated.go
+
+# Ignore logs and temporary files
+*.log
+*.out
+/tmp/
+*.o
+*.a
+
+# Ignore vendor directory
+/vendor/
+
+# Ignore cache files
+/.cache/
+*.cache
+
+# Ignore editor and IDE specific files
+*~
+*.swp
+*.swo
+.DS_Store
+.idea/
+.vscode/
+
+# Ignore Go specific files
+*.cgo1.go
+*.cgo2.c
+*_testmain.go
+profile.out
+/go.sum
+
+# Ignore binary files
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+
+# Ignore other specific files
+*.iws
+out/
+.idea_modules/
+atlassian-ide-plugin.xml
+com_crashlytics_export_strings.xml
+crashlytics.properties
+crashlytics-build.properties
+fabric.properties
+.idea/httpRequests
+.idea/caches/build_file_checksums.ser
