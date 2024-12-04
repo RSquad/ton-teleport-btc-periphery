@@ -96,12 +96,12 @@ func run(app *App) error {
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
 
-	if err := startRelayer(app, "block", app.Config.BitcoinClientContractAddr, 10*time.Second, ctx); err != nil {
+	if err := startRelayer(app, "block", 10*time.Second, ctx); err != nil {
 		return fmt.Errorf("[App] failed to start block relayer: %w", err)
 	}
 
 	time.Sleep(5 * time.Second)
-	if err := startRelayer(app, "pegout", app.Config.TeleportContractAddr, 10*time.Second, ctx); err != nil {
+	if err := startRelayer(app, "pegout", 10*time.Second, ctx); err != nil {
 		return fmt.Errorf("[App] failed to start pegout relayer: %w", err)
 	}
 
@@ -116,14 +116,14 @@ func run(app *App) error {
 func startRelayer(
 	app *App,
 	relayerName string,
-	contractAddress string,
 	interval time.Duration,
 	ctx context.Context,
 ) error {
 	relayer, err := app.RelayerFactory.CreateRelayer(
 		relayerName,
 		app.JWV4R2Contract,
-		contractAddress,
+		app.Config.BitcoinClientContractAddr,
+		app.Config.TeleportContractAddr,
 	)
 	if err != nil {
 		return fmt.Errorf("[App] failed to create %v relayer: %w", relayerName, err)
