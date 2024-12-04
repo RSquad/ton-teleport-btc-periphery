@@ -59,12 +59,12 @@ func (c *PegoutRelayer) Relay() error {
 
 	blockHash, err := c.bitcoinClient.GetBlockHashByTxID(teleportContractStorage.LastPegoutTxID)
 	if err != nil {
-		return fmt.Errorf("[PegoutRelayer] failed to get pegout tx block hash: %w", err)
+		return fmt.Errorf("[PegoutRelayer] failed to get last pegout tx block hash: %w", err)
 	}
 
 	blockHeight, err := c.bitcoinClient.GetBlockHeightByHash(blockHash)
 	if err != nil {
-		return fmt.Errorf("[PegoutRelayer] failed to get pegout tx block height: %w", err)
+		return fmt.Errorf("[PegoutRelayer] failed to get last pegout tx block height: %w", err)
 	}
 
 	lastConfirmedBlockHash, err := c.bitcoinClientContract.GetLastConfirmedBlockHash()
@@ -82,30 +82,30 @@ func (c *PegoutRelayer) Relay() error {
 		return fmt.Errorf("[PegoutRelayer] failed to get bitcoin client contract confirmations needed: %w", err)
 	}
 
-	if blockHeight-lastConfirmedBlockHeight > confirmationsNeeded {
+	if lastConfirmedBlockHeight-blockHeight >= confirmationsNeeded {
 		txProof, err := c.getTxProof(teleportContractStorage.LastPegoutTxID, blockHash)
 		if err != nil {
-			return fmt.Errorf("[PegoutRelayer] failed to get pegout tx proof: %w", err)
+			return fmt.Errorf("[PegoutRelayer] failed to get last pegout tx proof: %w", err)
 		}
 
 		merkleBlock, err := c.decodeTxProof(txProof)
 		if err != nil {
-			return fmt.Errorf("[PegoutRelayer] failed to decode pegout tx proof: %w", err)
+			return fmt.Errorf("[PegoutRelayer] failed to decode last pegout tx proof: %w", err)
 		}
 
-		log.Printf("[PegoutRelayer] sending pegout tx: txId=%v", teleportContractStorage.LastPegoutTxID.String())
+		log.Printf("[PegoutRelayer] sending last pegout tx proof: txId=%v", teleportContractStorage.LastPegoutTxID.String())
 
 		tx, _, err := c.teleportContract.SendPegoutProof(teleportContractStorage.LastPegoutTxID, blockHash, merkleBlock)
 		if err != nil {
 			return fmt.Errorf("[PegoutRelayer] failed to send pegout tx proof: %w", err)
 		}
 
-		log.Printf("[PegoutRelayer] pegout tx proof sent: tonTxHash=%s", hex.EncodeToString(tx.Hash))
+		log.Printf("[PegoutRelayer] last pegout tx proof sent: tonTxHash=%s", hex.EncodeToString(tx.Hash))
 
 		return nil
 	}
 
-	log.Println("[PegoutRelayer] nothing to relay")
+	log.Println("[PegoutRelayer] last pegout tx not confirmed yet")
 
 	return nil
 }
