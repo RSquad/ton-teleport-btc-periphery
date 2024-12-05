@@ -75,19 +75,25 @@ func NewFromStateInit(
 func (c *PegoutContract) GetTxParts(block *ton.BlockIDExt) (*TxParts, error) {
 	res, err := c.tonClient.API.RunGetMethod(c.ctx, block, c.Addr, "get_tx_parts")
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get tx parts: %w", err)
 	}
 
-	inputsDictCell := res.MustCell(txPartsIndexInputsDictCell).AsDict(256)
-	inputs, err := NewTxPartsInputsFromDictCell(inputsDictCell)
+	inputsDictCell, err := res.Cell(txPartsIndexInputsDictCell)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get inputs dict cell: %w", err)
+	}
+	inputs, err := NewTxPartsInputsFromDictCell(inputsDictCell.AsDict(256))
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode inputs: %w", err)
 	}
 
-	pegoutOutputCell := res.MustCell(txPartsIndexPegoutOutputCell)
+	pegoutOutputCell, err := res.Cell(txPartsIndexPegoutOutputCell)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get pegout output cell: %w", err)
+	}
 	pegoutOutput, err := DecodeTxPartsOutput(pegoutOutputCell)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to decode pegout output: %w", err)
 	}
 	outputs := []*TxPartsOutput{pegoutOutput}
 
@@ -95,18 +101,24 @@ func (c *PegoutContract) GetTxParts(block *ton.BlockIDExt) (*TxParts, error) {
 	if err == nil {
 		changeOutput, err := DecodeTxPartsOutput(changeOutputCell)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to decode change output: %w", err)
 		}
 		outputs = append(outputs, changeOutput)
 	}
 
-	signaturesDictCell := res.MustCell(txPartsIndexSignaturesDictCell).AsDict(16)
-	signatures, err := NewTxPartsSignaturesFromDictCell(signaturesDictCell)
+	signaturesDictCell, err := res.Cell(txPartsIndexSignaturesDictCell)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get signatures dict cell: %w", err)
+	}
+	signatures, err := NewTxPartsSignaturesFromDictCell(signaturesDictCell.AsDict(16))
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode signatures: %w", err)
 	}
 
-	internalKey := res.MustInt(txPartsIndexInternalKey)
+	internalKey, err := res.Int(txPartsIndexInternalKey)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get internal key: %w", err)
+	}
 
 	return &TxParts{
 		Inputs:      inputs,
