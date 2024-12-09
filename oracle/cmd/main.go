@@ -10,7 +10,7 @@ import (
 	"github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/ton/wallet"
 
-	coordinatorcontract "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator_contract"
+	coordinatorcontract "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinatorcontract"
 	tonclient "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/ton_client"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
 	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/config"
@@ -31,7 +31,7 @@ func initialize() (*App, error) {
 	if err != nil {
 		return nil, err
 	}
-  
+
 	// jwV4R2Secret, err := hex.DecodeString(oracleConfig.OracleWalletSecret)
 	words := strings.Split(oracleConfig.OracleWalletSecret, " ")
 
@@ -50,7 +50,7 @@ func initialize() (*App, error) {
 		return nil, fmt.Errorf("[App] failed to create jwv4r2 contract: %w", err)
 	}
 
-	coordinatorContract, err := coordinatorcontract.NewCoordinatorContract(
+	coordinatorContract := coordinatorcontract.New(
 		address.MustParseAddr(oracleConfig.CoordinatorContractAddr),
 		tonClient,
 		jwV4R2Contract,
@@ -71,11 +71,6 @@ func main() {
 		log.Fatalf("[App] failed to initialize: %v", err)
 	}
 
-	//dkg, err := app.CoordinatorContract.GetDKG()
-	//if err != nil {
-	//	log.Fatalf("[App] Get dkg  error: %v", err)
-	//}
-	//log.Printf("fDKG = %v", dkg)
 	prevDkg, err := app.CoordinatorContract.GetPrevDKG()
 	if err != nil {
 		log.Fatalf("[App] Get prev dkg error: %v", err)
