@@ -4,10 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"os/exec"
 	"regexp"
 	"sort"
 	"strings"
+
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils/console_executor"
 )
 
 const DefaultVerbosityLevel = 0
@@ -45,6 +46,7 @@ type ValidatorEngineConsole struct {
 	ClientPrivateKeyPath       string
 	ServerAddress              string
 	baseCommandParams          BaseCommandParams
+	consoleExecutor            console_executor.ConsoleExecutorInterface
 }
 
 func NewValidatorEngineConsole(
@@ -52,6 +54,7 @@ func NewValidatorEngineConsole(
 	serverPublicKeyPath string,
 	clientPrivateKeyPath string,
 	serverAddress string,
+	executor console_executor.ConsoleExecutorInterface,
 ) *ValidatorEngineConsole {
 	baseCommandParams := BaseCommandParams{
 		P: serverPublicKeyPath,
@@ -65,6 +68,7 @@ func NewValidatorEngineConsole(
 		ClientPrivateKeyPath:       clientPrivateKeyPath,
 		ServerAddress:              serverAddress,
 		baseCommandParams:          baseCommandParams,
+		consoleExecutor:            executor,
 	}
 }
 
@@ -144,8 +148,10 @@ func (v *ValidatorEngineConsole) GetValidatorPublicKey(timestamp int64) (string,
 func (v *ValidatorEngineConsole) runCommand(params ValidatorEngineCommand) (string, error) {
 	executable := fmt.Sprintf("%s/validator-engine-console", v.ValidatorEngineConsolePath)
 	command := v.buildCommand(executable, params)
-
-	result, err := v.execute(command)
+	if v.consoleExecutor == nil {
+		return "", fmt.Errorf("executor is nil")
+	}
+	result, err := v.consoleExecutor.Execute(command)
 	if err != nil {
 		log.Fatalf("Error running command: %v", err)
 	}
@@ -162,15 +168,6 @@ func (v *ValidatorEngineConsole) buildCommand(executable string, parameters Vali
 		parameters.V,
 		parameters.C,
 	)
-}
-
-func (v *ValidatorEngineConsole) execute(command string) (string, error) {
-	stdout, err := exec.Command("bash", "-c", command).Output()
-	if err != nil {
-		log.Fatalf(err.Error())
-	}
-
-	return string(stdout), nil
 }
 
 func (v *ValidatorEngineConsole) parseGetValidatorConfigOutput(output string) (*ValidatorEngineConfig, error) {
