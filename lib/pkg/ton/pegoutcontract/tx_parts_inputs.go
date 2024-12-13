@@ -21,8 +21,8 @@ type TxPartsInput struct {
 type TxPartsInputs map[string]*TxPartsInput
 
 func parseTxPartsInputKey(keySlice *cell.Slice, keySize uint) string {
-	key := keySlice.MustLoadBigUInt(keySize)
-	return fmt.Sprintf("%x", key.Bytes())
+	key := keySlice.MustLoadSlice(keySize)
+	return fmt.Sprintf("%x", key)
 }
 
 func parseTxPartsInputValue(valueSlice *cell.Slice) (*TxPartsInput, error) {
