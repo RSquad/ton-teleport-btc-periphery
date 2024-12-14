@@ -242,7 +242,10 @@ func (c *PegoutManager) buildPegoutTx(txParts *pegoutcontract.TxParts) (*wire.Ms
 			pInput.TaprootMerkleRoot = input.BitcoinMerkleRoot
 		}
 		signature := (*txParts.Signatures)[strconv.Itoa(i)]
-		pInput.TaprootKeySpendSig = signature[len(signature)-64:]
+		if len(signature) > 64 {
+			signature = signature[len(signature)-64:]
+		}
+		pInput.TaprootKeySpendSig = signature
 		packet.Inputs = append(packet.Inputs, pInput)
 	}
 
