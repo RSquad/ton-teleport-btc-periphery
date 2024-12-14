@@ -2,6 +2,7 @@ package pegoutcontract
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/parseddict"
 	"github.com/xssnick/tonutils-go/tvm/cell"
@@ -10,8 +11,7 @@ import (
 type TxPartsSignatures map[string][]byte
 
 func parseTxPartsSignatureKey(keySlice *cell.Slice, keySize uint) string {
-	key := keySlice.MustLoadBigUInt(keySize)
-	return key.String()
+	return fmt.Sprintf("%x", keySlice.MustLoadSlice(keySize))
 }
 
 func parseTxPartsSignatureValue(valueSlice *cell.Slice) ([]byte, error) {
