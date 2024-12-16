@@ -21,8 +21,8 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/pegoutmanager"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/teleportcontract"
-	tonclient "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/ton_client"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/toncenterv3"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
 	"github.com/xssnick/tonutils-go/address"
 )
@@ -64,7 +64,7 @@ func initialize() (*App, error) {
 		return nil, fmt.Errorf("[App] failed to create bitcoin client: %w", err)
 	}
 
-	tonClient, err := tonclient.NewTonClient(indexerConfig.TonConfigUrl)
+	tonClient, err := tonclient.New(indexerConfig.TonConfigUrl)
 	if err != nil {
 		return nil, fmt.Errorf("[App] failed to create ton client: %w", err)
 	}

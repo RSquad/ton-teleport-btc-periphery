@@ -23,8 +23,8 @@ func parseSigningShareValue(value *cell.Slice) (*cell.Cell, error) {
 	return value.MustToCell(), nil
 }
 
-func NewSigningSharesFromDictCell(dictCell *cell.Dictionary) (*SigningShares, error) {
-	result, err := parseddict.NewFromDictCell(dictCell, parseSigningShareKey, parseSigningShareValue)
+func NewSigningShares(dict *cell.Dictionary) (*SigningShares, error) {
+	result, err := parseddict.New(dict, parseSigningShareKey, parseSigningShareValue)
 	if err != nil {
 		return nil, err
 	}

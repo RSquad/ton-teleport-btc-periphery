@@ -8,7 +8,7 @@ import (
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
-	bitcoinclientcontract "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/bitcoin_client_contract"
+	bitcoinclientcontract "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/bitcoinclientcontract"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
 )
 

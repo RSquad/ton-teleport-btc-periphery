@@ -4,6 +4,6 @@ use (
 	./frost
 	./indexer
 	./lib
-	// ./oracle
+	./oracle
 	./relayer
 )

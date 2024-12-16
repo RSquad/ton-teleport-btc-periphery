@@ -7,19 +7,23 @@ import (
 	"github.com/xssnick/tonutils-go/tvm/cell"
 )
 
-func NewFromDictCell[V any](dictCell *cell.Dictionary, parseKey func(*cell.Slice, uint) string, parseValue func(*cell.Slice) (V, error)) (*map[string]V, error) {
-	if dictCell == nil {
+func ParseKey(s *cell.Slice, keySize uint) string {
+	return fmt.Sprintf("%x", s.MustLoadBigUInt(keySize).Bytes())
+}
+
+func New[V any](dict *cell.Dictionary, parseKey func(*cell.Slice, uint) string, parseValue func(*cell.Slice) (V, error)) (*map[string]V, error) {
+	if dict == nil {
 		return nil, errors.New("dict cell is nil")
 	}
 
-	dictKV, err := dictCell.LoadAll()
+	dictKV, err := dict.LoadAll()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load dictionary: %w", err)
 	}
 
 	result := make(map[string]V)
 	for _, kv := range dictKV {
-		key := parseKey(kv.Key, dictCell.GetKeySize())
+		key := parseKey(kv.Key, dict.GetKeySize())
 
 		value, err := parseValue(kv.Value)
 		if err != nil {

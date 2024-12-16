@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"math/big"
 
-	tonclient "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/ton_client"
+	tonclient "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
 	"github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/tlb"
 	"github.com/xssnick/tonutils-go/ton"
@@ -82,7 +82,7 @@ func (c *PegoutContract) GetTxParts(block *ton.BlockIDExt) (*TxParts, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to get inputs dict cell: %w", err)
 	}
-	inputs, err := NewTxPartsInputsFromDictCell(inputsDictCell.AsDict(256))
+	inputs, err := NewTxPartsInputs(inputsDictCell.AsDict(256))
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode inputs: %w", err)
 	}
@@ -110,7 +110,7 @@ func (c *PegoutContract) GetTxParts(block *ton.BlockIDExt) (*TxParts, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to get signatures dict cell: %w", err)
 	}
-	signatures, err := NewTxPartsSignaturesFromDictCell(signaturesDictCell.AsDict(16))
+	signatures, err := NewTxPartsSignatures(signaturesDictCell.AsDict(16))
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode signatures: %w", err)
 	}

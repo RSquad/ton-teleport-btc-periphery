@@ -7,10 +7,10 @@ import (
 	"github.com/xssnick/tonutils-go/address"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
-	bitcoinclientcontract "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/bitcoin_client_contract"
+	bitcoinclientcontract "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/bitcoinclientcontract"
 	jwv4r2contract "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/jw_v4r2_contract"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/teleportcontract"
-	tonclient "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/ton_client"
+	tonclient "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
 	blockrelayer "github.com/rsquad/ton-teleport-btc-periphery/relayer/internal/block_relayer"
 	pegoutrelayer "github.com/rsquad/ton-teleport-btc-periphery/relayer/internal/pegout_relayer"
 )
