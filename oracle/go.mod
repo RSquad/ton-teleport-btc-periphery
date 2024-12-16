@@ -1,6 +1,6 @@
 module github.com/rsquad/ton-teleport-btc-periphery/oracle
 
-go 1.22.0
+go 1.23
 
 replace github.com/rsquad/ton-teleport-btc-periphery/lib => ../lib
 

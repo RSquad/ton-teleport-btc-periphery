@@ -19,20 +19,20 @@ type (
 )
 
 type UnsignedPegoutsDict struct {
-	dictCell *cell.Dictionary
+	dict *cell.Dictionary
 }
 
-func NewUnsignedPegoutsDict(dictCell *cell.Dictionary) *UnsignedPegoutsDict {
+func NewUnsignedPegoutsDict(dict *cell.Dictionary) *UnsignedPegoutsDict {
 	return &UnsignedPegoutsDict{
-		dictCell,
+		dict,
 	}
 }
 
 func (c *UnsignedPegoutsDict) Get(key *big.Int) *UnsignedPegout {
-	if c.dictCell == nil {
+	if c.dict == nil {
 		return nil
 	}
-	valueSlice, err := c.dictCell.LoadValueByIntKey(key)
+	valueSlice, err := c.dict.LoadValueByIntKey(key)
 	if err != nil {
 		return nil
 	}
