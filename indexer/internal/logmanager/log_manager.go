@@ -8,6 +8,7 @@ import (
 	"time"
 
 	ent "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated"
+	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated/pegin"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated/tonmsg"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinatorcontract"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/loglistener"
@@ -56,7 +57,7 @@ func New(
 
 	teleportContractLogParser, err := teleportcontract.NewLogParser()
 	if err != nil {
-		return nil, fmt.Errorf("[LogManager] failed to create teleport contract log parser: %w", err)
+		return nil, fmt.Errorf("failed to create teleport contract log parser: %w", err)
 	}
 	logManager.teleportContractLogParser = teleportContractLogParser
 
@@ -66,13 +67,13 @@ func New(
 		logManager.onLogReceived,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("[LogManager] failed to create teleport contract log listener: %w", err)
+		return nil, fmt.Errorf("failed to create teleport contract log listener: %w", err)
 	}
 	logManager.teleportContractLogListener = teleportContractLogListener
 
 	coordinatorContractLogParser, err := coordinatorcontract.NewLogParser()
 	if err != nil {
-		return nil, fmt.Errorf("[LogManager] failed to create coordinator contract log parser: %w", err)
+		return nil, fmt.Errorf("failed to create coordinator contract log parser: %w", err)
 	}
 	logManager.coordinatorContractLogParser = coordinatorContractLogParser
 
@@ -82,7 +83,7 @@ func New(
 		logManager.onLogReceived,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("[LogManager] failed to create coordinator contract log listener: %w", err)
+		return nil, fmt.Errorf("failed to create coordinator contract log listener: %w", err)
 	}
 	logManager.coordinatorContractLogListener = coordinatorContractLogListener
 
@@ -95,12 +96,10 @@ func (c *LogManager) Run() {
 }
 
 func (c *LogManager) onLogReceived(logCell *cell.Cell, msgHash string, msgCreatedAt time.Time) {
-	parsedLog, err := c.teleportContractLogParser.Parse(logCell)
-	if parsedLog == nil {
-		parsedLog, err = c.coordinatorContractLogParser.Parse(logCell)
-	}
-	if err != nil {
-		log.Printf("[LogManager] failed to parse log %v", err)
+	parsedLog, err := c.parseLog(logCell)
+	if err != nil || parsedLog == nil {
+		log.Printf("failed to parse log %v", err)
+		return
 	}
 
 	exists, err := c.checkMsgExists(msgHash)
@@ -113,82 +112,125 @@ func (c *LogManager) onLogReceived(logCell *cell.Cell, msgHash string, msgCreate
 		return
 	}
 
+	err = c.saveLog(tonMsg, parsedLog)
+	if err != nil {
+		log.Printf("failed to save log %v: %v", parsedLog.GetLogID(), err)
+	}
+}
+
+func (c *LogManager) parseLog(logCell *cell.Cell) (teleportcontract.LogInterface, error) {
+	parsedLog, err := c.teleportContractLogParser.Parse(logCell)
+	if parsedLog == nil {
+		parsedLog, err = c.coordinatorContractLogParser.Parse(logCell)
+	}
+	return parsedLog, err
+}
+
+func (c *LogManager) saveLog(tonMsg *ent.TonMsg, parsedLog teleportcontract.LogInterface) error {
 	switch typedParsedLog := parsedLog.(type) {
 	case *teleportcontract.MintLog:
-		c.saveMint(tonMsg, typedParsedLog)
+		return c.saveMint(tonMsg, typedParsedLog)
 	case *teleportcontract.BurnLog:
-		c.saveBurn(tonMsg, typedParsedLog)
+		return c.saveBurn(tonMsg, typedParsedLog)
 	case *teleportcontract.ReinitLog:
-		c.saveReinit(tonMsg, typedParsedLog)
+		return c.saveReinit(tonMsg, typedParsedLog)
 	case *coordinatorcontract.DKGCompletedLog:
-		c.saveInternalKey(tonMsg, typedParsedLog)
+		return c.saveInternalKey(tonMsg, typedParsedLog)
 	default:
-		log.Printf("[LogManager] unknown log type %T\n", typedParsedLog.GetLogID())
+		log.Printf("unknown log type %T\n", typedParsedLog.GetLogID())
+		return nil
 	}
 }
 
-func (c *LogManager) saveMint(tonMsg *ent.TonMsg, typedParsedLog *teleportcontract.MintLog) {
-	_, err := c.repo.Mint.Create().
-		SetReceiverAddr(utils.AddrToRawString(typedParsedLog.ReceiverAddr)).
-		SetAmount(typedParsedLog.Amount.String()).
-		SetBitcoinTxId(typedParsedLog.BitcoinTxID.String()).
-		SetTonMsg(tonMsg).
-		Save(c.ctx)
-	if err != nil {
-		log.Printf("[LogManager] failed to save mint: %v %v %v", err, typedParsedLog, tonMsg)
-	}
+func (c *LogManager) saveMint(tonMsg *ent.TonMsg, typedParsedLog *teleportcontract.MintLog) error {
+	return c.saveTransaction(func(tx *ent.Tx) error {
+		existingPegin, err := tx.Pegin.Query().
+			Where(pegin.BitcoinTxIdEQ(typedParsedLog.BitcoinTxID.String())).
+			Only(c.ctx)
+		if err == nil {
+			_, err = tx.Mint.UpdateOne(existingPegin.Edges.Mint).
+				SetTonMsg(tonMsg).
+				Save(c.ctx)
+			return err
+		}
+
+		mint, err := tx.Mint.Create().
+			SetTonMsg(tonMsg).
+			Save(c.ctx)
+		if err != nil {
+			return err
+		}
+		_, err = tx.Pegin.Create().
+			SetReceiverAddr(utils.AddrToRawString(typedParsedLog.ReceiverAddr)).
+			SetAmount(typedParsedLog.Amount.String()).
+			SetBitcoinTxId(typedParsedLog.BitcoinTxID.String()).
+			SetMint(mint).
+			Save(c.ctx)
+		return err
+	})
 }
 
-func (c *LogManager) saveBurn(tonMsg *ent.TonMsg, typedParsedLog *teleportcontract.BurnLog) {
-	pegout, err := c.savePegout(typedParsedLog)
-	if err != nil {
-		log.Printf("[LogManager] failed to save pegout: %v %v %v", err, typedParsedLog, tonMsg)
-		return
-	}
-	_, err = c.repo.Burn.Create().
-		SetExternalId(int64(typedParsedLog.ID)).
-		SetSenderAddr(utils.AddrToRawString(typedParsedLog.SenderAddr)).
-		SetAmount(typedParsedLog.Amount.String()).
-		SetBitcoinScript(hex.EncodeToString(typedParsedLog.BitcoinScript)).
-		SetTonMsg(tonMsg).
-		SetPegout(pegout).
-		Save(c.ctx)
-	if err != nil {
-		log.Printf("[LogManager] failed to save burn: %v %v %v", err, typedParsedLog, tonMsg)
-	}
+func (c *LogManager) saveBurn(tonMsg *ent.TonMsg, typedParsedLog *teleportcontract.BurnLog) error {
+	return c.saveTransaction(func(tx *ent.Tx) error {
+		pegout, err := c.savePegoutTx(tx, typedParsedLog)
+		if err != nil {
+			return err
+		}
+		_, err = tx.Burn.Create().
+			SetExternalId(int64(typedParsedLog.ID)).
+			SetSenderAddr(utils.AddrToRawString(typedParsedLog.SenderAddr)).
+			SetAmount(typedParsedLog.Amount.String()).
+			SetBitcoinScript(hex.EncodeToString(typedParsedLog.BitcoinScript)).
+			SetTonMsg(tonMsg).
+			SetPegout(pegout).
+			Save(c.ctx)
+		return err
+	})
 }
 
-func (c *LogManager) saveReinit(tonMsg *ent.TonMsg, typedParsedLog *teleportcontract.ReinitLog) {
-	pegout, err := c.savePegout(typedParsedLog)
-	if err != nil {
-		log.Printf("[LogManager] failed to save pegout: %v %v %v", err, typedParsedLog, tonMsg)
-		return
-	}
-	_, err = c.repo.Reinit.Create().
-		SetExternalId(int64(typedParsedLog.ID)).
-		SetAmount(typedParsedLog.Amount.String()).
-		SetBitcoinTxId(typedParsedLog.BitcoinTxID.String()).
-		SetBitcoinScript(hex.EncodeToString(typedParsedLog.BitcoinScript)).
-		SetTonMsg(tonMsg).
-		SetPegout(pegout).
-		Save(c.ctx)
-	if err != nil {
-		log.Printf("[LogManager] failed to save reinit: %v %v %v", err, typedParsedLog, tonMsg)
-	}
+func (c *LogManager) saveReinit(tonMsg *ent.TonMsg, typedParsedLog *teleportcontract.ReinitLog) error {
+	return c.saveTransaction(func(tx *ent.Tx) error {
+		pegout, err := c.savePegoutTx(tx, typedParsedLog)
+		if err != nil {
+			return err
+		}
+		_, err = tx.Reinit.Create().
+			SetExternalId(int64(typedParsedLog.ID)).
+			SetAmount(typedParsedLog.Amount.String()).
+			SetBitcoinTxId(typedParsedLog.BitcoinTxID.String()).
+			SetBitcoinScript(hex.EncodeToString(typedParsedLog.BitcoinScript)).
+			SetTonMsg(tonMsg).
+			SetPegout(pegout).
+			Save(c.ctx)
+		return err
+	})
 }
 
-func (c *LogManager) saveInternalKey(tonMsg *ent.TonMsg, typedParsedLog *coordinatorcontract.DKGCompletedLog) {
+func (c *LogManager) saveInternalKey(tonMsg *ent.TonMsg, typedParsedLog *coordinatorcontract.DKGCompletedLog) error {
 	_, err := c.repo.InternalKey.Create().
 		SetCompletedAt(typedParsedLog.CompletedAt).
 		SetKey(hex.EncodeToString(typedParsedLog.Key)).
 		SetTonMsg(tonMsg).
 		Save(c.ctx)
-	if err != nil {
-		log.Printf("[LogManager] failed to save internal key: %v %v %v", err, typedParsedLog, tonMsg)
-	}
+	return err
 }
 
-func (c *LogManager) savePegout(parsedLog teleportcontract.LogWithPegoutInterface) (*ent.Pegout, error) {
+func (c *LogManager) saveTransaction(fn func(tx *ent.Tx) error) error {
+	tx, err := c.repo.Tx(c.ctx)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+		} else {
+			err = tx.Commit()
+		}
+	}()
+	return fn(tx)
+}
+
+func (c *LogManager) savePegoutTx(tx *ent.Tx, parsedLog teleportcontract.LogWithPegoutInterface) (*ent.Pegout, error) {
 	initData := &pegoutcontract.InitData{
 		ID:                   uint32(parsedLog.GetID()),
 		Amount:               parsedLog.GetAmount(),
@@ -204,15 +246,12 @@ func (c *LogManager) savePegout(parsedLog teleportcontract.LogWithPegoutInterfac
 		return nil, err
 	}
 
-	pegout, err := c.repo.Pegout.Create().
+	pegout, err := tx.Pegout.Create().
 		SetExternalId(int64(parsedLog.GetID())).
 		SetAddr(utils.AddrToRawString(pegoutContract.Addr)).
 		Save(c.ctx)
-	if err != nil {
-		log.Printf("[LogManager] failed to save ton msg: %v", err)
-		return nil, err
-	}
-	return pegout, nil
+
+	return pegout, err
 }
 
 func (c *LogManager) checkMsgExists(msgHash string) (bool, error) {
@@ -231,7 +270,7 @@ func (c *LogManager) createTonMsg(msgHash string, msgCreatedAt time.Time) (*ent.
 		SetCreatedAt(msgCreatedAt).
 		Save(c.ctx)
 	if err != nil {
-		log.Printf("[LogManager] failed to save ton msg: %v", err)
+		log.Printf("failed to save ton msg: %v", err)
 		return nil, err
 	}
 	return tonMsg, nil

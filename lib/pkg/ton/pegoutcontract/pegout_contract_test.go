@@ -5,14 +5,14 @@ import (
 	"reflect"
 	"testing"
 
-	tonclient "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/ton_client"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
 	"github.com/xssnick/tonutils-go/address"
 )
 
 func TestInputsOrder(t *testing.T) {
 	tonConfigUrl := "https://ton-blockchain.github.io/testnet-global.config.json"
 	ctx := context.Background()
-	client, err := tonclient.NewTonClient(tonConfigUrl)
+	client, err := tonclient.New(tonConfigUrl)
 	if err != nil {
 		t.Errorf("failed to create client: %v", err)
 	}

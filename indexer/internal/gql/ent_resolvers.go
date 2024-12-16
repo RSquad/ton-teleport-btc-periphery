@@ -39,6 +39,12 @@ func (r *queryResolver) Mints(ctx context.Context, after *entgql.Cursor[int], fi
 		Paginate(ctx, after, first, before, last, generated.WithMintFilter(where.Filter))
 }
 
+// Pegins is the resolver for the pegins field.
+func (r *queryResolver) Pegins(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, where *generated.PeginWhereInput) (*generated.PeginConnection, error) {
+	return r.repo.Pegin.Query().
+		Paginate(ctx, after, first, before, last, generated.WithPeginFilter(where.Filter))
+}
+
 // Pegouts is the resolver for the pegouts field.
 func (r *queryResolver) Pegouts(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, where *generated.PegoutWhereInput) (*generated.PegoutConnection, error) {
 	return r.repo.Pegout.Query().

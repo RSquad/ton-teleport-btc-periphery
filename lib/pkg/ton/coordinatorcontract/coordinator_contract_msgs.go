@@ -30,23 +30,7 @@ func (c *CoordinatorContract) SendStartDKG(ttl int64) (*tlb.Transaction, error) 
 		return nil, err
 	}
 
-	celll, err := tlb.ToCell(msg)
-	if err != nil {
-		return nil, err
-	}
-
-	log.Printf("c: %+v", celll.BeginParse().BitsLeft())
-
-	log.Printf("msg: %+v", msg.Payload().BeginParse().BitsLeft())
-	log.Printf("msg: %+v", msg.Payload().BeginParse().RefsNum())
-	log.Printf("msg: %+v", msg.Body.BeginParse().BitsLeft())
-	log.Printf("msg: %+v", msg.Body.BeginParse().RefsNum())
-
-	tx, block, inMsgHash, err := c.tonClient.API.SendExternalMessageWaitTransaction(c.ctx, msg)
-
-	log.Printf("tx: %+v", tx)
-	log.Printf("block: %+v", block)
-	log.Printf("inMsgHash: %+v", inMsgHash)
+	tx, _, _, err := c.tonClient.API.SendExternalMessageWaitTransaction(c.ctx, msg)
 
 	return tx, err
 }

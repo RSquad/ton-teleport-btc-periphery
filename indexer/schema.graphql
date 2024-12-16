@@ -11,3 +11,7 @@ type Statistics {
   uniqueMintReceiversCount: Int!
   uniqueBurnSendersCount: Int!
 }
+
+type Mutation {
+  createPegin(input: CreatePeginInput!): Pegin
+}

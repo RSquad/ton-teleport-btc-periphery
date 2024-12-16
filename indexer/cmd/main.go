@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"sync"
 
+	"entgo.io/contrib/entgql"
 	"entgo.io/ent/dialect"
 
 	"github.com/99designs/gqlgen/graphql/handler"
@@ -39,16 +40,16 @@ func main() {
 
 	app, err := initialize()
 	if err != nil {
-		log.Fatalf("[App] failed to initialize: %v", err)
+		log.Fatalf("failed to initialize: %v", err)
 	}
 
 	if err := run(app); err != nil {
-		log.Fatalf("[App] stopped with error: %v", err)
+		log.Fatalf("stopped with error: %v", err)
 	}
 }
 
 func initialize() (*App, error) {
-	log.Println("[App] initializing...")
+	log.Println("initializing...")
 
 	indexerConfig, err := utils.LoadConfig[config.IndexerConfig]()
 	if err != nil {
@@ -61,12 +62,12 @@ func initialize() (*App, error) {
 		indexerConfig.BitcoinRpcPass,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("[App] failed to create bitcoin client: %w", err)
+		return nil, fmt.Errorf("failed to create bitcoin client: %w", err)
 	}
 
 	tonClient, err := tonclient.New(indexerConfig.TonConfigUrl)
 	if err != nil {
-		return nil, fmt.Errorf("[App] failed to create ton client: %w", err)
+		return nil, fmt.Errorf("failed to create ton client: %w", err)
 	}
 
 	teleportContractAddr := address.MustParseAddr(indexerConfig.TeleportContractAddr)
@@ -76,14 +77,14 @@ func initialize() (*App, error) {
 
 	repo, err := ent.Open(dialect.Postgres, indexerConfig.DatabaseURL)
 	if err != nil {
-		log.Fatalf("[App] failed to create repo: %v", err)
+		log.Fatalf("failed to create repo: %v", err)
 	}
 
 	if err := repo.Schema.Create(
 		context.Background(),
 		migrate.WithGlobalUniqueID(true),
 	); err != nil {
-		log.Fatalf("[App] failed creating repos schema: %v", err)
+		log.Fatalf("failed creating repos schema: %v", err)
 	}
 
 	tonCenterV3Client, err := toncenterv3.NewClient(
@@ -94,7 +95,7 @@ func initialize() (*App, error) {
 		false,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("[App] failed to create ton client: %w", err)
+		return nil, fmt.Errorf("failed to create ton client: %w", err)
 	}
 
 	logManager, err := logmanager.New(
@@ -105,7 +106,7 @@ func initialize() (*App, error) {
 		coordinatorContractAddr,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("[App] failed to create log manager: %w", err)
+		return nil, fmt.Errorf("failed to create log manager: %w", err)
 	}
 
 	pegoutManager, err := pegoutmanager.New(
@@ -117,10 +118,10 @@ func initialize() (*App, error) {
 		teleportContract,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("[App] failed to create pegout manager: %w", err)
+		return nil, fmt.Errorf("failed to create pegout manager: %w", err)
 	}
 
-	log.Println("[App] initialized")
+	log.Println("initialized")
 
 	return &App{
 		TonCenterV3Client: tonCenterV3Client,
@@ -131,7 +132,6 @@ func initialize() (*App, error) {
 }
 
 func run(app *App) error {
-	log.Println("[App] running...")
 	defer app.Repo.Close()
 
 	var wg sync.WaitGroup
@@ -140,6 +140,7 @@ func run(app *App) error {
 	go func() {
 		defer wg.Done()
 		srv := handler.NewDefaultServer(gql.NewSchema(app.Repo))
+		srv.Use(entgql.Transactioner{TxOpener: app.Repo})
 
 		mux := http.NewServeMux()
 		mux.Handle("/indexer/graphql", srv)
@@ -174,6 +175,6 @@ func run(app *App) error {
 
 	wg.Wait()
 
-	log.Println("[App] shutdown complete")
+	log.Println("shutdown complete")
 	return nil
 }

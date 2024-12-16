@@ -14,18 +14,15 @@ type Mint struct {
 
 func (Mint) Fields() []ent.Field {
 	return []ent.Field{
-		field.Text("receiverAddr").
-			NotEmpty().
-			Immutable().
-			Annotations(entgql.MapsTo("receiverAddr")),
-		field.Text("amount").
-			NotEmpty().
-			Immutable(),
-		field.Text("bitcoinTxId").
-			Unique().
-			NotEmpty().
-			Immutable().
-			Annotations(entgql.MapsTo("bitcoinTxId")),
+		field.Enum("status").
+			NamedValues(
+				"Pending", "PENDING",
+				"Completed", "COMPLETED",
+				"Failed", "FAILED",
+				"Refund", "REFUND",
+				"Refunded", "REFUNDED",
+			).
+			Default("PENDING"),
 	}
 }
 
@@ -34,8 +31,9 @@ func (Mint) Edges() []ent.Edge {
 		edge.From("tonMsg", TonMsg.Type).
 			Ref("mint").
 			Unique().
-			Required().
 			Annotations(entgql.MapsTo("tonMsg")),
+		edge.To("pegin", Pegin.Type).
+			Unique(),
 	}
 }
 
@@ -43,6 +41,5 @@ func (Mint) Annotations() []schema.Annotation {
 	return []schema.Annotation{
 		entgql.RelayConnection(),
 		entgql.QueryField(),
-		entgql.Mutations(entgql.MutationCreate()),
 	}
 }

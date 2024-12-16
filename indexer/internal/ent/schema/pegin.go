@@ -8,46 +8,41 @@ import (
 	"entgo.io/ent/schema/field"
 )
 
-type Reinit struct {
+type Pegin struct {
 	ent.Schema
 }
 
-func (Reinit) Fields() []ent.Field {
+func (Pegin) Fields() []ent.Field {
 	return []ent.Field{
-		field.Int64("externalId").
-			Unique().
+		field.Text("receiverAddr").
+			NotEmpty().
 			Immutable().
-			Annotations(entgql.MapsTo("externalId")),
+			Annotations(entgql.MapsTo("receiverAddr")),
 		field.Text("amount").
 			NotEmpty().
 			Immutable(),
 		field.Text("bitcoinTxId").
+			Unique().
 			NotEmpty().
 			Immutable().
 			Annotations(entgql.MapsTo("bitcoinTxId")),
-		field.Text("bitcoinScript").
-			Immutable().
-			Annotations(entgql.MapsTo("bitcoinScript")),
 	}
 }
 
-func (Reinit) Edges() []ent.Edge {
+func (Pegin) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("tonMsg", TonMsg.Type).
-			Ref("reinit").
+		edge.From("mint", Mint.Type).
+			Ref("pegin").
 			Unique().
 			Required().
-			Annotations(entgql.MapsTo("tonMsg")),
-		edge.From("pegout", Pegout.Type).
-			Ref("reinit").
-			Unique().
-			Required(),
+			Annotations(entgql.Skip(entgql.SkipMutationCreateInput)),
 	}
 }
 
-func (Reinit) Annotations() []schema.Annotation {
+func (Pegin) Annotations() []schema.Annotation {
 	return []schema.Annotation{
 		entgql.RelayConnection(),
 		entgql.QueryField(),
+		entgql.Mutations(entgql.MutationCreate()),
 	}
 }
