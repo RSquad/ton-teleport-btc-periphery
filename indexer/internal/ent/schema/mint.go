@@ -23,6 +23,9 @@ func (Mint) Fields() []ent.Field {
 				"Refunded", "REFUNDED",
 			).
 			Default("PENDING"),
+		field.Text("amount").
+			Optional().
+			Immutable(),
 	}
 }
 

@@ -155,6 +155,8 @@ func (c *LogManager) saveMint(tonMsg *ent.TonMsg, typedParsedLog *teleportcontra
 		}
 
 		mint, err := tx.Mint.Create().
+			SetAmount(typedParsedLog.Amount.String()).
+			SetStatus("SUCCESS").
 			SetTonMsg(tonMsg).
 			Save(c.ctx)
 		if err != nil {
@@ -162,7 +164,6 @@ func (c *LogManager) saveMint(tonMsg *ent.TonMsg, typedParsedLog *teleportcontra
 		}
 		_, err = tx.Pegin.Create().
 			SetReceiverAddr(utils.AddrToRawString(typedParsedLog.ReceiverAddr)).
-			SetAmount(typedParsedLog.Amount.String()).
 			SetBitcoinTxId(typedParsedLog.BitcoinTxID.String()).
 			SetMint(mint).
 			Save(c.ctx)

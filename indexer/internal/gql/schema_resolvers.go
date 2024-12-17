@@ -9,25 +9,26 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated"
-	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated/pegin"
 )
 
 // CreatePegin is the resolver for the createPegin field.
 func (r *mutationResolver) CreatePegin(ctx context.Context, input generated.CreatePeginInput) (*generated.Pegin, error) {
-	if _, err := chainhash.NewHashFromStr(input.BitcoinTxId); err != nil {
-		return nil, fmt.Errorf("invalid bitcoin tx id: %w", err)
-	}
 	repo := generated.FromContext(ctx)
-	existingPegin, err := repo.Pegin.Query().Where(
-		pegin.BitcoinTxIdEQ(input.BitcoinTxId),
-	).Only(ctx)
-	if err != nil && !generated.IsNotFound(err) {
+
+	peginExists, err := r.peginManager.PeginExists(input.BitcoinTxId)
+	if peginExists {
+		return nil, fmt.Errorf("pegin with the same bitcoin tx id already exists: %w", err)
+	}
+
+	internalKeyExists, err := r.peginManager.InternalKeyExists(*input.InternalKey)
+	if !internalKeyExists {
 		return nil, err
 	}
-	if existingPegin != nil {
-		return nil, fmt.Errorf("pegin with the same bitcoin tx id already exists")
+
+	bitcoinTxExists, _, err := r.peginManager.BitcoinTxExists(input.BitcoinTxId)
+	if !bitcoinTxExists {
+		return nil, err
 	}
 
 	mint, err := repo.Mint.Create().Save(ctx)
@@ -49,9 +50,9 @@ func (r *queryResolver) Statistics(ctx context.Context) (*Statistics, error) {
 	uniqueMintReceivers := make(map[string]struct{})
 	for _, mint := range mints {
 		amount := new(big.Int)
-		amount, ok := amount.SetString(mint.Edges.Pegin.Amount, 10)
+		amount, ok := amount.SetString(mint.Amount, 10)
 		if !ok {
-			return nil, fmt.Errorf("invalid amount: %s", mint.Edges.Pegin.Amount)
+			return nil, fmt.Errorf("invalid amount: %s", mint.Amount)
 		}
 		totalMintAmount.Add(totalMintAmount, amount)
 		uniqueMintReceivers[mint.Edges.Pegin.ReceiverAddr] = struct{}{}

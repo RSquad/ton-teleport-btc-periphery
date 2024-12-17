@@ -18,14 +18,23 @@ func (Pegin) Fields() []ent.Field {
 			NotEmpty().
 			Immutable().
 			Annotations(entgql.MapsTo("receiverAddr")),
-		field.Text("amount").
-			NotEmpty().
-			Immutable(),
 		field.Text("bitcoinTxId").
 			Unique().
 			NotEmpty().
 			Immutable().
 			Annotations(entgql.MapsTo("bitcoinTxId")),
+		field.Text("internalKey").
+			Optional().
+			Immutable().
+			Annotations(
+				entgql.MapsTo("internalKey"),
+			),
+		field.Text("recoveryKey").
+			Optional().
+			Immutable().
+			Annotations(
+				entgql.MapsTo("recoveryKey"),
+			),
 	}
 }
 

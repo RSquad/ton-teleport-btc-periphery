@@ -19,6 +19,7 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated/migrate"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/gql"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/logmanager"
+	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/peginmanager"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/pegoutmanager"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/teleportcontract"
@@ -31,8 +32,10 @@ import (
 type App struct {
 	TonCenterV3Client *toncenterv3.Client
 	Repo              *ent.Client
+	BitcoinClient     *bitcoin.Client
 	LogManager        *logmanager.LogManager
 	PegoutManager     *pegoutmanager.PegoutManager
+	PeginManager      *peginmanager.PeginManager
 }
 
 func main() {
@@ -109,6 +112,15 @@ func initialize() (*App, error) {
 		return nil, fmt.Errorf("failed to create log manager: %w", err)
 	}
 
+	peginManager := peginmanager.New(
+		context.Background(),
+		repo,
+		bitcoinClient,
+		tonClient,
+		tonCenterV3Client,
+		teleportContract,
+	)
+
 	pegoutManager, err := pegoutmanager.New(
 		context.Background(),
 		repo,
@@ -126,8 +138,10 @@ func initialize() (*App, error) {
 	return &App{
 		TonCenterV3Client: tonCenterV3Client,
 		Repo:              repo,
+		BitcoinClient:     bitcoinClient,
 		LogManager:        logManager,
 		PegoutManager:     pegoutManager,
+		PeginManager:      peginManager,
 	}, nil
 }
 
@@ -139,7 +153,7 @@ func run(app *App) error {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		srv := handler.NewDefaultServer(gql.NewSchema(app.Repo))
+		srv := handler.NewDefaultServer(gql.NewSchema(app.Repo, app.PeginManager))
 		srv.Use(entgql.Transactioner{TxOpener: app.Repo})
 
 		mux := http.NewServeMux()
