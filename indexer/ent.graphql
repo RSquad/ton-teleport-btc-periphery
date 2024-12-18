@@ -273,7 +273,7 @@ MintStatus is enum for the field status
 """
 enum MintStatus @goModel(model: "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated/mint.Status") {
   PENDING
-  COMPLETED
+  SUCCESS
   FAILED
   REFUND
   REFUNDED

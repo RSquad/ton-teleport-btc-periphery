@@ -17,7 +17,7 @@ func (Mint) Fields() []ent.Field {
 		field.Enum("status").
 			NamedValues(
 				"Pending", "PENDING",
-				"Completed", "COMPLETED",
+				"Success", "SUCCESS",
 				"Failed", "FAILED",
 				"Refund", "REFUND",
 				"Refunded", "REFUNDED",

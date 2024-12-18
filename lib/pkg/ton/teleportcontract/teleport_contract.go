@@ -15,7 +15,7 @@ import (
 	"github.com/xssnick/tonutils-go/tvm/cell"
 
 	jwv4r2contract "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/jw_v4r2_contract"
-	tonclient "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
 )
 
@@ -23,6 +23,7 @@ const (
 	opCodeConfirmPegoutTx          = 0xbd0eaf09
 	storageIndexPegoutChainCounter = 13
 	storageIndexLastPegoutTxID     = 14
+	storageIndexCsvLock            = 15
 	storageIndexPegoutContractCode = 7
 )
 
@@ -37,6 +38,7 @@ type Storage struct {
 	PegoutContractCode *cell.Cell
 	PegoutChainCounter uint64
 	LastPegoutTxID     *chainhash.Hash
+	CsvLock            int64
 }
 
 func New(
@@ -113,7 +115,7 @@ func (c *TeleportContract) GetStorage() (Storage, error) {
 	pegoutChainCounter := storage.MustInt(storageIndexPegoutChainCounter)
 	lastPegoutTxIDInt := storage.MustInt(storageIndexLastPegoutTxID)
 	pegoutContractCode := storage.MustCell(storageIndexPegoutContractCode)
-
+	csvLock := storage.MustInt(storageIndexCsvLock)
 	lastPegoutTxID, err := chainhash.NewHash(utils.BytesPadTo(lastPegoutTxIDInt.Bytes(), 32))
 	if err != nil {
 		return Storage{}, err
@@ -123,6 +125,7 @@ func (c *TeleportContract) GetStorage() (Storage, error) {
 		PegoutContractCode: pegoutContractCode,
 		PegoutChainCounter: pegoutChainCounter.Uint64(),
 		LastPegoutTxID:     lastPegoutTxID,
+		CsvLock:            csvLock.Int64(),
 	}, nil
 }
 

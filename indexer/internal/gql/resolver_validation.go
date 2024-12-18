@@ -1,0 +1,44 @@
+package gql
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/btcsuite/btcd/btcjson"
+	"github.com/btcsuite/btcd/chaincfg/chainhash"
+	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated"
+	internalkeymodel "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated/internalkey"
+	peginmodel "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated/pegin"
+)
+
+func (c *Resolver) internalKeyExists(
+	ctx context.Context,
+	internalKey string,
+) (bool, error) {
+	repo := generated.FromContext(ctx)
+	exists, err := repo.InternalKey.Query().Where(internalkeymodel.KeyEQ(internalKey)).Exist(ctx)
+	return exists, err
+}
+
+func (c *Resolver) bitcoinTxExists(
+	bitcoinTxIdStr string,
+) (bool, *btcjson.TxRawResult, error) {
+	bitcoinTxId, err := chainhash.NewHashFromStr(bitcoinTxIdStr)
+	if err != nil {
+		return false, nil, fmt.Errorf("invalid bitcoin tx id: %w", err)
+	}
+	bitcoinTx, err := c.bitcoinClient.RPCClient.GetRawTransactionVerbose(bitcoinTxId)
+	if err != nil {
+		return false, nil, fmt.Errorf("bitcoin tx not found: %w", err)
+	}
+	return true, bitcoinTx, nil
+}
+
+func (c *Resolver) peginExists(
+	ctx context.Context,
+	bitcoinTxIdStr string,
+) (bool, error) {
+	repo := generated.FromContext(ctx)
+	exists, err := repo.Pegin.Query().Where(peginmodel.BitcoinTxIdEQ(bitcoinTxIdStr)).Exist(ctx)
+	return exists, err
+}

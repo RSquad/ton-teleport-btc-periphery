@@ -6,29 +6,69 @@ package gql
 
 import (
 	"context"
+	"encoding/hex"
 	"fmt"
+	"log"
 	"math/big"
 
+	"github.com/btcsuite/btcd/btcec/v2/schnorr"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated"
+	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/peginutils"
+	"github.com/xssnick/tonutils-go/address"
 )
 
 // CreatePegin is the resolver for the createPegin field.
 func (r *mutationResolver) CreatePegin(ctx context.Context, input generated.CreatePeginInput) (*generated.Pegin, error) {
+	recoveryKeyBytes, err := hex.DecodeString(*input.RecoveryKey)
+	if err != nil {
+		return nil, fmt.Errorf("invalid recovery key: %w", err)
+	}
+	recoveryKey, err := schnorr.ParsePubKey(recoveryKeyBytes)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse recovery key: %w", err)
+	}
+
+	internalKeyBytes, err := hex.DecodeString(*input.InternalKey)
+	if err != nil {
+		return nil, fmt.Errorf("invalid internal key: %w", err)
+	}
+	internalKey, err := schnorr.ParsePubKey(internalKeyBytes)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse internal key: %w", err)
+	}
+
+	receiverAddr, err := address.ParseRawAddr(input.ReceiverAddr)
+	if err != nil {
+		return nil, fmt.Errorf("invalid receiver address: %w", err)
+	}
+
+	teleportContractStorage, err := r.teleportContract.GetStorage()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get teleport contract storage: %w", err)
+	}
+
+	peginBitcoinAddr, err := peginutils.CalcPeginBitcoinAddr(internalKey, recoveryKey, receiverAddr, &teleportContractStorage)
+	if err != nil {
+		return nil, fmt.Errorf("failed to calculate pegin bitcoin address: %w", err)
+	}
+
+	log.Printf("pegin bitcoin address: %s", peginBitcoinAddr.String())
+
 	repo := generated.FromContext(ctx)
 
-	peginExists, err := r.peginManager.PeginExists(input.BitcoinTxId)
+	peginExists, err := r.peginExists(ctx, input.BitcoinTxId)
 	if peginExists {
 		return nil, fmt.Errorf("pegin with the same bitcoin tx id already exists: %w", err)
 	}
 
-	internalKeyExists, err := r.peginManager.InternalKeyExists(*input.InternalKey)
+	internalKeyExists, err := r.internalKeyExists(ctx, *input.InternalKey)
 	if !internalKeyExists {
-		return nil, err
+		return nil, fmt.Errorf("internal key not found: %w", err)
 	}
 
-	bitcoinTxExists, _, err := r.peginManager.BitcoinTxExists(input.BitcoinTxId)
+	bitcoinTxExists, _, err := r.bitcoinTxExists(input.BitcoinTxId)
 	if !bitcoinTxExists {
-		return nil, err
+		return nil, fmt.Errorf("bitcoin tx not found: %w", err)
 	}
 
 	mint, err := repo.Mint.Create().Save(ctx)

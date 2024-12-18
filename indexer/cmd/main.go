@@ -34,6 +34,7 @@ type App struct {
 	Repo              *ent.Client
 	BitcoinClient     *bitcoin.Client
 	LogManager        *logmanager.LogManager
+	TeleportContract  *teleportcontract.TeleportContract
 	PegoutManager     *pegoutmanager.PegoutManager
 	PeginManager      *peginmanager.PeginManager
 }
@@ -74,7 +75,12 @@ func initialize() (*App, error) {
 	}
 
 	teleportContractAddr := address.MustParseAddr(indexerConfig.TeleportContractAddr)
-	teleportContract := teleportcontract.New(teleportContractAddr, tonClient, nil, context.Background())
+	teleportContract := teleportcontract.New(
+		teleportContractAddr,
+		tonClient,
+		nil,
+		context.Background(),
+	)
 
 	coordinatorContractAddr := address.MustParseAddr(indexerConfig.CoordinatorContractAddr)
 
@@ -140,6 +146,7 @@ func initialize() (*App, error) {
 		Repo:              repo,
 		BitcoinClient:     bitcoinClient,
 		LogManager:        logManager,
+		TeleportContract:  teleportContract,
 		PegoutManager:     pegoutManager,
 		PeginManager:      peginManager,
 	}, nil
@@ -153,7 +160,9 @@ func run(app *App) error {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		srv := handler.NewDefaultServer(gql.NewSchema(app.Repo, app.PeginManager))
+		srv := handler.NewDefaultServer(
+			gql.NewSchema(app.Repo, app.BitcoinClient, app.TeleportContract),
+		)
 		srv.Use(entgql.Transactioner{TxOpener: app.Repo})
 
 		mux := http.NewServeMux()

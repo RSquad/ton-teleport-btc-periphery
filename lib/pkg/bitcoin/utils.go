@@ -7,6 +7,7 @@ import (
 
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/wire"
+	"github.com/xssnick/tonutils-go/address"
 )
 
 func SliceOfHashesContains(haystack []*chainhash.Hash, needle *chainhash.Hash) bool {
@@ -47,4 +48,13 @@ func HexToTx(txHex string, version int32) (*wire.MsgTx, error) {
 	}
 
 	return tx, nil
+}
+
+func TonAddrToBytesForTapLeaf(addr *address.Address) []byte {
+	suffix := byte(0x00)
+	if addr.Workchain() != 0 {
+		suffix = byte(0xff)
+	}
+
+	return append(addr.Data(), suffix)
 }
