@@ -169,7 +169,7 @@ func (c *MintManager) handleRefundMint(mint *ent.Mint) error {
 		return fmt.Errorf("invalid bitcoin tx id: %w", err)
 	}
 
-	out, err := c.bitcoinClient.RPCClient.GetTxOut(bitcoinTxID, uint32(mint.Edges.Pegin.VoutIndex), false)
+	out, err := c.bitcoinClient.RPCClient.GetTxOut(bitcoinTxID, uint32(mint.Edges.Pegin.VoutIndex), true)
 	if err != nil {
 		return fmt.Errorf("failed to get bitcoin transaction output: %w", err)
 	}
