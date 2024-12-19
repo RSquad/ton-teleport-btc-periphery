@@ -6,6 +6,7 @@ COPY go.work go.work.sum ./
 
 RUN go work edit -dropuse ./indexer
 RUN go work edit -dropuse ./frost
+RUN go work edit -dropuse ./oracle
 
 COPY relayer/go.mod relayer/go.sum ./relayer/
 COPY lib/go.mod lib/go.sum ./lib/
