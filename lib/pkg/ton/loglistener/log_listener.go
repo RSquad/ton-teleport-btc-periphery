@@ -41,7 +41,7 @@ func New(
 }
 
 func (c *LogListener) StartListen() {
-	log.Printf("[LogListener] listening for %v started", c.listenAddr.String())
+	log.Printf("listening for %v started", c.listenAddr.String())
 	c.listen()
 }
 
@@ -49,7 +49,7 @@ func (c *LogListener) listen() {
 	for {
 		msgs, err := c.fetchMsgs()
 		if err != nil {
-			log.Println(fmt.Errorf("[LogListener] failed to fetch msgs %v", err))
+			log.Println(fmt.Errorf("failed to fetch msgs %v", err))
 		}
 
 		c.processMsgs(msgs)
@@ -57,7 +57,7 @@ func (c *LogListener) listen() {
 		c.offset += int64(len(msgs))
 
 		if int64(len(msgs)) < c.limit {
-			log.Println("[LogListener] all logs fetched, waiting for new logs")
+			log.Println("all logs fetched, waiting for new logs")
 			time.Sleep(3 * time.Second)
 		}
 	}
@@ -93,7 +93,7 @@ func (c *LogListener) processMsgs(msgs []*toncenterv3models.Message) {
 		}
 		unixTime, err := strconv.ParseInt(msg.CreatedAt, 10, 64)
 		if err != nil {
-			log.Printf("[LogListener] failed to parse msg creation time: %v", err)
+			log.Printf("failed to parse msg creation time: %v", err)
 			continue
 		}
 		createdAt := time.Unix(unixTime, 0)

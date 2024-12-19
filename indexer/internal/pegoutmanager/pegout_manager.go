@@ -146,7 +146,7 @@ func (c *PegoutManager) handleSigningPegout(
 	err = c.repo.Pegout.Update().
 		SetStatus(entpegout.StatusSigned).
 		SetBitcoinTxRaw(txHex).
-		SetBitcoinTxId(pegoutTx.TxID()).
+		SetBitcoinTxID(pegoutTx.TxID()).
 		Where(entpegout.ID(pegout.ID)).
 		Exec(c.ctx)
 	if err != nil {
@@ -159,7 +159,7 @@ func (c *PegoutManager) handleSigningPegout(
 func (c *PegoutManager) handleSignedPegout(
 	pegout *ent.Pegout,
 ) error {
-	txHash, err := chainhash.NewHashFromStr(pegout.BitcoinTxId)
+	txHash, err := chainhash.NewHashFromStr(pegout.BitcoinTxID)
 	if err != nil {
 		return fmt.Errorf("failed to parse tx hash: %w", err)
 	}

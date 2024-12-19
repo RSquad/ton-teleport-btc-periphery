@@ -14,31 +14,23 @@ type Pegin struct {
 
 func (Pegin) Fields() []ent.Field {
 	return []ent.Field{
-		field.Text("receiverAddr").
+		field.Text("receiver_addr").
 			NotEmpty().
-			Immutable().
-			Annotations(entgql.MapsTo("receiverAddr")),
-		field.Text("bitcoinTxId").
+			Immutable(),
+		field.Text("bitcoin_tx_id").
 			Unique().
 			NotEmpty().
-			Immutable().
-			Annotations(entgql.MapsTo("bitcoinTxId")),
+			Immutable(),
 		field.Int("vout_index").
 			Optional().
 			Immutable().
 			Annotations(entgql.Skip(entgql.SkipMutationCreateInput)),
-		field.Text("internalKey").
+		field.Text("internal_key").
 			Optional().
-			Immutable().
-			Annotations(
-				entgql.MapsTo("internalKey"),
-			),
-		field.Text("recoveryKey").
+			Immutable(),
+		field.Text("recovery_key").
 			Optional().
-			Immutable().
-			Annotations(
-				entgql.MapsTo("recoveryKey"),
-			),
+			Immutable(),
 	}
 }
 

@@ -17,19 +17,17 @@ func (InternalKey) Fields() []ent.Field {
 		field.Text("key").
 			NotEmpty().
 			Immutable(),
-		field.Time("completedAt").
-			Immutable().
-			Annotations(entgql.MapsTo("completedAt")),
+		field.Time("completed_at").
+			Immutable(),
 	}
 }
 
 func (InternalKey) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("tonMsg", TonMsg.Type).
-			Ref("internalKey").
+		edge.From("ton_msg", TonMsg.Type).
+			Ref("internal_key").
 			Unique().
-			Required().
-			Annotations(entgql.MapsTo("tonMsg")),
+			Required(),
 	}
 }
 

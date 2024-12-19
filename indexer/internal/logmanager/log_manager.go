@@ -145,7 +145,7 @@ func (c *LogManager) saveLog(tonMsg *ent.TonMsg, parsedLog teleportcontract.LogI
 func (c *LogManager) saveMint(tonMsg *ent.TonMsg, typedParsedLog *teleportcontract.MintLog) error {
 	return c.saveTransaction(func(tx *ent.Tx) error {
 		existingPegin, err := tx.Pegin.Query().
-			Where(pegin.BitcoinTxIdEQ(typedParsedLog.BitcoinTxID.String())).
+			Where(pegin.BitcoinTxIDEQ(typedParsedLog.BitcoinTxID.String())).
 			Only(c.ctx)
 		if err == nil {
 			_, err = tx.Mint.UpdateOne(existingPegin.Edges.Mint).
@@ -164,7 +164,7 @@ func (c *LogManager) saveMint(tonMsg *ent.TonMsg, typedParsedLog *teleportcontra
 		}
 		_, err = tx.Pegin.Create().
 			SetReceiverAddr(utils.AddrToRawString(typedParsedLog.ReceiverAddr)).
-			SetBitcoinTxId(typedParsedLog.BitcoinTxID.String()).
+			SetBitcoinTxID(typedParsedLog.BitcoinTxID.String()).
 			SetMint(mint).
 			Save(c.ctx)
 		return err
@@ -178,7 +178,7 @@ func (c *LogManager) saveBurn(tonMsg *ent.TonMsg, typedParsedLog *teleportcontra
 			return err
 		}
 		_, err = tx.Burn.Create().
-			SetExternalId(int64(typedParsedLog.ID)).
+			SetExternalID(int64(typedParsedLog.ID)).
 			SetSenderAddr(utils.AddrToRawString(typedParsedLog.SenderAddr)).
 			SetAmount(typedParsedLog.Amount.String()).
 			SetBitcoinScript(hex.EncodeToString(typedParsedLog.BitcoinScript)).
@@ -196,9 +196,9 @@ func (c *LogManager) saveReinit(tonMsg *ent.TonMsg, typedParsedLog *teleportcont
 			return err
 		}
 		_, err = tx.Reinit.Create().
-			SetExternalId(int64(typedParsedLog.ID)).
+			SetExternalID(int64(typedParsedLog.ID)).
 			SetAmount(typedParsedLog.Amount.String()).
-			SetBitcoinTxId(typedParsedLog.BitcoinTxID.String()).
+			SetBitcoinTxID(typedParsedLog.BitcoinTxID.String()).
 			SetBitcoinScript(hex.EncodeToString(typedParsedLog.BitcoinScript)).
 			SetTonMsg(tonMsg).
 			SetPegout(pegout).
@@ -248,7 +248,7 @@ func (c *LogManager) savePegoutTx(tx *ent.Tx, parsedLog teleportcontract.LogWith
 	}
 
 	pegout, err := tx.Pegout.Create().
-		SetExternalId(int64(parsedLog.GetID())).
+		SetExternalID(int64(parsedLog.GetID())).
 		SetAddr(utils.AddrToRawString(pegoutContract.Addr)).
 		Save(c.ctx)
 

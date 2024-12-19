@@ -21,13 +21,13 @@ func (c *Resolver) internalKeyExists(
 }
 
 func (c *Resolver) bitcoinTxExists(
-	bitcoinTxIdStr string,
+	bitcoinTxIDStr string,
 ) (bool, *btcjson.TxRawResult, error) {
-	bitcoinTxId, err := chainhash.NewHashFromStr(bitcoinTxIdStr)
+	bitcoinTxID, err := chainhash.NewHashFromStr(bitcoinTxIDStr)
 	if err != nil {
 		return false, nil, fmt.Errorf("invalid bitcoin tx id: %w", err)
 	}
-	bitcoinTx, err := c.bitcoinClient.RPCClient.GetRawTransactionVerbose(bitcoinTxId)
+	bitcoinTx, err := c.bitcoinClient.RPCClient.GetRawTransactionVerbose(bitcoinTxID)
 	if err != nil {
 		return false, nil, fmt.Errorf("bitcoin tx not found: %w", err)
 	}
@@ -36,9 +36,9 @@ func (c *Resolver) bitcoinTxExists(
 
 func (c *Resolver) peginExists(
 	ctx context.Context,
-	bitcoinTxIdStr string,
+	bitcoinTxIDStr string,
 ) (bool, error) {
 	repo := generated.FromContext(ctx)
-	exists, err := repo.Pegin.Query().Where(peginmodel.BitcoinTxIdEQ(bitcoinTxIdStr)).Exist(ctx)
+	exists, err := repo.Pegin.Query().Where(peginmodel.BitcoinTxIDEQ(bitcoinTxIDStr)).Exist(ctx)
 	return exists, err
 }

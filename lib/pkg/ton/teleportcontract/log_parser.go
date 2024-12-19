@@ -87,19 +87,19 @@ func (c *LogParser) Parse(logCell *cell.Cell) (LogInterface, error) {
 func parseMintLog(logSlice *cell.Slice) (*MintLog, error) {
 	amount := logSlice.MustLoadBigCoins()
 	receiver := logSlice.MustLoadAddr()
-	bitcoinTxId, err := chainhash.NewHash(logSlice.MustLoadSlice(256))
+	bitcoinTxID, err := chainhash.NewHash(logSlice.MustLoadSlice(256))
 	if err != nil {
 		return nil, err
 	}
 	return &MintLog{
-		amount, receiver, bitcoinTxId,
+		amount, receiver, bitcoinTxID,
 	}, nil
 }
 
 func parseBurnLog(logSlice *cell.Slice) (*BurnLog, error) {
 	id := uint32(logSlice.MustLoadUInt(32))
 	amount := logSlice.MustLoadBigCoins()
-	bitcoinTxId, err := chainhash.NewHash(logSlice.MustLoadSlice(256))
+	bitcoinTxID, err := chainhash.NewHash(logSlice.MustLoadSlice(256))
 	if err != nil {
 		return nil, err
 	}
@@ -107,14 +107,14 @@ func parseBurnLog(logSlice *cell.Slice) (*BurnLog, error) {
 	bitcoinScriptSlice := logSlice.MustLoadRef()
 	bitcoinScript := bitcoinScriptSlice.MustLoadSlice(uint(bitcoinScriptSlice.MustLoadUInt(8) * 8))
 	return &BurnLog{
-		LogWithPegout{id, amount, bitcoinScript}, bitcoinTxId, senderAddr,
+		LogWithPegout{id, amount, bitcoinScript}, bitcoinTxID, senderAddr,
 	}, nil
 }
 
 func parseReinitLog(logSlice *cell.Slice) (*ReinitLog, error) {
 	id := uint32(logSlice.MustLoadUInt(32))
 	amount := logSlice.MustLoadBigCoins()
-	bitcoinTxId, err := chainhash.NewHash(logSlice.MustLoadSlice(256))
+	bitcoinTxID, err := chainhash.NewHash(logSlice.MustLoadSlice(256))
 	if err != nil {
 		return nil, err
 	}
@@ -124,6 +124,6 @@ func parseReinitLog(logSlice *cell.Slice) (*ReinitLog, error) {
 		bitcoinScript = bitcoinScriptSlice.MustLoadSlice(bitcoinScriptSlice.BitsLeft())
 	}
 	return &ReinitLog{
-		LogWithPegout{id, amount, bitcoinScript}, bitcoinTxId,
+		LogWithPegout{id, amount, bitcoinScript}, bitcoinTxID,
 	}, nil
 }

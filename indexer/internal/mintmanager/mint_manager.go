@@ -112,8 +112,8 @@ func (c *MintManager) handlePendingMint(
 	peginContractCode *cell.Cell,
 	block *ton.BlockIDExt,
 ) error {
-	log.Printf("BitcoinTxId %v", mint.Edges.Pegin.BitcoinTxId)
-	bitcoinTxId, err := chainhash.NewHash(utils.MustHexToBytes(mint.Edges.Pegin.BitcoinTxId, 32))
+	log.Printf("BitcoinTxID %v", mint.Edges.Pegin.BitcoinTxID)
+	bitcoinTxID, err := chainhash.NewHash(utils.MustHexToBytes(mint.Edges.Pegin.BitcoinTxID, 32))
 	if err != nil {
 		return fmt.Errorf("failed to create bitcoin transaction hash: %w", err)
 	}
@@ -122,7 +122,7 @@ func (c *MintManager) handlePendingMint(
 		&pegincontract.StateInit{
 			Code: peginContractCode,
 			InitData: &pegincontract.InitData{
-				BitcoinTxId:          bitcoinTxId,
+				BitcoinTxID:          bitcoinTxID,
 				TeleportContractAddr: c.teleportContract.Addr,
 			},
 		},
@@ -164,12 +164,12 @@ func (c *MintManager) handlePendingMint(
 }
 
 func (c *MintManager) handleRefundMint(mint *ent.Mint) error {
-	bitcoinTxId, err := chainhash.NewHashFromStr(mint.Edges.Pegin.BitcoinTxId)
+	bitcoinTxID, err := chainhash.NewHashFromStr(mint.Edges.Pegin.BitcoinTxID)
 	if err != nil {
 		return fmt.Errorf("invalid bitcoin tx id: %w", err)
 	}
 
-	out, err := c.bitcoinClient.RPCClient.GetTxOut(bitcoinTxId, uint32(mint.Edges.Pegin.VoutIndex), false)
+	out, err := c.bitcoinClient.RPCClient.GetTxOut(bitcoinTxID, uint32(mint.Edges.Pegin.VoutIndex), false)
 	if err != nil {
 		return fmt.Errorf("failed to get bitcoin transaction output: %w", err)
 	}

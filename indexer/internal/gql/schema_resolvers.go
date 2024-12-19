@@ -11,6 +11,7 @@ import (
 	"math/big"
 
 	"github.com/btcsuite/btcd/btcec/v2/schnorr"
+	"github.com/btcsuite/btcd/btcutil"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/peginutils"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
@@ -49,7 +50,7 @@ func (r *mutationResolver) CreatePegin(ctx context.Context, input generated.Crea
 
 	repo := generated.FromContext(ctx)
 
-	peginExists, err := r.peginExists(ctx, input.BitcoinTxId)
+	peginExists, err := r.peginExists(ctx, input.BitcoinTxID)
 	if peginExists {
 		return nil, fmt.Errorf("pegin with the same bitcoin tx id already exists: %w", err)
 	}
@@ -59,7 +60,7 @@ func (r *mutationResolver) CreatePegin(ctx context.Context, input generated.Crea
 		return nil, fmt.Errorf("internal key not found: %w", err)
 	}
 
-	bitcoinTxExists, bitcoinTx, err := r.bitcoinTxExists(input.BitcoinTxId)
+	bitcoinTxExists, bitcoinTx, err := r.bitcoinTxExists(input.BitcoinTxID)
 	if !bitcoinTxExists {
 		return nil, fmt.Errorf("bitcoin tx not found: %w", err)
 	}
@@ -75,7 +76,14 @@ func (r *mutationResolver) CreatePegin(ctx context.Context, input generated.Crea
 		return nil, fmt.Errorf("calculated pegin bitcoin address not found in the bitcoin transaction")
 	}
 
-	mint, err := repo.Mint.Create().Save(ctx)
+	amount, err := btcutil.NewAmount(vout.Value)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert vout value to btcutil.Amount: %w", err)
+	}
+
+	mint, err := repo.Mint.Create().
+		SetAmount(fmt.Sprintf("%d", amount)).
+		Save(ctx)
 	if err != nil {
 		return nil, err
 	}

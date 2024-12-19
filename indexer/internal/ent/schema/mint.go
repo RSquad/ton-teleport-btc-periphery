@@ -30,10 +30,9 @@ func (Mint) Fields() []ent.Field {
 
 func (Mint) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("tonMsg", TonMsg.Type).
+		edge.From("ton_msg", TonMsg.Type).
 			Ref("mint").
-			Unique().
-			Annotations(entgql.MapsTo("tonMsg")),
+			Unique(),
 		edge.To("pegin", Pegin.Type).
 			Unique(),
 	}

@@ -23,14 +23,14 @@ type StateInit struct {
 }
 
 type InitData struct {
-	BitcoinTxId          *chainhash.Hash
+	BitcoinTxID          *chainhash.Hash
 	TeleportContractAddr *address.Address
 }
 
 func InitDataToCell(initData InitData) *cell.Cell {
 	return cell.BeginCell().
 		MustStoreUInt(0, 1).
-		MustStoreSlice(initData.BitcoinTxId.CloneBytes(), 256).
+		MustStoreSlice(initData.BitcoinTxID.CloneBytes(), 256).
 		MustStoreAddr(initData.TeleportContractAddr).
 		EndCell()
 }
