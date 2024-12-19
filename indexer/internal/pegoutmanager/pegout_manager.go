@@ -58,10 +58,10 @@ func New(
 	return pegoutManager, nil
 }
 
-func (pm *PegoutManager) Run() {
+func (c *PegoutManager) Run() {
 	const sleepDuration = 3 * time.Second
 	for {
-		if err := pm.processPegouts(); err != nil {
+		if err := c.processPegouts(); err != nil {
 			log.Printf("failed to process pegouts: %v", err)
 		}
 		time.Sleep(sleepDuration)

@@ -41,7 +41,7 @@ func New(
 	*LogManager,
 	error,
 ) {
-	teleportContractStorage, err := teleportContract.GetStorage()
+	teleportContractStorage, err := teleportContract.GetStorage(nil)
 	if err != nil {
 		return nil, err
 	}

@@ -23,6 +23,10 @@ func (Pegin) Fields() []ent.Field {
 			NotEmpty().
 			Immutable().
 			Annotations(entgql.MapsTo("bitcoinTxId")),
+		field.Int("vout_index").
+			Optional().
+			Immutable().
+			Annotations(entgql.Skip(entgql.SkipMutationCreateInput)),
 		field.Text("internalKey").
 			Optional().
 			Immutable().

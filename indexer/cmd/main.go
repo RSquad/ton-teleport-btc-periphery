@@ -19,7 +19,7 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated/migrate"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/gql"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/logmanager"
-	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/peginmanager"
+	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/mintmanager"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/pegoutmanager"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/teleportcontract"
@@ -36,7 +36,7 @@ type App struct {
 	LogManager        *logmanager.LogManager
 	TeleportContract  *teleportcontract.TeleportContract
 	PegoutManager     *pegoutmanager.PegoutManager
-	PeginManager      *peginmanager.PeginManager
+	MintManager       *mintmanager.MintManager
 }
 
 func main() {
@@ -118,7 +118,7 @@ func initialize() (*App, error) {
 		return nil, fmt.Errorf("failed to create log manager: %w", err)
 	}
 
-	peginManager := peginmanager.New(
+	mintManager := mintmanager.New(
 		context.Background(),
 		repo,
 		bitcoinClient,
@@ -148,7 +148,7 @@ func initialize() (*App, error) {
 		LogManager:        logManager,
 		TeleportContract:  teleportContract,
 		PegoutManager:     pegoutManager,
-		PeginManager:      peginManager,
+		MintManager:       mintManager,
 	}, nil
 }
 
@@ -194,6 +194,12 @@ func run(app *App) error {
 	go func() {
 		defer wg.Done()
 		app.PegoutManager.Run()
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		app.MintManager.Run()
 	}()
 
 	wg.Wait()

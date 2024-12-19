@@ -47,7 +47,7 @@ func (c *PegoutRelayer) Relay() error {
 
 	log.Println("[PegoutRelayer] relay started")
 
-	teleportContractStorage, err := c.teleportContract.GetStorage()
+	teleportContractStorage, err := c.teleportContract.GetStorage(nil)
 	if err != nil {
 		return err
 	}

@@ -18,7 +18,6 @@ func (Mint) Fields() []ent.Field {
 			NamedValues(
 				"Pending", "PENDING",
 				"Success", "SUCCESS",
-				"Failed", "FAILED",
 				"Refund", "REFUND",
 				"Refunded", "REFUNDED",
 			).

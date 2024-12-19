@@ -8,12 +8,12 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
-	"log"
 	"math/big"
 
 	"github.com/btcsuite/btcd/btcec/v2/schnorr"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/peginutils"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
 	"github.com/xssnick/tonutils-go/address"
 )
 
@@ -42,17 +42,10 @@ func (r *mutationResolver) CreatePegin(ctx context.Context, input generated.Crea
 		return nil, fmt.Errorf("invalid receiver address: %w", err)
 	}
 
-	teleportContractStorage, err := r.teleportContract.GetStorage()
+	teleportContractStorage, err := r.teleportContract.GetStorage(nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get teleport contract storage: %w", err)
 	}
-
-	peginBitcoinAddr, err := peginutils.CalcPeginBitcoinAddr(internalKey, recoveryKey, receiverAddr, &teleportContractStorage)
-	if err != nil {
-		return nil, fmt.Errorf("failed to calculate pegin bitcoin address: %w", err)
-	}
-
-	log.Printf("pegin bitcoin address: %s", peginBitcoinAddr.String())
 
 	repo := generated.FromContext(ctx)
 
@@ -66,9 +59,20 @@ func (r *mutationResolver) CreatePegin(ctx context.Context, input generated.Crea
 		return nil, fmt.Errorf("internal key not found: %w", err)
 	}
 
-	bitcoinTxExists, _, err := r.bitcoinTxExists(input.BitcoinTxId)
+	bitcoinTxExists, bitcoinTx, err := r.bitcoinTxExists(input.BitcoinTxId)
 	if !bitcoinTxExists {
 		return nil, fmt.Errorf("bitcoin tx not found: %w", err)
+	}
+
+	peginBitcoinAddr, err := peginutils.CalcPeginBitcoinAddr(internalKey, recoveryKey, receiverAddr, teleportContractStorage.CsvLock)
+	if err != nil {
+		return nil, fmt.Errorf("failed to calculate pegin bitcoin address: %w", err)
+	}
+
+	addrFound, vout := bitcoin.TxContainsOutWithAddr(bitcoinTx, peginBitcoinAddr.String())
+
+	if !addrFound {
+		return nil, fmt.Errorf("calculated pegin bitcoin address not found in the bitcoin transaction")
 	}
 
 	mint, err := repo.Mint.Create().Save(ctx)
@@ -76,7 +80,7 @@ func (r *mutationResolver) CreatePegin(ctx context.Context, input generated.Crea
 		return nil, err
 	}
 
-	return repo.Pegin.Create().SetInput(input).SetMint(mint).Save(ctx)
+	return repo.Pegin.Create().SetInput(input).SetMint(mint).SetVoutIndex(int(vout.N)).Save(ctx)
 }
 
 // Statistics is the resolver for the statistics field.

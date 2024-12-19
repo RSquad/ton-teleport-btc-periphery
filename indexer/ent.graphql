@@ -274,7 +274,6 @@ MintStatus is enum for the field status
 enum MintStatus @goModel(model: "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated/mint.Status") {
   PENDING
   SUCCESS
-  FAILED
   REFUND
   REFUNDED
 }
@@ -382,6 +381,7 @@ type Pegin implements Node {
   id: ID!
   receiverAddr: String!
   bitcoinTxId: String!
+  voutIndex: Int
   internalKey: String
   recoveryKey: String
   mint: Mint!
@@ -467,6 +467,19 @@ input PeginWhereInput {
   bitcointxidHasSuffix: String
   bitcointxidEqualFold: String
   bitcointxidContainsFold: String
+  """
+  vout_index field predicates
+  """
+  voutIndex: Int
+  voutIndexNEQ: Int
+  voutIndexIn: [Int!]
+  voutIndexNotIn: [Int!]
+  voutIndexGT: Int
+  voutIndexGTE: Int
+  voutIndexLT: Int
+  voutIndexLTE: Int
+  voutIndexIsNil: Boolean
+  voutIndexNotNil: Boolean
   """
   internalKey field predicates
   """

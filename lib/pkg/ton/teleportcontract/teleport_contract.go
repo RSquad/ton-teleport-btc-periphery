@@ -23,8 +23,9 @@ const (
 	opCodeConfirmPegoutTx          = 0xbd0eaf09
 	storageIndexPegoutChainCounter = 13
 	storageIndexLastPegoutTxID     = 14
-	storageIndexCsvLock            = 15
+	storageIndexCsvLock            = 17
 	storageIndexPegoutContractCode = 7
+	storageIndexPeginContractCode  = 10
 )
 
 type TeleportContract struct {
@@ -38,7 +39,8 @@ type Storage struct {
 	PegoutContractCode *cell.Cell
 	PegoutChainCounter uint64
 	LastPegoutTxID     *chainhash.Hash
-	CsvLock            int64
+	CsvLock            uint32
+	PeginContractCode  *cell.Cell
 }
 
 func New(
@@ -101,10 +103,13 @@ func (c *TeleportContract) SendPegoutProof(
 	return c.sender.SendWaitTransaction(c.ctx, message)
 }
 
-func (c *TeleportContract) GetStorage() (Storage, error) {
-	block, err := c.TonClient.API.CurrentMasterchainInfo(c.ctx)
-	if err != nil {
-		return Storage{}, err
+func (c *TeleportContract) GetStorage(block *ton.BlockIDExt) (Storage, error) {
+	if block == nil {
+		var err error
+		block, err = c.TonClient.API.CurrentMasterchainInfo(c.ctx)
+		if err != nil {
+			return Storage{}, err
+		}
 	}
 
 	storage, err := c.TonClient.API.RunGetMethod(c.ctx, block, c.Addr, "get_storage")
@@ -115,6 +120,7 @@ func (c *TeleportContract) GetStorage() (Storage, error) {
 	pegoutChainCounter := storage.MustInt(storageIndexPegoutChainCounter)
 	lastPegoutTxIDInt := storage.MustInt(storageIndexLastPegoutTxID)
 	pegoutContractCode := storage.MustCell(storageIndexPegoutContractCode)
+	peginContractCode := storage.MustCell(storageIndexPeginContractCode)
 	csvLock := storage.MustInt(storageIndexCsvLock)
 	lastPegoutTxID, err := chainhash.NewHash(utils.BytesPadTo(lastPegoutTxIDInt.Bytes(), 32))
 	if err != nil {
@@ -125,11 +131,15 @@ func (c *TeleportContract) GetStorage() (Storage, error) {
 		PegoutContractCode: pegoutContractCode,
 		PegoutChainCounter: pegoutChainCounter.Uint64(),
 		LastPegoutTxID:     lastPegoutTxID,
-		CsvLock:            csvLock.Int64(),
+		CsvLock:            uint32(csvLock.Uint64()),
+		PeginContractCode:  peginContractCode,
 	}, nil
 }
 
-func (c *TeleportContract) storeHashesToCell(hashes []*chainhash.Hash, builder *cell.Builder) *cell.Builder {
+func (c *TeleportContract) storeHashesToCell(
+	hashes []*chainhash.Hash,
+	builder *cell.Builder,
+) *cell.Builder {
 	const hashBitLen = 256
 	var store func(hashes []*chainhash.Hash, builder *cell.Builder) *cell.Builder
 	store = func(hashes []*chainhash.Hash, builder *cell.Builder) *cell.Builder {
