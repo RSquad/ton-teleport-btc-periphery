@@ -93,7 +93,9 @@ func (r *mutationResolver) CreatePegin(ctx context.Context, input generated.Crea
 
 // Statistics is the resolver for the statistics field.
 func (r *queryResolver) Statistics(ctx context.Context) (*Statistics, error) {
-	mints, err := r.repo.Mint.Query().All(ctx)
+	mints, err := r.repo.Mint.
+		Query().
+		WithPegin().All(ctx)
 	if err != nil {
 		return nil, err
 	}
