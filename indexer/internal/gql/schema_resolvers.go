@@ -6,13 +6,96 @@ package gql
 
 import (
 	"context"
+	"encoding/hex"
 	"fmt"
 	"math/big"
+
+	"github.com/btcsuite/btcd/btcec/v2/schnorr"
+	"github.com/btcsuite/btcd/btcutil"
+	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated"
+	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/peginutils"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
+	"github.com/xssnick/tonutils-go/address"
 )
+
+// CreatePegin is the resolver for the createPegin field.
+func (r *mutationResolver) CreatePegin(ctx context.Context, input generated.CreatePeginInput) (*generated.Pegin, error) {
+	recoveryKeyBytes, err := hex.DecodeString(*input.RecoveryKey)
+	if err != nil {
+		return nil, fmt.Errorf("invalid recovery key: %w", err)
+	}
+	recoveryKey, err := schnorr.ParsePubKey(recoveryKeyBytes)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse recovery key: %w", err)
+	}
+
+	internalKeyBytes, err := hex.DecodeString(*input.InternalKey)
+	if err != nil {
+		return nil, fmt.Errorf("invalid internal key: %w", err)
+	}
+	internalKey, err := schnorr.ParsePubKey(internalKeyBytes)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse internal key: %w", err)
+	}
+
+	receiverAddr, err := address.ParseRawAddr(input.ReceiverAddr)
+	if err != nil {
+		return nil, fmt.Errorf("invalid receiver address: %w", err)
+	}
+
+	teleportContractStorage, err := r.teleportContract.GetStorage(nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get teleport contract storage: %w", err)
+	}
+
+	repo := generated.FromContext(ctx)
+
+	peginExists, err := r.peginExists(ctx, input.BitcoinTxID)
+	if peginExists {
+		return nil, fmt.Errorf("pegin with the same bitcoin tx id already exists: %w", err)
+	}
+
+	internalKeyExists, err := r.internalKeyExists(ctx, *input.InternalKey)
+	if !internalKeyExists {
+		return nil, fmt.Errorf("internal key not found: %w", err)
+	}
+
+	bitcoinTxExists, bitcoinTx, err := r.bitcoinTxExists(input.BitcoinTxID)
+	if !bitcoinTxExists {
+		return nil, fmt.Errorf("bitcoin tx not found: %w", err)
+	}
+
+	peginBitcoinAddr, err := peginutils.CalcPeginBitcoinAddr(internalKey, recoveryKey, receiverAddr, teleportContractStorage.CsvLock)
+	if err != nil {
+		return nil, fmt.Errorf("failed to calculate pegin bitcoin address: %w", err)
+	}
+
+	addrFound, vout := bitcoin.TxContainsOutWithAddr(bitcoinTx, peginBitcoinAddr.String())
+
+	if !addrFound {
+		return nil, fmt.Errorf("calculated pegin bitcoin address not found in the bitcoin transaction")
+	}
+
+	amount, err := btcutil.NewAmount(vout.Value)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert vout value to btcutil.Amount: %w", err)
+	}
+
+	mint, err := repo.Mint.Create().
+		SetAmount(fmt.Sprintf("%d", amount)).
+		Save(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return repo.Pegin.Create().SetInput(input).SetMint(mint).SetVoutIndex(int(vout.N)).Save(ctx)
+}
 
 // Statistics is the resolver for the statistics field.
 func (r *queryResolver) Statistics(ctx context.Context) (*Statistics, error) {
-	mints, err := r.repo.Mint.Query().All(ctx)
+	mints, err := r.repo.Mint.
+		Query().
+		WithPegin().All(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -26,7 +109,7 @@ func (r *queryResolver) Statistics(ctx context.Context) (*Statistics, error) {
 			return nil, fmt.Errorf("invalid amount: %s", mint.Amount)
 		}
 		totalMintAmount.Add(totalMintAmount, amount)
-		uniqueMintReceivers[mint.ReceiverAddr] = struct{}{}
+		uniqueMintReceivers[mint.Edges.Pegin.ReceiverAddr] = struct{}{}
 	}
 
 	uniqueMintReceiversCount := len(uniqueMintReceivers)
@@ -60,3 +143,8 @@ func (r *queryResolver) Statistics(ctx context.Context) (*Statistics, error) {
 		UniqueBurnSendersCount:   uniqueBurnSendersCount,
 	}, nil
 }
+
+// Mutation returns MutationResolver implementation.
+func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
+
+type mutationResolver struct{ *Resolver }

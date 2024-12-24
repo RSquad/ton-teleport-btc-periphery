@@ -10,23 +10,25 @@ import (
 	"github.com/xssnick/tonutils-go/tvm/cell"
 )
 
-type TxPartsInput struct {
-	Amount            *big.Int
-	Index             uint8
-	Receiver          *address.Address
-	BitcoinMerkleRoot []byte
-	BitcoinScript     []byte
-}
-
-type TxPartsInputs map[string]*TxPartsInput
+type (
+	TxPartsInput struct {
+		Amount            *big.Int
+		Index             uint8
+		Receiver          *address.Address
+		BitcoinMerkleRoot []byte
+		BitcoinScript     []byte
+	}
+	TxPartsInputs map[string]*TxPartsInput
+)
 
 func parseTxPartsInputKey(keySlice *cell.Slice, keySize uint) string {
-	return fmt.Sprintf("%x", keySlice.MustLoadSlice(keySize))
+	key := keySlice.MustLoadSlice(keySize)
+	return fmt.Sprintf("%x", key)
 }
 
 func parseTxPartsInputValue(valueSlice *cell.Slice) (*TxPartsInput, error) {
 	if valueSlice == nil {
-		return nil, errors.New("valueSlice is nil")
+		return nil, errors.New("value slice is nil")
 	}
 
 	amount := valueSlice.MustLoadBigUInt(128)
@@ -45,8 +47,8 @@ func parseTxPartsInputValue(valueSlice *cell.Slice) (*TxPartsInput, error) {
 	}, nil
 }
 
-func NewTxPartsInputsFromDictCell(dictCell *cell.Dictionary) (*TxPartsInputs, error) {
-	result, err := parseddict.NewFromDictCell(dictCell, parseTxPartsInputKey, parseTxPartsInputValue)
+func NewTxPartsInputs(dict *cell.Dictionary) (*TxPartsInputs, error) {
+	result, err := parseddict.New(dict, parseTxPartsInputKey, parseTxPartsInputValue)
 	if err != nil {
 		return nil, err
 	}

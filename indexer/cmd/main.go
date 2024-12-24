@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"sync"
 
+	"entgo.io/contrib/entgql"
 	"entgo.io/ent/dialect"
 
 	"github.com/99designs/gqlgen/graphql/handler"
@@ -18,11 +19,12 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated/migrate"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/gql"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/logmanager"
+	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/mintmanager"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/pegoutmanager"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/teleportcontract"
-	tonclient "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/ton_client"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/toncenterv3"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
 	"github.com/xssnick/tonutils-go/address"
 )
@@ -30,8 +32,11 @@ import (
 type App struct {
 	TonCenterV3Client *toncenterv3.Client
 	Repo              *ent.Client
+	BitcoinClient     *bitcoin.Client
 	LogManager        *logmanager.LogManager
+	TeleportContract  *teleportcontract.TeleportContract
 	PegoutManager     *pegoutmanager.PegoutManager
+	MintManager       *mintmanager.MintManager
 }
 
 func main() {
@@ -39,16 +44,16 @@ func main() {
 
 	app, err := initialize()
 	if err != nil {
-		log.Fatalf("[App] failed to initialize: %v", err)
+		log.Fatalf("failed to initialize: %v", err)
 	}
 
 	if err := run(app); err != nil {
-		log.Fatalf("[App] stopped with error: %v", err)
+		log.Fatalf("stopped with error: %v", err)
 	}
 }
 
 func initialize() (*App, error) {
-	log.Println("[App] initializing...")
+	log.Println("initializing...")
 
 	indexerConfig, err := utils.LoadConfig[config.IndexerConfig]()
 	if err != nil {
@@ -61,29 +66,34 @@ func initialize() (*App, error) {
 		indexerConfig.BitcoinRpcPass,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("[App] failed to create bitcoin client: %w", err)
+		return nil, fmt.Errorf("failed to create bitcoin client: %w", err)
 	}
 
-	tonClient, err := tonclient.NewTonClient(indexerConfig.TonConfigUrl)
+	tonClient, err := tonclient.New(indexerConfig.TonConfigUrl)
 	if err != nil {
-		return nil, fmt.Errorf("[App] failed to create ton client: %w", err)
+		return nil, fmt.Errorf("failed to create ton client: %w", err)
 	}
 
 	teleportContractAddr := address.MustParseAddr(indexerConfig.TeleportContractAddr)
-	teleportContract := teleportcontract.New(teleportContractAddr, tonClient, nil, context.Background())
+	teleportContract := teleportcontract.New(
+		teleportContractAddr,
+		tonClient,
+		nil,
+		context.Background(),
+	)
 
 	coordinatorContractAddr := address.MustParseAddr(indexerConfig.CoordinatorContractAddr)
 
 	repo, err := ent.Open(dialect.Postgres, indexerConfig.DatabaseURL)
 	if err != nil {
-		log.Fatalf("[App] failed to create repo: %v", err)
+		log.Fatalf("failed to create repo: %v", err)
 	}
 
 	if err := repo.Schema.Create(
 		context.Background(),
 		migrate.WithGlobalUniqueID(true),
 	); err != nil {
-		log.Fatalf("[App] failed creating repos schema: %v", err)
+		log.Fatalf("failed creating repos schema: %v", err)
 	}
 
 	tonCenterV3Client, err := toncenterv3.NewClient(
@@ -94,7 +104,7 @@ func initialize() (*App, error) {
 		false,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("[App] failed to create ton client: %w", err)
+		return nil, fmt.Errorf("failed to create ton client: %w", err)
 	}
 
 	logManager, err := logmanager.New(
@@ -105,8 +115,17 @@ func initialize() (*App, error) {
 		coordinatorContractAddr,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("[App] failed to create log manager: %w", err)
+		return nil, fmt.Errorf("failed to create log manager: %w", err)
 	}
+
+	mintManager := mintmanager.New(
+		context.Background(),
+		repo,
+		bitcoinClient,
+		tonClient,
+		tonCenterV3Client,
+		teleportContract,
+	)
 
 	pegoutManager, err := pegoutmanager.New(
 		context.Background(),
@@ -117,21 +136,23 @@ func initialize() (*App, error) {
 		teleportContract,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("[App] failed to create pegout manager: %w", err)
+		return nil, fmt.Errorf("failed to create pegout manager: %w", err)
 	}
 
-	log.Println("[App] initialized")
+	log.Println("initialized")
 
 	return &App{
 		TonCenterV3Client: tonCenterV3Client,
 		Repo:              repo,
+		BitcoinClient:     bitcoinClient,
 		LogManager:        logManager,
+		TeleportContract:  teleportContract,
 		PegoutManager:     pegoutManager,
+		MintManager:       mintManager,
 	}, nil
 }
 
 func run(app *App) error {
-	log.Println("[App] running...")
 	defer app.Repo.Close()
 
 	var wg sync.WaitGroup
@@ -139,7 +160,10 @@ func run(app *App) error {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		srv := handler.NewDefaultServer(gql.NewSchema(app.Repo))
+		srv := handler.NewDefaultServer(
+			gql.NewSchema(app.Repo, app.BitcoinClient, app.TeleportContract),
+		)
+		srv.Use(entgql.Transactioner{TxOpener: app.Repo})
 
 		mux := http.NewServeMux()
 		mux.Handle("/indexer/graphql", srv)
@@ -172,8 +196,14 @@ func run(app *App) error {
 		app.PegoutManager.Run()
 	}()
 
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		app.MintManager.Run()
+	}()
+
 	wg.Wait()
 
-	log.Println("[App] shutdown complete")
+	log.Println("shutdown complete")
 	return nil
 }

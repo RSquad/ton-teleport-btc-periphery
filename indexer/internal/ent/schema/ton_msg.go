@@ -18,9 +18,8 @@ func (TonMsg) Fields() []ent.Field {
 			Unique().
 			NotEmpty().
 			Immutable(),
-		field.Time("createdAt").
-			Immutable().
-			Annotations(entgql.MapsTo("createdAt")),
+		field.Time("created_at").
+			Immutable(),
 	}
 }
 
@@ -32,9 +31,8 @@ func (TonMsg) Edges() []ent.Edge {
 			Unique(),
 		edge.To("reinit", Reinit.Type).
 			Unique(),
-		edge.To("internalKey", InternalKey.Type).
-			Unique().
-			Annotations(entgql.MapsTo("internalKey")),
+		edge.To("internal_key", InternalKey.Type).
+			Unique(),
 	}
 }
 
@@ -42,6 +40,5 @@ func (TonMsg) Annotations() []schema.Annotation {
 	return []schema.Annotation{
 		entgql.RelayConnection(),
 		entgql.QueryField(),
-		entgql.Mutations(entgql.MutationCreate()),
 	}
 }

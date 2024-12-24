@@ -19,8 +19,8 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/pegoutcontract"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/teleportcontract"
-	tonclient "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/ton_client"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/toncenterv3"
+	tonclient "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
 	"github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/ton"
@@ -58,10 +58,10 @@ func New(
 	return pegoutManager, nil
 }
 
-func (pm *PegoutManager) Run() {
+func (c *PegoutManager) Run() {
 	const sleepDuration = 3 * time.Second
 	for {
-		if err := pm.processPegouts(); err != nil {
+		if err := c.processPegouts(); err != nil {
 			log.Printf("failed to process pegouts: %v", err)
 		}
 		time.Sleep(sleepDuration)
@@ -146,7 +146,7 @@ func (c *PegoutManager) handleSigningPegout(
 	err = c.repo.Pegout.Update().
 		SetStatus(entpegout.StatusSigned).
 		SetBitcoinTxRaw(txHex).
-		SetBitcoinTxId(pegoutTx.TxID()).
+		SetBitcoinTxID(pegoutTx.TxID()).
 		Where(entpegout.ID(pegout.ID)).
 		Exec(c.ctx)
 	if err != nil {
@@ -159,7 +159,7 @@ func (c *PegoutManager) handleSigningPegout(
 func (c *PegoutManager) handleSignedPegout(
 	pegout *ent.Pegout,
 ) error {
-	txHash, err := chainhash.NewHashFromStr(pegout.BitcoinTxId)
+	txHash, err := chainhash.NewHashFromStr(pegout.BitcoinTxID)
 	if err != nil {
 		return fmt.Errorf("failed to parse tx hash: %w", err)
 	}
@@ -242,10 +242,10 @@ func (c *PegoutManager) buildPegoutTx(txParts *pegoutcontract.TxParts) (*wire.Ms
 			pInput.TaprootMerkleRoot = input.BitcoinMerkleRoot
 		}
 		signature := (*txParts.Signatures)[strconv.Itoa(i)]
-		if len(signature) > 64 {
-			signature = signature[len(signature)-64:]
+		if len(signature) < 64 {
+			return nil, fmt.Errorf("signature is too short")
 		}
-		pInput.TaprootKeySpendSig = signature
+		pInput.TaprootKeySpendSig = signature[len(signature)-64:]
 		packet.Inputs = append(packet.Inputs, pInput)
 	}
 
