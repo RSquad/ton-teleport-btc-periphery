@@ -112,7 +112,6 @@ func (c *MintManager) handlePendingMint(
 	peginContractCode *cell.Cell,
 	block *ton.BlockIDExt,
 ) error {
-	log.Printf("BitcoinTxID %v", mint.Edges.Pegin.BitcoinTxID)
 	bitcoinTxID, err := chainhash.NewHash(utils.MustHexToBytes(mint.Edges.Pegin.BitcoinTxID, 32))
 	if err != nil {
 		return fmt.Errorf("failed to create bitcoin transaction hash: %w", err)

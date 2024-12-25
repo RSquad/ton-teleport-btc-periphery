@@ -13,6 +13,7 @@ import (
 	"github.com/btcsuite/btcd/btcec/v2/schnorr"
 	"github.com/btcsuite/btcd/btcutil"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated"
+	mintmodel "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated/mint"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/peginutils"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
 	"github.com/xssnick/tonutils-go/address"
@@ -81,9 +82,14 @@ func (r *mutationResolver) CreatePegin(ctx context.Context, input generated.Crea
 		return nil, fmt.Errorf("failed to convert vout value to btcutil.Amount: %w", err)
 	}
 
-	mint, err := repo.Mint.Create().
-		SetAmount(fmt.Sprintf("%d", amount)).
-		Save(ctx)
+	mintCreate := repo.Mint.Create().
+		SetAmount(fmt.Sprintf("%d", amount))
+
+	if amount.ToUnit(btcutil.AmountSatoshi) < float64(teleportContractStorage.Limits.MinPeginAmount) {
+		mintCreate.SetStatus(mintmodel.StatusRefund)
+	}
+
+	mint, err := mintCreate.Save(ctx)
 	if err != nil {
 		return nil, err
 	}

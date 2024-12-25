@@ -24,6 +24,7 @@ const (
 	storageIndexPegoutChainCounter = 13
 	storageIndexLastPegoutTxID     = 14
 	storageIndexCsvLock            = 17
+	storageIndexLimits             = 18
 	storageIndexPegoutContractCode = 7
 	storageIndexPeginContractCode  = 10
 )
@@ -41,6 +42,12 @@ type Storage struct {
 	LastPegoutTxID     *chainhash.Hash
 	CsvLock            uint32
 	PeginContractCode  *cell.Cell
+	Limits             Limits
+}
+
+type Limits struct {
+	MinPeginAmount  uint32
+	MinPegoutAmount uint32
 }
 
 func New(
@@ -122,6 +129,11 @@ func (c *TeleportContract) GetStorage(block *ton.BlockIDExt) (Storage, error) {
 	pegoutContractCode := storage.MustCell(storageIndexPegoutContractCode)
 	peginContractCode := storage.MustCell(storageIndexPeginContractCode)
 	csvLock := storage.MustInt(storageIndexCsvLock)
+	limitsSlice := storage.MustSlice(storageIndexLimits)
+	limits := Limits{
+		MinPeginAmount:  uint32(limitsSlice.MustLoadUInt(32)),
+		MinPegoutAmount: uint32(limitsSlice.MustLoadUInt(32)),
+	}
 	lastPegoutTxID, err := chainhash.NewHash(utils.BytesPadTo(lastPegoutTxIDInt.Bytes(), 32))
 	if err != nil {
 		return Storage{}, err
@@ -133,6 +145,7 @@ func (c *TeleportContract) GetStorage(block *ton.BlockIDExt) (Storage, error) {
 		LastPegoutTxID:     lastPegoutTxID,
 		CsvLock:            uint32(csvLock.Uint64()),
 		PeginContractCode:  peginContractCode,
+		Limits:             limits,
 	}, nil
 }
 
