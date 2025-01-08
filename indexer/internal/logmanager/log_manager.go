@@ -144,11 +144,13 @@ func (c *LogManager) saveLog(tonMsg *ent.TonMsg, parsedLog teleportcontract.LogI
 
 func (c *LogManager) saveMint(tonMsg *ent.TonMsg, typedParsedLog *teleportcontract.MintLog) error {
 	return c.saveTransaction(func(tx *ent.Tx) error {
-		existingPegin, err := tx.Pegin.Query().
+		existingPegin, _ := tx.Pegin.Query().
 			Where(pegin.BitcoinTxIDEQ(typedParsedLog.BitcoinTxID.String())).
 			Only(c.ctx)
-		if err == nil {
-			_, err = tx.Mint.UpdateOne(existingPegin.Edges.Mint).
+
+		if existingPegin != nil {
+			_, err := tx.Mint.UpdateOne(existingPegin.Edges.Mint).
+				SetStatus("SUCCESS").
 				SetTonMsg(tonMsg).
 				Save(c.ctx)
 			return err
@@ -162,6 +164,7 @@ func (c *LogManager) saveMint(tonMsg *ent.TonMsg, typedParsedLog *teleportcontra
 		if err != nil {
 			return err
 		}
+
 		_, err = tx.Pegin.Create().
 			SetReceiverAddr(utils.AddrToRawString(typedParsedLog.ReceiverAddr)).
 			SetBitcoinTxID(typedParsedLog.BitcoinTxID.String()).
