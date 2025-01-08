@@ -9,6 +9,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"math/big"
+	"time"
 
 	"github.com/btcsuite/btcd/btcec/v2/schnorr"
 	"github.com/btcsuite/btcd/btcutil"
@@ -82,8 +83,15 @@ func (r *mutationResolver) CreatePegin(ctx context.Context, input generated.Crea
 		return nil, fmt.Errorf("failed to convert vout value to btcutil.Amount: %w", err)
 	}
 
+	mintCreateAt := time.Now()
+
+	if bitcoinTx.Time != 0 {
+		mintCreateAt = time.Unix(bitcoinTx.Time, 0)
+	}
+
 	mintCreate := repo.Mint.Create().
-		SetAmount(fmt.Sprintf("%d", amount))
+		SetAmount(fmt.Sprintf("%d", amount)).
+		SetCreatedAt(mintCreateAt)
 
 	if amount.ToUnit(btcutil.AmountSatoshi) < float64(teleportContractStorage.Limits.MinPeginAmount) {
 		mintCreate.SetStatus(mintmodel.StatusRefund)

@@ -159,6 +159,7 @@ func (c *LogManager) saveMint(tonMsg *ent.TonMsg, typedParsedLog *teleportcontra
 		mint, err := tx.Mint.Create().
 			SetAmount(typedParsedLog.Amount.String()).
 			SetStatus("SUCCESS").
+			SetCreatedAt(tonMsg.CreatedAt).
 			SetTonMsg(tonMsg).
 			Save(c.ctx)
 		if err != nil {

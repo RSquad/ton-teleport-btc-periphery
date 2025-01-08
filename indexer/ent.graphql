@@ -235,6 +235,7 @@ type Mint implements Node {
   id: ID!
   status: MintStatus!
   amount: String
+  createdAt: Time!
   tonMsg: TonMsg
   pegin: Pegin
 }
@@ -321,6 +322,17 @@ input MintWhereInput {
   amountNotNil: Boolean
   amountEqualFold: String
   amountContainsFold: String
+  """
+  created_at field predicates
+  """
+  createdAt: Time
+  createdAtNEQ: Time
+  createdAtIn: [Time!]
+  createdAtNotIn: [Time!]
+  createdAtGT: Time
+  createdAtGTE: Time
+  createdAtLT: Time
+  createdAtLTE: Time
   """
   ton_msg edge predicates
   """

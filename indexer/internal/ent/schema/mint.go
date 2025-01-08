@@ -25,6 +25,8 @@ func (Mint) Fields() []ent.Field {
 		field.Text("amount").
 			Optional().
 			Immutable(),
+		field.Time("created_at").
+			Immutable(),
 	}
 }
 
