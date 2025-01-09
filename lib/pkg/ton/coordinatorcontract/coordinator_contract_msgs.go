@@ -1,7 +1,6 @@
 package coordinatorcontract
 
 import (
-	"log"
 	"time"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton"
@@ -20,10 +19,6 @@ func (c *CoordinatorContract) SendStartDKG(ttl int64) (*tlb.Transaction, error) 
 		MustStoreUInt(OpCodeStartDKG, 32).
 		MustStoreUInt(uint64(time.Now().Unix()+ttl), 32).
 		EndCell()
-
-	log.Printf("unix: %d", uint64(time.Now().Unix()+ttl))
-
-	log.Printf("addr: %+v", c.Addr)
 
 	msg, err := ton.BuildExtMsg(unsignedMsgBody, c.Addr, c.signer)
 	if err != nil {

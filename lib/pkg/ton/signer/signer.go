@@ -7,14 +7,12 @@ import (
 	"github.com/xssnick/tonutils-go/tvm/cell"
 )
 
-const TestSecret = ""
-
 type Signer struct {
 	secret ed25519.PrivateKey
 }
 
-func New() *Signer {
-	secret, err := hex.DecodeString(TestSecret)
+func New(secretStr string) *Signer {
+	secret, err := hex.DecodeString(secretStr)
 	if err != nil {
 		panic(err)
 	}

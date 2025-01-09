@@ -55,7 +55,7 @@ func main() {
 func initialize() (*App, error) {
 	log.Println("initializing...")
 
-	indexerConfig, err := utils.LoadConfig[config.IndexerConfig]()
+	indexerConfig, err := utils.LoadCfg[config.IndexerConfig]()
 	if err != nil {
 		return nil, err
 	}

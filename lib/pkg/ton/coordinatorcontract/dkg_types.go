@@ -2,18 +2,19 @@ package coordinatorcontract
 
 import (
 	"math/big"
+	"time"
 )
 
 type DKG struct {
-	status     DKGStatus
-	vSet       *VSet
-	maxSigners uint64
-	r1         *DKGR1
-	r2         *DKGR2
+	Status     DKGStatus
+	VSet       *VSet
+	MaxSigners uint64
+	R1         *DKGR1
+	R2         *DKGR2
+	Until      time.Time
 	// r3Pkg  R3Pkg
 	// cfgHash    []byte
 	// attempts   uint64
-	// until      uint64
 }
 
 type DKGRoundState struct {

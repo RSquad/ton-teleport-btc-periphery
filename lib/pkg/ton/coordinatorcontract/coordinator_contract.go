@@ -2,6 +2,7 @@ package coordinatorcontract
 
 import (
 	"context"
+	"time"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/signer"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
@@ -40,6 +41,14 @@ func New(
 }
 
 func (c *CoordinatorContract) GetDkg(block *ton.BlockIDExt) (*DKG, error) {
+	if block == nil {
+		var err error
+		block, err = c.tonClient.API.CurrentMasterchainInfo(c.ctx)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	result, err := c.tonClient.API.RunGetMethod(c.ctx, block, c.Addr, "get_dkg")
 	if err != nil {
 		return nil, err
@@ -84,12 +93,20 @@ func parseDGKSlice(dkgSlice *cell.Slice) (*DKG, error) {
 		return nil, err
 	}
 
+	_ = dkgSlice.MustLoadSlice(256)
+	_ = dkgSlice.MustLoadUInt(8)
+	until := time.Unix(int64(dkgSlice.MustLoadUInt(32)), 0)
+	packagesSlice := dkgSlice.MustLoadRef()
+	_ = packagesSlice.MustLoadUInt(16)
+	_ = packagesSlice.MustLoadBigUInt(256)
+
 	return &DKG{
-		status:     status,
-		vSet:       vSet,
-		maxSigners: maxSigners,
-		r1:         r1,
-		r2:         r2,
+		status,
+		vSet,
+		maxSigners,
+		r1,
+		r2,
+		until,
 	}, nil
 }
 
