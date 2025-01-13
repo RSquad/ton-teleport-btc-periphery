@@ -89,19 +89,24 @@ func (ew *EventWriter) writeEvent(tonTx *ent.TonTx, event ton.EventInterface) er
 }
 
 func (ew *EventWriter) writeMint(tonTx *ent.TonTx, event *teleportcontract.MintEvent) error {
+	existingPegin, _ := ew.repo.Pegin.Query().
+		Where(pegin.BitcoinTxIDEQ(event.BitcoinTxID.String())).
+		WithMint().
+		Only(ew.ctx)
+
+	if existingPegin != nil {
+		log.Printf(
+			"updating mint status to SUCCESS (mintid=%d, txhash=%x)",
+			existingPegin.Edges.Mint.ID, event.GetRaw().TxHash,
+		)
+		_, err := ew.repo.Mint.UpdateOne(existingPegin.Edges.Mint).
+			SetStatus("SUCCESS").
+			SetTonTx(tonTx).
+			Save(ew.ctx)
+		return err
+	}
+
 	return ew.write(func(tx *ent.Tx) error {
-		existingPegin, _ := tx.Pegin.Query().
-			Where(pegin.BitcoinTxIDEQ(event.BitcoinTxID.String())).
-			Only(ew.ctx)
-
-		if existingPegin != nil {
-			_, err := tx.Mint.UpdateOne(existingPegin.Edges.Mint).
-				SetStatus("SUCCESS").
-				SetTonTx(tonTx).
-				Save(ew.ctx)
-			return err
-		}
-
 		mint, err := tx.Mint.Create().
 			SetAmount(event.Amount.String()).
 			SetStatus("SUCCESS").
