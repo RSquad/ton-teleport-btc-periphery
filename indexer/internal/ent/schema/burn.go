@@ -31,7 +31,7 @@ func (Burn) Fields() []ent.Field {
 
 func (Burn) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("ton_msg", TonMsg.Type).
+		edge.From("ton_tx", TonTx.Type).
 			Ref("burn").
 			Unique().
 			Required(),

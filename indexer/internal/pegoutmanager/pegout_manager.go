@@ -19,7 +19,6 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/pegoutcontract"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/teleportcontract"
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/toncenterv3"
 	tonclient "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
 	"github.com/xssnick/tonutils-go/address"
@@ -27,12 +26,11 @@ import (
 )
 
 type PegoutManager struct {
-	ctx               context.Context
-	repo              *ent.Client
-	bitcoinClient     *bitcoin.Client
-	tonClient         *tonclient.TonClient
-	tonCenterV3Client *toncenterv3.Client
-	teleportContract  *teleportcontract.TeleportContract
+	ctx              context.Context
+	repo             *ent.Client
+	bitcoinClient    *bitcoin.Client
+	tonClient        *tonclient.TonClient
+	teleportContract *teleportcontract.TeleportContract
 }
 
 func New(
@@ -40,19 +38,17 @@ func New(
 	repo *ent.Client,
 	bitcoinClient *bitcoin.Client,
 	tonClient *tonclient.TonClient,
-	tonCenterV3Client *toncenterv3.Client,
 	teleportContract *teleportcontract.TeleportContract,
 ) (
 	*PegoutManager,
 	error,
 ) {
 	pegoutManager := &PegoutManager{
-		ctx:               ctx,
-		repo:              repo,
-		bitcoinClient:     bitcoinClient,
-		tonClient:         tonClient,
-		tonCenterV3Client: tonCenterV3Client,
-		teleportContract:  teleportContract,
+		ctx:              ctx,
+		repo:             repo,
+		bitcoinClient:    bitcoinClient,
+		tonClient:        tonClient,
+		teleportContract: teleportContract,
 	}
 
 	return pegoutManager, nil

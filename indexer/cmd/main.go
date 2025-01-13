@@ -17,26 +17,27 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/config"
 	ent "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated/migrate"
+	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/events"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/gql"
-	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/logmanager"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/mintmanager"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/pegoutmanager"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinatorcontract"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/teleportcontract"
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/toncenterv3"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
 	"github.com/xssnick/tonutils-go/address"
 )
 
 type App struct {
-	TonCenterV3Client *toncenterv3.Client
-	Repo              *ent.Client
-	BitcoinClient     *bitcoin.Client
-	LogManager        *logmanager.LogManager
-	TeleportContract  *teleportcontract.TeleportContract
-	PegoutManager     *pegoutmanager.PegoutManager
-	MintManager       *mintmanager.MintManager
+	Repo                *ent.Client
+	TonClient           *tonclient.TonClient
+	BitcoinClient       *bitcoin.Client
+	EventService        *events.EventService
+	TeleportContract    *teleportcontract.TeleportContract
+	CoordinatorContract *coordinatorcontract.CoordinatorContract
+	PegoutManager       *pegoutmanager.PegoutManager
+	MintManager         *mintmanager.MintManager
 }
 
 func main() {
@@ -83,6 +84,12 @@ func initialize() (*App, error) {
 	)
 
 	coordinatorContractAddr := address.MustParseAddr(indexerConfig.CoordinatorContractAddr)
+	coordinatorContract := coordinatorcontract.New(
+		nil,
+		coordinatorContractAddr,
+		tonClient,
+		context.Background(),
+	)
 
 	repo, err := ent.Open(dialect.Postgres, indexerConfig.DatabaseURL)
 	if err != nil {
@@ -96,34 +103,11 @@ func initialize() (*App, error) {
 		log.Fatalf("failed creating repos schema: %v", err)
 	}
 
-	tonCenterV3Client, err := toncenterv3.NewClient(
-		indexerConfig.TonCenterV3Host,
-		indexerConfig.TonCenterApiKey,
-		"/",
-		"https",
-		false,
-	)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create ton client: %w", err)
-	}
-
-	logManager, err := logmanager.New(
-		context.Background(),
-		repo,
-		tonCenterV3Client,
-		teleportContract,
-		coordinatorContractAddr,
-	)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create log manager: %w", err)
-	}
-
 	mintManager := mintmanager.New(
 		context.Background(),
 		repo,
 		bitcoinClient,
 		tonClient,
-		tonCenterV3Client,
 		teleportContract,
 	)
 
@@ -132,23 +116,30 @@ func initialize() (*App, error) {
 		repo,
 		bitcoinClient,
 		tonClient,
-		tonCenterV3Client,
 		teleportContract,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create pegout manager: %w", err)
 	}
 
+	eventService := events.NewEventService(
+		tonClient,
+		repo,
+		teleportContract,
+		coordinatorContract,
+	)
+
 	log.Println("initialized")
 
 	return &App{
-		TonCenterV3Client: tonCenterV3Client,
-		Repo:              repo,
-		BitcoinClient:     bitcoinClient,
-		LogManager:        logManager,
-		TeleportContract:  teleportContract,
-		PegoutManager:     pegoutManager,
-		MintManager:       mintManager,
+		Repo:                repo,
+		TonClient:           tonClient,
+		BitcoinClient:       bitcoinClient,
+		TeleportContract:    teleportContract,
+		CoordinatorContract: coordinatorContract,
+		PegoutManager:       pegoutManager,
+		MintManager:         mintManager,
+		EventService:        eventService,
 	}, nil
 }
 
@@ -187,7 +178,7 @@ func run(app *App) error {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		app.LogManager.Run()
+		app.EventService.Run()
 	}()
 
 	wg.Add(1)

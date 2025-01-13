@@ -24,7 +24,7 @@ func (InternalKey) Fields() []ent.Field {
 
 func (InternalKey) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("ton_msg", TonMsg.Type).
+		edge.From("ton_tx", TonTx.Type).
 			Ref("internal_key").
 			Unique().
 			Required(),

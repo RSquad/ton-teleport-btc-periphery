@@ -30,7 +30,7 @@ func (Reinit) Fields() []ent.Field {
 
 func (Reinit) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("ton_msg", TonMsg.Type).
+		edge.From("ton_tx", TonTx.Type).
 			Ref("reinit").
 			Unique().
 			Required(),

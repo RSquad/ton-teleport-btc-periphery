@@ -6,6 +6,7 @@ package gql
 
 import (
 	"context"
+	"fmt"
 
 	"entgo.io/contrib/entgql"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated"
@@ -57,10 +58,9 @@ func (r *queryResolver) Reinits(ctx context.Context, after *entgql.Cursor[int], 
 		Paginate(ctx, after, first, before, last, generated.WithReinitFilter(where.Filter))
 }
 
-// TonMsgs is the resolver for the tonMsgs field.
-func (r *queryResolver) TonMsgs(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, where *generated.TonMsgWhereInput) (*generated.TonMsgConnection, error) {
-	return r.repo.TonMsg.Query().
-		Paginate(ctx, after, first, before, last, generated.WithTonMsgFilter(where.Filter))
+// TonTxes is the resolver for the tonTxes field.
+func (r *queryResolver) TonTxes(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, where *generated.TonTxWhereInput) (*generated.TonTxConnection, error) {
+	panic(fmt.Errorf("not implemented: TonTxes - tonTxes"))
 }
 
 // Query returns QueryResolver implementation.
