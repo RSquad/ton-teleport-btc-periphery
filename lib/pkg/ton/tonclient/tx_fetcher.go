@@ -2,30 +2,106 @@ package tonclient
 
 import (
 	"context"
-	"fmt"
+	"time"
 
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
 	"github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/tlb"
 )
 
 type TxFetcher struct {
 	tonClient *TonClient
+	addr      *address.Address
+	lt        uint64
+	hash      []byte
+	limit     uint32
+	outChan   chan<- *tlb.Transaction
 }
 
-func NewTxFetcher(tonClient *TonClient) *TxFetcher {
-	return &TxFetcher{
-		tonClient: tonClient,
-	}
-}
-
-func (tf *TxFetcher) Fetch(ctx context.Context, addr *address.Address, lt uint64, hash []byte, limit int) ([]*tlb.Transaction, error) {
+func NewTxFetcher(
+	tonClient *TonClient,
+	addr *address.Address,
+	lt uint64,
+	hash []byte,
+	limit uint32,
+	outChan chan<- *tlb.Transaction,
+) *TxFetcher {
 	if limit == 0 {
 		limit = 64
 	}
-	txs, err := tf.tonClient.API.WithRetry(3).ListTransactions(ctx, addr, uint32(limit), lt, hash)
+	return &TxFetcher{
+		tonClient: tonClient,
+		addr:      addr,
+		lt:        lt,
+		hash:      hash,
+		limit:     limit,
+		outChan:   outChan,
+	}
+}
+
+func (tf *TxFetcher) Work(ctx context.Context) (err error) {
+	tf.logStartWork()
+
+	count := 0
+	start := time.Now()
+
+	defer func() {
+		tf.logFinishWork(count, time.Since(start), err)
+	}()
+
+	for {
+		if cerr := tf.checkCtx(ctx); cerr != nil {
+			return cerr
+		}
+
+		txs, ferr := tf.Fetch(ctx)
+		if ferr != nil {
+			tf.handleFetchError(ferr)
+			continue
+		}
+
+		if len(txs) == 0 {
+			return nil
+		}
+
+		tf.logTxsFetched(len(txs), count+len(txs))
+
+		for _, tx := range txs {
+			if cerr := tf.checkCtx(ctx); cerr != nil {
+				return cerr
+			}
+
+			tf.outChan <- tx
+			count++
+
+			if tx.PrevTxLT < tf.lt {
+				tf.lt = tx.PrevTxLT
+				tf.hash = tx.PrevTxHash
+			}
+			if tf.lt == 0 {
+				return nil
+			}
+		}
+	}
+}
+
+func (tf *TxFetcher) checkCtx(ctx context.Context) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+		return nil
+	}
+}
+
+func (tf *TxFetcher) handleFetchError(err error) {
+	tf.logFetchError(err)
+	time.Sleep(1 * time.Second)
+}
+
+func (tf *TxFetcher) Fetch(ctx context.Context) ([]*tlb.Transaction, error) {
+	txs, err := tf.tonClient.API.WithRetry(3).ListTransactions(ctx, tf.addr, tf.limit, tf.lt, tf.hash)
 	if err != nil {
-		return nil, fmt.Errorf("error fetching txs (addr=%v, txhash=%x, txlt=%v): %w", utils.AddrToRawString(addr), hash, lt, err)
+		return nil, err
 	}
 	return txs, nil
 }

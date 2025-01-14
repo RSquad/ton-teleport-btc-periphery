@@ -32,13 +32,17 @@ func NewEventService(
 }
 
 func (es *EventService) Run() {
+	teleportContractRawEventChan := make(chan *ton.RawEvent)
+	coordinatorContractRawEventChan := make(chan *ton.RawEvent)
 	teleportContractRawEventCollector := ton.NewRawEventCollector(
 		es.tonClient,
-		es.teleportContract,
+		es.teleportContract.GetAddr(),
+		teleportContractRawEventChan,
 	)
 	coordinatorContractRawEventCollector := ton.NewRawEventCollector(
 		es.tonClient,
-		es.coordinatorContract,
+		es.coordinatorContract.GetAddr(),
+		coordinatorContractRawEventChan,
 	)
 
 	teleportContractEventParserExecutor := ton.NewEventParserExecutor(teleportcontract.NewEventParser())
@@ -53,8 +57,6 @@ func (es *EventService) Run() {
 	eventWriter := NewEventWriter(context.Background(), es.repo, pegoutWriter)
 	eventWriterExecutor := NewEventWriterExecutor(eventWriter)
 
-	teleportContractRawEventChan := make(chan *ton.RawEvent)
-	coordinatorContractRawEventChan := make(chan *ton.RawEvent)
 	eventChan := make(chan ton.EventInterface)
 
 	var wg sync.WaitGroup
@@ -62,11 +64,11 @@ func (es *EventService) Run() {
 	wg.Add(5)
 	go func() {
 		defer wg.Done()
-		teleportContractRawEventCollector.Run(teleportContractRawEventChan)
+		teleportContractRawEventCollector.Work(context.Background())
 	}()
 	go func() {
 		defer wg.Done()
-		coordinatorContractRawEventCollector.Run(coordinatorContractRawEventChan)
+		coordinatorContractRawEventCollector.Work(context.Background())
 	}()
 	go func() {
 		defer wg.Done()

@@ -1,44 +1,53 @@
 package ton
 
 import (
-	"sync"
+	"context"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
+	"github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/tlb"
+	"golang.org/x/sync/errgroup"
 )
 
 type RawEventCollector struct {
 	tonClient *tonclient.TonClient
-	contract  ContractInterface
+	addr      *address.Address
+	outChan   chan<- *RawEvent
 }
 
 func NewRawEventCollector(
 	tonClient *tonclient.TonClient,
-	contract ContractInterface,
+	addr *address.Address,
+	outChan chan<- *RawEvent,
 ) *RawEventCollector {
 	return &RawEventCollector{
-		tonClient, contract,
+		tonClient: tonClient,
+		addr:      addr,
+		outChan:   outChan,
 	}
 }
 
-func (ec *RawEventCollector) Run(rawEventChan chan<- *RawEvent) error {
-	txCollectorWorker := tonclient.NewTxCollectorWorker(ec.tonClient)
-	eventFilter := NewEventFilter()
+func (ec *RawEventCollector) Work(ctx context.Context) (err error) {
+	ec.logStartWork()
+	defer ec.logFinishWork(err)
 
 	txChan := make(chan *tlb.Transaction)
+	txCollector := tonclient.NewTxCollector(ec.tonClient, ec.addr, txChan)
+	eventFilter := NewRawEventFilter(txChan, ec.outChan)
 
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		txCollectorWorker.Run(ec.contract.GetAddr(), txChan)
-	}()
-	go func() {
-		defer wg.Done()
-		eventFilter.Run(txChan, rawEventChan)
-	}()
+	g, ctx := errgroup.WithContext(ctx)
 
-	wg.Wait()
+	g.Go(func() error {
+		return txCollector.Work(ctx)
+	})
+
+	g.Go(func() error {
+		return eventFilter.Work(ctx)
+	})
+
+	if werr := g.Wait(); werr != nil {
+		return werr
+	}
 
 	return nil
 }

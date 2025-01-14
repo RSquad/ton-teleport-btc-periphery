@@ -22,6 +22,7 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/mintmanager"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/pegoutmanager"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinatorcontract"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/teleportcontract"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
@@ -54,7 +55,11 @@ func main() {
 }
 
 func initialize() (*App, error) {
-	log.Println("initializing...")
+	logger.Init()
+
+	logger.Log.Info().
+		Str("component", "main").
+		Msg("initializing")
 
 	indexerConfig, err := utils.LoadConfig[config.IndexerConfig]()
 	if err != nil {

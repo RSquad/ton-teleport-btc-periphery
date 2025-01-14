@@ -3,7 +3,9 @@ package tonclient
 import (
 	"context"
 
+	"github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/liteclient"
+	"github.com/xssnick/tonutils-go/tlb"
 	"github.com/xssnick/tonutils-go/ton"
 )
 
@@ -26,4 +28,19 @@ func New(configURL string) (*TonClient, error) {
 		Pool: pool,
 		API:  api,
 	}, nil
+}
+
+func (tc *TonClient) FetchAcc(
+	addr *address.Address,
+	block *ton.BlockIDExt,
+) (*tlb.Account, error) {
+	var err error
+	if block == nil {
+		block, err = tc.API.CurrentMasterchainInfo(context.Background())
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return tc.API.GetAccount(context.Background(), block, addr)
 }
