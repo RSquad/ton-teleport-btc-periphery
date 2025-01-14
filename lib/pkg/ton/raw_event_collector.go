@@ -1,7 +1,6 @@
 package ton
 
 import (
-	"context"
 	"sync"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
@@ -23,31 +22,16 @@ func NewRawEventCollector(
 }
 
 func (ec *RawEventCollector) Run(rawEventChan chan<- *RawEvent) error {
-	block, err := ec.tonClient.API.CurrentMasterchainInfo(context.Background())
-	if err != nil {
-		return nil
-	}
-
-	contractAcc, err := ec.tonClient.API.GetAccount(context.Background(), block, ec.contract.GetAddr())
-	if err != nil {
-		return nil
-	}
-
-	txFetcher := tonclient.NewTxFetcher(ec.tonClient, ec.contract.GetAddr())
-	txSubscriber := tonclient.NewTxSubscriber(ec.tonClient, ec.contract.GetAddr(), contractAcc.LastTxLT)
+	txCollectorWorker := tonclient.NewTxCollectorWorker(ec.tonClient)
 	eventFilter := NewEventFilter()
 
 	txChan := make(chan *tlb.Transaction)
 
 	var wg sync.WaitGroup
-	wg.Add(3)
+	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		txFetcher.Run(txChan, contractAcc.LastTxLT, contractAcc.LastTxHash)
-	}()
-	go func() {
-		defer wg.Done()
-		txSubscriber.Run(txChan)
+		txCollectorWorker.Run(ec.contract.GetAddr(), txChan)
 	}()
 	go func() {
 		defer wg.Done()
