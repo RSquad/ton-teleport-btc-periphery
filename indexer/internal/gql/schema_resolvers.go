@@ -14,6 +14,8 @@ import (
 	"github.com/btcsuite/btcd/btcec/v2/schnorr"
 	"github.com/btcsuite/btcd/btcutil"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated"
+	ent "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated"
+	internalkeymodel "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated/internalkey"
 	mintmodel "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated/mint"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/peginutils"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
@@ -57,8 +59,8 @@ func (r *mutationResolver) CreatePegin(ctx context.Context, input generated.Crea
 		return nil, fmt.Errorf("pegin with the same bitcoin tx id already exists: %w", err)
 	}
 
-	internalKeyExists, err := r.internalKeyExists(ctx, *input.InternalKey)
-	if !internalKeyExists {
+	internalKeyModel, err := r.findInternalKey(ctx, *input.InternalKey)
+	if err != nil {
 		return nil, fmt.Errorf("internal key not found: %w", err)
 	}
 
@@ -94,6 +96,17 @@ func (r *mutationResolver) CreatePegin(ctx context.Context, input generated.Crea
 		SetCreatedAt(mintCreateAt)
 
 	if amount.ToUnit(btcutil.AmountSatoshi) < float64(teleportContractStorage.Limits.MinPeginAmount) {
+		mintCreate.SetStatus(mintmodel.StatusRefund)
+	}
+
+	latestInternalKey, err := repo.InternalKey.Query().
+		Order(ent.Desc(internalkeymodel.FieldCompletedAt)).
+		First(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query latest internal key: %w", err)
+	}
+
+	if !internalKeyModel.CompletedAt.Equal(latestInternalKey.CompletedAt) {
 		mintCreate.SetStatus(mintmodel.StatusRefund)
 	}
 
