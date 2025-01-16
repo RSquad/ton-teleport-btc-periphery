@@ -1,6 +1,7 @@
 package events
 
 import (
+	"encoding/hex"
 	"fmt"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
@@ -11,7 +12,7 @@ func (ew *EventWriter) logEventWritten(event ton.EventInterface) {
 	logger.Log.Info().
 		Str("component", "EventWriter").
 		Str("event_id", fmt.Sprintf("%x", event.GetEventID())).
-		Str("tx_hash", fmt.Sprintf("%x", event.GetRaw().TxHash)).
+		Str("tx_hash", hex.EncodeToString(event.GetRaw().TxHash)).
 		Msg("Event written")
 }
 

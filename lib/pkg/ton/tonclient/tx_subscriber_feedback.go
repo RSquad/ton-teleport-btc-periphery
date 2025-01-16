@@ -1,6 +1,8 @@
 package tonclient
 
 import (
+	"encoding/hex"
+
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
 	"github.com/xssnick/tonutils-go/tlb"
@@ -30,6 +32,6 @@ func (ts *TxSubscriber) logTxReceived(tx *tlb.Transaction) {
 	logger.Log.Info().
 		Str("component", "TxSubscriber").
 		Str("address", utils.AddrToRawString(ts.addr)).
-		Bytes("tx_hash", tx.Hash).
+		Str("tx_hash", hex.EncodeToString(tx.Hash)).
 		Msg("Received transaction")
 }
