@@ -3,12 +3,10 @@ package events
 import (
 	"context"
 	"encoding/hex"
-	"fmt"
 	"log"
 
 	ent "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated/pegin"
-	enttontx "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated/tontx"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/pegout"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinatorcontract"
@@ -47,26 +45,13 @@ func (ew *EventWriter) write(fn func(tx *ent.Tx) error) error {
 	return fn(tx)
 }
 
-func (ew *EventWriter) Write(event ton.EventInterface) error {
-	exists, err := ew.checkTonTxExists(event)
-	if err != nil {
-		return err
-	}
-	if exists {
-		return nil
-	}
-
-	tonTx, err := ew.writeTonTx(event)
+func (ew *EventWriter) Write(tonTx *ent.TonTx, event ton.EventInterface) error {
+	err := ew.writeEvent(tonTx, event)
 	if err != nil {
 		return err
 	}
 
-	err = ew.writeEvent(tonTx, event)
-	if err != nil {
-		return err
-	}
-
-	log.Printf("event wrote (id=%x, txhash=%x)", event.GetEventID(), event.GetRaw().TxHash)
+	ew.logEventWritten(event)
 
 	return nil
 }
@@ -82,10 +67,7 @@ func (ew *EventWriter) writeEvent(tonTx *ent.TonTx, event ton.EventInterface) er
 	case *coordinatorcontract.DKGCompletedEvent:
 		return ew.writeInternalKey(tonTx, event)
 	}
-	return fmt.Errorf(
-		"failed to write event: unknown event type (id=%x, txhash=%x)",
-		event.GetEventID(), event.GetRaw().TxHash,
-	)
+	return ew.formatUnknownEventError(event)
 }
 
 func (ew *EventWriter) writeMint(tonTx *ent.TonTx, event *teleportcontract.MintEvent) error {
@@ -169,23 +151,4 @@ func (ew *EventWriter) writeInternalKey(tonTx *ent.TonTx, event *coordinatorcont
 		SetTonTx(tonTx).
 		Save(ew.ctx)
 	return err
-}
-
-func (ew *EventWriter) checkTonTxExists(event ton.EventInterface) (bool, error) {
-	rawEvent := event.GetRaw()
-	exists, err := ew.repo.TonTx.Query().
-		Where(enttontx.Hash(fmt.Sprintf("%x", rawEvent.TxHash))).
-		Exist(ew.ctx)
-	if err != nil {
-		return false, err
-	}
-	return exists, nil
-}
-
-func (ew *EventWriter) writeTonTx(event ton.EventInterface) (*ent.TonTx, error) {
-	rawEvent := event.GetRaw()
-	return ew.repo.TonTx.Create().
-		SetHash(fmt.Sprintf("%x", rawEvent.TxHash)).
-		SetCreatedAt(rawEvent.TxUtime).
-		Save(ew.ctx)
 }

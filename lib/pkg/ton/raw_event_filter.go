@@ -40,6 +40,7 @@ func (ef *RawEventFilter) Work(ctx context.Context) (err error) {
 				for _, msg := range outMsgs {
 					if msg.MsgType == tlb.MsgTypeExternalOut {
 						ef.outChan <- &RawEvent{
+							Addr:    tx.IO.In.Msg.DestAddr(),
 							TxHash:  tx.Hash,
 							TxLT:    tx.LT,
 							TxUtime: time.Unix(int64(tx.Now), 0),

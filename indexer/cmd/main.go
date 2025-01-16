@@ -134,7 +134,9 @@ func initialize() (*App, error) {
 		coordinatorContract,
 	)
 
-	log.Println("initialized")
+	logger.Log.Info().
+		Str("component", "main").
+		Msg("initialized")
 
 	return &App{
 		Repo:                repo,
@@ -174,16 +176,21 @@ func run(app *App) error {
 
 		handlerWithCORS := c.Handler(mux)
 
-		log.Println("listening on :3000")
+		logger.Log.Info().
+			Str("component", "main").
+			Msg("listening on :3000")
 		if err := http.ListenAndServe(":3000", handlerWithCORS); err != nil {
-			log.Printf("http server terminated: %v", err)
+			logger.Log.Error().
+				Str("component", "main").
+				Err(err).
+				Msg("http server terminated")
 		}
 	}()
 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		app.EventService.Run()
+		app.EventService.Work(context.Background())
 	}()
 
 	wg.Add(1)

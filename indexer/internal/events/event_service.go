@@ -2,15 +2,18 @@ package events
 
 import (
 	"context"
-	"log"
-	"sync"
+
+	"golang.org/x/sync/errgroup"
 
 	ent "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/pegout"
+	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/tontx"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinatorcontract"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/teleportcontract"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
+	"github.com/xssnick/tonutils-go/address"
+	"github.com/xssnick/tonutils-go/tvm/cell"
 )
 
 type EventService struct {
@@ -27,61 +30,92 @@ func NewEventService(
 	coordinatorContract *coordinatorcontract.CoordinatorContract,
 ) *EventService {
 	return &EventService{
-		tonClient, repo, teleportContract, coordinatorContract,
+		tonClient:           tonClient,
+		repo:                repo,
+		teleportContract:    teleportContract,
+		coordinatorContract: coordinatorContract,
 	}
 }
 
-func (es *EventService) Run() {
-	teleportContractRawEventChan := make(chan *ton.RawEvent)
-	coordinatorContractRawEventChan := make(chan *ton.RawEvent)
-	teleportContractRawEventCollector := ton.NewRawEventCollector(
-		es.tonClient,
-		es.teleportContract.GetAddr(),
-		teleportContractRawEventChan,
-	)
-	coordinatorContractRawEventCollector := ton.NewRawEventCollector(
-		es.tonClient,
-		es.coordinatorContract.GetAddr(),
-		coordinatorContractRawEventChan,
-	)
+func (es *EventService) Work(ctx context.Context) (err error) {
+	es.logStartWork()
+	defer es.logFinishWork(err)
 
-	teleportContractEventParserExecutor := ton.NewEventParserExecutor(teleportcontract.NewEventParser())
-	coordinatorContractEventParserExecutor := ton.NewEventParserExecutor(coordinatorcontract.NewEventParser())
-
-	storage, err := es.teleportContract.GetStorage(nil)
+	teleportContractStorage, err := es.teleportContract.GetStorage(nil)
 	if err != nil {
-		log.Printf("failed to get teleport contract storage: %v", err)
+		return err
 	}
-	pegoutWriter := pegout.NewPegoutWriter(context.Background(), es.repo, es.teleportContract, storage.PegoutContractCode)
 
-	eventWriter := NewEventWriter(context.Background(), es.repo, pegoutWriter)
-	eventWriterExecutor := NewEventWriterExecutor(eventWriter)
+	rawEventChan := make(chan *ton.RawEvent, 64)
+	teleportContractRawEventCollector := es.createRawEventCollector(es.teleportContract.GetAddr(), rawEventChan)
+	coordinatorContractRawEventCollector := es.createRawEventCollector(es.coordinatorContract.GetAddr(), rawEventChan)
 
-	eventChan := make(chan ton.EventInterface)
+	tonTxWriter := es.createTonTxWriter(ctx)
+	pegoutWriter := es.createPegoutWriter(ctx, teleportContractStorage.PegoutContractCode)
+	eventWriter := es.createEventWriter(ctx, pegoutWriter)
 
-	var wg sync.WaitGroup
+	dispatcher := es.createEventDispatcher(rawEventChan, tonTxWriter, eventWriter)
 
-	wg.Add(5)
-	go func() {
-		defer wg.Done()
-		teleportContractRawEventCollector.Work(context.Background())
-	}()
-	go func() {
-		defer wg.Done()
-		coordinatorContractRawEventCollector.Work(context.Background())
-	}()
-	go func() {
-		defer wg.Done()
-		teleportContractEventParserExecutor.Run(teleportContractRawEventChan, eventChan)
-	}()
-	go func() {
-		defer wg.Done()
-		coordinatorContractEventParserExecutor.Run(coordinatorContractRawEventChan, eventChan)
-	}()
-	go func() {
-		defer wg.Done()
-		eventWriterExecutor.Run(eventChan)
-	}()
+	g, ctx := errgroup.WithContext(ctx)
 
-	wg.Wait()
+	g.Go(func() error {
+		return teleportContractRawEventCollector.Work(ctx)
+	})
+
+	g.Go(func() error {
+		return coordinatorContractRawEventCollector.Work(ctx)
+	})
+
+	g.Go(func() error {
+		return dispatcher.Work(ctx)
+	})
+
+	if werr := g.Wait(); werr != nil {
+		return werr
+	}
+
+	return nil
+}
+
+func (es *EventService) createRawEventCollector(
+	addr *address.Address,
+	rawEventChan chan *ton.RawEvent,
+) *ton.RawEventCollector {
+	return ton.NewRawEventCollector(es.tonClient, addr, rawEventChan)
+}
+
+func (es *EventService) createTonTxWriter(
+	ctx context.Context,
+) *tontx.TonTxWriter {
+	return tontx.NewTonTxWriter(ctx, es.repo)
+}
+
+func (es *EventService) createPegoutWriter(
+	ctx context.Context,
+	pegoutContractCode *cell.Cell,
+) *pegout.PegoutWriter {
+	return pegout.NewPegoutWriter(ctx, es.repo, es.teleportContract.GetAddr(), pegoutContractCode)
+}
+
+func (es *EventService) createEventWriter(
+	ctx context.Context,
+	pegoutWriter *pegout.PegoutWriter,
+) *EventWriter {
+	return NewEventWriter(ctx, es.repo, pegoutWriter)
+}
+
+func (es *EventService) createEventDispatcher(
+	rawEventChan chan *ton.RawEvent,
+	tonTxWriter *tontx.TonTxWriter,
+	eventWriter *EventWriter,
+) *EventDispatcher {
+	return NewEventDispatcher(
+		rawEventChan,
+		tonTxWriter,
+		eventWriter,
+		map[string]ton.EventParserInterface{
+			es.teleportContract.GetAddr().String():    teleportcontract.NewEventParser(),
+			es.coordinatorContract.GetAddr().String(): coordinatorcontract.NewEventParser(),
+		},
+	)
 }

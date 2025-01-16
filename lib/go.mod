@@ -14,7 +14,7 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/rs/zerolog v1.33.0
 	github.com/xssnick/tonutils-go v1.10.2
-	golang.org/x/sync v0.6.0
+	golang.org/x/sync v0.10.0
 )
 
 require (

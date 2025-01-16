@@ -15,5 +15,7 @@ func Init() {
 		TimeFormat: time.RFC3339,
 	}
 
+	zerolog.DurationFieldUnit = time.Second
+
 	Log = zerolog.New(consoleWriter).With().Timestamp().Logger()
 }
