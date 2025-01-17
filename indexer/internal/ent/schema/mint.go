@@ -25,12 +25,14 @@ func (Mint) Fields() []ent.Field {
 		field.Text("amount").
 			Optional().
 			Immutable(),
+		field.Time("created_at").
+			Immutable(),
 	}
 }
 
 func (Mint) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("ton_msg", TonMsg.Type).
+		edge.From("ton_tx", TonTx.Type).
 			Ref("mint").
 			Unique(),
 		edge.To("pegin", Pegin.Type).

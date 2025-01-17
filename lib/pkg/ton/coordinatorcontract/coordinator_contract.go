@@ -3,10 +3,11 @@ package coordinatorcontract
 import (
 	"context"
 
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/signer"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
 	"github.com/xssnick/tonutils-go/address"
-	"github.com/xssnick/tonutils-go/ton"
+	tonutils "github.com/xssnick/tonutils-go/ton"
 	"github.com/xssnick/tonutils-go/tvm/cell"
 )
 
@@ -19,8 +20,8 @@ const (
 )
 
 type CoordinatorContract struct {
+	ton.Contract
 	signer    *signer.Signer
-	Addr      *address.Address
 	tonClient *tonclient.TonClient
 	ctx       context.Context
 }
@@ -32,14 +33,11 @@ func New(
 	ctx context.Context,
 ) *CoordinatorContract {
 	return &CoordinatorContract{
-		signer:    signer,
-		Addr:      addr,
-		tonClient: tonClient,
-		ctx:       ctx,
+		ton.Contract{Addr: addr}, signer, tonClient, ctx,
 	}
 }
 
-func (c *CoordinatorContract) GetDkg(block *ton.BlockIDExt) (*DKG, error) {
+func (c *CoordinatorContract) GetDkg(block *tonutils.BlockIDExt) (*DKG, error) {
 	result, err := c.tonClient.API.RunGetMethod(c.ctx, block, c.Addr, "get_dkg")
 	if err != nil {
 		return nil, err

@@ -14,7 +14,6 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/pegincontract"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/teleportcontract"
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/toncenterv3"
 	tonclient "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
 	"github.com/xssnick/tonutils-go/ton"
@@ -22,12 +21,11 @@ import (
 )
 
 type MintManager struct {
-	ctx               context.Context
-	repo              *ent.Client
-	bitcoinClient     *bitcoin.Client
-	tonClient         *tonclient.TonClient
-	tonCenterV3Client *toncenterv3.Client
-	teleportContract  *teleportcontract.TeleportContract
+	ctx              context.Context
+	repo             *ent.Client
+	bitcoinClient    *bitcoin.Client
+	tonClient        *tonclient.TonClient
+	teleportContract *teleportcontract.TeleportContract
 }
 
 func New(
@@ -35,16 +33,14 @@ func New(
 	repo *ent.Client,
 	bitcoinClient *bitcoin.Client,
 	tonClient *tonclient.TonClient,
-	tonCenterV3Client *toncenterv3.Client,
 	teleportContract *teleportcontract.TeleportContract,
 ) *MintManager {
 	return &MintManager{
-		ctx:               ctx,
-		repo:              repo,
-		bitcoinClient:     bitcoinClient,
-		tonClient:         tonClient,
-		tonCenterV3Client: tonCenterV3Client,
-		teleportContract:  teleportContract,
+		ctx:              ctx,
+		repo:             repo,
+		bitcoinClient:    bitcoinClient,
+		tonClient:        tonClient,
+		teleportContract: teleportContract,
 	}
 }
 
@@ -112,7 +108,6 @@ func (c *MintManager) handlePendingMint(
 	peginContractCode *cell.Cell,
 	block *ton.BlockIDExt,
 ) error {
-	log.Printf("BitcoinTxID %v", mint.Edges.Pegin.BitcoinTxID)
 	bitcoinTxID, err := chainhash.NewHash(utils.MustHexToBytes(mint.Edges.Pegin.BitcoinTxID, 32))
 	if err != nil {
 		return fmt.Errorf("failed to create bitcoin transaction hash: %w", err)

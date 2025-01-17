@@ -10,10 +10,11 @@ import (
 	"github.com/btcsuite/btcd/wire"
 	"github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/tlb"
-	"github.com/xssnick/tonutils-go/ton"
+	tonutils "github.com/xssnick/tonutils-go/ton"
 	"github.com/xssnick/tonutils-go/ton/wallet"
 	"github.com/xssnick/tonutils-go/tvm/cell"
 
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton"
 	jwv4r2contract "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/jw_v4r2_contract"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
@@ -24,12 +25,13 @@ const (
 	storageIndexPegoutChainCounter = 13
 	storageIndexLastPegoutTxID     = 14
 	storageIndexCsvLock            = 17
+	storageIndexLimits             = 18
 	storageIndexPegoutContractCode = 7
 	storageIndexPeginContractCode  = 10
 )
 
 type TeleportContract struct {
-	Addr      *address.Address
+	ton.Contract
 	TonClient *tonclient.TonClient
 	sender    *jwv4r2contract.JWV4R2Contract
 	ctx       context.Context
@@ -41,6 +43,12 @@ type Storage struct {
 	LastPegoutTxID     *chainhash.Hash
 	CsvLock            uint32
 	PeginContractCode  *cell.Cell
+	Limits             Limits
+}
+
+type Limits struct {
+	MinPeginAmount  uint32
+	MinPegoutAmount uint32
 }
 
 func New(
@@ -49,7 +57,7 @@ func New(
 	sender *jwv4r2contract.JWV4R2Contract,
 	ctx context.Context,
 ) *TeleportContract {
-	return &TeleportContract{addr, tonClient, sender, ctx}
+	return &TeleportContract{ton.Contract{Addr: addr}, tonClient, sender, ctx}
 }
 
 func (c *TeleportContract) SendPegoutProof(
@@ -58,7 +66,7 @@ func (c *TeleportContract) SendPegoutProof(
 	merkleBlock *wire.MsgMerkleBlock,
 ) (
 	*tlb.Transaction,
-	*ton.BlockIDExt,
+	*tonutils.BlockIDExt,
 	error,
 ) {
 	blockHashUInt := new(big.Int).SetBytes(blockHash.CloneBytes())
@@ -103,7 +111,7 @@ func (c *TeleportContract) SendPegoutProof(
 	return c.sender.SendWaitTransaction(c.ctx, message)
 }
 
-func (c *TeleportContract) GetStorage(block *ton.BlockIDExt) (Storage, error) {
+func (c *TeleportContract) GetStorage(block *tonutils.BlockIDExt) (Storage, error) {
 	if block == nil {
 		var err error
 		block, err = c.TonClient.API.CurrentMasterchainInfo(c.ctx)
@@ -122,6 +130,11 @@ func (c *TeleportContract) GetStorage(block *ton.BlockIDExt) (Storage, error) {
 	pegoutContractCode := storage.MustCell(storageIndexPegoutContractCode)
 	peginContractCode := storage.MustCell(storageIndexPeginContractCode)
 	csvLock := storage.MustInt(storageIndexCsvLock)
+	limitsSlice := storage.MustSlice(storageIndexLimits)
+	limits := Limits{
+		MinPeginAmount:  uint32(limitsSlice.MustLoadUInt(32)),
+		MinPegoutAmount: uint32(limitsSlice.MustLoadUInt(32)),
+	}
 	lastPegoutTxID, err := chainhash.NewHash(utils.BytesPadTo(lastPegoutTxIDInt.Bytes(), 32))
 	if err != nil {
 		return Storage{}, err
@@ -133,6 +146,7 @@ func (c *TeleportContract) GetStorage(block *ton.BlockIDExt) (Storage, error) {
 		LastPegoutTxID:     lastPegoutTxID,
 		CsvLock:            uint32(csvLock.Uint64()),
 		PeginContractCode:  peginContractCode,
+		Limits:             limits,
 	}, nil
 }
 
