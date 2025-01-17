@@ -49,6 +49,7 @@ func (tf *TxFetcher) Work(ctx context.Context) (err error) {
 	}()
 
 	for {
+		time.Sleep(50 * time.Millisecond)
 		if cerr := tf.checkCtx(ctx); cerr != nil {
 			return cerr
 		}
