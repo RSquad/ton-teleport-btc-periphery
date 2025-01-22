@@ -27,9 +27,9 @@ type CoordinatorContract struct {
 }
 
 func New(
-	signer *signer.Signer,
 	addr *address.Address,
 	tonClient *tonclient.TonClient,
+	signer *signer.Signer,
 	ctx context.Context,
 ) *CoordinatorContract {
 	return &CoordinatorContract{
@@ -38,6 +38,14 @@ func New(
 }
 
 func (c *CoordinatorContract) GetDkg(block *tonutils.BlockIDExt) (*DKG, error) {
+	if block == nil {
+		var err error
+		block, err = c.tonClient.API.CurrentMasterchainInfo(c.ctx)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	result, err := c.tonClient.API.RunGetMethod(c.ctx, block, c.Addr, "get_dkg")
 	if err != nil {
 		return nil, err
@@ -83,11 +91,11 @@ func parseDGKSlice(dkgSlice *cell.Slice) (*DKG, error) {
 	}
 
 	return &DKG{
-		status:     status,
-		vSet:       vSet,
-		maxSigners: maxSigners,
-		r1:         r1,
-		r2:         r2,
+		Status:     status,
+		VSet:       vSet,
+		MaxSigners: maxSigners,
+		R1:         r1,
+		R2:         r2,
 	}, nil
 }
 

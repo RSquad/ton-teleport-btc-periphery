@@ -1,14 +1,16 @@
 package main
 
 import (
-	"log"
+	"context"
 	"sync"
 
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinatorcontract"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
 	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/cfg"
 	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/dkg"
-	"github.com/rsquad/ton-teleport-btc-periphery/oracle/validator"
+	"github.com/xssnick/tonutils-go/address"
 )
 
 type App struct {
@@ -16,6 +18,12 @@ type App struct {
 }
 
 func initialize() (*App, error) {
+	logger.Init()
+
+	logger.Log.Info().
+		Str("component", "main").
+		Msg("Initializing")
+
 	cfg, err := utils.LoadCfg[cfg.Cfg]()
 	if err != nil {
 		return nil, err
@@ -26,16 +34,19 @@ func initialize() (*App, error) {
 		return nil, err
 	}
 
-	_ = validator.New(cfg.Pubkey)
+	coordinatorContractAddr, err := address.ParseAddr(cfg.CoordinatorContractAddr)
+	if err != nil {
+		return nil, err
+	}
+	coordinatorContract := coordinatorcontract.New(coordinatorContractAddr, tonClient, nil, context.Background())
+	dkgService := dkg.NewService(coordinatorContract)
 
-	DGKRoot := dkg.NewRoot(tonClient, &cfg)
-
-	var wg sync.WaitGroup
+	wg := sync.WaitGroup{}
 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		DGKRoot.Runner.Run()
+		dkgService.Work(context.Background())
 	}()
 
 	wg.Wait()
@@ -48,6 +59,10 @@ func initialize() (*App, error) {
 func main() {
 	_, err := initialize()
 	if err != nil {
-		log.Fatalf("failed to initialize: %v", err)
+		logger.Log.Error().
+			Err(err).
+			Str("component", "main").
+			Msg("Failed to initialize")
+		return
 	}
 }

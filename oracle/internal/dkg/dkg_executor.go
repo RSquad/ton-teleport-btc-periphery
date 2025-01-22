@@ -1,30 +1,48 @@
 package dkg
 
 import (
-	"log"
+	"context"
 	"time"
 
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinatorcontract"
 )
 
 type Executor struct {
-	until time.Time
+	inChan chan *coordinatorcontract.DKG
+	until  time.Time
 }
 
-func NewExecutor() *Executor {
+func NewExecutor(inChan chan *coordinatorcontract.DKG) *Executor {
 	return &Executor{
-		until: time.Unix(0, 0),
+		inChan: inChan,
+		until:  time.Unix(0, 0),
 	}
 }
 
-func (h *Executor) Execute(dkg *coordinatorcontract.DKG) {
+func (e *Executor) Work(ctx context.Context) (err error) {
+	logger.DefaultLogStartWork("DKGExecutor")
+	defer logger.DefaultLogFinishWork("DKGExecutor", err)
+	for {
+		dkg, ok := <-e.inChan
+		if !ok {
+			return nil
+		}
+		e.Execute(dkg)
+	}
+}
+
+func (e *Executor) Execute(dkg *coordinatorcontract.DKG) {
+	e.logStartExecuting(dkg)
+	defer e.logFinishExecuting(dkg)
+
 	if dkg.Status == coordinatorcontract.DKGStatusFinished {
-		log.Printf("DKG finished")
+		e.logDKGFinished(dkg)
 		return
 	}
 
-	if dkg.Until.After(h.until) {
-		h.until = dkg.Until
-		log.Printf("New DKG started until %s", h.until)
+	if dkg.Until.After(e.until) {
+		e.until = dkg.Until
+		e.logNewDKGStarted(dkg)
 	}
 }
