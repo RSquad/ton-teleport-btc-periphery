@@ -16,10 +16,6 @@ RUN go mod download
 COPY relayer/ ./relayer/
 COPY lib/ ./lib/
 
-RUN go install github.com/go-swagger/go-swagger/cmd/swagger@latest
-
-RUN cd ./lib && ./gen-ton-center-v3-client.sh && cd ..
-
 RUN go build -o ./bin ./relayer/cmd/main.go
 
 FROM debian:bookworm-slim

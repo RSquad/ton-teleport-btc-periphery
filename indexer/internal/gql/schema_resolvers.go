@@ -13,15 +13,16 @@ import (
 
 	"github.com/btcsuite/btcd/btcec/v2/schnorr"
 	"github.com/btcsuite/btcd/btcutil"
-	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated"
-	mintmodel "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated/mint"
+	ent "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated"
+	entinternalkey "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated/internalkey"
+	entmint "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated/mint"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/peginutils"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
 	"github.com/xssnick/tonutils-go/address"
 )
 
 // CreatePegin is the resolver for the createPegin field.
-func (r *mutationResolver) CreatePegin(ctx context.Context, input generated.CreatePeginInput) (*generated.Pegin, error) {
+func (r *mutationResolver) CreatePegin(ctx context.Context, input ent.CreatePeginInput) (*ent.Pegin, error) {
 	recoveryKeyBytes, err := hex.DecodeString(*input.RecoveryKey)
 	if err != nil {
 		return nil, fmt.Errorf("invalid recovery key: %w", err)
@@ -50,15 +51,15 @@ func (r *mutationResolver) CreatePegin(ctx context.Context, input generated.Crea
 		return nil, fmt.Errorf("failed to get teleport contract storage: %w", err)
 	}
 
-	repo := generated.FromContext(ctx)
+	repo := ent.FromContext(ctx)
 
 	peginExists, err := r.peginExists(ctx, input.BitcoinTxID)
 	if peginExists {
 		return nil, fmt.Errorf("pegin with the same bitcoin tx id already exists: %w", err)
 	}
 
-	internalKeyExists, err := r.internalKeyExists(ctx, *input.InternalKey)
-	if !internalKeyExists {
+	internalKeyModel, err := r.findInternalKey(ctx, *input.InternalKey)
+	if err != nil {
 		return nil, fmt.Errorf("internal key not found: %w", err)
 	}
 
@@ -94,7 +95,18 @@ func (r *mutationResolver) CreatePegin(ctx context.Context, input generated.Crea
 		SetCreatedAt(mintCreateAt)
 
 	if amount.ToUnit(btcutil.AmountSatoshi) < float64(teleportContractStorage.Limits.MinPeginAmount) {
-		mintCreate.SetStatus(mintmodel.StatusRefund)
+		mintCreate.SetStatus(entmint.StatusRefund)
+	}
+
+	latestInternalKey, err := repo.InternalKey.Query().
+		Order(ent.Desc(entinternalkey.FieldCompletedAt)).
+		First(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query latest internal key: %w", err)
+	}
+
+	if !internalKeyModel.CompletedAt.Equal(latestInternalKey.CompletedAt) {
+		mintCreate.SetStatus(entmint.StatusRefund)
 	}
 
 	mint, err := mintCreate.Save(ctx)

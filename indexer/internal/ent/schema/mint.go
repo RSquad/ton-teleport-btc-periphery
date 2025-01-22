@@ -32,7 +32,7 @@ func (Mint) Fields() []ent.Field {
 
 func (Mint) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("ton_msg", TonMsg.Type).
+		edge.From("ton_tx", TonTx.Type).
 			Ref("mint").
 			Unique(),
 		edge.To("pegin", Pegin.Type).

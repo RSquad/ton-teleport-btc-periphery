@@ -2,12 +2,12 @@ package coordinatorcontract
 
 import (
 	"context"
-	"time"
 
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/signer"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
 	"github.com/xssnick/tonutils-go/address"
-	"github.com/xssnick/tonutils-go/ton"
+	tonutils "github.com/xssnick/tonutils-go/ton"
 	"github.com/xssnick/tonutils-go/tvm/cell"
 )
 
@@ -20,8 +20,8 @@ const (
 )
 
 type CoordinatorContract struct {
+	ton.Contract
 	signer    *signer.Signer
-	Addr      *address.Address
 	tonClient *tonclient.TonClient
 	ctx       context.Context
 }
@@ -33,22 +33,11 @@ func New(
 	ctx context.Context,
 ) *CoordinatorContract {
 	return &CoordinatorContract{
-		signer:    signer,
-		Addr:      addr,
-		tonClient: tonClient,
-		ctx:       ctx,
+		ton.Contract{Addr: addr}, signer, tonClient, ctx,
 	}
 }
 
-func (c *CoordinatorContract) GetDkg(block *ton.BlockIDExt) (*DKG, error) {
-	if block == nil {
-		var err error
-		block, err = c.tonClient.API.CurrentMasterchainInfo(c.ctx)
-		if err != nil {
-			return nil, err
-		}
-	}
-
+func (c *CoordinatorContract) GetDkg(block *tonutils.BlockIDExt) (*DKG, error) {
 	result, err := c.tonClient.API.RunGetMethod(c.ctx, block, c.Addr, "get_dkg")
 	if err != nil {
 		return nil, err
@@ -93,20 +82,12 @@ func parseDGKSlice(dkgSlice *cell.Slice) (*DKG, error) {
 		return nil, err
 	}
 
-	_ = dkgSlice.MustLoadSlice(256)
-	_ = dkgSlice.MustLoadUInt(8)
-	until := time.Unix(int64(dkgSlice.MustLoadUInt(32)), 0)
-	packagesSlice := dkgSlice.MustLoadRef()
-	_ = packagesSlice.MustLoadUInt(16)
-	_ = packagesSlice.MustLoadBigUInt(256)
-
 	return &DKG{
-		status,
-		vSet,
-		maxSigners,
-		r1,
-		r2,
-		until,
+		status:     status,
+		vSet:       vSet,
+		maxSigners: maxSigners,
+		r1:         r1,
+		r2:         r2,
 	}, nil
 }
 

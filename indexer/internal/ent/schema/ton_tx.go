@@ -8,11 +8,11 @@ import (
 	"entgo.io/ent/schema/field"
 )
 
-type TonMsg struct {
+type TonTx struct {
 	ent.Schema
 }
 
-func (TonMsg) Fields() []ent.Field {
+func (TonTx) Fields() []ent.Field {
 	return []ent.Field{
 		field.Text("hash").
 			Unique().
@@ -23,7 +23,7 @@ func (TonMsg) Fields() []ent.Field {
 	}
 }
 
-func (TonMsg) Edges() []ent.Edge {
+func (TonTx) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("mint", Mint.Type).
 			Unique(),
@@ -36,7 +36,7 @@ func (TonMsg) Edges() []ent.Edge {
 	}
 }
 
-func (TonMsg) Annotations() []schema.Annotation {
+func (TonTx) Annotations() []schema.Annotation {
 	return []schema.Annotation{
 		entgql.RelayConnection(),
 		entgql.QueryField(),

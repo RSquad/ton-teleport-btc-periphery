@@ -10,10 +10,11 @@ import (
 	"github.com/btcsuite/btcd/wire"
 	"github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/tlb"
-	"github.com/xssnick/tonutils-go/ton"
+	tonutils "github.com/xssnick/tonutils-go/ton"
 	"github.com/xssnick/tonutils-go/ton/wallet"
 	"github.com/xssnick/tonutils-go/tvm/cell"
 
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton"
 	jwv4r2contract "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/jw_v4r2_contract"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
@@ -21,16 +22,16 @@ import (
 
 const (
 	opCodeConfirmPegoutTx          = 0xbd0eaf09
-	storageIndexPegoutChainCounter = 13
-	storageIndexLastPegoutTxID     = 14
-	storageIndexCsvLock            = 17
-	storageIndexLimits             = 18
-	storageIndexPegoutContractCode = 7
-	storageIndexPeginContractCode  = 10
+	storageIndexPegoutChainCounter = 12
+	storageIndexLastPegoutTxID     = 13
+	storageIndexCsvLock            = 15
+	storageIndexLimits             = 16
+	storageIndexPegoutContractCode = 6
+	storageIndexPeginContractCode  = 9
 )
 
 type TeleportContract struct {
-	Addr      *address.Address
+	ton.Contract
 	TonClient *tonclient.TonClient
 	sender    *jwv4r2contract.JWV4R2Contract
 	ctx       context.Context
@@ -56,7 +57,7 @@ func New(
 	sender *jwv4r2contract.JWV4R2Contract,
 	ctx context.Context,
 ) *TeleportContract {
-	return &TeleportContract{addr, tonClient, sender, ctx}
+	return &TeleportContract{ton.Contract{Addr: addr}, tonClient, sender, ctx}
 }
 
 func (c *TeleportContract) SendPegoutProof(
@@ -65,7 +66,7 @@ func (c *TeleportContract) SendPegoutProof(
 	merkleBlock *wire.MsgMerkleBlock,
 ) (
 	*tlb.Transaction,
-	*ton.BlockIDExt,
+	*tonutils.BlockIDExt,
 	error,
 ) {
 	blockHashUInt := new(big.Int).SetBytes(blockHash.CloneBytes())
@@ -110,7 +111,7 @@ func (c *TeleportContract) SendPegoutProof(
 	return c.sender.SendWaitTransaction(c.ctx, message)
 }
 
-func (c *TeleportContract) GetStorage(block *ton.BlockIDExt) (Storage, error) {
+func (c *TeleportContract) GetStorage(block *tonutils.BlockIDExt) (Storage, error) {
 	if block == nil {
 		var err error
 		block, err = c.TonClient.API.CurrentMasterchainInfo(c.ctx)

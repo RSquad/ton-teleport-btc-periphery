@@ -7,17 +7,17 @@ import (
 	"github.com/btcsuite/btcd/btcjson"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated"
+	ent "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated"
 	internalkeymodel "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated/internalkey"
 	peginmodel "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated/pegin"
 )
 
-func (c *Resolver) internalKeyExists(
+func (c *Resolver) findInternalKey(
 	ctx context.Context,
 	internalKey string,
-) (bool, error) {
+) (*ent.InternalKey, error) {
 	repo := generated.FromContext(ctx)
-	exists, err := repo.InternalKey.Query().Where(internalkeymodel.KeyEQ(internalKey)).Exist(ctx)
-	return exists, err
+	return repo.InternalKey.Query().Where(internalkeymodel.KeyEQ(internalKey)).Only(ctx)
 }
 
 func (c *Resolver) bitcoinTxExists(

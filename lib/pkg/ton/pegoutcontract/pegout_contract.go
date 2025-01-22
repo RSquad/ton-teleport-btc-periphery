@@ -63,13 +63,23 @@ func NewFromStateInit(
 	tonClient *tonclient.TonClient,
 	ctx context.Context,
 ) (*PegoutContract, error) {
+	addr, err := AddrFromStateInit(stateInit)
+	if err != nil {
+		return nil, err
+	}
+	return &PegoutContract{addr, tonClient, ctx}, nil
+}
+
+func AddrFromStateInit(
+	stateInit *StateInit,
+) (*address.Address, error) {
 	initDataCell := InitDataToCell(*stateInit.InitData)
 	stateInitCell, err := tlb.ToCell(tlb.StateInit{Code: stateInit.Code, Data: initDataCell})
 	if err != nil {
 		return nil, fmt.Errorf("[PegoutContract] failed to build state init cell: %w", err)
 	}
 	addr := address.NewAddress(0, byte(stateInit.InitData.TeleportContractAddr.Workchain()), stateInitCell.Hash())
-	return &PegoutContract{addr, tonClient, ctx}, nil
+	return addr, nil
 }
 
 func (c *PegoutContract) GetTxParts(block *ton.BlockIDExt) (*TxParts, error) {
