@@ -22,12 +22,12 @@ import (
 
 const (
 	opCodeConfirmPegoutTx          = 0xbd0eaf09
-	storageIndexPegoutChainCounter = 13
-	storageIndexLastPegoutTxID     = 14
-	storageIndexCsvLock            = 17
-	storageIndexLimits             = 18
-	storageIndexPegoutContractCode = 7
-	storageIndexPeginContractCode  = 10
+	storageIndexPegoutChainCounter = 12
+	storageIndexLastPegoutTxID     = 13
+	storageIndexCsvLock            = 15
+	storageIndexLimits             = 16
+	storageIndexPegoutContractCode = 6
+	storageIndexPeginContractCode  = 9
 )
 
 type TeleportContract struct {
