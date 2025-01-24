@@ -68,9 +68,21 @@ func (r *mutationResolver) CreatePegin(ctx context.Context, input ent.CreatePegi
 		return nil, fmt.Errorf("bitcoin tx not found: %w", err)
 	}
 
-	peginBitcoinAddr, err := peginutils.CalcPeginBitcoinAddr(internalKey, recoveryKey, receiverAddr, teleportContractStorage.CsvLock)
-	if err != nil {
-		return nil, fmt.Errorf("failed to calculate pegin bitcoin address: %w", err)
+	possibleCvsLocks := []uint32{teleportContractStorage.CsvLock, 36}
+
+	var peginBitcoinAddr *btcutil.AddressTaproot
+
+	for _, cvsLock := range possibleCvsLocks {
+		peginBitcoinAddr, err = peginutils.CalcPeginBitcoinAddr(internalKey, recoveryKey, receiverAddr, cvsLock)
+		if err != nil {
+			fmt.Printf("error calculating pegin bitcoin address with cvsLock %d: %v\n", cvsLock, err)
+			continue
+		}
+		break
+	}
+
+	if peginBitcoinAddr == nil {
+		return nil, fmt.Errorf("failed to calculate pegin bitcoin address")
 	}
 
 	addrFound, vout := bitcoin.TxContainsOutWithAddr(bitcoinTx, peginBitcoinAddr.String())
