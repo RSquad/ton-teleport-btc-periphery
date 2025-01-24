@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/btcsuite/btcd/btcec/v2/schnorr"
+	"github.com/btcsuite/btcd/btcjson"
 	"github.com/btcsuite/btcd/btcutil"
 	ent "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated"
 	entinternalkey "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated/internalkey"
@@ -70,24 +71,18 @@ func (r *mutationResolver) CreatePegin(ctx context.Context, input ent.CreatePegi
 
 	possibleCvsLocks := []uint32{teleportContractStorage.CsvLock, 36}
 
-	var peginBitcoinAddr *btcutil.AddressTaproot
+	var vout *btcjson.Vout
 
 	for _, cvsLock := range possibleCvsLocks {
-		peginBitcoinAddr, err = peginutils.CalcPeginBitcoinAddr(internalKey, recoveryKey, receiverAddr, cvsLock)
-		if err != nil {
-			fmt.Printf("error calculating pegin bitcoin address with cvsLock %d: %v\n", cvsLock, err)
-			continue
+		if peginBitcoinAddr, err := peginutils.CalcPeginBitcoinAddr(internalKey, recoveryKey, receiverAddr, cvsLock); err == nil {
+			if addrFound, voutFound := bitcoin.TxContainsOutWithAddr(bitcoinTx, peginBitcoinAddr.String()); addrFound {
+				vout = voutFound
+				break
+			}
 		}
-		break
 	}
 
-	if peginBitcoinAddr == nil {
-		return nil, fmt.Errorf("failed to calculate pegin bitcoin address")
-	}
-
-	addrFound, vout := bitcoin.TxContainsOutWithAddr(bitcoinTx, peginBitcoinAddr.String())
-
-	if !addrFound {
+	if vout == nil {
 		return nil, fmt.Errorf("calculated pegin bitcoin address not found in the bitcoin transaction")
 	}
 
