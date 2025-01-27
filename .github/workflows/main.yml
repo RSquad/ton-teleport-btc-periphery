@@ -80,18 +80,24 @@ jobs:
         shell: bash
         run: |
           # Fetch the config map to verify its contents
+          echo "===== Debug: ENVs Configmap Dumped ====="
           jq -r '.data | to_entries[] | "\(.key)=\(.value)"' $(pwd)/config.json
 
       - name: Set Environment Variables from ConfigMap (develop)
         shell: bash
         run: |
-          POSTGRES_USER=$(jq -r '.data.POSTGRES_USER' $(pwd)/config.json)
-          POSTGRES_PASSWORD=$(jq -r '.data.POSTGRES_PASSWORD' $(pwd)/config.json)
-          POSTGRES_DB=$(jq -r '.data.POSTGRES_DB' $(pwd)/config.json)
+          # For each "key=value" entry in the ConfigMap's .data section,
+          # write it into the $GITHUB_ENV file as environment variables.
+          jq -r '.data | to_entries[] | "\(.key)=\(.value)"' "$(pwd)/config.json" \
+          | while IFS='=' read -r key value; do
+              echo "$key=$value" >> "$GITHUB_ENV"
+            done
 
-          echo "POSTGRES_USER=${POSTGRES_USER}" >> $GITHUB_ENV
-          echo "POSTGRES_PASSWORD=${POSTGRES_PASSWORD}" >> $GITHUB_ENV
-          echo "POSTGRES_DB=${POSTGRES_DB}" >> $GITHUB_ENV
+      - name: Print Environment Variables (develop)
+        shell: bash
+        run: |
+          echo "===== Debug: Environment Variables Collected ====="
+          cat "$GITHUB_ENV"
 
       - name: Build and Push Docker Image (develop)
         shell: bash
