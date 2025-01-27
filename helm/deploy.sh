@@ -1,62 +1,114 @@
 #!/bin/bash
 
-# Function to output errors and exit the script
+##############################################################################
+# Helper functions
+##############################################################################
+
 function error_exit {
   echo "Error: $1" >&2
   exit 1
 }
 
-# Function to display usage information
 function usage {
-  echo "Usage: $0 <image-path> <dns-host> <tag> [<ingress-path>]"
-  echo "  <image-path>   - Path to the Docker image (e.g., your-docker-repo/app)"
-  echo "  <dns-host>     - DNS host for Ingress (e.g., app.local)"
-  echo "  <tag>          - Docker image tag (e.g., 31)"
-  echo "  <ingress-path> - (Optional) Path for Ingress. Defaults to '/' if not provided."
+  echo "Usage: $0 image-path=<image-path> dns-host=<dns-host> tag=<tag> [ingress-path=<ingress-path>] [namespace=<namespace>]"
+  echo
+  echo "Description:"
+  echo "  Deploys (or upgrades) the 'indexer' Helm chart with the specified options."
+  echo
+  echo "Required arguments (in any order):"
+  echo "  image-path=<image-path>  Path to the Docker image (e.g., docker-repo/app)"
+  echo "  dns-host=<dns-host>      DNS host for Ingress (e.g., app.local)"
+  echo "  tag=<tag>                Docker image tag (e.g., 31)"
+  echo
+  echo "Optional arguments (in any order):"
+  echo "  ingress-path=<ingress-path>  Ingress path (default: /)"
+  echo "  namespace=<namespace>        Kubernetes namespace (default: default)"
+  echo
+  echo "Environment variables (optional for image pull secrets):"
+  echo "  DOCKER_REGISTRY_URL, DOCKER_REGISTRY_USERNAME, DOCKER_REGISTRY_PASSWORD, IMAGE_PULL_SECRET_NAME"
+  echo
+  echo "Examples:"
+  echo "  # Minimal usage with required arguments only:"
+  echo "  $0 image-path=docker-repo/app dns-host=app.local tag=latest"
+  echo
+  echo "  # Custom ingress path, custom namespace:"
+  echo "  $0 dns-host=app.local image-path=docker-repo/app tag=latest ingress-path=/api namespace=my-namespace"
   exit 1
 }
+
+##############################################################################
+# Parse key-value arguments
+##############################################################################
+
+# Default values for optional arguments
+INGRESS_PATH="/"
+NAMESPACE="default"
+
+# Track which required arguments we've seen
+IMAGE_PATH=""
+DNS_HOST=""
+IMAGE_TAG=""
+
+# Iterate over each argument, parse key=value pairs
+for arg in "$@"; do
+  case $arg in
+    image-path=*)
+      IMAGE_PATH="${arg#*=}"
+      ;;
+    dns-host=*)
+      DNS_HOST="${arg#*=}"
+      ;;
+    tag=*)
+      IMAGE_TAG="${arg#*=}"
+      ;;
+    ingress-path=*)
+      INGRESS_PATH="${arg#*=}"
+      ;;
+    namespace=*)
+      NAMESPACE="${arg#*=}"
+      ;;
+    *)
+      echo "Invalid argument: $arg"
+      usage
+      ;;
+  esac
+done
+
+##############################################################################
+# Validate required arguments
+##############################################################################
+
+# If any of the required variables are empty, show usage and exit
+[ -z "$IMAGE_PATH" ] && { echo "Missing required argument: image-path"; usage; }
+[ -z "$DNS_HOST" ] && { echo "Missing required argument: dns-host"; usage; }
+[ -z "$IMAGE_TAG" ] && { echo "Missing required argument: tag"; usage; }
 
 # Check if Helm is installed
 command -v helm >/dev/null 2>&1 || { error_exit "Helm is not installed. Please install Helm."; }
 
-# Check the number of arguments (at least 3, up to 4)
-if [ "$#" -lt 3 ] || [ "$#" -gt 4 ]; then
-  usage
-fi
+##############################################################################
+# Image Pull Secret variables from the environment
+##############################################################################
 
-# Assign mandatory arguments to variables
-IMAGE_PATH="$1"
-DNS_HOST="$2"
-IMAGE_TAG="$3"
-
-# Optional 4th argument: Ingress path (default to / if not provided)
-INGRESS_PATH="${4:-/}"
-
-# Ensure that mandatory arguments are not empty
-[ -z "$IMAGE_PATH" ] && { error_exit "Image path (image-path) is not provided."; }
-[ -z "$DNS_HOST" ] && { error_exit "DNS host (dns-host) is not provided."; }
-[ -z "$IMAGE_TAG" ] && { error_exit "Image tag (tag) is not provided."; }
-
-# Variables for Image Pull Secret from the environment
-# These should be set in the environment (e.g., via GitHub Actions)
 DOCKER_REGISTRY_URL="${DOCKER_REGISTRY_URL}"
 DOCKER_REGISTRY_USERNAME="${DOCKER_REGISTRY_USERNAME}"
 DOCKER_REGISTRY_PASSWORD="${DOCKER_REGISTRY_PASSWORD}"
-IMAGE_PULL_SECRET_NAME="${IMAGE_PULL_SECRET_NAME:-my-registry-secret}" # Default value if not set
+IMAGE_PULL_SECRET_NAME="${IMAGE_PULL_SECRET_NAME:-my-registry-secret}" # default if not set
 
-# Formulate the Helm command
-#  - We enable ingress with: --set ingress.enabled=true
-#  - We set the host to $DNS_HOST
-#  - We set the first path to $INGRESS_PATH (defaulting to /)
+##############################################################################
+# Build the Helm command
+##############################################################################
+
 HELM_CMD="helm upgrade --install indexer ./ \
+  --namespace ${NAMESPACE} \
+  --create-namespace \
   --set image.repository=${IMAGE_PATH} \
   --set image.tag=${IMAGE_TAG} \
   --set ingress.enabled=true \
   --set ingress.hosts[0].host=${DNS_HOST} \
   --set ingress.hosts[0].paths[0]=${INGRESS_PATH}"
 
-# If Image Pull Secret is enabled, add its parameters to the Helm command
-# Check if all necessary variables for Image Pull Secret are set
+# If all the registry credentials are present, configure imagePullSecret
 if [[ -n "$DOCKER_REGISTRY_URL" && -n "$DOCKER_REGISTRY_USERNAME" && -n "$DOCKER_REGISTRY_PASSWORD" ]]; then
   HELM_CMD+=" \
   --set imagePullSecret.name=${IMAGE_PULL_SECRET_NAME} \
@@ -65,12 +117,15 @@ if [[ -n "$DOCKER_REGISTRY_URL" && -n "$DOCKER_REGISTRY_USERNAME" && -n "$DOCKER
   --set imagePullSecret.password=${DOCKER_REGISTRY_PASSWORD}"
 fi
 
-# Execute the Helm command
+##############################################################################
+# Execute Helm command
+##############################################################################
+
 echo "Executing Helm command:"
 echo "$HELM_CMD"
 eval "$HELM_CMD"
 
-# Check if the Helm command was successful
+# Check success
 if [ "$?" -eq 0 ]; then
   echo "Helm chart successfully installed/updated."
 else
