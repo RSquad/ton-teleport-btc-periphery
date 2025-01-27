@@ -128,8 +128,8 @@ jobs:
           chmod +x ./deploy.sh
 
           # Execute deploy.sh with parameters:
-          # <image-path> <dns-host> <tag>
-          ./deploy.sh "${{ vars.DOCKER_REGISTRY_URL }}/indexer-dev" "indexer.rsquad.local" "latest"
+          # Usage: $0 image-path=<image-path> dns-host=<dns-host> tag=<tag> [ingress-path=<ingress-path>] [namespace=<namespace>]
+          ./deploy.sh image-path="${{ vars.DOCKER_REGISTRY_URL }}/indexer-dev" dns-host=indexer.rsquad.local tag=latest namespace=indexer-dev
 
   # ==========================
   #       PROD / PRODUCTION
