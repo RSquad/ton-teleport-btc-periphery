@@ -1,0 +1,33 @@
+replicaCount: 1
+
+image:
+  repository: registry.digitalocean.com/rsquad-prod/indexer-dev
+  tag: "latest"
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 80
+
+ingress:
+  enabled: true
+  annotations:
+    kubernetes.io/ingress.class: nginx
+  hosts:
+    - host: app.local
+      paths:
+        - /
+
+envs:
+  - name: ENV_VAR1
+    value: "value1"
+  - name: ENV_VAR2
+    value: "value2"
+
+# configMap:
+#   my-config: |
+#     key1: value1
+#     key2: value2
+
+# secret:
+#   my-secret: "s3cr3tValue"
