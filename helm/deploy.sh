@@ -26,7 +26,7 @@ fi
 # Assign arguments to variables
 IMAGE_PATH="$1"
 DNS_HOST="$2"
-TAG="$3"
+IMAGE_TAG="$3"
 
 # Ensure that arguments are not empty
 [ -z "$IMAGE_PATH" ] && { error_exit "Image path (image-path) is not provided."; }
