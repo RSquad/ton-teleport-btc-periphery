@@ -16,6 +16,7 @@ import (
 	ent "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated"
 	entpegout "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated/pegout"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/pegoutcontract"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/teleportcontract"
 	tonclient "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
@@ -83,7 +84,12 @@ func (c *PegoutManager) processPegouts() error {
 		go func(pegout *ent.Pegout) {
 			defer wg.Done()
 			if err := c.processPegout(block, pegout); err != nil {
-				// log.Printf("failed to process pegout id=%v addr=%v: %v", pegout.ID, pegout.Addr, err)
+				logger.Log.Error().
+					Err(err).
+					Str("component", "PegoutManager").
+					Int64("id", pegout.ExternalID).
+					Str("addr", pegout.Addr).
+					Msg("Failed to process pegout")
 			}
 		}(pegout)
 	}
