@@ -107,31 +107,27 @@ jobs:
 
           docker build \
             -f indexer/Dockerfile \
-            --build-arg POSTGRES_USER=${POSTGRES_USER} \
-            --build-arg POSTGRES_PASSWORD=${POSTGRES_PASSWORD} \
-            --build-arg POSTGRES_DB=${POSTGRES_DB} \
-            -t $IMAGE_NAME:develop \
+            -t $IMAGE_NAME:latest \
             -t $IMAGE_NAME:$COMMIT_SHA \
             .
 
-          docker push $IMAGE_NAME:develop
+          docker push $IMAGE_NAME:latest
           docker push $IMAGE_NAME:$COMMIT_SHA
 
-      - name: Deploy with Helm (develop)
+      - name: Deploy with deploy.sh (develop)
         shell: bash
+        env:
+          DOCKER_REGISTRY_URL: ${{ vars.DOCKER_REGISTRY_URL }}
+          DOCKER_REGISTRY_USERNAME: ${{ secrets.DOCKER_REGISTRY_USERNAME }}
+          DOCKER_REGISTRY_PASSWORD: ${{ secrets.DOCKER_REGISTRY_PASSWORD }}
+          IMAGE_PULL_SECRET_NAME: "github-registry-secret" # Optional, defaults to "my-registry-secret" in deploy.sh
         run: |
-          # $KUBECONFIG is set via GITHUB_ENV, so kubectl/helm commands automatically use it
-          kubectl create namespace develop --dry-run=client -o yaml | kubectl apply -f -
+          # Make sure deploy.sh is executable
+          chmod +x helm/deploy.sh
 
-          helm upgrade --install indexer-develop ./helm-chart \
-            --namespace develop \
-            --set image.repository=${{ vars.DOCKER_REGISTRY_URL }}/indexer-dev \
-            --set image.tag=develop \
-            --set ingress.host="develop.indexer.mycompany.local" \
-            --set environment.POSTGRES_USER="${POSTGRES_USER}" \
-            --set environment.POSTGRES_PASSWORD="${POSTGRES_PASSWORD}" \
-            --set environment.POSTGRES_DB="${POSTGRES_DB}"
-
+          # Execute deploy.sh with parameters:
+          # <image-path> <dns-host> <tag>
+          ./helm/deploy.sh "${{ vars.DOCKER_REGISTRY_URL }}/indexer-dev" "indexer.rsquad.local" "latest"
 
   # ==========================
   #       PROD / PRODUCTION
