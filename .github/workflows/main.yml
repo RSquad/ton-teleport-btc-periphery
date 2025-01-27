@@ -122,12 +122,14 @@ jobs:
           DOCKER_REGISTRY_PASSWORD: ${{ secrets.DOCKER_REGISTRY_PASSWORD }}
           IMAGE_PULL_SECRET_NAME: "github-registry-secret" # Optional, defaults to "my-registry-secret" in deploy.sh
         run: |
+          # chdir into helm dir
+          cd helm
           # Make sure deploy.sh is executable
-          chmod +x helm/deploy.sh
+          chmod +x ./deploy.sh
 
           # Execute deploy.sh with parameters:
           # <image-path> <dns-host> <tag>
-          ./helm/deploy.sh "${{ vars.DOCKER_REGISTRY_URL }}/indexer-dev" "indexer.rsquad.local" "latest"
+          ./deploy.sh "${{ vars.DOCKER_REGISTRY_URL }}/indexer-dev" "indexer.rsquad.local" "latest"
 
   # ==========================
   #       PROD / PRODUCTION
