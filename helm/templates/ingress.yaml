@@ -10,11 +10,11 @@ metadata:
 spec:
   rules:
     {{- range .Values.ingress.hosts }}
-    - host: {{ .host }}
+    - host: {{ .host | quote }}
       http:
         paths:
           {{- range .paths }}
-          - path: {{ . }}
+          - path: {{ . | quote }}
             pathType: Prefix
             backend:
               service:

@@ -19,7 +19,7 @@ spec:
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
-            - containerPort: 8080
+            - containerPort: {{ .Values.container.port }}  # Use value from values.yml
           env:
             {{- if .Values.BaseEnvs }}
               {{- range .Values.BaseEnvs }}
