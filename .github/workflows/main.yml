@@ -17,6 +17,9 @@ jobs:
       stage: develop
       app_namespace: develop
       kube_config_secret: DEV_KUBE_CONFIG
+      DOCKER_REGISTRY_URL: ${{ vars.DOCKER_REGISTRY_URL }}
+      DOCKER_REGISTRY_USERNAME: ${{ secrets.DOCKER_REGISTRY_USERNAME }}
+      DOCKER_REGISTRY_PASSWORD: ${{ secrets.DOCKER_REGISTRY_PASSWORD }}
     strategy:
       matrix:
         app: [indexer, relayer]
@@ -32,6 +35,9 @@ jobs:
       stage: production
       app_namespace: production
       kube_config_secret: PROD_KUBE_CONFIG
+      DOCKER_REGISTRY_URL: ${{ vars.DOCKER_REGISTRY_URL }}
+      DOCKER_REGISTRY_USERNAME: ${{ secrets.DOCKER_REGISTRY_USERNAME }}
+      DOCKER_REGISTRY_PASSWORD: ${{ secrets.DOCKER_REGISTRY_PASSWORD }}
     strategy:
       matrix:
         app: [indexer, relayer]
