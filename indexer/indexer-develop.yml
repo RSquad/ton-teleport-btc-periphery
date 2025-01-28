@@ -8,6 +8,10 @@ image:
 service:
   type: ClusterIP
   port: 80
+  targetPort: 3000  # Port exposed by the container (matches Dockerfile)
+
+container:
+  port: 3000  # Port exposed by the container (matches Dockerfile)
 
 ingress:
   enabled: true
