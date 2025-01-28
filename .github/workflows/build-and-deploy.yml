@@ -4,26 +4,31 @@ on:
   workflow_call:
     inputs:
       app_name:
+        description: 'Name of the application'
         required: true
         type: string
       stage:
+        description: 'Deployment stage (e.g., develop, production)'
         required: true
         type: string
       app_namespace:
-        required: true
-        type: string
-      kube_config_secret:
+        description: 'Kubernetes namespace for the application'
         required: true
         type: string
       DOCKER_REGISTRY_URL:
+        description: 'URL of the Docker registry'
         required: true
         type: string
+    secrets:
       DOCKER_REGISTRY_USERNAME:
+        description: 'Username for Docker registry authentication'
         required: true
-        type: string
       DOCKER_REGISTRY_PASSWORD:
+        description: 'Password for Docker registry authentication'
         required: true
-        type: string
+      KUBE_CONFIG:
+        description: 'Kubeconfig file content for Kubernetes cluster access'
+        required: true
 
 jobs:
   build-and-deploy:
@@ -43,8 +48,8 @@ jobs:
         uses: docker/login-action@v2
         with:
           registry: ${{ inputs.DOCKER_REGISTRY_URL }}
-          username: ${{ secrets[inputs.DOCKER_REGISTRY_USERNAME] }}
-          password: ${{ secrets[inputs.DOCKER_REGISTRY_PASSWORD] }}
+          username: ${{ secrets.DOCKER_REGISTRY_USERNAME }}
+          password: ${{ secrets.DOCKER_REGISTRY_PASSWORD }}
 
       - name: Setup Kubernetes Tools
         run: |
@@ -57,7 +62,7 @@ jobs:
         shell: bash
         run: |
           # Write the secret to a file
-          echo "${{ secrets[inputs.kube_config_secret] }}" > $(pwd)/kubeconfig.yaml
+          echo "${{ secrets.KUBE_CONFIG }}" > $(pwd)/kubeconfig.yaml
 
           # Make that file the default for kubectl in subsequent steps
           echo "KUBECONFIG=$(pwd)/kubeconfig.yaml" >> $GITHUB_ENV
