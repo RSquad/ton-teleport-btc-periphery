@@ -66,66 +66,90 @@ jobs:
         run: |
           # Get configmap and store as JSON file
           kubectl get configmap envs-config -n develop -o json > $(pwd)/config.json
-          # Process apps_config with proper JSON escaping
-          APPS_CONFIG=$(jq -r '.data.apps_config' $(pwd)/config.json | sed 's/"/\\"/g')
+          # Process apps_config as raw JSON (remove sed escaping)
+          APPS_CONFIG=$(jq -r '.data.apps_config' $(pwd)/config.json)
+          # Add to GITHUB_ENV with proper formatting
+          echo "APPS_CONFIG<<EOF" >> $GITHUB_ENV
+          echo "$APPS_CONFIG" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
           # Process other environment variables
           jq -r '.data | to_entries[] | select(.key != "apps_config") | "\(.key)=\(.value | @sh)"' $(pwd)/config.json >> $GITHUB_ENV
 
       - name: Validate Configurations (develop)
         shell: bash
         run: |
-          echo $APPS_CONFIG
-          if ! jq -e '. | length > 0' <<< $APPS_CONFIG; then
-            echo "❌ Invalid or empty apps_config"
+          # Enhanced validation
+          if ! echo "$APPS_CONFIG" | jq -e 'type == "array" and length > 0' >/dev/null; then
+            echo "❌ Invalid apps_config - must be a non-empty array"
             exit 1
           fi
 
       - name: Build and Deploy Apps (develop)
         shell: bash
-        run: |  
-          # APPS_CONFIG is expected to be a JSON array. Example:
-          # [
-          #   {"app": "serviceA", "dev": {"dns_host": "serviceA.dev.example.com"}, ...},
-          #   {"app": "serviceB", "dev": {"dns_host": "serviceB.dev.example.com"}, ...}
-          # ]
+        env:
+          DOCKER_REGISTRY_URL: ${{ secrets.DOCKER_REGISTRY_URL }}
+          DEVELOP_NAMESPACE: ${{ env.DEVELOP_NAMESPACE }}
+        run: |
+          set -euo pipefail  # Enable strict error checking
           
-          # Loop through each object in the JSON array
-          for row in $(echo $APPS_CONFIG | jq -c '.[]'); do
-            # Extract values from this item
-            APP_NAME=$(echo "$row" | jq -r '.app')
-            DEV_DNS=$(echo "$row" | jq -r '.dev.dns_host')
-            
-            # Construct image name & tags
-            IMAGE_TAG="${GITHUB_SHA:0:7}" # 7-char short SHA
+          # Validate apps_config structure first
+          if ! jq -e 'type == "array" and length > 0' <<< "$APPS_CONFIG"; then
+            echo "❌ Invalid apps_config - must be a non-empty JSON array"
+            exit 1
+          fi
+      
+          # Process each application configuration
+          echo "$APPS_CONFIG" | jq -c '.[]' | while read -r APP_CONFIG; do
+            # Extract values with error handling
+            APP_NAME=$(echo "$APP_CONFIG" | jq -r '.app')
+            DEV_DNS=$(echo "$APP_CONFIG" | jq -r '.dev.dns_host')
+            DEV_NAMESPACE=$(echo "$APP_CONFIG" | jq -r '.dev.namespace // ""')
+      
+            # Validate required fields
+            if [[ -z "$APP_NAME" || -z "$DEV_DNS" ]]; then
+              echo "❌ Missing required fields in app config: $APP_CONFIG"
+              exit 1
+            fi
+      
+            # Set default namespace if not specified
+            : "${DEV_NAMESPACE:=$DEVELOP_NAMESPACE}"
+      
+            # Generate image tags
+            SHORT_SHA="${GITHUB_SHA:0:7}"
             IMAGE_NAME="$DOCKER_REGISTRY_URL/$APP_NAME-dev"
       
             echo "----------------------------------------"
             echo "🚀 Building and deploying $APP_NAME"
+            echo "📦 Image: $IMAGE_NAME:$SHORT_SHA"
+            echo "🌐 Host: $DEV_DNS"
+            echo "📁 Namespace: $DEV_NAMESPACE"
             echo "----------------------------------------"
       
             # Build Docker image
-            docker build \
-              -f $APP_NAME/Dockerfile \
-              -t $IMAGE_NAME:$IMAGE_TAG \
-              -t $IMAGE_NAME:latest \
+            docker buildx build \
+              -f "$APP_NAME/Dockerfile" \
+              --platform linux/amd64 \
+              -t "$IMAGE_NAME:$SHORT_SHA" \
+              -t "$IMAGE_NAME:latest" \
+              --push \
               .
       
-            # Push Docker images
-            docker push $IMAGE_NAME:$IMAGE_TAG
-            docker push $IMAGE_NAME:latest
-      
-            # Deploy with Helm
+            # Helm deployment with atomic rollback
             helm upgrade --install "$APP_NAME-dev" \
               "./helm/$APP_NAME" \
-              --namespace "$DEVELOP_NAMESPACE" \
+              --namespace "$DEV_NAMESPACE" \
+              --create-namespace \
               --set image.repository="$IMAGE_NAME" \
-              --set image.tag="$IMAGE_TAG" \
+              --set image.tag="$SHORT_SHA" \
               --set ingress.host="$DEV_DNS" \
               --set environment=dev \
               --atomic \
-              --timeout 5m
+              --timeout 5m \
+              --wait
+      
+            echo "✅ Successfully deployed $APP_NAME"
           done
-
+          
   # ==========================
   #       PROD / PRODUCTION
   # ==========================
