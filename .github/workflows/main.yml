@@ -86,7 +86,7 @@ jobs:
       - name: Validate Configurations (develop)
         shell: bash
         run: |
-          if ! jq -e '. | length > 0' <<< "${{ APPS_CONFIG }}"; then
+          if ! jq -e '. | length > 0' <<< "$APPS_CONFIG"; then
             echo "❌ Invalid or empty apps_config"
             exit 1
           fi
