@@ -65,8 +65,8 @@ jobs:
         shell: bash
         run: |
           kubectl get configmap envs-config -n develop -o json > $(pwd)/config.json
-          APPS_CONFIG=$(jq -r '.data.apps_config' $(pwd)/config.json)
-          echo "APPS_CONFIG=$APPS_CONFIG" >> $GITHUB_ENV
+          APPS_CONFIG=$(jq -c -r '.data.apps_config' $(pwd)/config.json)
+          echo "APPS_CONFIG=${APPS_CONFIG}" >> $GITHUB_ENV
           jq -r '.data | to_entries[] | select(.key != "apps_config") | "\(.key)=\(.value)"' $(pwd)/config.json >> $GITHUB_ENV
 
       - name: Debug Environment (develop)
