@@ -96,8 +96,8 @@ jobs:
           # Process environment variables
           jq -r '.data | to_entries[] | "\(.key)=\(.value | @sh)"' $(pwd)/config.json >> $GITHUB_ENV
           # Generate a Helm values file for environment variables
-          echo "BaseEnvs:" > env-values.yaml
-          jq -r '.data | to_entries[] | "  \(.key): \"\(.value)\""' $(pwd)/config.json >> $(pwd)/env-values.yaml
+          echo "BaseEnvs:" >> env-values.yaml
+          jq -r '.data.BaseEnvs | to_entries[] | "  - name: \(.key)\n    value: \"\(.value)\""' $(pwd)/config.json >> env-values.yaml
 
       - name: Debug Environment Values
         shell: bash
