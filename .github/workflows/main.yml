@@ -80,7 +80,7 @@ jobs:
           echo "--------------------------------------------------------------------------------"
           cat "$GITHUB_ENV" || echo "No \$GITHUB_ENV file found."
           echo "--------------------------------------------------------------------------------"
-          echo "APPS_CONFIG: ${{ APPS_CONFIG }}"
+          echo "APPS_CONFIG: $APPS_CONFIG"
           echo "--------------------------------------------------------------------------------"
 
       - name: Validate Configurations (develop)
@@ -103,7 +103,7 @@ jobs:
           # ]
           
           # Loop through each object in the JSON array
-          for row in $(echo "${{ APPS_CONFIG }}" | jq -c '.[]'); do
+          for row in $(echo "$APPS_CONFIG" | jq -c '.[]'); do
             # Extract values from this item
             APP_NAME=$(echo "$row" | jq -r '.app')
             DEV_DNS=$(echo "$row" | jq -r '.dev.dns_host')
