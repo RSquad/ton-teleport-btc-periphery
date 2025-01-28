@@ -64,10 +64,13 @@ jobs:
       - name: Fetch Environment Configs (develop)
         shell: bash
         run: |
+          # Get configmap and store as JSON file
           kubectl get configmap envs-config -n develop -o json > $(pwd)/config.json
-          APPS_CONFIG=$(jq -c -r '.data.apps_config' $(pwd)/config.json)
-          echo "APPS_CONFIG=${APPS_CONFIG}" >> $GITHUB_ENV
-          jq -r '.data | to_entries[] | select(.key != "apps_config") | "\(.key)=\(.value)"' $(pwd)/config.json >> $GITHUB_ENV
+          # Process apps_config with proper JSON escaping
+          APPS_CONFIG=$(jq -r '.data.apps_config' $(pwd)/config.json | sed 's/"/\\"/g')
+          echo "APPS_CONFIG=$APPS_CONFIG" >> $GITHUB_ENV
+          # Process other environment variables
+          jq -r '.data | to_entries[] | select(.key != "apps_config") | "\(.key)=\(.value | @sh)"' $(pwd)/config.json >> $GITHUB_ENV
 
       - name: Debug Environment (develop)
         shell: bash
