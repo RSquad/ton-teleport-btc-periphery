@@ -15,47 +15,61 @@ jobs:
     name: Build and Deploy (develop)
     
     steps:
-      - name: Check out repository
+      - name: Check out repository (develop)
         uses: actions/checkout@v3
 
-      - name: Docker Login
+      - name: Docker Login (develop)
         uses: docker/login-action@v2
         with:
           registry: ${{ vars.DOCKER_REGISTRY_URL }}
           username: ${{ secrets.DOCKER_REGISTRY_USERNAME }}
           password: ${{ secrets.DOCKER_REGISTRY_PASSWORD }}
 
-      - name: Setup Kubernetes Tools
+      - name: Setup Kubernetes Tools (develop)
         run: |
           sudo apt-get update && sudo apt-get install -y ca-certificates curl jq
           curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
           sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
           curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 
-      - name: Configure Kubecontext (develop)
+      - name: Configure Kubeconfig (develop)
         shell: bash
         run: |
-          echo "${{ secrets.DEV_KUBE_CONFIG }}" > kubeconfig.yaml
-          echo "KUBECONFIG=$(pwd)/kubeconfig.yaml" >> $GITHUB_ENV
-          kubectl config use-context "$(kubectl config get-contexts -o name)"
+          # Write the secret to a file
+          echo "${{ secrets.DEV_KUBE_CONFIG }}" > $(pwd)/kubeconfig-develop.yaml
 
-      - name: Fetch Environment Configs
-        shell: bash
-        run: |
-          kubectl get configmap envs-config -n develop -o json > config.json
-          APPS_CONFIG=$(jq -r '.data.apps_config' config.json)
-          echo "APPS_CONFIG=$APPS_CONFIG" >> $GITHUB_ENV
-          jq -r '.data | to_entries[] | select(.key != "apps_config") | "\(.key)=\(.value)"' config.json >> $GITHUB_ENV
+          # Make that file the default for kubectl in subsequent steps
+          echo "KUBECONFIG=$(pwd)/kubeconfig-develop.yaml" >> $GITHUB_ENV
 
-      - name: Validate Configurations
-        shell: bash
-        run: |
-          if ! jq -e '. | length > 0' <<< "${{ env.APPS_CONFIG }}"; then
-            echo "❌ Invalid or empty apps_config"
+          # Discover the single context in this kubeconfig (if exactly one)
+          CONTEXT_COUNT=$(kubectl --kubeconfig=$(pwd)/kubeconfig-develop.yaml config get-contexts -o name | wc -l)
+          if [ "$CONTEXT_COUNT" -eq 1 ]; then
+            CONTEXT_NAME=$(kubectl --kubeconfig=$(pwd)/kubeconfig-develop.yaml config get-contexts -o name)
+            echo "Found a single context: $CONTEXT_NAME"
+            # Set it as the current-context in the file
+            kubectl --kubeconfig=$(pwd)/kubeconfig-develop.yaml config use-context "$CONTEXT_NAME"
+          else
+            echo "ERROR: Found $CONTEXT_COUNT contexts; cannot pick automatically."
             exit 1
           fi
           
-      - name: Debug Environment
+      - name: Debug Kubeconfig (develop)
+        shell: bash
+        run: |
+          # Let's verify that the file has a current-context
+          kubectl config get-contexts
+          kubectl config current-context
+          kubectl cluster-info
+          
+      - name: Fetch Environment Configs (develop)
+        shell: bash
+        run: |
+          kubectl get configmap envs-config -n develop -o json > $(pwd)/config.json
+          APPS_CONFIG=$(jq -r '.data.apps_config' $(pwd)/config.json)
+          echo "APPS_CONFIG=$APPS_CONFIG" >> $GITHUB_ENV
+          jq -r '.data | to_entries[] | select(.key != "apps_config") | "\(.key)=\(.value)"' $(pwd)/config.json >> $GITHUB_ENV
+
+      - name: Debug Environment (develop)
         shell: bash
         run: |
           echo "--------------------------------------------------------------------------------"
@@ -66,11 +80,19 @@ jobs:
           echo "APPS_CONFIG: ${{ env.APPS_CONFIG }}"
           echo "--------------------------------------------------------------------------------"
 
-      - name: Build and Deploy Apps
+      - name: Validate Configurations (develop)
+        shell: bash
+        run: |
+          if ! jq -e '. | length > 0' <<< "${{ env.APPS_CONFIG }}"; then
+            echo "❌ Invalid or empty apps_config"
+            exit 1
+          fi
+
+      - name: Build and Deploy Apps (develop)
         shell: bash
         run: |
           # "env.APPS_CONFIG" should already be set by a previous step,
-          # for example via:  echo "APPS_CONFIG=$(jq -r '.data.apps_config' config.json)" >> $GITHUB_ENV      
+          # for example via:  echo "APPS_CONFIG=$(jq -r '.data.apps_config' $(pwd)/config.json)" >> $GITHUB_ENV      
           # APPS_CONFIG is expected to be a JSON array. Example:
           # [
           #   {"app": "serviceA", "dev": {"dns_host": "serviceA.dev.example.com"}, ...},
