@@ -13,9 +13,6 @@ jobs:
     if: startsWith(github.ref, 'refs/heads/')
     runs-on: self-hosted
     name: Build and Deploy (develop)
-    strategy:
-      matrix:
-        config: ${{ fromJson(env.APPS_CONFIG) }}
     
     steps:
       - name: Check out repository
@@ -57,34 +54,70 @@ jobs:
             echo "❌ Invalid or empty apps_config"
             exit 1
           fi
+          
+      - name: Debug Environment
+        shell: bash
+        run: |
+          echo "--------------------------------------------------------------------------------"
+          echo "Contents of \$GITHUB_ENV (for debugging):"
+          echo "--------------------------------------------------------------------------------"
+          cat "$GITHUB_ENV" || echo "No \$GITHUB_ENV file found."
+          echo "--------------------------------------------------------------------------------"
+          echo "APPS_CONFIG: ${{ env.APPS_CONFIG }}"
+          echo "--------------------------------------------------------------------------------"
 
       - name: Build and Deploy Apps
         shell: bash
         run: |
-          APP_NAME="${{ matrix.config.app }}"
-          IMAGE_TAG="${GITHUB_SHA:0:7}"
-          IMAGE_NAME="$DOCKER_REGISTRY_URL/${APP_NAME}-dev"
+          # "env.APPS_CONFIG" should already be set by a previous step,
+          # for example via:  echo "APPS_CONFIG=$(jq -r '.data.apps_config' config.json)" >> $GITHUB_ENV      
+          # APPS_CONFIG is expected to be a JSON array. Example:
+          # [
+          #   {"app": "serviceA", "dev": {"dns_host": "serviceA.dev.example.com"}, ...},
+          #   {"app": "serviceB", "dev": {"dns_host": "serviceB.dev.example.com"}, ...}
+          # ]
+          
+          # Loop through each object in the JSON array
+          for row in $(echo "${{ env.APPS_CONFIG }}" | jq -c '.[]'); do
+            # Extract values from this item
+            APP_NAME=$(echo "$row" | jq -r '.app')
+            DEV_DNS=$(echo "$row" | jq -r '.dev.dns_host')
+            
+            # Construct image name & tags
+            IMAGE_TAG="${GITHUB_SHA:0:7}" # 7-char short SHA
+            IMAGE_NAME="$DOCKER_REGISTRY_URL/$APP_NAME-dev"
+      
+            echo "----------------------------------------"
+            echo "🚀 Building and deploying $APP_NAME"
+            echo "----------------------------------------"
+      
+            # Build Docker image
+            docker build \
+              -f $APP_NAME/Dockerfile \
+              -t $IMAGE_NAME:$IMAGE_TAG \
+              -t $IMAGE_NAME:latest \
+              .
+      
+            # Push Docker images
+            docker push $IMAGE_NAME:$IMAGE_TAG
+            docker push $IMAGE_NAME:latest
+      
+            # Deploy with Helm
+            helm upgrade --install "$APP_NAME-dev" \
+              "./helm/$APP_NAME" \
+              --namespace "$DEVELOP_NAMESPACE" \
+              --set image.repository="$IMAGE_NAME" \
+              --set image.tag="$IMAGE_TAG" \
+              --set ingress.host="$DEV_DNS" \
+              --set environment=dev \
+              --atomic \
+              --timeout 5m
+          done
 
-          # Build and push Docker image
-          docker build \
-            -f $APP_NAME/Dockerfile \
-            -t $IMAGE_NAME:$IMAGE_TAG \
-            -t $IMAGE_NAME:latest \
-            .
 
-          docker push $IMAGE_NAME:$IMAGE_TAG
-          docker push $IMAGE_NAME:latest
 
-          # Helm deployment
-          helm upgrade --install $APP_NAME-dev \
-            ./helm/$APP_NAME \
-            --namespace $DEVELOP_NAMESPACE \
-            --set image.repository=$IMAGE_NAME \
-            --set image.tag=$IMAGE_TAG \
-            --set ingress.host="${{ matrix.config.dev.dns_host }}" \
-            --set environment=dev \
-            --atomic \
-            --timeout 5m
+
+
 
   # ==========================
   #       PROD / PRODUCTION
