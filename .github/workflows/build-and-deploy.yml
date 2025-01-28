@@ -33,7 +33,8 @@ on:
 jobs:
   build-and-deploy:
     runs-on: self-hosted
-    name: Build and Deploy
+    name: Build and Deploy - ${{ inputs.app_name }} - ${{ inputs.stage }}
+    environment: ${{ inputs.stage }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
