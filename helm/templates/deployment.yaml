@@ -21,9 +21,17 @@ spec:
           ports:
             - containerPort: 8080
           env:
-            {{- range .Values.envs }}
+            {{- if .Values.BaseEnvs }}
+              {{- range .Values.BaseEnvs }}
             - name: {{ .name }}
               value: "{{ .value }}"
+              {{- end }}
+            {{- end }}
+            {{- if .Values.envs }}
+              {{- range .Values.envs }}
+            - name: {{ .name }}
+              value: "{{ .value }}"
+              {{- end }}
             {{- end }}
           {{- if or .Values.configMap .Values.secret }}
           envFrom:
