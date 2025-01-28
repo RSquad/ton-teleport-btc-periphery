@@ -114,11 +114,6 @@ jobs:
               --timeout 5m
           done
 
-
-
-
-
-
   # ==========================
   #       PROD / PRODUCTION
   # ==========================
@@ -126,9 +121,6 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: self-hosted
     name: Build and Deploy (production)
-    strategy:
-      matrix:
-        config: ${{ fromJson(env.APPS_CONFIG) }}
     
     steps:
       - name: Check out repository
@@ -141,44 +133,3 @@ jobs:
           username: ${{ secrets.DOCKER_REGISTRY_USERNAME }}
           password: ${{ secrets.DOCKER_REGISTRY_PASSWORD }}
 
-      - name: Configure Kubecontext (prod)
-        shell: bash
-        run: |
-          echo "${{ secrets.PROD_KUBE_CONFIG }}" > kubeconfig.yaml
-          echo "KUBECONFIG=$(pwd)/kubeconfig.yaml" >> $GITHUB_ENV
-          kubectl config use-context "$(kubectl config get-contexts -o name)"
-
-      - name: Fetch Environment Configs
-        shell: bash
-        run: |
-          kubectl get configmap envs-config -n production -o json > config.json
-          APPS_CONFIG=$(jq -r '.data.apps_config' config.json)
-          echo "APPS_CONFIG=$APPS_CONFIG" >> $GITHUB_ENV
-          jq -r '.data | to_entries[] | select(.key != "apps_config") | "\(.key)=\(.value)"' config.json >> $GITHUB_ENV
-
-      - name: Deploy Production Apps
-        shell: bash
-        run: |
-          APP_NAME="${{ matrix.config.app }}"
-          RELEASE_TAG="${GITHUB_REF#refs/tags/}"
-          IMAGE_NAME="$DOCKER_REGISTRY_URL/$APP_NAME"
-
-          # Build and push versioned image
-          docker build \
-            -f $APP_NAME/Dockerfile \
-            -t $IMAGE_NAME:$RELEASE_TAG \
-            .
-
-          docker push $IMAGE_NAME:$RELEASE_TAG
-
-          # Helm deployment
-          helm upgrade --install $APP_NAME-prod \
-            ./helm/$APP_NAME \
-            --namespace $PROD_NAMESPACE \
-            --set image.repository=$IMAGE_NAME \
-            --set image.tag=$RELEASE_TAG \
-            --set ingress.host="${{ matrix.config.prod.dns_host }}" \
-            --set environment=prod \
-            --atomic \
-            --timeout 10m \
-            --values ./helm/$APP_NAME/prod-values.yaml
