@@ -15,6 +15,15 @@ on:
       kube_config_secret:
         required: true
         type: string
+      DOCKER_REGISTRY_URL:
+        required: true
+        type: string
+      DOCKER_REGISTRY_USERNAME:
+        required: true
+        type: string
+      DOCKER_REGISTRY_PASSWORD:
+        required: true
+        type: string
 
 jobs:
   build-and-deploy:
