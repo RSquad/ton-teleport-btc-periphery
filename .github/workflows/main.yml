@@ -52,7 +52,7 @@ jobs:
             echo "ERROR: Found $CONTEXT_COUNT contexts; cannot pick automatically."
             exit 1
           fi
-          
+
       - name: Debug Kubeconfig (develop)
         shell: bash
         run: |
@@ -60,7 +60,7 @@ jobs:
           kubectl config get-contexts
           kubectl config current-context
           kubectl cluster-info
-          
+
       - name: Fetch Environment Configs (develop)
         shell: bash
         run: |
@@ -104,7 +104,7 @@ jobs:
           echo "$APPS_CONFIG" | jq -c '.[]' | while read -r APP_CONFIG; do
             # Extract values with error handling
             APP_NAME=$(echo "$APP_CONFIG" | jq -r '.app')
-            DEV_DNS=$(echo "$APP_CONFIG" | jq -r '.dev.dns_host')
+            _DNS=$(echo "$APP_CONFIG" | jq -r '.dev.dns_host')
             DEV_INGRESS_PATH=$(echo "$APP_CONFIG" | jq -r '.dev.ingress_path // ""')
             DEV_NAMESPACE=$(echo "$APP_CONFIG" | jq -r '.dev.namespace // ""')
 
@@ -114,7 +114,7 @@ jobs:
               exit 1
             fi
 
-            # Set default namespace if not specified
+            # Set default ENVs if not specified
             : "${DEV_NAMESPACE:=$DEVELOP_NAMESPACE}"
 
             # Generate image tags
@@ -140,20 +140,31 @@ jobs:
             docker push $IMAGE_NAME:latest
             docker push $IMAGE_NAME:$SHORT_SHA
 
-            # Deploy with deploy.sh (develop)
-            deploy_command=(
-              "./deploy.sh"
-              "image-path=$$IMAGE_NAME"
-              "dns-host=$DEV_DNS"
-              "tag=latest"
+            # Base Helm command
+            HELM_CMD=(
+              helm upgrade --install "$APP_NAME-dev"
+              "./helm/"
+              --namespace "$DEV_NAMESPACE"
+              --create-namespace
+              --set image.repository="$IMAGE_NAME"
+              --set image.tag="$SHORT_SHA"
+              --atomic
+              --timeout 5m
             )
 
-            # Add non requered vars if specified in config
-            [[ -n "$DEV_NAMESPACE" ]] && deploy_command+=("namespace=$DEV_NAMESPACE")
-            [[ -n "$DEV_INGRESS_PATH" ]] && deploy_command+=("ingress-path=$DEV_INGRESS_PATH")
-            # Execute deployment
-            echo "🏃 Running: ${deploy_command[*]}"
-            "${deploy_command[@]}"
+            # Add registry credentials if available
+            if [[ -n "$DOCKER_REGISTRY_URL" && -n "$DOCKER_REGISTRY_USERNAME" && -n "$DOCKER_REGISTRY_PASSWORD" ]]; then
+              HELM_CMD+=(
+                --set imagePullSecret.name="$IMAGE_PULL_SECRET_NAME"
+                --set imagePullSecret.registry="$DOCKER_REGISTRY_URL"
+                --set imagePullSecret.username="$DOCKER_REGISTRY_USERNAME"
+                --set imagePullSecret.password="$DOCKER_REGISTRY_PASSWORD"
+              )
+            fi
+
+            # Execute Helm command
+            echo "🏃 Running: ${HELM_CMD[*]}"
+            "${HELM_CMD[@]}"
 
             echo "✅ Successfully deployed $APP_NAME"
           done
