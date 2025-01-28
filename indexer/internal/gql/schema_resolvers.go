@@ -71,7 +71,7 @@ func (r *mutationResolver) CreatePegin(ctx context.Context, input ent.CreatePegi
 		return nil, fmt.Errorf("bitcoin tx not found: %w", err)
 	}
 
-	possibleCvsLocks := []uint32{teleportContractStorage.CsvLock, 36}
+	possibleCvsLocks := []uint32{teleportContractStorage.CsvLock, 36, 29}
 
 	var vout *btcjson.Vout
 
