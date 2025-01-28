@@ -126,7 +126,7 @@ jobs:
             echo "----------------------------------------"
       
             # Build Docker image
-            docker buildx build \
+            docker build \
               -f "$APP_NAME/Dockerfile" \
               --platform linux/amd64 \
               -t "$IMAGE_NAME:$SHORT_SHA" \
