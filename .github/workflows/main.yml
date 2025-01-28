@@ -142,7 +142,6 @@ jobs:
           "${HELM_CMD[@]}"
 
           echo "✅ Successfully deployed $APP_NAME"
-        done
 
   # ==========================
   #       PROD / PRODUCTION
