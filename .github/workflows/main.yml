@@ -23,7 +23,7 @@ jobs:
       - name: Set up environment
         run: |
           echo "APP_NAME=${{ matrix.app }}" >> $GITHUB_ENV
-          echo "APP_NAMESPACE="develop" >> $GITHUB_ENV
+          echo "APP_NAMESPACE=develop" >> $GITHUB_ENV
 
       - name: Docker Login (develop)
         uses: docker/login-action@v2
