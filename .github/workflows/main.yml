@@ -68,34 +68,21 @@ jobs:
           kubectl get configmap envs-config -n develop -o json > $(pwd)/config.json
           # Process apps_config with proper JSON escaping
           APPS_CONFIG=$(jq -r '.data.apps_config' $(pwd)/config.json | sed 's/"/\\"/g')
-          # echo "APPS_CONFIG=$APPS_CONFIG" >> $GITHUB_ENV
           # Process other environment variables
           jq -r '.data | to_entries[] | select(.key != "apps_config") | "\(.key)=\(.value | @sh)"' $(pwd)/config.json >> $GITHUB_ENV
-
-      - name: Debug Environment (develop)
-        shell: bash
-        run: |
-          echo "--------------------------------------------------------------------------------"
-          echo "Contents of \$GITHUB_ENV (for debugging):"
-          echo "--------------------------------------------------------------------------------"
-          cat "$GITHUB_ENV" || echo "No \$GITHUB_ENV file found."
-          echo "--------------------------------------------------------------------------------"
-          echo "APPS_CONFIG: $APPS_CONFIG"
-          echo "--------------------------------------------------------------------------------"
 
       - name: Validate Configurations (develop)
         shell: bash
         run: |
-          if ! jq -e '. | length > 0' <<< "$APPS_CONFIG"; then
+          echo $APPS_CONFIG
+          if ! jq -e '. | length > 0' <<< $APPS_CONFIG; then
             echo "❌ Invalid or empty apps_config"
             exit 1
           fi
 
       - name: Build and Deploy Apps (develop)
         shell: bash
-        run: |
-          # "APPS_CONFIG" should already be set by a previous step,
-          # for example via:  echo "APPS_CONFIG=$(jq -r '.data.apps_config' $(pwd)/config.json)"    
+        run: |  
           # APPS_CONFIG is expected to be a JSON array. Example:
           # [
           #   {"app": "serviceA", "dev": {"dns_host": "serviceA.dev.example.com"}, ...},
@@ -103,7 +90,7 @@ jobs:
           # ]
           
           # Loop through each object in the JSON array
-          for row in $(echo "$APPS_CONFIG" | jq -c '.[]'); do
+          for row in $(echo $APPS_CONFIG | jq -c '.[]'); do
             # Extract values from this item
             APP_NAME=$(echo "$row" | jq -r '.app')
             DEV_DNS=$(echo "$row" | jq -r '.dev.dns_host')
