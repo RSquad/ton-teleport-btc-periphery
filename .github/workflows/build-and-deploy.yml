@@ -92,9 +92,18 @@ jobs:
         shell: bash
         run: |
           # Get configmap and store as JSON file
-          kubectl get configmap envs-config -n ${{ inputs.app_namespace }} -o json > $(pwd)/config.json
+          kubectl get configmap envs-config -n develop -o json > $(pwd)/config.json
           # Process environment variables
           jq -r '.data | to_entries[] | "\(.key)=\(.value | @sh)"' $(pwd)/config.json >> $GITHUB_ENV
+          # Generate a Helm values file for environment variables
+          echo "env:" > env-values.yaml
+          jq -r '.data | to_entries[] | "  \(.key): \"\(.value)\""' $(pwd)/config.json >> $(pwd)/env-values.yaml
+
+      - name: Debug Environment Values
+        shell: bash
+        run: |
+          # Output the generated env-values.yaml for verification
+          cat $(pwd)/env-values.yaml
 
       - name: Build and Deploy Apps
         shell: bash
@@ -144,7 +153,8 @@ jobs:
             --set image.tag="$SHORT_SHA"
             --atomic
             --timeout 5m
-            -f "$APP_NAME/$APP_NAME-$STAGE".yml
+            -f env-values.yaml  # Include the generated env vars
+            -f "$APP_NAME/$APP_NAME-$STAGE".yml # Include APP-related vars
           )
 
           # Add registry credentials if available
