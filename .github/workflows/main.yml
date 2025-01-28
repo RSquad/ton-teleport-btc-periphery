@@ -2,21 +2,18 @@ name: Build and Deploy to K8s (via Helm)
 
 on:
   push:
-    branches:
-      - '**'       # Any branch
-    tags:
-      - 'v*'       # Tags starting with v (e.g. v1.0.0)
+    branches: ['**']
+    tags: ['v*']
 
 jobs:
   # ==========================
   #       DEV / develop
   # ==========================
   build-and-deploy-develop:
-    # Condition: run only if this is a push to a branch (not a tag)
     if: startsWith(github.ref, 'refs/heads/')
     runs-on: self-hosted
     name: Build and Deploy (develop)
-
+    
     steps:
       - name: Check out repository
         uses: actions/checkout@v3
@@ -28,125 +25,158 @@ jobs:
           username: ${{ secrets.DOCKER_REGISTRY_USERNAME }}
           password: ${{ secrets.DOCKER_REGISTRY_PASSWORD }}
 
-      - name: Install kubectl (develop)
+      - name: Setup Kubernetes Tools
         run: |
-          sudo apt-get update && sudo apt-get install -y ca-certificates curl
+          sudo apt-get update && sudo apt-get install -y ca-certificates curl jq
           curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
           sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
-
-      - name: Install Helm (develop)
-        run: |
           curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 
-      - name: Set up Kubeconfig (develop)
+      - name: Configure Kubecontext (develop)
         shell: bash
         run: |
-          # Write the secret to a file
-          echo "${{ secrets.DEV_KUBE_CONFIG }}" > $(pwd)/kubeconfig-develop.yaml
+          echo "${{ secrets.DEV_KUBE_CONFIG }}" > kubeconfig.yaml
+          echo "KUBECONFIG=$(pwd)/kubeconfig.yaml" >> $GITHUB_ENV
+          kubectl config use-context "$(kubectl config get-contexts -o name)"
 
-          # Make that file the default for kubectl in subsequent steps
-          echo "KUBECONFIG=$(pwd)/kubeconfig-develop.yaml" >> $GITHUB_ENV
+      - name: Fetch Environment Configs
+        shell: bash
+        run: |
+          # Get combined environment configuration
+          kubectl get configmap envs-config -n develop -o json > config.json
+          
+          # Extract apps configuration
+          APPS_CONFIG=$(jq -r '.data.apps_config' config.json)
+          echo "APPS_CONFIG=$APPS_CONFIG" >> $GITHUB_ENV
+          
+          # Set regular environment variables
+          jq -r '.data | to_entries[] | select(.key != "apps_config") | "\(.key)=\(.value)"' config.json >> $GITHUB_ENV
 
-          # Discover the single context in this kubeconfig (if exactly one)
-          CONTEXT_COUNT=$(kubectl --kubeconfig=$(pwd)/kubeconfig-develop.yaml config get-contexts -o name | wc -l)
-          if [ "$CONTEXT_COUNT" -eq 1 ]; then
-            CONTEXT_NAME=$(kubectl --kubeconfig=$(pwd)/kubeconfig-develop.yaml config get-contexts -o name)
-            echo "Found a single context: $CONTEXT_NAME"
-            # Set it as the current-context in the file
-            kubectl --kubeconfig=$(pwd)/kubeconfig-develop.yaml config use-context "$CONTEXT_NAME"
-          else
-            echo "ERROR: Found $CONTEXT_COUNT contexts; cannot pick automatically."
+      - name: Validate Configurations
+        shell: bash
+        run: |
+          # Validate apps_config JSON
+          if ! jq -e '. | length > 0' <<< "${{ env.APPS_CONFIG }}"; then
+            echo "❌ Invalid or empty apps_config"
             exit 1
           fi
 
-      - name: Debug Kubeconfig (develop)
+          # Validate required environment variables
+          for var in DOCKER_REGISTRY_URL DEPLOY_NAMESPACE; do
+            if [ -z "${!var}" ]; then
+              echo "❌ Missing required variable: $var"
+              exit 1
+            fi
+          done
+
+      - name: Build and Deploy Apps
+        strategy:
+          matrix:
+            config: ${{ fromJson(env.APPS_CONFIG) }}
         shell: bash
         run: |
-          # Now that the file has a current-context, let's verify
-          kubectl config get-contexts
-          kubectl config current-context
-          kubectl cluster-info
+          # Build parameters
+          APP_NAME="${{ matrix.config.app }}"
+          DEV_CONFIG="${{ matrix.config.dev }}"
+          IMAGE_TAG="${GITHUB_SHA:0:7}"
+          IMAGE_NAME="$DOCKER_REGISTRY_URL/${APP_NAME}-dev"
 
-      - name: Fetch ConfigMap (develop)
-        shell: bash
-        run: |
-          kubectl get configmap envs-config -n develop -o json > $(pwd)/config.json
-
-      - name: Install jq (develop)
-        run: |
-          sudo apt-get update && sudo apt-get install -y jq
-
-      - name: Debug Fetch ConfigMap (develop)
-        shell: bash
-        run: |
-          # Fetch the config map to verify its contents
-          echo "===== Debug: ENVs Configmap Dumped ====="
-          jq -r '.data | to_entries[] | "\(.key)=\(.value)"' $(pwd)/config.json
-
-      - name: Set Environment Variables from ConfigMap (develop)
-        shell: bash
-        run: |
-          # For each "key=value" entry in the ConfigMap's .data section,
-          # write it into the $GITHUB_ENV file as environment variables.
-          jq -r '.data | to_entries[] | "\(.key)=\(.value)"' "$(pwd)/config.json" \
-          | while IFS='=' read -r key value; do
-              echo "$key=$value" >> "$GITHUB_ENV"
-            done
-
-      - name: Print Environment Variables (develop)
-        shell: bash
-        run: |
-          echo "===== Debug: Environment Variables Collected ====="
-          cat "$GITHUB_ENV"
-
-      - name: Build and Push Docker Image (develop)
-        shell: bash
-        run: |
-          IMAGE_NAME="${{ vars.DOCKER_REGISTRY_URL }}/indexer-dev"
-          COMMIT_SHA="${{ github.sha }}"
-
+          # Build and push Docker image
           docker build \
-            -f indexer/Dockerfile \
+            -f $APP_NAME/Dockerfile \
+            -t $IMAGE_NAME:$IMAGE_TAG \
             -t $IMAGE_NAME:latest \
-            -t $IMAGE_NAME:$COMMIT_SHA \
             .
 
+          docker push $IMAGE_NAME:$IMAGE_TAG
           docker push $IMAGE_NAME:latest
-          docker push $IMAGE_NAME:$COMMIT_SHA
 
-      - name: Deploy with deploy.sh (develop)
-        shell: bash
-        env:
-          DOCKER_REGISTRY_URL: ${{ vars.DOCKER_REGISTRY_URL }}
-          DOCKER_REGISTRY_USERNAME: ${{ secrets.DOCKER_REGISTRY_USERNAME }}
-          DOCKER_REGISTRY_PASSWORD: ${{ secrets.DOCKER_REGISTRY_PASSWORD }}
-          IMAGE_PULL_SECRET_NAME: "github-registry-secret" # Optional, defaults to "my-registry-secret" in deploy.sh
-        run: |
-          # chdir into helm dir
-          cd helm
-          # Make sure deploy.sh is executable
-          chmod +x ./deploy.sh
-
-          # Execute deploy.sh with parameters:
-          # Usage: $0 image-path=<image-path> dns-host=<dns-host> tag=<tag> [ingress-path=<ingress-path>] [namespace=<namespace>]
-          ./deploy.sh image-path="${{ vars.DOCKER_REGISTRY_URL }}/indexer-dev" dns-host=indexer.rsquad.local tag=latest namespace=indexer-dev
+          # Helm deployment
+          helm upgrade --install $APP_NAME-dev \
+            ./helm/$APP_NAME \
+            --namespace $DEPLOY_NAMESPACE \
+            --set image.repository=$IMAGE_NAME \
+            --set image.tag=$IMAGE_TAG \
+            --set ingress.host="${{ fromJson(DEV_CONFIG).dns_host }}" \
+            --set environment=dev \
+            --atomic \
+            --timeout 5m
 
   # ==========================
   #       PROD / PRODUCTION
   # ==========================
   build-and-deploy-prod:
-    # Condition: run only if this is a push to a tag (refs/tags/...)
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: self-hosted
     name: Build and Deploy (production)
-
+    
     steps:
-      - name: Check out repository (production)
+      - name: Check out repository
         uses: actions/checkout@v3
 
-      - name: Docker Login (production)
+      - name: Docker Login
         uses: docker/login-action@v2
         with:
           registry: ${{ vars.DOCKER_REGISTRY_URL }}
           username: ${{ secrets.DOCKER_REGISTRY_USERNAME }}
           password: ${{ secrets.DOCKER_REGISTRY_PASSWORD }}
+
+      # - name: Setup Kubernetes Tools
+      #   run: |
+      #     sudo apt-get update && sudo apt-get install -y ca-certificates curl jq
+      #     curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+      #     sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+
+      # - name: Configure Kubecontext (prod)
+      #   shell: bash
+      #   run: |
+      #     echo "${{ secrets.PROD_KUBE_CONFIG }}" > kubeconfig.yaml
+      #     echo "KUBECONFIG=$(pwd)/kubeconfig.yaml" >> $GITHUB_ENV
+      #     kubectl config use-context "$(kubectl config get-contexts -o name)"
+
+      # - name: Fetch Environment Configs
+      #   shell: bash
+      #   run: |
+      #     kubectl get configmap envs-config -n production -o json > config.json
+      #     APPS_CONFIG=$(jq -r '.data.apps_config' config.json)
+      #     echo "APPS_CONFIG=$APPS_CONFIG" >> $GITHUB_ENV
+      #     jq -r '.data | to_entries[] | select(.key != "apps_config") | "\(.key)=\(.value)"' config.json >> $GITHUB_ENV
+
+      # - name: Validate Configurations
+      #   shell: bash
+      #   run: |
+      #     if ! jq -e '. | length > 0' <<< "${{ env.APPS_CONFIG }}"; then
+      #       echo "❌ Invalid or empty apps_config"
+      #       exit 1
+      #     fi
+
+      # - name: Deploy Production Apps
+      #   strategy:
+      #     matrix:
+      #       config: ${{ fromJson(env.APPS_CONFIG) }}
+      #   shell: bash
+      #   run: |
+      #     APP_NAME="${{ matrix.config.app }}"
+      #     PROD_CONFIG="${{ matrix.config.prod }}"
+      #     RELEASE_TAG="${GITHUB_REF#refs/tags/}"
+      #     IMAGE_NAME="$DOCKER_REGISTRY_URL/$APP_NAME"
+
+      #     # Build and push versioned image
+      #     docker build \
+      #       -f $APP_NAME/Dockerfile \
+      #       -t $IMAGE_NAME:$RELEASE_TAG \
+      #       .
+
+      #     docker push $IMAGE_NAME:$RELEASE_TAG
+
+      #     # Helm deployment with production values
+      #     helm upgrade --install $APP_NAME-prod \
+      #       ./helm/$APP_NAME \
+      #       --namespace $PROD_NAMESPACE \
+      #       --set image.repository=$IMAGE_NAME \
+      #       --set image.tag=$RELEASE_TAG \
+      #       --set ingress.host="${{ fromJson(PROD_CONFIG).dns_host }}" \
+      #       --set environment=prod \
+      #       --atomic \
+      #       --timeout 10m \
+      #       --values ./helm/$APP_NAME/prod-values.yaml
