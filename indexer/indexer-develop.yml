@@ -1,19 +1,5 @@
-replicaCount: 1
-
-image:
-  repository: 
-  tag: "latest"
-  pullPolicy: IfNotPresent
-
-service:
-  type: ClusterIP
-  port: 80
-  targetPort: 3000  # Port exposed by the container
-
-container:
-  port: 3000  # Port exposed by the container
-
 ingress:
+  letsencrypt-issuer: "letsencrypt-prod"
   enabled: true
   annotations:
     kubernetes.io/ingress.class: nginx
@@ -21,15 +7,3 @@ ingress:
     - host: ton-teleport-develop.rsquad.solutions
       paths:
         - /indexer
-
-envs:
-  - name: INDEXER_DATABASE_URL
-    value: "postgresql://doadmin:AVNS_wtor6XX-uRjFcPvd_m3@ton-teleport-dev-db-do-user-10040990-0.f.db.ondigitalocean.com:25060/indexer?sslmode=require"
-
-# configMap:
-#   my-config: |
-#     key1: value1
-#     key2: value2
-
-# secret:
-#   my-secret: "s3cr3tValue"

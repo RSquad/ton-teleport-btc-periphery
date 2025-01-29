@@ -153,8 +153,16 @@ jobs:
             --set image.tag="$SHORT_SHA"
             --timeout 5m
             -f env-values.yaml  # Include the generated env vars
-            -f "$APP_NAME/$APP_NAME-$STAGE".yml # Include APP-related vars
           )
+
+          # Check if the APP-related vars file exists and is non-empty
+          APP_VARS_FILE="$APP_NAME/$APP_NAME-$STAGE.yml"
+          if [[ -s "$APP_VARS_FILE" ]]; then
+            echo "✅ Found non-empty APP-related vars file: $APP_VARS_FILE"
+            HELM_CMD+=(-f "$APP_VARS_FILE")
+          else
+            echo "⚠️ APP-related vars file not found or empty: $APP_VARS_FILE"
+          fi
 
           # Add registry credentials if available
           if [[ -n "$DOCKER_REGISTRY_URL" && -n "$DOCKER_REGISTRY_USERNAME" && -n "$DOCKER_REGISTRY_PASSWORD" ]]; then

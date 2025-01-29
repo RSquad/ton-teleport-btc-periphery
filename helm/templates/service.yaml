@@ -6,10 +6,10 @@ metadata:
   labels:
     app: {{ include "app.name" . }}
 spec:
-  type: {{ .Values.service.type }}
+  type: {{ .Values.service.type | default "ClusterIP" }} # Default to ClusterIP if not specified
   ports:
-    - port: {{ .Values.service.port }}  # External port (e.g., 80)
-      targetPort: {{ .Values.service.targetPort }}  # Container port (e.g., 3000)
+    - port: {{ .Values.service.port | default 80 }} # Default to 80 if not specified
+      targetPort: {{ .Values.service.targetPort | default 3000 }} # Default to 3000 if not specified
   selector:
     app: {{ include "app.name" . }}
 {{- end }}
