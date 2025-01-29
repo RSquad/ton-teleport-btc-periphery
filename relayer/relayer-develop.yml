@@ -20,11 +20,11 @@ ingress:
   hosts:
     - host: ton-teleport-develop.rsquad.solutions
       paths:
-        - /indexer
+        - /relayer
 
 envs:
-  - name: INDEXER_DATABASE_URL
-    value: "postgresql://doadmin:AVNS_wtor6XX-uRjFcPvd_m3@ton-teleport-dev-db-do-user-10040990-0.f.db.ondigitalocean.com:25060/indexer?sslmode=require"
+  - name: RELAYER_WALLET_V4_SECRET
+    value: "4550a1c8cf258e8180d4021d106f7c61b52ad8799773edd24336521af954035ce9f486285907b21503df91e68220ec86deef59bfa0e09ea09c53429fd54ec0e9"
 
 # configMap:
 #   my-config: |
