@@ -7,12 +7,12 @@ metadata:
     {{- range $key, $value := .Values.ingress.annotations }}
     {{ $key }}: {{ $value | quote }}
     {{- end }}
-    {{- if .Values.ingress.letsencrypt-issuer }}
-    cert-manager.io/cluster-issuer: {{ .Values.ingress.letsencrypt-issuer | quote }}
+    {{- if index .Values.ingress "letsencrypt-issuer" }}
+    cert-manager.io/cluster-issuer: {{ index .Values.ingress "letsencrypt-issuer" | quote }}
     {{- end }}
 spec:
   ingressClassName: "nginx"
-  {{- if .Values.ingress.letsencrypt-issuer }}
+  {{- if index .Values.ingress "letsencrypt-issuer" }}
   tls:
     - hosts:
         {{- range .Values.ingress.hosts }}
