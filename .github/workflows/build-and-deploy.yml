@@ -111,7 +111,7 @@ jobs:
           DOCKER_REGISTRY_URL: ${{ vars.DOCKER_REGISTRY_URL }}
           DOCKER_REGISTRY_USERNAME: ${{ secrets.DOCKER_REGISTRY_USERNAME }}
           DOCKER_REGISTRY_PASSWORD: ${{ secrets.DOCKER_REGISTRY_PASSWORD }}
-          IMAGE_PULL_SECRET_NAME: "github-registry-secret"
+          IMAGE_PULL_SECRET_NAME: "$APP_NAME-github-registry-secret"
         run: |
           set -euo pipefail  # Enable strict error checking
 
