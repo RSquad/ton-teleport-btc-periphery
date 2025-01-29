@@ -19,7 +19,11 @@ spec:
           image: {{ .Values.image.repository }}:{{ .Values.image.tag | default "latest" }} # Default to 'latest'
           imagePullPolicy: {{ .Values.image.pullPolicy | default "IfNotPresent" }} # Default to 'IfNotPresent'
           ports:
-            - containerPort: {{ .Values.container.port | default 3000 }} # Default to port 3000
+            {{- if and .Values.container .Values.container "port" }}
+            - containerPort: {{ .Values.container.port }}
+            {{- else }}
+            - containerPort: 3000
+            {{- end }}
           env:
             {{- if .Values.BaseEnvs }}
               {{- range .Values.BaseEnvs }}

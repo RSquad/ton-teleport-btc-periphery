@@ -5,10 +5,10 @@ metadata:
   name: {{ include "app.fullname" . }}
   annotations:
     {{- range $key, $value := .Values.ingress.annotations }}
-    {{ $key }}: {{ $value | quote }}
+    {{ $key }}: "{{ $value }}"
     {{- end }}
     {{- if index .Values.ingress "letsencrypt-issuer" }}
-    cert-manager.io/cluster-issuer: {{ index .Values.ingress "letsencrypt-issuer" | quote }}
+    cert-manager.io/cluster-issuer: "{{ index .Values.ingress "letsencrypt-issuer" }}"
     {{- end }}
 spec:
   ingressClassName: "nginx"
@@ -16,24 +16,24 @@ spec:
   tls:
     - hosts:
         {{- range .Values.ingress.hosts }}
-        - {{ .host | quote }}
+        - "{{ .host }}"
         {{- end }}
-      secretName: {{ (index .Values.ingress.hosts 0).host | quote }}-tls
+      secretName: "{{ (index .Values.ingress.hosts 0).host }}-tls"
   {{- end }}
   rules:
     {{- range .Values.ingress.hosts }}
-    - host: {{ .host | quote }}
+    - host: "{{ .host }}"
       http:
         paths:
           {{- range .paths }}
-          - path: {{ . | quote }}
+          - path: "{{ . }}"
             pathType: Prefix
             backend:
               service:
-                name: {{ include "app.fullname" $ }}
-                {{- if and .Values.service .Values.service "port" }}
+                name: "{{ include "app.fullname" $ }}"
+                {{- if and $.Values.service $.Values.service.port }}
                 port:
-                  number: {{ .Values.service.port }}
+                  number: {{ $.Values.service.port }}
                 {{- else }}
                 port:
                   number: 80 # Default to 80 if not specified
