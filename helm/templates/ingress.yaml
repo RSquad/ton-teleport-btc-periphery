@@ -7,16 +7,18 @@ metadata:
     {{- range $key, $value := .Values.ingress.annotations }}
     {{ $key }}: {{ $value | quote }}
     {{- end }}
-    {{- if index $root.Values $appName "letsencrypt-issuer" }}
-    cert-manager.io/cluster-issuer: {{ index $root.Values $appName "letsencrypt-issuer" }}
+    {{- if .Values.ingress.letsencrypt-issuer }}
+    cert-manager.io/cluster-issuer: {{ .Values.ingress.letsencrypt-issuer | quote }}
     {{- end }}
 spec:
   ingressClassName: "nginx"
-  {{- if index $root.Values $appName "letsencrypt-issuer" }}
+  {{- if .Values.ingress.letsencrypt-issuer }}
   tls:
     - hosts:
+        {{- range .Values.ingress.hosts }}
         - {{ .host | quote }}
-      secretName: {{ .host | quote }}-tls
+        {{- end }}
+      secretName: {{ (index .Values.ingress.hosts 0).host | quote }}-tls
   {{- end }}
   rules:
     {{- range .Values.ingress.hosts }}
@@ -30,7 +32,7 @@ spec:
               service:
                 name: {{ include "app.fullname" $ }}
                 port:
-                  number: {{ $.Values.service.port | default 80  }} # Default to 80 if not specified
+                  number: {{ $.Values.service.port | default 80 }} # Default to 80 if not specified
           {{- end }}
     {{- end }}
 {{- end }}
