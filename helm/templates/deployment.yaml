@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: {{ .Chart.Name }}
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default 'latest' }}" # Default to 'latest'
+          image: {{ .Values.image.repository }}:{{ .Values.image.tag | default "latest" }} # Default to 'latest'
           imagePullPolicy: {{ .Values.image.pullPolicy | default "IfNotPresent" }} # Default to 'IfNotPresent'
           ports:
             - containerPort: {{ .Values.container.port | default 3000 }} # Default to port 3000
