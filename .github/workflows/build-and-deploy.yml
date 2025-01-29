@@ -151,6 +151,7 @@ jobs:
             --create-namespace
             --set image.repository="$IMAGE_NAME"
             --set image.tag="$SHORT_SHA"
+            --set app.name="$APP_NAME-$STAGE"
             --timeout 5m
             -f env-values.yaml  # Include the generated env vars
           )
