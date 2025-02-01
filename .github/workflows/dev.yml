@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - develop
+      - actions
 
 jobs:
   build-and-deploy-develop-indexer:
