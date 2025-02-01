@@ -4,22 +4,16 @@ kind: Ingress
 metadata:
   name: {{ include "app.fullname" . }}
   annotations:
-    {{- range $key, $value := .Values.ingress.annotations }}
-    {{ $key }}: "{{ $value }}"
-    {{- end }}
-    {{- if index .Values.ingress "letsencrypt-issuer" }}
-    cert-manager.io/cluster-issuer: "{{ index .Values.ingress "letsencrypt-issuer" }}"
-    {{- end }}
+    kubernetes.io/ingress.class: nginx
+  cert-manager.io/cluster-issuer: "{{ .Values.ingress.letsencrypt_issuer | default "letsencrypt-prod" }}"
 spec:
   ingressClassName: "nginx"
-  {{- if index .Values.ingress "letsencrypt-issuer" }}
   tls:
     - hosts:
-        {{- range .Values.ingress.hosts }}
+      {{- range .Values.ingress.hosts }}
         - "{{ .host }}"
-        {{- end }}
+      {{- end }}
       secretName: "{{ (index .Values.ingress.hosts 0).host }}-tls"
-  {{- end }}
   rules:
     {{- range .Values.ingress.hosts }}
     - host: "{{ .host }}"
@@ -31,13 +25,8 @@ spec:
             backend:
               service:
                 name: "{{ include "app.fullname" $ }}"
-                {{- if and $.Values.service $.Values.service.port }}
                 port:
-                  number: {{ $.Values.service.port }}
-                {{- else }}
-                port:
-                  number: 80 # Default to 80 if not specified
-                {{- end }}
+                  number: {{ $.Values.service.port | default 80 }}
           {{- end }}
     {{- end }}
 {{- end }}

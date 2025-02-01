@@ -1,4 +1,4 @@
-{{- if and .Values.service .Values.service.enabled}}
+{{- if and .Values.service .Values.service.enabled }}
 apiVersion: v1
 kind: Service
 metadata:
@@ -6,10 +6,10 @@ metadata:
   labels:
     app: {{ include "app.name" . }}
 spec:
-  type: {{ .Values.service.type | default "ClusterIP" }} # Default to ClusterIP if not specified
+  type: {{ .Values.service.type | default "ClusterIP" }}
   ports:
-    - port: {{ .Values.service.port | default 80 }} # Default to 80 if not specified
-      targetPort: {{ .Values.service.targetPort | default 3000 }} # Default to 3000 if not specified
+    - port: {{ .Values.service.port | default 80 }}
+      targetPort: {{ .Values.service.targetPort | default 3000 }}
   selector:
     app: {{ include "app.name" . }}
 {{- end }}

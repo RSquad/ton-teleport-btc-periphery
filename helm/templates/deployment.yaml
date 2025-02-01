@@ -5,7 +5,7 @@ metadata:
   labels:
     app: {{ include "app.name" . }}
 spec:
-  replicas: {{ .Values.replicaCount | default 1 }} # Default to 1 replica if not specified
+  replicas: {{ .Values.replicaCount | default 1 }}
   selector:
     matchLabels:
       app: {{ include "app.name" . }}
@@ -16,38 +16,25 @@ spec:
     spec:
       containers:
         - name: {{ .Chart.Name }}
-          image: {{ .Values.image.repository }}:{{ .Values.image.tag | default "latest" }} # Default to 'latest'
-          imagePullPolicy: {{ .Values.image.pullPolicy | default "IfNotPresent" }} # Default to 'IfNotPresent'
+          image: {{ .Values.image.repository }}:{{ .Values.image.tag | default "latest" }}
+          imagePullPolicy: {{ .Values.image.pullPolicy | default "IfNotPresent" }}
+          {{- if and .Values.container .Values.container.port }}
           ports:
-            {{- if and .Values.container .Values.container "port" }}
             - containerPort: {{ .Values.container.port }}
-            {{- else }}
-            - containerPort: 3000
-            {{- end }}
+          {{- end }}
           env:
-            {{- if .Values.BaseEnvs }}
-              {{- range .Values.BaseEnvs }}
+            {{- if .Values.CommonEnvs }}
+            {{- range .Values.CommonEnvs }}
             - name: {{ .name }}
               value: "{{ .value }}"
-              {{- end }}
+            {{- end }}
             {{- end }}
             {{- if .Values.envs }}
-              {{- range .Values.envs }}
+            {{- range .Values.envs }}
             - name: {{ .name }}
               value: "{{ .value }}"
-              {{- end }}
             {{- end }}
-          {{- if or .Values.configMap .Values.secret }}
-          envFrom:
-            {{- if .Values.configMap }}
-            - configMapRef:
-                name: {{ include "app.fullname" . }}-config
             {{- end }}
-            {{- if .Values.secret }}
-            - secretRef:
-                name: {{ include "app.fullname" . }}-secret
-            {{- end }}
-          {{- end }}
       {{- if .Values.imagePullSecret }}
       imagePullSecrets:
         - name: {{ .Values.imagePullSecret.name }}

@@ -1,0 +1,33 @@
+name: Build and Deploy (multi-environment)
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build-and-deploy-prod-indexer:
+    if: github.ref == 'refs/heads/master'
+    uses: ./.github/workflows/build-and-deploy.yml
+    with:
+      APP_NAME: indexer
+      STAGE: production
+      APP_NAMESPACE: ton-teleport-prod
+      DOCKER_REGISTRY_URL: ${{ vars.DOCKER_REGISTRY_URL }}
+    secrets:
+      DOCKER_REGISTRY_USERNAME: ${{ secrets.DOCKER_REGISTRY_USERNAME }}
+      DOCKER_REGISTRY_PASSWORD: ${{ secrets.DOCKER_REGISTRY_PASSWORD }}
+      KUBE_CONFIG: ${{ secrets.PROD_KUBE_CONFIG }}
+
+  build-and-deploy-prod-relayer:
+    if: github.ref == 'refs/heads/master'
+    uses: ./.github/workflows/build-and-deploy.yml
+    with:
+      APP_NAME: relayer
+      STAGE: production
+      APP_NAMESPACE: ton-teleport-prod
+      DOCKER_REGISTRY_URL: ${{ vars.DOCKER_REGISTRY_URL }}
+    secrets:
+      DOCKER_REGISTRY_USERNAME: ${{ secrets.DOCKER_REGISTRY_USERNAME }}
+      DOCKER_REGISTRY_PASSWORD: ${{ secrets.DOCKER_REGISTRY_PASSWORD }}
+      KUBE_CONFIG: ${{ secrets.PROD_KUBE_CONFIG }}

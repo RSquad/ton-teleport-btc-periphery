@@ -1,12 +1,13 @@
 ingress:
   enabled: true
   letsencrypt-issuer: "letsencrypt-prod"
-  annotations:
-    kubernetes.io/ingress.class: nginx
   hosts:
-    - host: ton-teleport-develop.rsquad.solutions
+    - host: ton-teleport.dev.rsquad.solutions
       paths:
         - /indexer
 
 service:
   enabled: true
+
+container:
+  port: 3000
