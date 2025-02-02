@@ -58,14 +58,22 @@ jobs:
       - name: Fetch Environment Configs from ConfigMap
         shell: bash
         run: |
-          kubectl get configmap envs-config -n develop -o json > config.json
-          jq -r '.data | to_entries[] | "\(.key)=\(.value)"' config.json >> $GITHUB_ENV
+          kubectl get configmap envs-config -n $APP_NAMESPACE -o json > config.json
+          jq -r '.data | to_entries[] | select(.key | startswith("COMMON_")) | "\(.key)=\(.value)"' config.json >> $GITHUB_ENV
           echo "CommonEnvs:" > env-values.yaml
-          jq -r '.data | to_entries[] | "  - name: \(.key)\n    value: \"\(.value)\""' config.json >> env-values.yaml
+          jq -r '.data | to_entries[] | select(.key | startswith("COMMON_")) | "  - name: \(.key)\n    value: \"\(.value)\""' config.json >> env-values.yaml
+
+      - name: Fetch Docker Registry Credentials from Kubernetes Secret
+        shell: bash
+        run: |
+          secretJson=$(kubectl get secret docker-registry-creds -n $APP_NAMESPACE -o json)
+          dockerConfig=$(echo "$secretJson" | jq -r '.data[".dockerconfigjson"]' | base64 --decode)
+          DOCKER_REGISTRY_URL=$(echo "$dockerConfig" | jq -r '.auths | to_entries[0].key')
+          DOCKER_REGISTRY_USERNAME=$(echo "$dockerConfig" | jq -r '.auths | to_entries[0].value.username')
+          DOCKER_REGISTRY_PASSWORD=$(echo "$dockerConfig" | jq -r '.auths | to_entries[0].value.password')
 
       - name: Docker Login
         run: |
-          echo "Logging into Docker registry at $DOCKER_REGISTRY_URL"
           docker login "$DOCKER_REGISTRY_URL" \
             --username "$DOCKER_REGISTRY_USERNAME" \
             --password "$DOCKER_REGISTRY_PASSWORD"
@@ -74,7 +82,6 @@ jobs:
         run: |
           SHORT_SHA="${GITHUB_SHA:0:7}"
           IMAGE_NAME="$DOCKER_REGISTRY_URL/${{ inputs.APP_NAME }}-${{ inputs.STAGE }}"
-          echo "Building image: $IMAGE_NAME:$SHORT_SHA"
           docker build \
             -f $APP_NAME/Dockerfile \
             --platform linux/amd64 \
