@@ -66,11 +66,13 @@ jobs:
       - name: Fetch Docker Registry Credentials from Kubernetes Secret
         shell: bash
         run: |
-          secretJson=$(kubectl get secret docker-registry-creds -n $APP_NAMESPACE -o json)
-          dockerConfig=$(echo "$secretJson" | jq -r '.data[".dockerconfigjson"]' | base64 --decode)
+          dockerConfig=$(kubectl get secret docker-registry-creds -n $APP_NAMESPACE -o jsonpath='{.data.\.dockerconfigjson}' | base64 -d)
           DOCKER_REGISTRY_URL=$(echo "$dockerConfig" | jq -r '.auths | to_entries[0].key')
           DOCKER_REGISTRY_USERNAME=$(echo "$dockerConfig" | jq -r '.auths | to_entries[0].value.username')
           DOCKER_REGISTRY_PASSWORD=$(echo "$dockerConfig" | jq -r '.auths | to_entries[0].value.password')
+          echo "DOCKER_REGISTRY_URL=$DOCKER_REGISTRY_URL" >> $GITHUB_ENV
+          echo "DOCKER_REGISTRY_USERNAME=$DOCKER_REGISTRY_USERNAME" >> $GITHUB_ENV
+          echo "DOCKER_REGISTRY_PASSWORD=$DOCKER_REGISTRY_PASSWORD" >> $GITHUB_ENV
 
       - name: Docker Login
         run: |
