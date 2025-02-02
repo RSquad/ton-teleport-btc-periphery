@@ -14,10 +14,7 @@ jobs:
       APP_NAME: indexer
       STAGE: develop
       APP_NAMESPACE: ton-teleport-dev
-      DOCKER_REGISTRY_URL: ${{ vars.DOCKER_REGISTRY_URL }}
     secrets:
-      DOCKER_REGISTRY_USERNAME: ${{ secrets.DOCKER_REGISTRY_USERNAME }}
-      DOCKER_REGISTRY_PASSWORD: ${{ secrets.DOCKER_REGISTRY_PASSWORD }}
       KUBE_CONFIG: ${{ secrets.DEV_KUBE_CONFIG }}
 
   build-and-deploy-develop-relayer:
@@ -27,8 +24,5 @@ jobs:
       APP_NAME: relayer
       STAGE: develop
       APP_NAMESPACE: ton-teleport-dev
-      DOCKER_REGISTRY_URL: ${{ vars.DOCKER_REGISTRY_URL }}
     secrets:
-      DOCKER_REGISTRY_USERNAME: ${{ secrets.DOCKER_REGISTRY_USERNAME }}
-      DOCKER_REGISTRY_PASSWORD: ${{ secrets.DOCKER_REGISTRY_PASSWORD }}
       KUBE_CONFIG: ${{ secrets.DEV_KUBE_CONFIG }}

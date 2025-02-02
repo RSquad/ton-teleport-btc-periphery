@@ -35,7 +35,5 @@ spec:
               value: "{{ .value }}"
             {{- end }}
             {{- end }}
-      {{- if .Values.imagePullSecret }}
       imagePullSecrets:
-        - name: {{ .Values.imagePullSecret.name }}
-      {{- end }}
+        - name: docker-registry-creds
