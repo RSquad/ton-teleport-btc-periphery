@@ -62,6 +62,7 @@ jobs:
           jq -r '.data | to_entries[] | select(.key | startswith("COMMON_")) | "\(.key)=\(.value)"' config.json >> $GITHUB_ENV
           echo "CommonEnvs:" > env-values.yaml
           jq -r '.data | to_entries[] | select(.key | startswith("COMMON_")) | "  - name: \(.key)\n    value: \"\(.value)\""' config.json >> env-values.yaml
+          rm config.json
 
       - name: Fetch Docker Registry Credentials from Kubernetes Secret
         shell: bash
