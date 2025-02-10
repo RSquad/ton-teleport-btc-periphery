@@ -56,22 +56,27 @@ func (es *EventService) Work(ctx context.Context) (err error) {
 
 	dispatcher := es.createEventDispatcher(rawEventChan, tonTxWriter, eventWriter)
 
-	g, ctx := errgroup.WithContext(ctx)
+	for {
+		g, ctx := errgroup.WithContext(ctx)
 
-	g.Go(func() error {
-		return teleportContractRawEventCollector.Work(ctx)
-	})
+		g.Go(func() error {
+			return teleportContractRawEventCollector.Work(ctx)
+		})
 
-	g.Go(func() error {
-		return coordinatorContractRawEventCollector.Work(ctx)
-	})
+		g.Go(func() error {
+			return coordinatorContractRawEventCollector.Work(ctx)
+		})
 
-	g.Go(func() error {
-		return dispatcher.Work(ctx)
-	})
+		g.Go(func() error {
+			return dispatcher.Work(ctx)
+		})
 
-	if werr := g.Wait(); werr != nil {
-		return werr
+		if werr := g.Wait(); werr != nil {
+			es.logFinishWork(werr)
+			continue
+		}
+
+		break
 	}
 
 	return nil
