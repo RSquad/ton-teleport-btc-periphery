@@ -12,10 +12,13 @@ import (
 	"time"
 
 	"github.com/btcsuite/btcd/btcec/v2/schnorr"
+	"github.com/btcsuite/btcd/btcjson"
 	"github.com/btcsuite/btcd/btcutil"
 	ent "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated"
+	entburn "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated/burn"
 	entinternalkey "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated/internalkey"
 	entmint "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated/mint"
+	entpegout "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated/pegout"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/peginutils"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
 	"github.com/xssnick/tonutils-go/address"
@@ -68,14 +71,20 @@ func (r *mutationResolver) CreatePegin(ctx context.Context, input ent.CreatePegi
 		return nil, fmt.Errorf("bitcoin tx not found: %w", err)
 	}
 
-	peginBitcoinAddr, err := peginutils.CalcPeginBitcoinAddr(internalKey, recoveryKey, receiverAddr, teleportContractStorage.CsvLock)
-	if err != nil {
-		return nil, fmt.Errorf("failed to calculate pegin bitcoin address: %w", err)
+	possibleCvsLocks := []uint32{teleportContractStorage.CsvLock, 36, 29}
+
+	var vout *btcjson.Vout
+
+	for _, cvsLock := range possibleCvsLocks {
+		if peginBitcoinAddr, err := peginutils.CalcPeginBitcoinAddr(internalKey, recoveryKey, receiverAddr, cvsLock); err == nil {
+			if addrFound, voutFound := bitcoin.TxContainsOutWithAddr(bitcoinTx, peginBitcoinAddr.String()); addrFound {
+				vout = voutFound
+				break
+			}
+		}
 	}
 
-	addrFound, vout := bitcoin.TxContainsOutWithAddr(bitcoinTx, peginBitcoinAddr.String())
-
-	if !addrFound {
+	if vout == nil {
 		return nil, fmt.Errorf("calculated pegin bitcoin address not found in the bitcoin transaction")
 	}
 
@@ -121,7 +130,9 @@ func (r *mutationResolver) CreatePegin(ctx context.Context, input ent.CreatePegi
 func (r *queryResolver) Statistics(ctx context.Context) (*Statistics, error) {
 	mints, err := r.repo.Mint.
 		Query().
-		WithPegin().All(ctx)
+		WithPegin().
+		Where(entmint.StatusIn(entmint.StatusSuccess)).
+		All(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -140,7 +151,9 @@ func (r *queryResolver) Statistics(ctx context.Context) (*Statistics, error) {
 
 	uniqueMintReceiversCount := len(uniqueMintReceivers)
 
-	burns, err := r.repo.Burn.Query().All(ctx)
+	burns, err := r.repo.Burn.Query().
+		Where(entburn.HasPegoutWith(entpegout.StatusIn(entpegout.StatusConfirmed))).
+		All(ctx)
 	if err != nil {
 		return nil, err
 	}

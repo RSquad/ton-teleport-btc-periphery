@@ -10,8 +10,7 @@ import (
 type TxPartsSignatures map[string][]byte
 
 func parseTxPartsSignatureKey(keySlice *cell.Slice, keySize uint) string {
-	key := keySlice.MustLoadBigUInt(keySize)
-	return key.String()
+	return keySlice.MustLoadBigUInt(keySize).String()
 }
 
 func parseTxPartsSignatureValue(valueSlice *cell.Slice) ([]byte, error) {

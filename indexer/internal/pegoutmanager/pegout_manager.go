@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
-	"log"
 	"sort"
 	"strconv"
 	"sync"
@@ -58,7 +57,7 @@ func (c *PegoutManager) Run() {
 	const sleepDuration = 3 * time.Second
 	for {
 		if err := c.processPegouts(); err != nil {
-			log.Printf("failed to process pegouts: %v", err)
+			// log.Printf("failed to process pegouts: %v", err)
 		}
 		time.Sleep(sleepDuration)
 	}
@@ -84,7 +83,7 @@ func (c *PegoutManager) processPegouts() error {
 		go func(pegout *ent.Pegout) {
 			defer wg.Done()
 			if err := c.processPegout(block, pegout); err != nil {
-				log.Printf("failed to process pegout id=%v addr=%v: %v", pegout.ID, pegout.Addr, err)
+				// log.Printf("failed to process pegout id=%v addr=%v: %v", pegout.ID, pegout.Addr, err)
 			}
 		}(pegout)
 	}
