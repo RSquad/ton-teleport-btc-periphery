@@ -6,6 +6,7 @@ import (
 	ent "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/pegout"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/tontx"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinatorcontract"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/teleportcontract"
@@ -55,6 +56,10 @@ func (es *EventService) Work(ctx context.Context) (err error) {
 	dispatcher := es.createEventDispatcher(rawEventChan, tonTxWriter, eventWriter)
 
 	for {
+		logger.Log.Info().
+			Str("component", "EventService").
+			Msg("Run workers")
+
 		done := make(chan struct{})
 		ctx, cancel := context.WithCancel(ctx)
 
@@ -74,6 +79,10 @@ func (es *EventService) Work(ctx context.Context) (err error) {
 		}()
 
 		<-done
+
+		logger.Log.Info().
+			Str("component", "EventService").
+			Msg("Restart workers")
 
 		cancel()
 	}
