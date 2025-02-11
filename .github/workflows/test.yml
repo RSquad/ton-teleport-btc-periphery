@@ -18,15 +18,15 @@ jobs:
       - name: Set up environment variables
         env:
           ENVIRONMENT: 'actions'
-          EXPECTED_HASH: 'cf80cd8aed482d5d1527d7dc72fceff84e6326592848447d2dc0b0e87dfc9a90'
+          EXPECTED_HASH: '2b0dcdd40016096b852d9d5b79de2ad570249dc8e4d4ebe4fa4ab81e2aa9af35'
           SECRET: ${{ secrets.SECRET }}
         run: |
           echo "ENVIRONMENT=$ENVIRONMENT" >> $GITHUB_ENV
           COMPUTED_HASH=$(echo -n "$SECRET" | sha256sum | awk '{print $1}')
           if [ "$COMPUTED_HASH" = "$EXPECTED_HASH" ]; then
-              echo "result=true" >> $GITHUB_OUTPUT
+              echo "result=actions" >> $GITHUB_ENV
           else
-              echo "result=false" >> $GITHUB_OUTPUT
+              echo "result=false" >> $GITHUB_ENV
           fi
           cat $GITHUB_ENV
 
