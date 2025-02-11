@@ -22,12 +22,10 @@ jobs:
           SECRET: ${{ secrets.SECRET }}
         run: |
           echo "ENVIRONMENT=$ENVIRONMENT" >> $GITHUB_ENV
-          echo "$SECRET"
-          COMPUTED_HASH=$(echo -n "$SECRET" | sha256sum | awk '{print $1}')
-          if [ "$COMPUTED_HASH" = "$EXPECTED_HASH" ]; then
+          if [ "$SECRET" = "actions" ]; then
               echo "result=actions" >> $GITHUB_ENV
           else
-              echo "result=false" >> $GITHUB_ENV
+              echo "result=other" >> $GITHUB_ENV
           fi
           cat $GITHUB_ENV
 
