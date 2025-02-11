@@ -1,0 +1,33 @@
+name: Deploy Environments
+
+on:
+    push:
+      branches:
+        - develop
+        - actions
+
+jobs:
+  build_and_deploy:
+    runs-on: self-hosted
+    name: Build and Deploy ${{ inputs.APP_NAME }} - ${{ inputs.STAGE }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up environment variables
+        run: |
+          echo "ENVIRONMENT=$ENVIRONMENT >> $GITHUB_ENV
+          COMPUTED_HASH=$(echo -n "$SECRET" | sha256sum | awk '{print $1}')
+          if [ "$COMPUTED_HASH" = EXPECTED_HASH ]; then
+              echo "result=true" >> $GITHUB_OUTPUT
+          else
+              echo "result=false" >> $GITHUB_OUTPUT
+          fi
+          cat $GITHUB_ENV
+    with:
+      ENVIRONMENT: 'actions'
+      EXPECTED_HASH: 'cf80cd8aed482d5d1527d7dc72fceff84e6326592848447d2dc0b0e87dfc9a90'  # Hash of "development"
+    secrets:
+      SECRET: ${{ secrets.SECRET }}
+
