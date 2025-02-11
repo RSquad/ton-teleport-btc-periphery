@@ -7,10 +7,10 @@ on:
       - actions
 
 jobs:
-  build_and_deploy:
+  actions:
     runs-on: self-hosted
     name: test secrets
-
+    environment: actions
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -28,4 +28,24 @@ jobs:
               echo "result=other" >> $GITHUB_ENV
           fi
           cat $GITHUB_ENV
+  develop:
+    runs-on: self-hosted
+    name: test secrets
+    environment: develop
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
+      - name: Set up environment variables
+        env:
+          ENVIRONMENT: 'actions'
+          EXPECTED_HASH: '2b0dcdd40016096b852d9d5b79de2ad570249dc8e4d4ebe4fa4ab81e2aa9af35'
+          SECRET: ${{ secrets.SECRET }}
+        run: |
+          echo "ENVIRONMENT=$ENVIRONMENT" >> $GITHUB_ENV
+          if [ "$SECRET" = "actions" ]; then
+              echo "result=actions" >> $GITHUB_ENV
+          else
+              echo "result=other" >> $GITHUB_ENV
+          fi
+          cat $GITHUB_ENV
