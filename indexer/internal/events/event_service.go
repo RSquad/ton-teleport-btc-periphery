@@ -3,8 +3,6 @@ package events
 import (
 	"context"
 
-	"golang.org/x/sync/errgroup"
-
 	ent "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/pegout"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/tontx"
@@ -57,29 +55,28 @@ func (es *EventService) Work(ctx context.Context) (err error) {
 	dispatcher := es.createEventDispatcher(rawEventChan, tonTxWriter, eventWriter)
 
 	for {
-		g, ctx := errgroup.WithContext(ctx)
+		done := make(chan struct{})
+		ctx, cancel := context.WithCancel(ctx)
 
-		g.Go(func() error {
-			return teleportContractRawEventCollector.Work(ctx)
-		})
+		go func() {
+			defer func() { done <- struct{}{} }()
+			teleportContractRawEventCollector.Work(ctx)
+		}()
 
-		g.Go(func() error {
-			return coordinatorContractRawEventCollector.Work(ctx)
-		})
+		go func() {
+			defer func() { done <- struct{}{} }()
+			coordinatorContractRawEventCollector.Work(ctx)
+		}()
 
-		g.Go(func() error {
-			return dispatcher.Work(ctx)
-		})
+		go func() {
+			defer func() { done <- struct{}{} }()
+			dispatcher.Work(ctx)
+		}()
 
-		if werr := g.Wait(); werr != nil {
-			es.logFinishWork(werr)
-			continue
-		}
+		<-done
 
-		break
+		cancel()
 	}
-
-	return nil
 }
 
 func (es *EventService) createRawEventCollector(
