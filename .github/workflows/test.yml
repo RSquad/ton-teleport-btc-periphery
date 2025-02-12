@@ -17,7 +17,7 @@ jobs:
 
       - name: Set up environment variables
         env:
-          SECRET: ${{ secrets.SECRET }}
+          SECRET: ${{ secrets.KUBE_CONFIG }}
         run: |
           if [ "$SECRET" = "actions" ]; then
               echo "result=a c t i o n s" >> $GITHUB_ENV
@@ -35,7 +35,7 @@ jobs:
 
       - name: Set up environment variables
         env:
-          SECRET: ${{ secrets.SECRET }}
+          SECRET: ${{ secrets.KUBE_CONFIG }}
         run: |
           if [ "$SECRET" = "actions" ]; then
               echo "result=actions" >> $GITHUB_ENV
