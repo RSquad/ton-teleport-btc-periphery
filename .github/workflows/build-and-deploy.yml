@@ -76,12 +76,13 @@ jobs:
           if kubectl get secret "$SECRET_NAME" -n "${{ inputs.APP_NAMESPACE }}" &>/dev/null; then
             echo "Found secret: $SECRET_NAME"
             kubectl get secret "$SECRET_NAME" -n "${{ inputs.APP_NAMESPACE }}" -o json > secrets.json
+            secretName=$(jq -r '.metadata.name' secrets.json)
             echo "SecretEnvs:" > secrets-values.yaml
-            jq -r '.data
+            jq -r --arg sname "$secretName" '
+              .data
               | to_entries[]
-              | "  - name: \(.key)\n    valueFrom:\n      secretKeyRef:\n        name: \"'$SECRET_NAME'\"\n        key: \(.key)"' secrets.json >> secrets-values.yaml
-            rm secrets.json
-            cat secrets-values.yaml
+              | "  - name: \(.key)\n    valueFrom:\n      secretKeyRef:\n        name: \"\($sname)\"\n        key: \(.key)"
+            ' secrets.json >> secrets-values.yaml
           else
             echo "No secret found with name: $SECRET_NAME. Skipping secret injection."
             # Create an empty file so Helm won't fail

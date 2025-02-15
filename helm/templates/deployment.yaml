@@ -36,7 +36,7 @@ spec:
             {{- end }}
             {{- end }}
             {{- if .Values.SecretEnvs }}
-            {{ toYaml .Values.SecretEnvs | indent 4 }}
+            {{ toYaml .Values.SecretEnvs | indent 10 }}
             {{- end }}
 
       imagePullSecrets:
