@@ -19,7 +19,6 @@ on:
 jobs:
   build_and_deploy:
     runs-on: self-hosted
-    environment: ${{ inputs.STAGE }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3

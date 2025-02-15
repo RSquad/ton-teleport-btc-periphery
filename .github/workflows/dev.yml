@@ -9,6 +9,7 @@ on:
 jobs:
   build-and-deploy-develop-indexer:
     if: ${{ github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/actions' }}
+    environment: develop
     uses: ./.github/workflows/build-and-deploy.yml
     with:
       APP_NAME: indexer
@@ -17,6 +18,7 @@ jobs:
 
   build-and-deploy-develop-relayer:
     if: ${{ github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/actions' }}
+    environment: develop
     uses: ./.github/workflows/build-and-deploy.yml
     with:
       APP_NAME: relayer
