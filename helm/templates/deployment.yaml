@@ -35,5 +35,9 @@ spec:
               value: "{{ .value }}"
             {{- end }}
             {{- end }}
+            {{- if .Values.SecretEnvs }}
+            {{ toYaml .Values.SecretEnvs | indent 4 }}
+            {{- end }}
+
       imagePullSecrets:
         - name: docker-registry-creds
