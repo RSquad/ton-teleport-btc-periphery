@@ -43,6 +43,7 @@ jobs:
         shell: bash
         run: |
           echo "$KUBE_CONFIG" > "$(pwd)/kubeconfig.yaml"
+          ls -la $(pwd)
           echo "KUBECONFIG=$(pwd)/kubeconfig.yaml" >> $GITHUB_ENV
           CONTEXT_COUNT=$(kubectl --kubeconfig=$(pwd)/kubeconfig.yaml config get-contexts -o name | wc -l)
           if [ "$CONTEXT_COUNT" -eq 1 ]; then
