@@ -88,7 +88,6 @@ jobs:
             # Create an empty file so Helm won't fail
             echo "SecretEnvs: []" > secrets-values.yaml
           fi
-          cat secrets-values.yaml
 
       - name: Fetch Docker Registry Credentials from Kubernetes Secret
         shell: bash
