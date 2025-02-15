@@ -81,6 +81,7 @@ jobs:
               | to_entries[]
               | "  - name: \(.key)\n    valueFrom:\n      secretKeyRef:\n        name: \"'$SECRET_NAME'\"\n        key: \(.key)"' secrets.json >> secrets-values.yaml
             rm secrets.json
+            cat secrets-values.yaml
           else
             echo "No secret found with name: $SECRET_NAME. Skipping secret injection."
             # Create an empty file so Helm won't fail
