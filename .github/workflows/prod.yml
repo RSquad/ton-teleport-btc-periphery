@@ -13,8 +13,6 @@ jobs:
       APP_NAME: indexer
       STAGE: production
       APP_NAMESPACE: ton-teleport-prod
-    secrets:
-      KUBE_CONFIG: ${{ secrets.PROD_KUBE_CONFIG }}
 
   build-and-deploy-prod-relayer:
     if: github.ref == 'refs/heads/master'
@@ -23,5 +21,3 @@ jobs:
       APP_NAME: relayer
       STAGE: production
       APP_NAMESPACE: ton-teleport-prod
-    secrets:
-      KUBE_CONFIG: ${{ secrets.PROD_KUBE_CONFIG }}
