@@ -19,7 +19,7 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated/migrate"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/events"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/gql"
-	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/mintmanager"
+	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/mintservice"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/pegoutmanager"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
@@ -38,7 +38,7 @@ type App struct {
 	TeleportContract    *teleportcontract.TeleportContract
 	CoordinatorContract *coordinatorcontract.CoordinatorContract
 	PegoutManager       *pegoutmanager.PegoutManager
-	MintManager         *mintmanager.MintManager
+	MintService         *mintservice.MintService
 }
 
 func main() {
@@ -108,8 +108,7 @@ func initialize() (*App, error) {
 		log.Fatalf("failed creating repos schema: %v", err)
 	}
 
-	mintManager := mintmanager.New(
-		context.Background(),
+	mintService := mintservice.New(
 		repo,
 		bitcoinClient,
 		tonClient,
@@ -145,7 +144,7 @@ func initialize() (*App, error) {
 		TeleportContract:    teleportContract,
 		CoordinatorContract: coordinatorContract,
 		PegoutManager:       pegoutManager,
-		MintManager:         mintManager,
+		MintService:         mintService,
 		EventService:        eventService,
 	}, nil
 }
@@ -202,7 +201,7 @@ func run(app *App) error {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		app.MintManager.Run()
+		app.MintService.Work(context.Background())
 	}()
 
 	wg.Wait()

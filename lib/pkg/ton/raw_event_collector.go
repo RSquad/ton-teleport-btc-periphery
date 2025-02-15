@@ -32,7 +32,10 @@ func (ec *RawEventCollector) Work(ctx context.Context) (err error) {
 	defer ec.logFinishWork(err)
 
 	txChan := make(chan *tlb.Transaction)
-	txCollector := tonclient.NewTxCollector(ec.tonClient, ec.addr, txChan)
+	txCollector, err := tonclient.NewTxCollector(ec.tonClient, ec.addr, txChan)
+	if err != nil {
+		return err
+	}
 	eventFilter := NewRawEventFilter(txChan, ec.outChan)
 
 	g, ctx := errgroup.WithContext(ctx)

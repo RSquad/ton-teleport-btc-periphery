@@ -22,11 +22,11 @@ func New(configURL string) (*TonClient, error) {
 		return nil, err
 	}
 
-	api := ton.NewAPIClient(pool)
+	api := ton.NewAPIClient(pool).WithRetry(5)
 
 	return &TonClient{
 		Pool: pool,
-		API:  api,
+		API:  api.(*ton.APIClient),
 	}, nil
 }
 

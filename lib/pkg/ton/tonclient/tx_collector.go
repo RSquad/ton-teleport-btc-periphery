@@ -19,10 +19,10 @@ func NewTxCollector(
 	tonClient *TonClient,
 	addr *address.Address,
 	outChan chan<- *tlb.Transaction,
-) *TxCollector {
+) (*TxCollector, error) {
 	acc, err := tonClient.FetchAcc(addr, nil)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	txFetcher := NewTxFetcher(tonClient, addr, acc.LastTxLT, acc.LastTxHash, 64, outChan)
@@ -33,7 +33,7 @@ func NewTxCollector(
 		addr:         addr,
 		txFetcher:    txFetcher,
 		txSubscriber: txSubscriber,
-	}
+	}, nil
 }
 
 func (tc *TxCollector) Work(ctx context.Context) (err error) {

@@ -44,9 +44,9 @@ func New(
 }
 
 func NewFromStateInit(
+	ctx context.Context,
 	stateInit *StateInit,
 	tonClient *tonclient.TonClient,
-	ctx context.Context,
 ) (*PeginContract, error) {
 	initDataCell := InitDataToCell(*stateInit.InitData)
 	stateInitCell, err := tlb.ToCell(tlb.StateInit{Code: stateInit.Code, Data: initDataCell})
