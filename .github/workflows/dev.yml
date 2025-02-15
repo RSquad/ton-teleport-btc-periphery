@@ -9,18 +9,20 @@ on:
 jobs:
   build-and-deploy-develop-indexer:
     if: ${{ github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/actions' }}
-    environment: develop
     uses: ./.github/workflows/build-and-deploy.yml
     with:
       APP_NAME: indexer
       STAGE: develop
       APP_NAMESPACE: ton-teleport-dev
+    secrets:
+      KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
 
   build-and-deploy-develop-relayer:
     if: ${{ github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/actions' }}
-    environment: develop
     uses: ./.github/workflows/build-and-deploy.yml
     with:
       APP_NAME: relayer
       STAGE: develop
       APP_NAMESPACE: ton-teleport-dev
+    secrets:
+      KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}

@@ -15,21 +15,29 @@ on:
         description: 'Kubernetes namespace for the application'
         required: true
         type: string
+    secrets:
+      KUBE_CONFIG:
+        description: 'Kubeconfig for the target cluster'
+        required: true
 
 jobs:
   build_and_deploy:
     runs-on: self-hosted
+    environment: ${{ inputs.STAGE }}
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
 
       - name: Set up environment variables
+        shell: bash
         run: |
           echo "APP_NAME=${{ inputs.APP_NAME }}" >> $GITHUB_ENV
           echo "STAGE=${{ inputs.STAGE }}" >> $GITHUB_ENV
           echo "APP_NAMESPACE=${{ inputs.APP_NAMESPACE }}" >> $GITHUB_ENV
 
       - name: Setup Kubernetes Tools and Helm
+        shell: bash
         run: |
           sudo apt-get update && sudo apt-get install -y ca-certificates curl jq
           curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
@@ -38,7 +46,7 @@ jobs:
 
       - name: Configure Kubeconfig
         env:
-          KUBE_CONFIG: ${{ secrets.secret123 }}
+          KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
         shell: bash
         run: |
           echo "$KUBE_CONFIG" > "$(pwd)/kubeconfig.yaml"
@@ -83,7 +91,7 @@ jobs:
       - name: Fetch Docker Registry Credentials from Kubernetes Secret
         shell: bash
         run: |
-          dockerConfig=$(kubectl get secret docker-registry-creds -n $APP_NAMESPACE -o jsonpath='{.data.\.dockerconfigjson}' | base64 -d)
+          dockerConfig=$(kubectl get secret docker-registry-creds -n "${{ inputs.APP_NAMESPACE }}" -o jsonpath='{.data.\.dockerconfigjson}' | base64 -d)
           DOCKER_REGISTRY_URL=$(echo "$dockerConfig" | jq -r '.auths | to_entries[0].key')
           DOCKER_REGISTRY_USERNAME=$(echo "$dockerConfig" | jq -r '.auths | to_entries[0].value.username')
           DOCKER_REGISTRY_PASSWORD=$(echo "$dockerConfig" | jq -r '.auths | to_entries[0].value.password')
@@ -95,12 +103,14 @@ jobs:
           echo "DOCKER_REGISTRY_PASSWORD=$DOCKER_REGISTRY_PASSWORD" >> $GITHUB_ENV
 
       - name: Docker Login
+        shell: bash
         run: |
           docker login "$DOCKER_REGISTRY_URL" \
             --username "$DOCKER_REGISTRY_USERNAME" \
             --password "$DOCKER_REGISTRY_PASSWORD"
 
       - name: Build and Push Docker Image
+        shell: bash
         run: |
           SHORT_SHA="${GITHUB_SHA:0:7}"
           IMAGE_NAME="$DOCKER_REGISTRY_URL/${{ inputs.APP_NAME }}-${{ inputs.STAGE }}"
