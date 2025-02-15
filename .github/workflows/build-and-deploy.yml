@@ -60,6 +60,24 @@ jobs:
           jq -r '.data | to_entries[] | select(.key | startswith("COMMON_")) | "  - name: \(.key)\n    value: \"\(.value)\""' config.json >> env-values.yaml
           rm config.json
 
+      - name: Fetch App-Specific Secrets from Kubernetes
+        shell: bash
+        run: |
+          SECRET_NAME="${{ inputs.APP_NAME }}-secrets"
+          if kubectl get secret "$SECRET_NAME" -n "${{ inputs.APP_NAMESPACE }}" &>/dev/null; then
+            echo "Found secret: $SECRET_NAME"
+            kubectl get secret "$SECRET_NAME" -n "${{ inputs.APP_NAMESPACE }}" -o json > secrets.json
+            echo "SecretEnvs:" > secrets-values.yaml
+            jq -r '.data
+              | to_entries[]
+              | "  - name: \(.key)\n    valueFrom:\n      secretKeyRef:\n        name: \"'$SECRET_NAME'\"\n        key: \(.key)"' secrets.json >> secrets-values.yaml
+            rm secrets.json
+          else
+            echo "No secret found with name: $SECRET_NAME. Skipping secret injection."
+            # Create an empty file so Helm won't fail
+            echo "SecretEnvs: []" > secrets-values.yaml
+          fi
+
       - name: Fetch Docker Registry Credentials from Kubernetes Secret
         shell: bash
         run: |
@@ -109,6 +127,7 @@ jobs:
             --set app.name="${{ inputs.APP_NAME }}-${{ inputs.STAGE }}"
             --timeout 5m
             -f env-values.yaml
+            -f secrets-values.yaml
           )
 
           APP_VARS_FILE="${{ inputs.APP_NAME }}/${{ inputs.APP_NAME }}-${{ inputs.STAGE }}.yml"
