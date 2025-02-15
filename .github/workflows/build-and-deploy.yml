@@ -1,4 +1,5 @@
 name: Build and Deploy
+
 on:
   workflow_call:
     inputs:
@@ -37,9 +38,11 @@ jobs:
           curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 
       - name: Configure Kubeconfig
+        env:
+          KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
         shell: bash
         run: |
-          echo "${{ secrets.KUBE_CONFIG }}" > "$(pwd)/kubeconfig.yaml"
+          echo "$KUBE_CONFIG" > "$(pwd)/kubeconfig.yaml"
           echo "KUBECONFIG=$(pwd)/kubeconfig.yaml" >> $GITHUB_ENV
           CONTEXT_COUNT=$(kubectl --kubeconfig=$(pwd)/kubeconfig.yaml config get-contexts -o name | wc -l)
           if [ "$CONTEXT_COUNT" -eq 1 ]; then
