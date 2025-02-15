@@ -39,7 +39,7 @@ jobs:
 
       - name: Configure Kubeconfig
         env:
-          KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
+          KUBE_CONFIG: ${{ secrets.secret123 }}
         shell: bash
         run: |
           echo "$KUBE_CONFIG" > "$(pwd)/kubeconfig.yaml"
