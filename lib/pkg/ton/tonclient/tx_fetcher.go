@@ -49,7 +49,7 @@ func (tf *TxFetcher) Work(ctx context.Context) (err error) {
 	}()
 
 	for {
-		time.Sleep(150 * time.Millisecond)
+		time.Sleep(200 * time.Millisecond)
 		if cerr := tf.checkCtx(ctx); cerr != nil {
 			return cerr
 		}
@@ -100,7 +100,7 @@ func (tf *TxFetcher) handleFetchError(err error) {
 }
 
 func (tf *TxFetcher) Fetch(ctx context.Context) ([]*tlb.Transaction, error) {
-	txs, err := tf.tonClient.API.ListTransactions(ctx, tf.addr, tf.limit, tf.lt, tf.hash)
+	txs, err := tf.tonClient.API.WithRetry(3).ListTransactions(ctx, tf.addr, tf.limit, tf.lt, tf.hash)
 	if err != nil {
 		return nil, err
 	}
