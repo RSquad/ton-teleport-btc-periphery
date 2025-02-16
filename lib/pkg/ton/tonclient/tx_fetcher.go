@@ -49,28 +49,31 @@ func (tf *TxFetcher) Work(ctx context.Context) (err error) {
 	}()
 
 	for {
-		time.Sleep(200 * time.Millisecond)
-		if cerr := tf.checkCtx(ctx); cerr != nil {
-			return cerr
+		innerCtx, cancelInnerCtx := context.WithCancel(ctx)
+
+		select {
+		case <-ctx.Done():
+			cancelInnerCtx()
+			return ctx.Err()
+		default:
 		}
 
-		txs, ferr := tf.Fetch(ctx)
+		txs, ferr := tf.Fetch(innerCtx)
 		if ferr != nil {
-			tf.handleFetchError(ferr)
+			cancelInnerCtx()
+			tf.logFetchError(ferr)
+			time.Sleep(1 * time.Second)
 			continue
 		}
 
 		if len(txs) == 0 {
+			cancelInnerCtx()
 			return nil
 		}
 
 		tf.logTxsFetched(len(txs), count+len(txs))
 
 		for _, tx := range txs {
-			if cerr := tf.checkCtx(ctx); cerr != nil {
-				return cerr
-			}
-
 			tf.outChan <- tx
 			count++
 
@@ -79,28 +82,15 @@ func (tf *TxFetcher) Work(ctx context.Context) (err error) {
 				tf.hash = tx.PrevTxHash
 			}
 			if tf.lt == 0 {
+				cancelInnerCtx()
 				return nil
 			}
 		}
 	}
 }
 
-func (tf *TxFetcher) checkCtx(ctx context.Context) error {
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	default:
-		return nil
-	}
-}
-
-func (tf *TxFetcher) handleFetchError(err error) {
-	tf.logFetchError(err)
-	time.Sleep(1 * time.Second)
-}
-
 func (tf *TxFetcher) Fetch(ctx context.Context) ([]*tlb.Transaction, error) {
-	txs, err := tf.tonClient.API.WithRetry(3).ListTransactions(ctx, tf.addr, tf.limit, tf.lt, tf.hash)
+	txs, err := tf.tonClient.API.ListTransactions(ctx, tf.addr, tf.limit, tf.lt, tf.hash)
 	if err != nil {
 		return nil, err
 	}
