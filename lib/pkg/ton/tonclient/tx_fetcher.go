@@ -49,25 +49,23 @@ func (tf *TxFetcher) Work(ctx context.Context) (err error) {
 	}()
 
 	for {
-		innerCtx, cancelInnerCtx := context.WithCancel(ctx)
-
 		select {
 		case <-ctx.Done():
-			cancelInnerCtx()
 			return ctx.Err()
 		default:
 		}
 
-		txs, ferr := tf.Fetch(innerCtx)
+		shortCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		txs, ferr := tf.Fetch(shortCtx)
+		cancel()
+
 		if ferr != nil {
-			cancelInnerCtx()
 			tf.logFetchError(ferr)
-			time.Sleep(1 * time.Second)
+			time.Sleep(500 * time.Millisecond)
 			continue
 		}
 
 		if len(txs) == 0 {
-			cancelInnerCtx()
 			return nil
 		}
 
@@ -82,7 +80,6 @@ func (tf *TxFetcher) Work(ctx context.Context) (err error) {
 				tf.hash = tx.PrevTxHash
 			}
 			if tf.lt == 0 {
-				cancelInnerCtx()
 				return nil
 			}
 		}
