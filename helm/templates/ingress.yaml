@@ -2,7 +2,7 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: {{ include "app.fullname" . }}
+  name: {{ include "app.name" . }}
   annotations:
     kubernetes.io/ingress.class: nginx
   cert-manager.io/cluster-issuer: "{{ .Values.ingress.letsencrypt_issuer | default "letsencrypt-prod" }}"
@@ -24,7 +24,7 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: "{{ include "app.fullname" $ }}"
+                name: "{{ include "app.name" $ }}"
                 port:
                   number: {{ $.Values.service.port | default 80 }}
           {{- end }}
