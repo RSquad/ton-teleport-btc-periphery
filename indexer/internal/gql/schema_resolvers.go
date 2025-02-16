@@ -6,13 +6,133 @@ package gql
 
 import (
 	"context"
+	"encoding/hex"
 	"fmt"
 	"math/big"
+	"time"
+
+	"github.com/btcsuite/btcd/btcec/v2/schnorr"
+	"github.com/btcsuite/btcd/btcjson"
+	"github.com/btcsuite/btcd/btcutil"
+	ent "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated"
+	entburn "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated/burn"
+	entinternalkey "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated/internalkey"
+	entmint "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated/mint"
+	entpegout "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated/pegout"
+	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/peginutils"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
+	"github.com/xssnick/tonutils-go/address"
 )
+
+// CreatePegin is the resolver for the createPegin field.
+func (r *mutationResolver) CreatePegin(ctx context.Context, input ent.CreatePeginInput) (*ent.Pegin, error) {
+	recoveryKeyBytes, err := hex.DecodeString(*input.RecoveryKey)
+	if err != nil {
+		return nil, fmt.Errorf("invalid recovery key: %w", err)
+	}
+	recoveryKey, err := schnorr.ParsePubKey(recoveryKeyBytes)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse recovery key: %w", err)
+	}
+
+	internalKeyBytes, err := hex.DecodeString(*input.InternalKey)
+	if err != nil {
+		return nil, fmt.Errorf("invalid internal key: %w", err)
+	}
+	internalKey, err := schnorr.ParsePubKey(internalKeyBytes)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse internal key: %w", err)
+	}
+
+	receiverAddr, err := address.ParseRawAddr(input.ReceiverAddr)
+	if err != nil {
+		return nil, fmt.Errorf("invalid receiver address: %w", err)
+	}
+
+	teleportContractStorage, err := r.teleportContract.GetStorage(nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get teleport contract storage: %w", err)
+	}
+
+	repo := ent.FromContext(ctx)
+
+	peginExists, err := r.peginExists(ctx, input.BitcoinTxID)
+	if peginExists {
+		return nil, fmt.Errorf("pegin with the same bitcoin tx id already exists: %w", err)
+	}
+
+	internalKeyModel, err := r.findInternalKey(ctx, *input.InternalKey)
+	if err != nil {
+		return nil, fmt.Errorf("internal key not found: %w", err)
+	}
+
+	bitcoinTxExists, bitcoinTx, err := r.bitcoinTxExists(input.BitcoinTxID)
+	if !bitcoinTxExists {
+		return nil, fmt.Errorf("bitcoin tx not found: %w", err)
+	}
+
+	possibleCvsLocks := []uint32{teleportContractStorage.CsvLock, 36, 29}
+
+	var vout *btcjson.Vout
+
+	for _, cvsLock := range possibleCvsLocks {
+		if peginBitcoinAddr, err := peginutils.CalcPeginBitcoinAddr(internalKey, recoveryKey, receiverAddr, cvsLock); err == nil {
+			if addrFound, voutFound := bitcoin.TxContainsOutWithAddr(bitcoinTx, peginBitcoinAddr.String()); addrFound {
+				vout = voutFound
+				break
+			}
+		}
+	}
+
+	if vout == nil {
+		return nil, fmt.Errorf("calculated pegin bitcoin address not found in the bitcoin transaction")
+	}
+
+	amount, err := btcutil.NewAmount(vout.Value)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert vout value to btcutil.Amount: %w", err)
+	}
+
+	mintCreateAt := time.Now()
+
+	if bitcoinTx.Time != 0 {
+		mintCreateAt = time.Unix(bitcoinTx.Time, 0)
+	}
+
+	mintCreate := repo.Mint.Create().
+		SetAmount(fmt.Sprintf("%d", amount)).
+		SetCreatedAt(mintCreateAt)
+
+	if amount.ToUnit(btcutil.AmountSatoshi) < float64(teleportContractStorage.Limits.MinPeginAmount) {
+		mintCreate.SetStatus(entmint.StatusRefund)
+	}
+
+	latestInternalKey, err := repo.InternalKey.Query().
+		Order(ent.Desc(entinternalkey.FieldCompletedAt)).
+		First(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query latest internal key: %w", err)
+	}
+
+	if !internalKeyModel.CompletedAt.Equal(latestInternalKey.CompletedAt) {
+		mintCreate.SetStatus(entmint.StatusRefund)
+	}
+
+	mint, err := mintCreate.Save(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return repo.Pegin.Create().SetInput(input).SetMint(mint).SetVoutIndex(int(vout.N)).Save(ctx)
+}
 
 // Statistics is the resolver for the statistics field.
 func (r *queryResolver) Statistics(ctx context.Context) (*Statistics, error) {
-	mints, err := r.repo.Mint.Query().All(ctx)
+	mints, err := r.repo.Mint.
+		Query().
+		WithPegin().
+		Where(entmint.StatusIn(entmint.StatusSuccess)).
+		All(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -26,12 +146,14 @@ func (r *queryResolver) Statistics(ctx context.Context) (*Statistics, error) {
 			return nil, fmt.Errorf("invalid amount: %s", mint.Amount)
 		}
 		totalMintAmount.Add(totalMintAmount, amount)
-		uniqueMintReceivers[mint.ReceiverAddr] = struct{}{}
+		uniqueMintReceivers[mint.Edges.Pegin.ReceiverAddr] = struct{}{}
 	}
 
 	uniqueMintReceiversCount := len(uniqueMintReceivers)
 
-	burns, err := r.repo.Burn.Query().All(ctx)
+	burns, err := r.repo.Burn.Query().
+		Where(entburn.HasPegoutWith(entpegout.StatusIn(entpegout.StatusConfirmed))).
+		All(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -60,3 +182,8 @@ func (r *queryResolver) Statistics(ctx context.Context) (*Statistics, error) {
 		UniqueBurnSendersCount:   uniqueBurnSendersCount,
 	}, nil
 }
+
+// Mutation returns MutationResolver implementation.
+func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
+
+type mutationResolver struct{ *Resolver }

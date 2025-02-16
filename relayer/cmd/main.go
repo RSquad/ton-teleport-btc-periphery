@@ -13,7 +13,7 @@ import (
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
 	jwv4r2contract "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/jw_v4r2_contract"
-	tonclient "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/ton_client"
+	tonclient "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
 	"github.com/rsquad/ton-teleport-btc-periphery/relayer/internal/config"
 	relayerfactory "github.com/rsquad/ton-teleport-btc-periphery/relayer/internal/relayer_factory"
@@ -50,7 +50,7 @@ func initialize() (*App, error) {
 		log.Fatalf("[App] Failed to load env: %v", err)
 	}
 
-	tonClient, err := tonclient.NewTonClient(relayerConfig.TonConfigUrl)
+	tonClient, err := tonclient.New(relayerConfig.TonConfigUrl)
 	if err != nil {
 		return nil, fmt.Errorf("[App] failed to create ton client: %w", err)
 	}

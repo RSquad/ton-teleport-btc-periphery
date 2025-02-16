@@ -14,31 +14,27 @@ type Burn struct {
 
 func (Burn) Fields() []ent.Field {
 	return []ent.Field{
-		field.Int64("externalId").
+		field.Int64("external_id").
 			Unique().
-			Immutable().
-			Annotations(entgql.MapsTo("externalId")),
-		field.Text("senderAddr").
+			Immutable(),
+		field.Text("sender_addr").
 			NotEmpty().
-			Immutable().
-			Annotations(entgql.MapsTo("senderAddr")),
+			Immutable(),
 		field.Text("amount").
 			NotEmpty().
 			Immutable(),
-		field.Text("bitcoinScript").
+		field.Text("bitcoin_script").
 			NotEmpty().
-			Immutable().
-			Annotations(entgql.MapsTo("bitcoinScript")),
+			Immutable(),
 	}
 }
 
 func (Burn) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("tonMsg", TonMsg.Type).
+		edge.From("ton_tx", TonTx.Type).
 			Ref("burn").
 			Unique().
-			Required().
-			Annotations(entgql.MapsTo("tonMsg")),
+			Required(),
 		edge.From("pegout", Pegout.Type).
 			Ref("burn").
 			Unique().
@@ -50,6 +46,5 @@ func (Burn) Annotations() []schema.Annotation {
 	return []schema.Annotation{
 		entgql.RelayConnection(),
 		entgql.QueryField(),
-		entgql.Mutations(entgql.MutationCreate()),
 	}
 }

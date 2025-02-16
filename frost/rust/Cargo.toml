@@ -1,0 +1,16 @@
+[package]
+name = "frost"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["staticlib"]
+name = "frost"
+
+[dependencies]
+libc = "0.2.2"
+rand = "0.8.5"
+frost-core = { git = "https://github.com/conduition/frost", branch = "add-secp256k1-tr" }
+frost-secp256k1-tr = { git = "https://github.com/conduition/frost", branch = "add-secp256k1-tr", features = [
+    "serde",
+] }

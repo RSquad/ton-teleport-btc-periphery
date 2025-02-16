@@ -9,6 +9,9 @@ if [ -n "$FILES" ]; then
 
     git add "$file"
   done
+
+  echo "Running Go tests..."
+  go test $(go list ./... | grep -v generated)
 else
   echo "No Go files to format."
 fi
