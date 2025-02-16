@@ -5,7 +5,7 @@ metadata:
   name: {{ include "app.name" . }}
   annotations:
     kubernetes.io/ingress.class: nginx
-  cert-manager.io/cluster-issuer: "{{ .Values.ingress.letsencrypt_issuer | default "letsencrypt-prod" }}"
+    cert-manager.io/cluster-issuer: "{{ .Values.ingress.letsencrypt_issuer | default "letsencrypt-prod" }}"
 spec:
   ingressClassName: "nginx"
   tls:
