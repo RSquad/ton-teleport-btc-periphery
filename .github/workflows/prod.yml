@@ -6,7 +6,7 @@ on:
       - master
 
 jobs:
-  build-and-deploy-prod-indexer:
+  indexer-prod:
     if: github.ref == 'refs/heads/master'
     uses: ./.github/workflows/build-and-deploy.yml
     with:
@@ -16,7 +16,7 @@ jobs:
     secrets:
       KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
 
-  build-and-deploy-prod-relayer:
+  relayer-prod:
     if: github.ref == 'refs/heads/master'
     uses: ./.github/workflows/build-and-deploy.yml
     with:

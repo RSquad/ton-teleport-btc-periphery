@@ -1,14 +1,13 @@
-name: Build and Deploy (multi-environment)
+name: Build and Deploy
 
 on:
   push:
     branches:
       - develop
-      - actions
 
 jobs:
-  build-and-deploy-develop-indexer:
-    if: ${{ github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/actions' }}
+  indexer-develop:
+    if: github.ref == 'refs/heads/develop'
     uses: ./.github/workflows/build-and-deploy.yml
     with:
       APP_NAME: indexer
@@ -17,8 +16,8 @@ jobs:
     secrets:
       KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
 
-  build-and-deploy-develop-relayer:
-    if: ${{ github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/actions' }}
+  relayer-develop:
+    if: github.ref == 'refs/heads/develop'
     uses: ./.github/workflows/build-and-deploy.yml
     with:
       APP_NAME: relayer
