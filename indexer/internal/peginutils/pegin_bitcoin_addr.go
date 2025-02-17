@@ -7,6 +7,7 @@ import (
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
 	"github.com/xssnick/tonutils-go/address"
 )
 
@@ -22,7 +23,7 @@ func buildCSVScript(recoveryKey *btcec.PublicKey, csvLock uint32) ([]byte, error
 		AddInt64(int64((1 << 22) | csvLock)).
 		AddOp(txscript.OP_CHECKSEQUENCEVERIFY).
 		AddOp(txscript.OP_DROP).
-		AddData(recoveryKey.X().Bytes()).
+		AddData(utils.BytesPadTo(recoveryKey.X().Bytes(), 32)).
 		AddOp(txscript.OP_CHECKSIG).
 		Script()
 }
