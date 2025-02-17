@@ -1,0 +1,32 @@
+{{- if and .Values.ingress .Values.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "app.name" . }}
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: "{{ .Values.ingress.letsencrypt_issuer | default "letsencrypt-prod" }}"
+spec:
+  ingressClassName: "nginx"
+  tls:
+    - hosts:
+      {{- range .Values.ingress.hosts }}
+        - "{{ .host }}"
+      {{- end }}
+      secretName: "{{ (index .Values.ingress.hosts 0).host }}-tls"
+  rules:
+    {{- range .Values.ingress.hosts }}
+    - host: "{{ .host }}"
+      http:
+        paths:
+          {{- range .paths }}
+          - path: "{{ . }}"
+            pathType: Prefix
+            backend:
+              service:
+                name: "{{ include "app.name" $ }}"
+                port:
+                  number: {{ $.Values.service.port | default 80 }}
+          {{- end }}
+    {{- end }}
+{{- end }}

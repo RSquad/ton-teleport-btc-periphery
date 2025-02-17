@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "app.name" . }}
+  labels:
+    app: {{ include "app.name" . }}
+spec:
+  replicas: {{ .Values.replicaCount | default 1 }}
+  selector:
+    matchLabels:
+      app: {{ include "app.name" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "app.name" . }}
+    spec:
+      containers:
+        - name: {{ .Chart.Name }}
+          image: {{ .Values.image.repository }}:{{ .Values.image.tag | default "latest" }}
+          imagePullPolicy: {{ .Values.image.pullPolicy | default "IfNotPresent" }}
+          {{- if and .Values.container .Values.container.port }}
+          ports:
+            - containerPort: {{ .Values.container.port }}
+          {{- end }}
+          env:
+            {{- if .Values.CommonEnvs }}
+            {{- range .Values.CommonEnvs }}
+            - name: {{ .name }}
+              value: "{{ .value }}"
+            {{- end }}
+            {{- end }}
+            {{- if .Values.envs }}
+            {{- range .Values.envs }}
+            - name: {{ .name }}
+              value: "{{ .value }}"
+            {{- end }}
+            {{- end }}
+            {{- if .Values.SecretEnvs }}
+            {{ toYaml .Values.SecretEnvs | nindent 12 }}
+            {{- end }}
+      imagePullSecrets:
+        - name: docker-registry-creds
