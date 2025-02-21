@@ -24,6 +24,8 @@ import (
 	"github.com/xssnick/tonutils-go/ton"
 )
 
+const RBF_SEQUENCE uint32 = 0xFFFFFFFD
+
 type PegoutManager struct {
 	ctx              context.Context
 	repo             *ent.Client
@@ -229,6 +231,7 @@ func (c *PegoutManager) buildPegoutTx(txParts *pegoutcontract.TxParts) (*wire.Ms
 			Hash:  *hash,
 			Index: uint32(input.Index),
 		}, nil, nil)
+		txIn.Sequence = RBF_SEQUENCE
 		packet.UnsignedTx.AddTxIn(txIn)
 
 		pInput := psbt.PInput{
