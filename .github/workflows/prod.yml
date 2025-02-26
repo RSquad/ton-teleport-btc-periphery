@@ -1,0 +1,27 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  indexer-prod:
+    if: github.ref == 'refs/heads/master'
+    uses: ./.github/workflows/build-and-deploy.yml
+    with:
+      APP_NAME: indexer
+      STAGE: production
+      APP_NAMESPACE: ton-teleport-prod
+    secrets:
+      KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
+
+  relayer-prod:
+    if: github.ref == 'refs/heads/master'
+    uses: ./.github/workflows/build-and-deploy.yml
+    with:
+      APP_NAME: relayer
+      STAGE: production
+      APP_NAMESPACE: ton-teleport-prod
+    secrets:
+      KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
