@@ -138,7 +138,9 @@ jobs:
             --set image.repository="$IMAGE_NAME"
             --set image.tag="$SHORT_SHA"
             --set app.name="${{ inputs.APP_NAME }}-${{ inputs.STAGE }}"
+            --atomic
             --timeout 5m
+            --history-max 2
             -f env-values.yaml
             -f secrets-values.yaml
           )
