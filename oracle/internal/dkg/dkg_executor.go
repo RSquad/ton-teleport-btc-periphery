@@ -8,7 +8,6 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/frost"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinatorcontract"
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinatorcontract/"
 )
 
 type Executor struct {
@@ -62,13 +61,13 @@ func (e *Executor) executeR1(dkg *coordinatorcontract.DKG, validatorIdx uint16, 
 	}
 
 	// TODO: store local part1Result while it no sended to coordinator
-	part1Result, sp, err := frost.DkgPart1(identifier, uint16(math.Floor(float64(dkg.MaxSigners)*2/3)), uint16(dkg.MaxSigners))
+	part1Result, _, err := frost.DkgPart1(identifier, uint16(math.Floor(float64(dkg.MaxSigners)*2/3)), uint16(dkg.MaxSigners))
 	if err != nil {
 		return
 	}
 
 	// TODO: add imports for correct call SendRound1 method
-	res, err := coordinatorcontract.SendRound1(
+	coordinatorcontract.SendRound1(
 		coordinatorcontract.DefaultDGKTTL,
 		validatorIdx,
 		identifier,
