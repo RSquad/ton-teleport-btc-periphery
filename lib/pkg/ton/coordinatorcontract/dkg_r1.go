@@ -16,3 +16,7 @@ func NewDKGR1(d *cell.Dictionary, p *DKGRoundState) (*DKGR1, error) {
 	pkg, err := NewDKGPkgs(d)
 	return &DKGR1{mask: p.mask, count: p.count, pkgs: pkg}, err
 }
+
+func (d *DKGR1) GetPkgs() *DKGPkgs {
+	return d.pkgs
+}

@@ -21,3 +21,7 @@ func NewDKGPkgs(dict *cell.Dictionary) (*DKGPkgs, error) {
 
 	return (*DKGPkgs)(result), err
 }
+
+func (p *DKGPkgs) Get(key string) []byte {
+	return (*p)[key]
+}
