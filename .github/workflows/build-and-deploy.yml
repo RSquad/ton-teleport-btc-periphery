@@ -63,7 +63,7 @@ jobs:
       - name: Fetch Environment Configs from ConfigMap
         shell: bash
         run: |
-          kubectl get configmap envs-config -n -n "${{ inputs.APP_NAMESPACE }}" -o json > config.json
+          kubectl get configmap envs-config -n "${{ inputs.APP_NAMESPACE }}" -o json > config.json
           jq -r '.data | to_entries[] | select(.key | startswith("COMMON_")) | "\(.key)=\(.value)"' config.json >> $GITHUB_ENV
           echo "CommonEnvs:" > env-values.yaml
           jq -r '.data | to_entries[] | select(.key | startswith("COMMON_")) | "  - name: \(.key)\n    value: \"\(.value)\""' config.json >> env-values.yaml
