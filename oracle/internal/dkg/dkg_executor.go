@@ -123,7 +123,7 @@ func (e *Executor) executeR2(dkg *coordinatorcontract.DKG, validatorIdx uint16, 
 				continue
 			}
 
-			r1Pkgs[frost.Identifier([]byte(ident))] = frost.Package(pkg)
+			r1Pkgs[frost.Identifier([]byte(ident))] = frost.NewPackage(pkg)
 		}
 
 		pkgs, r2Secret, err := frost.DkgPart2(e.frostState.r1.secret, r1Pkgs)
@@ -141,8 +141,8 @@ func (e *Executor) executeR2(dkg *coordinatorcontract.DKG, validatorIdx uint16, 
 			int64(coordinatorcontract.DefaultDGKTTL),
 			validatorIdx,
 			identifier,
-			[]byte(identifierTo),
-			e.frostState.r2.pkgs[identifierTo].buf,
+			frost.IdentifierToBytes(identifierTo),
+			frost.PackageToBytes(e.frostState.r2.pkgs[identifierTo]),
 		)
 	}
 }

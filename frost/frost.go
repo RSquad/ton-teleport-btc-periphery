@@ -27,8 +27,20 @@ type Pkg struct {
 	len        C.int
 }
 
+func NewPackage(buf []byte) Package {
+	return Package{buf: buf}
+}
+
+func IdentifierToBytes(ident Identifier) []byte {
+	return ident[:]
+}
+
 func newBuffer(p unsafe.Pointer, len int) C.Buffer {
 	return C.Buffer{(*C.uint8_t)(p), C.size_t(len)}
+}
+
+func PackageToBytes(p Package) []byte {
+	return p.buf
 }
 
 func newEmptyBuffer() C.Buffer {
