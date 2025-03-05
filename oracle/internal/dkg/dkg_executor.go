@@ -10,10 +10,32 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinatorcontract"
 )
 
+type r1Step struct {
+	pkg    []byte
+	secret uintptr
+}
+
+type r2Step struct {
+	pkgs   map[frost.Identifier]frost.Package
+	secret uintptr
+}
+
+type r3Step struct {
+	pkg    []byte
+	secret uintptr
+}
+
+type ExecutorState struct {
+	r1 *r1Step
+	r2 *r2Step
+	r3 *r3Step
+}
+
 type Executor struct {
 	inChan              chan *coordinatorcontract.DKG
 	until               time.Time
 	coordinatorContract *coordinatorcontract.CoordinatorContract
+	frostState          *ExecutorState
 }
 
 func NewExecutor(inChan chan *coordinatorcontract.DKG, coordinatorContract *coordinatorcontract.CoordinatorContract) *Executor {
@@ -21,6 +43,7 @@ func NewExecutor(inChan chan *coordinatorcontract.DKG, coordinatorContract *coor
 		inChan:              inChan,
 		until:               time.Unix(0, 0),
 		coordinatorContract: coordinatorContract,
+		frostState:          &ExecutorState{},
 	}
 }
 
@@ -65,19 +88,22 @@ func (e *Executor) executeR1(dkg *coordinatorcontract.DKG, validatorIdx uint16, 
 		return
 	}
 
-	// TODO: store local part1Result while it no sended to coordinator
-	part1Result, r1Secret, err := frost.DkgPart1(identifier, uint16(math.Floor(float64(dkg.MaxSigners)*2/3)), uint16(dkg.MaxSigners))
-	if err != nil {
-		return
+	if e.frostState.r1 == nil {
+		part1Result, r1Secret, err := frost.DkgPart1(identifier, uint16(math.Floor(float64(dkg.MaxSigners)*2/3)), uint16(dkg.MaxSigners))
+		if err != nil {
+			return
+		}
+		e.frostState.r1 = &r1Step{
+			pkg:    part1Result,
+			secret: r1Secret,
+		}
 	}
-
-	// TODO: store part1Result (package), r1Secret
 
 	e.coordinatorContract.SendRound1(
 		int64(coordinatorcontract.DefaultDGKTTL),
 		validatorIdx,
 		identifier,
-		part1Result,
+		e.frostState.r1.pkg,
 	)
 }
 
@@ -88,21 +114,26 @@ func (e *Executor) executeR2(dkg *coordinatorcontract.DKG, validatorIdx uint16, 
 		return
 	}
 
-	// part2Result, r2Secret, err := frost.DkgPart2(r1Secret, r1Pkgs)
-
-	// if err != nil {
-	// 	return
+	// if e.frostState.r2 == nil {
+	// 	// collect r1 packages, except pkg from this oracle and run dkg part2
+	// 	// r1Pkgs := map[frost.Identifier]frost.Package
+	// 	pkgs, r2Secret, err := frost.DkgPart2(e.frostState.r1.secret, r1Pkgs)
+	// 	if err != nil {
+	// 		return
+	// 	}
+	// 	e.frostState.r2 = &r2Step{
+	// 		pkgs:   pkgs,
+	// 		secret: r2Secret,
+	// 	}
 	// }
 
-	// TODO: store part2Result (packages), r2Secret
-
-	// for ident := range part2Result {
+	// for identifierTo := range e.frostState.r2.pkgs {
 	// 	e.coordinatorContract.SendRound2(
 	// 		int64(coordinatorcontract.DefaultDGKTTL),
 	// 		validatorIdx,
 	// 		identifier,
-	// 		ident,
-	// 		part2Result[ident],
+	// 		[]byte(identifierTo),
+	// 		e.frostState.r2.pkgs[identifierTo].buf,
 	// 	)
 	// }
 }
@@ -114,17 +145,13 @@ func (e *Executor) executeR3(dkg *coordinatorcontract.DKG, validatorIdx uint16, 
 		return
 	}
 
-	packages := dkg.R1.GetPkgs()
-	if packages.Get(string(identifier)) != nil {
-		return
+	if e.frostState.r3 == nil {
+		// TODO: get r1 and r2 packages from coordinator
+		// keyPackage, publicKeyPackage, err := frost.DkgPart3(e.frostState.r2.secret, r1Packages, r2Packages)
+		// if err != nil {
+		// 	return
+		// }
 	}
-
-	// keyPackage, publicKeyPackage, err := frost.DkgPart3(r2Secret, r1Packages, r2Packages)
-	// if err != nil {
-	// 	return
-	// }
-
-	// // TODO: store keyPackage publicKeyPackage
 
 	// e.coordinatorContract.SendPubkeyPackage(
 	// 	int64(coordinatorcontract.DefaultDGKTTL),
