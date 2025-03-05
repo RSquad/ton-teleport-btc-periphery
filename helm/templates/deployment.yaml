@@ -22,21 +22,16 @@ spec:
           ports:
             - containerPort: {{ .Values.container.port }}
           {{- end }}
-          env:
-            {{- if .Values.CommonEnvs }}
-            {{- range .Values.CommonEnvs }}
-            - name: {{ .name }}
-              value: "{{ .value }}"
+          {{- if or .Values.configMapName .Values.secretName }}
+          envFrom:
+            {{- if .Values.configMapName }}
+            - configMapRef:
+                name: {{ .Values.configMapName }}
             {{- end }}
+            {{- if .Values.secretName }}
+            - secretRef:
+                name: {{ .Values.secretName }}
             {{- end }}
-            {{- if .Values.envs }}
-            {{- range .Values.envs }}
-            - name: {{ .name }}
-              value: "{{ .value }}"
-            {{- end }}
-            {{- end }}
-            {{- if .Values.SecretEnvs }}
-            {{ toYaml .Values.SecretEnvs | nindent 12 }}
-            {{- end }}
+          {{- end }}
       imagePullSecrets:
         - name: docker-registry-creds
