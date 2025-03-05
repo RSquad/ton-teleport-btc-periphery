@@ -38,3 +38,11 @@ func (e *Executor) logNewDKGStarted(dkg *coordinatorcontract.DKG) {
 		Str("dkg_until", dkg.Until.Format(time.RFC3339)).
 		Msg("New DKG started")
 }
+
+func (e *Executor) logDKGProcess(dkg *coordinatorcontract.DKG, msg string) {
+	logger.Log.Info().
+		Str("component", "DKGExecutor").
+		Str("dkg_status", dkg.Status.String()).
+		Str("dkg_until", dkg.Until.Format(time.RFC3339)).
+		Msg(msg)
+}

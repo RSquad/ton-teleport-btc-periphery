@@ -52,6 +52,63 @@ func (e *Executor) Execute(dkg *coordinatorcontract.DKG) {
 }
 
 func (e *Executor) executeR1(dkg *coordinatorcontract.DKG, validatorIdx uint16, identifier []byte) {
+	e.logDKGProcess(dkg, "Start executing R1")
+	if dkg.Status == coordinatorcontract.DKGStatusFinished ||
+		dkg.Status >= coordinatorcontract.DKGStatusPart1Finished {
+		e.logDKGProcess(dkg, "R1 completed")
+		return
+	}
+
+	packages := dkg.R1.GetPkgs()
+	if packages.Get(string(identifier)) != nil {
+		e.logDKGProcess(dkg, "R1 package already sent")
+		return
+	}
+
+	// TODO: store local part1Result while it no sended to coordinator
+	part1Result, r1Secret, err := frost.DkgPart1(identifier, uint16(math.Floor(float64(dkg.MaxSigners)*2/3)), uint16(dkg.MaxSigners))
+	if err != nil {
+		return
+	}
+
+	// TODO: store part1Result (package), r1Secret
+
+	e.coordinatorContract.SendRound1(
+		int64(coordinatorcontract.DefaultDGKTTL),
+		validatorIdx,
+		identifier,
+		part1Result,
+	)
+}
+
+func (e *Executor) executeR2(dkg *coordinatorcontract.DKG, validatorIdx uint16, identifier []byte) {
+	e.logDKGProcess(dkg, "Start executing R2")
+	if dkg.Status == coordinatorcontract.DKGStatusFinished ||
+		dkg.Status >= coordinatorcontract.DKGStatusPart2Finished {
+		return
+	}
+
+	// part2Result, r2Secret, err := frost.DkgPart2(r1Secret, r1Pkgs)
+
+	// if err != nil {
+	// 	return
+	// }
+
+	// TODO: store part2Result (packages), r2Secret
+
+	// for ident := range part2Result {
+	// 	e.coordinatorContract.SendRound2(
+	// 		int64(coordinatorcontract.DefaultDGKTTL),
+	// 		validatorIdx,
+	// 		identifier,
+	// 		ident,
+	// 		part2Result[ident],
+	// 	)
+	// }
+}
+
+func (e *Executor) executeR3(dkg *coordinatorcontract.DKG, validatorIdx uint16, identifier []byte) {
+	e.logDKGProcess(dkg, "Start executing R3")
 	if dkg.Status == coordinatorcontract.DKGStatusFinished ||
 		dkg.Status == coordinatorcontract.DKGStatusPart1Finished {
 		return
@@ -62,19 +119,18 @@ func (e *Executor) executeR1(dkg *coordinatorcontract.DKG, validatorIdx uint16, 
 		return
 	}
 
-	// TODO: store local part1Result while it no sended to coordinator
-	part1Result, _, err := frost.DkgPart1(identifier, uint16(math.Floor(float64(dkg.MaxSigners)*2/3)), uint16(dkg.MaxSigners))
-	if err != nil {
-		return
-	}
+	// keyPackage, publicKeyPackage, err := frost.DkgPart3(r2Secret, r1Packages, r2Packages)
+	// if err != nil {
+	// 	return
+	// }
 
-	// TODO: add imports for correct call SendRound1 method
-	e.coordinatorContract.SendRound1(
-		coordinatorcontract.DefaultDGKTTL,
-		validatorIdx,
-		identifier,
-		part1Result,
-	)
+	// // TODO: store keyPackage publicKeyPackage
 
-	return
+	// e.coordinatorContract.SendPubkeyPackage(
+	// 	int64(coordinatorcontract.DefaultDGKTTL),
+	// 	validatorIdx,
+	// 	keyPackage,
+	// 	identifier,
+	// 	publicKeyPackage,
+	// )
 }

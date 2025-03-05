@@ -49,3 +49,7 @@ func NewDKGR2(dict *cell.Dictionary, params *DKGRoundState) (*DKGR2, error) {
 	}
 	return &DKGR2{mask: params.mask, count: params.count, pkgs: pkgs}, nil
 }
+
+func (d *DKGR2) GetPkgs() *DKGR2Pkgs {
+	return d.pkgs
+}
