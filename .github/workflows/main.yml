@@ -13,8 +13,8 @@ jobs:
     uses: ./.github/workflows/build-and-deploy.yml
     with:
       APPS: '["indexer", "relayer"]'
-      STAGE: develop
-      APP_NAMESPACE: ton-teleport-dev
+      STAGE: sandbox
+      APP_NAMESPACE: ton-teleport-sand
     secrets:
       KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
 
