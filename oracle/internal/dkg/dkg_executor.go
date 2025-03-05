@@ -11,14 +11,16 @@ import (
 )
 
 type Executor struct {
-	inChan chan *coordinatorcontract.DKG
-	until  time.Time
+	inChan              chan *coordinatorcontract.DKG
+	until               time.Time
+	coordinatorContract *coordinatorcontract.CoordinatorContract
 }
 
-func NewExecutor(inChan chan *coordinatorcontract.DKG) *Executor {
+func NewExecutor(inChan chan *coordinatorcontract.DKG, coordinatorContract *coordinatorcontract.CoordinatorContract) *Executor {
 	return &Executor{
-		inChan: inChan,
-		until:  time.Unix(0, 0),
+		inChan:              inChan,
+		until:               time.Unix(0, 0),
+		coordinatorContract: coordinatorContract,
 	}
 }
 
@@ -67,7 +69,7 @@ func (e *Executor) executeR1(dkg *coordinatorcontract.DKG, validatorIdx uint16, 
 	}
 
 	// TODO: add imports for correct call SendRound1 method
-	coordinatorcontract.SendRound1(
+	e.coordinatorContract.SendRound1(
 		coordinatorcontract.DefaultDGKTTL,
 		validatorIdx,
 		identifier,

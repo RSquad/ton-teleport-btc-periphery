@@ -26,7 +26,7 @@ func (s *Service) Work(ctx context.Context) (err error) {
 
 	outChan := make(chan *coordinatorcontract.DKG)
 	fetcher := NewFetcher(s.coordinatorContract, outChan)
-	executor := NewExecutor(outChan)
+	executor := NewExecutor(outChan, s.coordinatorContract)
 
 	wg := sync.WaitGroup{}
 
