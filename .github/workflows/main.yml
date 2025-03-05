@@ -5,11 +5,11 @@ on:
     branches:
       - develop
       - sandbox
-      - automation
+      - actions
 
 jobs:
-  develop:
-    if: github.ref == 'refs/heads/develop'
+  actions:
+    if: github.ref == 'refs/heads/automation'
     uses: ./.github/workflows/build-and-deploy.yml
     with:
       APPS: '["indexer", "relayer"]'
@@ -18,8 +18,8 @@ jobs:
     secrets:
       KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
 
-  automation:
-    if: github.ref == 'refs/heads/automation'
+  develop:
+    if: github.ref == 'refs/heads/develop'
     uses: ./.github/workflows/build-and-deploy.yml
     with:
       APPS: '["indexer", "relayer"]'
