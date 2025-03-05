@@ -25,3 +25,7 @@ func NewDKGPkgs(dict *cell.Dictionary) (*DKGPkgs, error) {
 func (p *DKGPkgs) Get(key string) []byte {
 	return (*p)[key]
 }
+
+func (p *DKGPkgs) GetAll() map[string][]byte {
+	return map[string][]byte(*p)
+}

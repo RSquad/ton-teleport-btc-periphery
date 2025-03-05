@@ -111,37 +111,46 @@ func (e *Executor) executeR2(dkg *coordinatorcontract.DKG, validatorIdx uint16, 
 	e.logDKGProcess(dkg, "Start executing R2")
 	if dkg.Status == coordinatorcontract.DKGStatusFinished ||
 		dkg.Status >= coordinatorcontract.DKGStatusPart2Finished {
+		e.logDKGProcess(dkg, "R2 completed")
 		return
 	}
 
-	// if e.frostState.r2 == nil {
-	// 	// collect r1 packages, except pkg from this oracle and run dkg part2
-	// 	// r1Pkgs := map[frost.Identifier]frost.Package
-	// 	pkgs, r2Secret, err := frost.DkgPart2(e.frostState.r1.secret, r1Pkgs)
-	// 	if err != nil {
-	// 		return
-	// 	}
-	// 	e.frostState.r2 = &r2Step{
-	// 		pkgs:   pkgs,
-	// 		secret: r2Secret,
-	// 	}
-	// }
+	if e.frostState.r2 == nil {
+		r1Pkgs := map[frost.Identifier]frost.Package{}
 
-	// for identifierTo := range e.frostState.r2.pkgs {
-	// 	e.coordinatorContract.SendRound2(
-	// 		int64(coordinatorcontract.DefaultDGKTTL),
-	// 		validatorIdx,
-	// 		identifier,
-	// 		[]byte(identifierTo),
-	// 		e.frostState.r2.pkgs[identifierTo].buf,
-	// 	)
-	// }
+		for ident, pkg := range dkg.R1.GetPkgs().GetAll() {
+			if ident == string(identifier) {
+				continue
+			}
+
+			r1Pkgs[frost.Identifier([]byte(ident))] = frost.Package(pkg)
+		}
+
+		pkgs, r2Secret, err := frost.DkgPart2(e.frostState.r1.secret, r1Pkgs)
+		if err != nil {
+			return
+		}
+		e.frostState.r2 = &r2Step{
+			pkgs:   pkgs,
+			secret: r2Secret,
+		}
+	}
+
+	for identifierTo := range e.frostState.r2.pkgs {
+		e.coordinatorContract.SendRound2(
+			int64(coordinatorcontract.DefaultDGKTTL),
+			validatorIdx,
+			identifier,
+			[]byte(identifierTo),
+			e.frostState.r2.pkgs[identifierTo].buf,
+		)
+	}
 }
 
 func (e *Executor) executeR3(dkg *coordinatorcontract.DKG, validatorIdx uint16, identifier []byte) {
 	e.logDKGProcess(dkg, "Start executing R3")
-	if dkg.Status == coordinatorcontract.DKGStatusFinished ||
-		dkg.Status == coordinatorcontract.DKGStatusPart1Finished {
+	if dkg.Status == coordinatorcontract.DKGStatusFinished {
+		e.logDKGProcess(dkg, "R3 completed")
 		return
 	}
 
