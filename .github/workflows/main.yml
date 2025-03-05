@@ -9,7 +9,7 @@ on:
 
 jobs:
   actions:
-    if: github.ref == 'refs/heads/automation'
+    if: github.ref == 'refs/heads/actions'
     uses: ./.github/workflows/build-and-deploy.yml
     with:
       APPS: '["indexer", "relayer"]'
