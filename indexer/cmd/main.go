@@ -90,9 +90,9 @@ func initialize() (*App, error) {
 
 	coordinatorContractAddr := address.MustParseAddr(indexerConfig.CoordinatorContractAddr)
 	coordinatorContract := coordinatorcontract.New(
-		nil,
 		coordinatorContractAddr,
 		tonClient,
+		nil,
 		context.Background(),
 	)
 
