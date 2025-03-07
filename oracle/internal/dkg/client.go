@@ -1,33 +1,29 @@
 package dkg
 
-import "context"
-
-type CommitRequest struct {
-	internalKey []byte
-}
-
-type CommitResult struct {
-	Nonce       []byte
-	Commitments []byte
-}
-
-type SignRequest struct {
-	internalKey []byte
-	signPkg     []byte
-	nonce       []byte
-	merkleRoot  []byte
-}
-
-type SignResult struct{}
-
-type DkgService interface {
-	Commit(ctx context.Context, internalKey []byte) (*CommitResult, error)
-	Sign(ctx context.Context, internalKey []byte, signPkg []byte, nonce []byte, merkleRoot []byte) ([]byte, error)
-}
+import "fmt"
 
 type Client struct {
-	commitRequestCh chan *CommitRequest
-	commitResultCh  chan *CommitResult
-	signRequestCh   chan *SignRequest
-	signResultCh    chan *SignResult
+	endpoint *Endpoint
+}
+
+func CreateClient(endpoint *Endpoint) *Client {
+	return &Client{endpoint}
+}
+
+func (c *Client) Commit(internalKey []byte) ([]byte, []byte, error) {
+	c.endpoint.CommitRequestCh <- &CommitRequest{internalKey}
+	result, ok := <-c.endpoint.CommitResultCh
+	if !ok {
+		return nil, nil, fmt.Errorf("failed to read from CommitResultCh")
+	}
+	return result.Nonce, result.Commitments, nil
+}
+
+func (c *Client) Sign(internalKey []byte, signPkg []byte, nonce []byte, merkleRoot []byte) ([]byte, error) {
+	c.endpoint.SignRequestCh <- &SignRequest{internalKey, signPkg, nonce, merkleRoot}
+	result, ok := <-c.endpoint.SignResultCh
+	if !ok {
+		return nil, fmt.Errorf("failed to read from SignResultCh")
+	}
+	return result.signingShare, nil
 }

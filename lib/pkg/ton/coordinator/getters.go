@@ -5,19 +5,23 @@ import (
 	"time"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/parseddict"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/signer"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
 	"github.com/xssnick/tonutils-go/address"
 	tonutils "github.com/xssnick/tonutils-go/ton"
 	"github.com/xssnick/tonutils-go/tvm/cell"
 )
 
 const (
-	OpCodeStartDKG                = 0xe16b89c0
-	OpCodeCoordinatorRound1       = 0x0000eaea
-	OpCodeCoordinatorRound2       = 0x0000bb50
-	OpCodeCoordinatorRound3       = 0x00008bc6
-	OpCodePegOutTxSendCommitments = 0x58e40000
+	OpCodeStartDKG                    = 0xe16b89c0
+	OpCodeCoordinatorRound1           = 0x0000eaea
+	OpCodeCoordinatorRound2           = 0x0000bb50
+	OpCodeCoordinatorRound3           = 0x00008bc6
+	OpCodeCoordinatorSendCommitments  = 0x58e40000
+	OpCodeCoordinatorSendSigningShare = 0x58e40000
+	OpCodeCoordinatorSendSignature    = 0x58e40000
 )
 
 const DefaultDGKTTL = time.Minute
@@ -93,8 +97,53 @@ func (c *CoordinatorContract) GetUnsignedPegouts() ([]PegoutRecord, error) {
 	if err != nil {
 		return nil, err
 	}
-	slice := cell.BeginParse()
-	slice.MustLoadDict(64)
+	dict, err := cell.BeginParse().ToDict(64)
+	if err != nil {
+		return nil, err
+	}
+	entries, err := dict.LoadAll()
+	if err != nil {
+		return nil, err
+	}
+
+	pegouts := make([]PegoutRecord, 0, len(entries))
+	for _, kv := range entries {
+		ID := kv.Key.MustLoadUInt(64)
+		value := kv.Value.MustLoadRef()
+		CommitmentsMask := value.MustLoadSlice(256)
+		value.MustLoadUInt(16)
+		commitmentsDict := value.MustLoadDict(256)
+		Commitments := parseddict.New(
+			commitmentsDict,
+			parseddict.ParseKey,
+			func(s *cell.Slice) ([]byte, error) {
+				return utils.WriteSlicesToBuffer(s.MustLoadRef()), nil
+			},
+		)
+		SigningSharesMask := value.MustLoadSlice(256)
+		value.MustLoadUInt(16)
+		signingSharesDict := value.MustLoadDict(256)
+		SigningShares := parseddict.New(
+			signingSharesDict,
+			parseddict.ParseKey,
+			func(s *cell.Slice) (*cell.Cell, error) {
+				return s.LoadRef()
+			},
+		)
+		PegoutAddress := value.MustLoadAddr()
+		InternalKey := value.MustLoadRef().MustLoadSlice(256)
+
+		pegouts = append(pegouts, PegoutRecord{
+			ID,
+			PegoutAddress,
+			InternalKey,
+			Commitments,
+			CommitmentsMask,
+			SigningShares, // map[string]*Cell
+			SigningSharesMask,
+		})
+	}
+	return pegouts, nil
 }
 
 func parseDGKSlice(dkgSlice *cell.Slice) (*DKG, error) {

@@ -10,6 +10,11 @@ import (
 
 type Service struct {
 	coordinatorContract *coordinator.CoordinatorContract
+	endpoint            *Endpoint
+}
+
+func (s *Service) GetClient() *Client {
+	return CreateClient(s.endpoint)
 }
 
 func NewService(
@@ -17,6 +22,7 @@ func NewService(
 ) *Service {
 	return &Service{
 		coordinatorContract: coordinatorContract,
+		endpoint:            CreateEndpoint(),
 	}
 }
 
@@ -45,6 +51,24 @@ func (s *Service) Work(ctx context.Context) (err error) {
 		err = executor.Work(ctx)
 		if err != nil {
 			logger.Log.Error().Err(err).Msg("Executor failed")
+		}
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		err = executor.startCommitServer(ctx, s.endpoint)
+		if err != nil {
+			logger.Log.Error().Err(err).Msg("Commit Server failed")
+		}
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		err = executor.startSignServer(ctx, s.endpoint)
+		if err != nil {
+			logger.Log.Error().Err(err).Msg("Sign Server failed")
 		}
 	}()
 

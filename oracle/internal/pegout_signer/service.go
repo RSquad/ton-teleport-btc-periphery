@@ -3,113 +3,121 @@ package pegoutsigner
 import (
 	"context"
 	"fmt"
-	"log"
 	"math"
 	"sync"
+	"time"
 
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinatorcontract"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
 	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/cfg"
 	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/dkg"
 	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/keystore"
+	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/validator"
 )
 
 type SignService struct {
-	logger           *log.Logger
-	mu               sync.Mutex
-	dkgService       *dkg.Client
-	config           *cfg.Cfg
-	keyStore         keystore.Keystore
-	coordinator      *coordinatorcontract.CoordinatorContract
-	validatorService ValidatorService
-	ctx              context.Context
+	mu          sync.Mutex
+	dkgClient   *dkg.Client
+	config      *cfg.Cfg
+	keyStore    keystore.Keystore
+	coordinator *coordinator.CoordinatorContract
+	validator   *validator.Validator
+	ctx         context.Context
 }
 
 func NewService(
 	config *cfg.Cfg,
-	dkgService *dkg.DkgService,
+	dkgClient *dkg.Client,
 	keyStore keystore.Keystore,
-	validatorService ValidatorService,
-	coordinator *coordinatorcontract.CoordinatorContract,
+	validator *validator.Validator,
+	coordinator *coordinator.CoordinatorContract,
 	ctx context.Context,
-) (*SignService, error) {
+) *SignService {
 	return &SignService{
-		logger:           log.New(log.Writer(), "SignService: ", log.LstdFlags),
-		config:           config,
-		dkgService:       dkgService,
-		keyStore:         keyStore,
-		validatorService: validatorService,
-		coordinator:      coordinator,
-		ctx:              ctx,
-	}, nil
+		config:      config,
+		dkgClient:   dkgClient,
+		keyStore:    keyStore,
+		validator:   validator,
+		coordinator: coordinator,
+		ctx:         ctx,
+	}
+}
+
+func (s *SignService) Work() {
+	logger.DefaultLogStartWork("SignService")
+	defer logger.DefaultLogFinishWork("SignService", nil)
+
+	for {
+		s.ExecuteSign()
+		time.Sleep(3 * time.Second)
+	}
 }
 
 func (s *SignService) ExecuteSign() {
 	defer func() {
-		s.logger.Println("Cron Job completed")
+		s.logMessage("completed")
 	}()
 
-	s.logger.Println("Cron Job started")
+	s.logMessage("started")
 
 	dkg, err := s.coordinator.GetPrevDKG()
 	if err != nil {
-		s.logger.Printf("failed to get previous DKG: %w", err)
+		s.logMessage(fmt.Sprintf("failed to get previous DKG: %w", err))
 		return
 	}
 
 	if dkg == nil {
-		s.logger.Println("DKG not yet completed")
+		s.logMessage("DKG not yet completed")
 		return
 	}
 	s.execute(dkg)
 }
 
-func (s *SignService) execute(dkg *coordinatorcontract.DKG) error {
+func (s *SignService) execute(dkg *coordinator.DKG) {
 	pegoutRecords, err := s.coordinator.GetUnsignedPegouts()
 	if err != nil {
-		return fmt.Errorf("failed to get unsigned pegouts: %w", err)
+		s.logMessage(fmt.Sprintf("failed to get unsigned pegouts: %w", err))
+		return
 	}
 
 	if len(pegoutRecords) == 0 {
-		s.logger.Println("No sign requests")
-		return nil
+		s.logMessage("No sign requests")
+		return
 	}
 
-	s.logger.Printf("%d signing requests", len(pegoutRecords))
+	s.logMessage(fmt.Sprintf("%d signing requests", len(pegoutRecords)))
 
 	// Get first pegout record
-	var pegoutTxID uint64
-	var pegoutTx PegoutRecord
-	for id, tx := range pegoutRecords {
-		pegoutTxID = id
-		pegoutTx = tx
-		break
-	}
+	unsignedPegout := pegoutRecords[0]
 
-	s.logger.Printf("Processing pegout ID: %x", pegoutTxID)
-	s.logger.Printf("Pegout address: %s", pegoutTx.PegoutAddress)
+	s.logMessage(fmt.Sprintf("Processing pegout ID: %x", unsignedPegout.ID))
+	s.logMessage(fmt.Sprintf("Pegout address: %s", unsignedPegout.PegoutAddress))
 
-	valKey, err := s.validatorService.GetValidatorKey(ctx, dkg)
+	valKey, err := s.validator.GetValidatorKey(dkg)
 	if err != nil {
-		return fmt.Errorf("failed to get validator key: %w", err)
+		s.logError(fmt.Errorf("failed to get validator key: %w", err))
+		return
 	}
 
 	if valKey == nil {
-		s.logger.Printf("Oracle is not a validator. Cannot participate in signing pegout %x", pegoutTxID)
-		return nil
+		s.logError(fmt.Errorf("Oracle is not a validator. Cannot participate in signing pegout %x", unsignedPegout.ID))
+		return
 	}
 
-	if err := s.coordinator.Connect(ctx, s.validatorService.GetSigner(valKey.ValidatorID)); err != nil {
-		return fmt.Errorf("failed to connect to coordinator: %w", err)
+	if err := s.coordinator.ConnectSigner(s.validator.GetSigner(valKey.ValidatorID)); err != nil {
+		s.logError(fmt.Errorf("failed to connect to coordinator: %w", err))
+		return
 	}
 
 	minSigners := int(math.Floor(float64(dkg.MaxSigners) * 2 / 3))
 
 	// Execute signing steps
-	if err := s.doCommit(ctx, valKey, pegoutTxID, &pegoutTx, minSigners); err != nil {
-		return fmt.Errorf("commit failed: %w", err)
+	if s.doCommit(valKey, pegoutTxID, &pegoutTx, minSigners) & 
+		s.doSign(ctx, valKey, pegoutTxID, &pegoutTx, minSigners) & {
+		
 	}
 
-	if err := s.doSign(ctx, valKey, pegoutTxID, &pegoutTx, minSigners); err != nil {
+	if err :=  err != nil {
 		return fmt.Errorf("sign failed: %w", err)
 	}
 
@@ -120,37 +128,41 @@ func (s *SignService) execute(dkg *coordinatorcontract.DKG) error {
 	return nil
 }
 
-func (s *SignService) doCommit(ctx context.Context, validatorKey *ValidatorKey, pegoutID uint64, pegoutRecord *PegoutRecord, minSigners int) error {
-	s.logger.Printf("Commit pegout %x", pegoutID)
+func (s *SignService) doCommit(
+	validatorKey *validator.ValidatorKey,
+	pegoutID uint64,
+	pegoutRecord *coordinator.PegoutRecord,
+	minSigners int,
+) bool {
+	s.logCommit(pegoutID)
 	identifier := validatorKey.ValidatorKey
 
 	pegoutAddressStr := pegoutRecord.PegoutAddress.String()
 
 	if pegoutRecord.HasCommitment(identifier) {
 		if pegoutRecord.CommitmentsCount() >= minSigners {
-			s.logger.Printf("Moving to signing phase for pegout %x", pegoutID)
-			return nil
+			s.logMessage(fmt.Sprintf("Moving to signing phase for pegout %x", pegoutID))
+			return true
 		}
-		return nil
+		return false
 	}
 
-	nonce := s.keyStore.LoadTemp(fmt.Sprintf("nonce_%s", pegoutAddressStr))
-	commitments := s.keyStore.LoadTemp(fmt.Sprintf("commitments_%s", pegoutAddressStr))
+	nonce := s.keyStore.LoadNonce(pegoutAddressStr)
+	commitments := s.keyStore.LoadCommitments(pegoutAddressStr)
 
 	if nonce == nil || commitments == nil {
 		if nonce == nil && commitments == nil {
-			commitResult, err := s.dkgService.Commit(ctx, pegoutRecord.InternalKey)
+			nonce, commitments, err := s.dkgClient.Commit(pegoutRecord.InternalKey)
 			if err != nil {
 				return fmt.Errorf("failed to commit: %w", err)
 			}
 
-			nonce = commitResult.Nonce
-			commitments = commitResult.Commitments
-
-			s.keyStore.StoreTemp(fmt.Sprintf("nonce_%s", pegoutAddressStr), nonce)
-			s.keyStore.StoreTemp(fmt.Sprintf("commitments_%s", pegoutAddressStr), commitments)
+			// TODO
+			//s.keyStore.StoreNonce(pegoutAddressStr, nonce)
+			//s.keyStore.StoreCommitments(pegoutAddressStr, commitments)
 		} else {
-			return fmt.Errorf("problem with saved nonce or commitments for %s", pegoutAddressStr)
+			s.logMessage(fmt.Errorf("problem with saved nonce or commitments for %s", pegoutAddressStr))
+			return false
 		}
 	}
 
@@ -159,24 +171,30 @@ func (s *SignService) doCommit(ctx context.Context, validatorKey *ValidatorKey, 
 		ValidatorIdx: validatorKey.ValidatorIdx,
 		Identifier:   identifier,
 		Commitments:  commitments,
-		Lifetime:     30,
 	}); err != nil {
-		return fmt.Errorf("failed to send commitments: %w", err)
+		s.logMessage(fmt.Errorf("failed to send commitments: %w", err))
+		return false
 	}
 
-	s.logger.Printf("Commit sent for pegout %x", pegoutID)
-	return nil
+	s.logMessage(fmt.Sprintf("Commit sent for pegout %x", pegoutID))
+	return true
 }
 
-func (s *SignService) doSign(ctx context.Context, validatorKey *ValidatorKey, pegoutID uint64, pegoutRecord *PegoutRecord, minSigners int) error {
-	s.logger.Printf("Sign pegout %x", pegoutID)
+func (s *SignService) doSign(
+	ctx context.Context, 
+	validatorKey *ValidatorKey, 
+	pegoutID uint64, 
+	pegoutRecord *PegoutRecord, 
+	minSigners int,
+) bool {
+	s.logMessage(fmt.Sprintf("Sign pegout %x", pegoutID))
 	identifier := validatorKey.ValidatorKey
 
 	pegoutAddressStr := pegoutRecord.PegoutAddress.String()
 
 	if !pegoutRecord.HasCommitment(identifier) {
-		s.logger.Printf("Oracle didn't send commitment and cannot participate in signing for pegout %x", pegoutID)
-		return nil
+		s.logMessage(fmt.Sprintf("Oracle didn't send commitment and cannot participate in signing for pegout %x", pegoutID))
+		return false
 	}
 
 	commitsArr := make([]CommitmentPackage, 0)
@@ -194,7 +212,7 @@ func (s *SignService) doSign(ctx context.Context, validatorKey *ValidatorKey, pe
 	}
 
 	if len(signHashes) == 0 {
-		s.logger.Printf("NO signing hashes in pegout %x", pegoutID)
+		s.logMessage(fmt.Sprintf(("NO signing hashes in pegout %x", pegoutID)
 		return nil
 	}
 
@@ -245,12 +263,12 @@ func (s *SignService) doSign(ctx context.Context, validatorKey *ValidatorKey, pe
 			return fmt.Errorf("failed to send signing share: %w", err)
 		}
 
-		s.logger.Printf("Signing share sent for pegout %x", pegoutID)
+		s.logMessage(fmt.Sprintf(("Signing share sent for pegout %x", pegoutID)
 		return nil
 	}
 
 	if pegoutRecord.SigningSharesCount() >= minSigners {
-		s.logger.Printf("Moving to aggregation phase for pegout %x", pegoutID)
+		s.logMessage(fmt.Sprintf(("Moving to aggregation phase for pegout %x", pegoutID)
 		return nil
 	}
 
@@ -258,7 +276,7 @@ func (s *SignService) doSign(ctx context.Context, validatorKey *ValidatorKey, pe
 }
 
 func (s *SignService) doAggregate(ctx context.Context, validatorKey *ValidatorKey, pegoutID uint64, pegoutRecord *PegoutRecord) error {
-	s.logger.Printf("Aggregate sign shares for pegout %x", pegoutID)
+	s.logMessage(fmt.Sprintf(("Aggregate sign shares for pegout %x", pegoutID)
 	identifier := validatorKey.ValidatorKey
 
 	pegoutTxContract := s.tonService.OpenPegoutTx(pegoutRecord.PegoutAddress)
@@ -317,7 +335,7 @@ func (s *SignService) doAggregate(ctx context.Context, validatorKey *ValidatorKe
 		return fmt.Errorf("failed to send signatures: %w", err)
 	}
 
-	s.logger.Printf("Signature sent for pegout %x", pegoutID)
+	s.logMessage(fmt.Sprintf(("Signature sent for pegout %x", pegoutID)
 	return nil
 }
 

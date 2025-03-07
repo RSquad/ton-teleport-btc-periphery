@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/signer"
 	"github.com/xssnick/tonutils-go/tlb"
 	"github.com/xssnick/tonutils-go/tvm/cell"
 )
@@ -49,6 +50,22 @@ func (c *CoordinatorContract) SendPubkeyPackage(validatorIdx uint16, internalKey
 	))
 }
 
+func (c *CoordinatorContract) SendCommitments(req *CommitmentRequest) (*tlb.Transaction, error) {
+	return c.sendBodyCell(BuildSendCommitmentsBody(int64(c.ttl.Seconds()), req))
+}
+
+func (c *CoordinatorContract) SendSigningShare(req *SigningShareRequest) (*tlb.Transaction, error) {
+	return c.sendBodyCell(BuildSendSigningShareBody(int64(c.ttl.Seconds()), req))
+}
+
+func (c *CoordinatorContract) SendSignatures(req *SignaturesRequest) (*tlb.Transaction, error) {
+	return c.sendBodyCell(BuildSendSignaturesBody(int64(c.ttl.Seconds()), req))
+}
+
+func (c *CoordinatorContract) ConnectSigner(signer *signer.Signer) {
+	c.signer = signer
+}
+
 func (c *CoordinatorContract) sendBodyCell(bodyCell *cell.Cell) (*tlb.Transaction, error) {
 	msg, err := ton.BuildExtMsg(bodyCell, c.Addr, c.signer)
 	if err != nil {
@@ -56,16 +73,4 @@ func (c *CoordinatorContract) sendBodyCell(bodyCell *cell.Cell) (*tlb.Transactio
 	}
 	tx, _, _, err := c.tonClient.API.SendExternalMessageWaitTransaction(c.ctx, msg)
 	return tx, err
-}
-
-func (c *CoordinatorContract) Connect(signer interface{}) error {
-}
-
-func (c *CoordinatorContract) SendCommitments(req *CommitmentRequest) error {
-}
-
-func (c *CoordinatorContract) SendSigningShare(req *SigningShareRequest) error {
-}
-
-func (c *CoordinatorContract) SendSignatures(req *SignaturesRequest) error {
 }

@@ -10,7 +10,9 @@ import (
 type Keystore interface {
 	LoadSecret(pubkey []byte) ([]byte, error)
 	StoreSecret(pubkey []byte, secret []byte) error
-	LoadShare(pubkey []byte) ([]byte, error)
+	LoadShare(pubkey []byte) []byte
+	LoadNonce(name string) []byte
+	LoadCommitments(name string) []byte
 }
 
 type FileKeystore struct {
@@ -41,15 +43,32 @@ func (ks *FileKeystore) LoadSecret(pubkey []byte) ([]byte, error) {
 	return secret, nil
 }
 
-func (ks *FileKeystore) LoadShare(pubkey []byte) ([]byte, error) {
+func (ks *FileKeystore) LoadShare(pubkey []byte) []byte {
 	fileName := hex.EncodeToString(pubkey[:32])
 	filePath := filepath.Join(ks.rootPath, "temp", "share_"+fileName)
-
 	share, err := os.ReadFile(filePath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to load share: %w", err)
+		return nil
 	}
-	return share, nil
+	return share
+}
+
+func (ks *FileKeystore) LoadNonce(name string) []byte {
+	filePath := filepath.Join(ks.rootPath, "temp", "nonce_"+name)
+	nonce, err := os.ReadFile(filePath)
+	if err != nil {
+		return nil
+	}
+	return nonce
+}
+
+func (ks *FileKeystore) LoadCommitments(name string) []byte {
+	filePath := filepath.Join(ks.rootPath, "temp", "commitments_"+name)
+	commitments, err := os.ReadFile(filePath)
+	if err != nil {
+		return nil
+	}
+	return commitments
 }
 
 func (ks *FileKeystore) StoreSecret(pubkey []byte, secret []byte) error {
@@ -61,6 +80,5 @@ func (ks *FileKeystore) StoreSecret(pubkey []byte, secret []byte) error {
 	if err != nil {
 		return fmt.Errorf("failed to store secret: %w", err)
 	}
-
 	return nil
 }

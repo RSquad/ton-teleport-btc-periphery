@@ -56,3 +56,65 @@ func BuildSendRound3Body(ttl int64, validatorIdx uint16, internalKeyXY []byte, I
 		).
 		EndCell()
 }
+
+func BuildSendCommitmentsBody(ttl int64, req *CommitmentRequest) *cell.Cell {
+	return cell.BeginCell().
+		MustStoreUInt(OpCodeCoordinatorSendCommitments, 32).
+		MustStoreUInt(uint64(time.Now().Unix()+ttl), 32).
+		MustStoreUInt(uint64(req.ValidatorIdx), 16).
+		MustStoreRef(
+			cell.BeginCell().
+				MustStoreSlice(req.Identifier, 32).
+				MustStoreUInt(req.PegoutID, 64).
+				MustStoreRef(
+					utils.SplitBytesToCells(req.Commitments),
+				).
+				EndCell(),
+		).
+		EndCell()
+}
+
+func BuildSendSigningShareBody(ttl int64, req *SigningShareRequest) *cell.Cell {
+	dict := cell.NewDict(64)
+
+	for i, share := range req.SigningShares {
+		dict.Set(cell.BeginCell().MustStoreUInt(uint64(i), 64).EndCell(),
+			cell.BeginCell().MustStoreRef(utils.SplitBytesToCells(share)).EndCell(),
+		)
+	}
+	return cell.BeginCell().
+		MustStoreUInt(OpCodeCoordinatorSendSigningShare, 32).
+		MustStoreUInt(uint64(time.Now().Unix()+ttl), 32).
+		MustStoreUInt(uint64(req.ValidatorIdx), 16).
+		MustStoreRef(
+			cell.BeginCell().
+				MustStoreSlice(req.Identifier, 32).
+				MustStoreUInt(req.PegoutID, 64).
+				MustStoreDict(dict).
+				EndCell(),
+		).
+		EndCell()
+}
+
+func BuildSendSignaturesBody(ttl int64, req *SignaturesRequest) *cell.Cell {
+	dict := cell.NewDict(16)
+
+	for i, signature := range req.Signatures {
+		dict.Set(cell.BeginCell().MustStoreUInt(uint64(i), 64).EndCell(),
+			utils.SplitBytesToCells(signature),
+		)
+	}
+
+	return cell.BeginCell().
+		MustStoreUInt(OpCodeCoordinatorSendSignature, 32).
+		MustStoreUInt(uint64(time.Now().Unix()+ttl), 32).
+		MustStoreUInt(uint64(req.ValidatorIdx), 16).
+		MustStoreRef(
+			cell.BeginCell().
+				MustStoreSlice(req.Identifier, 32).
+				MustStoreUInt(req.PegoutID, 32).
+				MustStoreDict(dict).
+				EndCell(),
+		).
+		EndCell()
+}

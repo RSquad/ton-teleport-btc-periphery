@@ -6,13 +6,6 @@ import (
 	"fmt"
 )
 
-// ValidatorKey represents a validator's key information
-type ValidatorKey struct {
-	ValidatorID  int
-	ValidatorIdx int
-	ValidatorKey []byte
-}
-
 // CommitmentPackage represents a commitment package
 type CommitmentPackage struct {
 	Identifier string
@@ -45,11 +38,7 @@ type KeystoreService interface {
 	StoreTempArray(key string, value [][]byte)
 }
 
-// ValidatorService defines the interface for validator service
-type ValidatorService interface {
-	GetValidatorKey(ctx context.Context, dkg *DKG) (*ValidatorKey, error)
-	GetSigner(validatorID int) interface{}
-}
+// Validator defines the interface for validator service
 
 // PegoutTxContract defines the interface for pegout transaction contract
 type PegoutTxContract interface {

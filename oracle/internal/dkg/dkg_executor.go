@@ -67,6 +67,40 @@ func (e *Executor) Work(ctx context.Context) (err error) {
 	}
 }
 
+func (e *Executor) startCommitServer(ctx context.Context, endpoint *Endpoint) (err error) {
+	logger.DefaultLogStartWork("Commit Server")
+	defer logger.DefaultLogFinishWork("Commit Server", err)
+	for {
+		req, ok := <-endpoint.CommitRequestCh
+		if !ok {
+			return nil
+		}
+		Nonce, Commitments, _ := e.Commit(req.internalKey)
+		endpoint.CommitResultCh <- &CommitResult{Nonce, Commitments}
+	}
+}
+
+func (e *Executor) startSignServer(ctx context.Context, endpoint *Endpoint) (err error) {
+	logger.DefaultLogStartWork("Sign Server")
+	defer logger.DefaultLogFinishWork("Sign Server", err)
+	for {
+		req, ok := <-endpoint.SignRequestCh
+		if !ok {
+			return nil
+		}
+		signingShare, _ := e.Sign(req.internalKey)
+		endpoint.SignResultCh <- &SignResult{signingShare}
+	}
+}
+
+func (e *Executor) Sign(key []byte) ([]byte, error) {
+	panic("unimplemented")
+}
+
+func (e *Executor) Commit(key []byte) ([]byte, []byte, error) {
+	panic("unimplemented")
+}
+
 func (e *Executor) Execute(dkg *coordinator.DKG) {
 	e.logStartExecuting(dkg)
 	defer e.logFinishExecuting(dkg)

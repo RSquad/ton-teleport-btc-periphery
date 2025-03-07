@@ -3,6 +3,8 @@ package coordinator
 import (
 	"math/big"
 	"time"
+
+	"github.com/xssnick/tonutils-go/address"
 )
 
 type DKG struct {
@@ -74,23 +76,46 @@ type CommitmentRequest struct {
 	ValidatorIdx int
 	Identifier   []byte
 	Commitments  []byte
-	Lifetime     int
 }
 
-// SigningShareRequest represents a request to send signing shares
 type SigningShareRequest struct {
 	PegoutID      uint64
 	ValidatorIdx  int
 	Identifier    []byte
 	SigningShares [][]byte
-	Lifetime      int
 }
 
-// SignaturesRequest represents a request to send signatures
 type SignaturesRequest struct {
 	PegoutID     uint64
 	ValidatorIdx int
 	Identifier   []byte
 	Signatures   [][]byte
-	Lifetime     int
+}
+
+type PegoutRecord struct {
+	ID                uint64
+	PegoutAddress     *address.Address
+	InternalKey       []byte
+	Commitments       map[string][]byte
+	CommitmentsMask   []byte
+	SigningShares     map[string]map[string][]byte
+	SigningSharesMask []byte
+}
+
+func (p *PegoutRecord) HasCommitment(identifier []byte) bool {
+	_, exists := p.Commitments[string(identifier)]
+	return exists
+}
+
+func (p *PegoutRecord) CommitmentsCount() int {
+	return len(p.Commitments)
+}
+
+func (p *PegoutRecord) HasSigningShare(identifier []byte) bool {
+	_, exists := p.SigningShares[string(identifier)]
+	return exists
+}
+
+func (p *PegoutRecord) SigningSharesCount() int {
+	return len(p.SigningShares)
 }
