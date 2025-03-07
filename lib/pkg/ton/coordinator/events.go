@@ -1,4 +1,4 @@
-package coordinatorcontract
+package coordinator
 
 import (
 	"fmt"

@@ -5,7 +5,7 @@ import (
 	"sync"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinatorcontract"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
 	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/cfg"
@@ -38,7 +38,7 @@ func initialize() (*App, error) {
 	if err != nil {
 		return nil, err
 	}
-	coordinatorContract := coordinatorcontract.New(coordinatorContractAddr, tonClient, nil, context.Background())
+	coordinatorContract := coordinator.New(coordinatorContractAddr, tonClient, nil, context.Background())
 	dkgService := dkg.NewService(coordinatorContract)
 
 	wg := sync.WaitGroup{}

@@ -7,7 +7,7 @@ import (
 
 	"github.com/rsquad/ton-teleport-btc-periphery/frost"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinatorcontract"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
 )
 
 type Secret struct {
@@ -40,13 +40,13 @@ type ExecutionArtifacts struct {
 }
 
 type Executor struct {
-	inChan              chan *coordinatorcontract.DKG
+	inChan              chan *coordinator.DKG
 	until               time.Time
-	coordinatorContract *coordinatorcontract.CoordinatorContract
+	coordinatorContract *coordinator.CoordinatorContract
 	artifacts           ExecutionArtifacts
 }
 
-func NewExecutor(inChan chan *coordinatorcontract.DKG, coordinatorContract *coordinatorcontract.CoordinatorContract) *Executor {
+func NewExecutor(inChan chan *coordinator.DKG, coordinatorContract *coordinator.CoordinatorContract) *Executor {
 	return &Executor{
 		inChan:              inChan,
 		until:               time.Unix(0, 0),
@@ -67,11 +67,11 @@ func (e *Executor) Work(ctx context.Context) (err error) {
 	}
 }
 
-func (e *Executor) Execute(dkg *coordinatorcontract.DKG) {
+func (e *Executor) Execute(dkg *coordinator.DKG) {
 	e.logStartExecuting(dkg)
 	defer e.logFinishExecuting(dkg)
 
-	if dkg.Status == coordinatorcontract.DKGStatusFinished {
+	if dkg.Status == coordinator.DKGStatusFinished {
 		e.logDKGFinished(dkg)
 		return
 	}
@@ -82,7 +82,7 @@ func (e *Executor) Execute(dkg *coordinatorcontract.DKG) {
 	}
 }
 
-func (e *Executor) executeR1(dkg *coordinatorcontract.DKG, validatorIdx uint16, localIdentifier []byte) {
+func (e *Executor) executeR1(dkg *coordinator.DKG, validatorIdx uint16, localIdentifier []byte) {
 	e.logDKGProcess(dkg, "Start executing R1")
 	if dkg.Round1Completed() {
 		e.logDKGProcess(dkg, "R1 completed")
@@ -118,7 +118,7 @@ func (e *Executor) executeR1(dkg *coordinatorcontract.DKG, validatorIdx uint16, 
 	)
 }
 
-func (e *Executor) executeR2(dkg *coordinatorcontract.DKG, validatorIdx uint16, localIdentifier []byte) {
+func (e *Executor) executeR2(dkg *coordinator.DKG, validatorIdx uint16, localIdentifier []byte) {
 	e.logDKGProcess(dkg, "Start executing R2")
 	if dkg.Round2Completed() {
 		e.logDKGProcess(dkg, "R2 completed")
@@ -156,7 +156,7 @@ func (e *Executor) executeR2(dkg *coordinatorcontract.DKG, validatorIdx uint16, 
 	}
 }
 
-func (e *Executor) executeR3(dkg *coordinatorcontract.DKG, validatorIdx uint16, localIdentifier []byte) {
+func (e *Executor) executeR3(dkg *coordinator.DKG, validatorIdx uint16, localIdentifier []byte) {
 	e.logDKGProcess(dkg, "Start executing R3")
 	if dkg.Round3Completed() {
 		e.logDKGProcess(dkg, "R3 completed")
