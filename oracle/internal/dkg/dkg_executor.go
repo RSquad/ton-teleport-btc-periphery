@@ -21,8 +21,8 @@ type r2Step struct {
 }
 
 type r3Step struct {
-	pkg    []byte
-	secret uintptr
+	pkg              []byte
+	publicKeyPackage []byte
 }
 
 type ExecutorState struct {
@@ -154,19 +154,47 @@ func (e *Executor) executeR3(dkg *coordinatorcontract.DKG, validatorIdx uint16, 
 		return
 	}
 
-	if e.frostState.r3 == nil {
-		// TODO: get r1 and r2 packages from coordinator
-		// keyPackage, publicKeyPackage, err := frost.DkgPart3(e.frostState.r2.secret, r1Packages, r2Packages)
-		// if err != nil {
-		// 	return
-		// }
+	if dkg.Status >= coordinatorcontract.DKGStatusPart2Finished {
+		e.logDKGProcess(dkg, "R2 not yet completed, waiting for more packages.")
+		return
 	}
 
-	// e.coordinatorContract.SendPubkeyPackage(
-	// 	int64(coordinatorcontract.DefaultDGKTTL),
-	// 	validatorIdx,
-	// 	keyPackage,
-	// 	identifier,
-	// 	publicKeyPackage,
-	// )
+	if e.frostState.r3 == nil {
+
+		r1Packages := map[frost.Identifier]frost.Package{}
+
+		for ident, pkg := range dkg.R1.GetPkgs().GetAll() {
+			if ident == string(identifier) {
+				continue
+			}
+
+			r1Packages[frost.Identifier([]byte(ident))] = frost.NewPackage(pkg)
+		}
+
+		r2Packages := map[frost.Identifier]frost.Package{}
+
+		for ident, pkg := range dkg.R2.GetPkgs().GetPkgsByIdentifier(string(identifier)) {
+			if ident == string(identifier) {
+				continue
+			}
+			r2Packages[frost.Identifier([]byte(ident))] = frost.NewPackage(pkg)
+		}
+
+		keyPackage, publicKeyPackage, err := frost.DkgPart3(e.frostState.r2.secret, r1Packages, r2Packages)
+		if err != nil {
+			return
+		}
+		e.frostState.r3 = &r3Step{
+			pkg:              keyPackage,
+			publicKeyPackage: publicKeyPackage,
+		}
+	}
+
+	e.coordinatorContract.SendPubkeyPackage(
+		int64(coordinatorcontract.DefaultDGKTTL),
+		validatorIdx,
+		e.frostState.r3.pkg,
+		identifier,
+		e.frostState.r3.publicKeyPackage,
+	)
 }

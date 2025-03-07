@@ -53,3 +53,8 @@ func NewDKGR2(dict *cell.Dictionary, params *DKGRoundState) (*DKGR2, error) {
 func (d *DKGR2) GetPkgs() *DKGR2Pkgs {
 	return d.pkgs
 }
+
+func (d *DKGR2Pkgs) GetPkgsByIdentifier(identifier string) map[string][]byte {
+	pkgs := (*d)[identifier]
+	return pkgs.GetAll()
+}
