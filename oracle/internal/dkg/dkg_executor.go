@@ -10,14 +10,22 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinatorcontract"
 )
 
+type Secret struct {
+	ptr uintptr
+}
+
+func NewSecret(ptr uintptr) Secret {
+	return Secret{ptr: ptr}
+}
+
 type Round1Result struct {
 	pkg    []byte
-	secret uintptr
+	secret Secret
 }
 
 type Round2Result struct {
 	pkgs   map[frost.Identifier]frost.Package
-	secret uintptr
+	secret Secret
 }
 
 type Round3Result struct {
@@ -89,7 +97,7 @@ func (e *Executor) executeR1(dkg *coordinatorcontract.DKG, validatorIdx uint16, 
 	}
 
 	if e.artifacts.r1 == nil {
-		r1Package, r1Secret, err := frost.DkgPart1(
+		r1Package, r1SecretPtr, err := frost.DkgPart1(
 			localIdentifier,
 			uint16(math.Floor(float64(dkg.MaxSigners)*2/3)),
 			uint16(dkg.MaxSigners),
@@ -99,7 +107,7 @@ func (e *Executor) executeR1(dkg *coordinatorcontract.DKG, validatorIdx uint16, 
 		}
 		e.artifacts.r1 = &Round1Result{
 			pkg:    r1Package,
-			secret: r1Secret,
+			secret: NewSecret(r1SecretPtr),
 		}
 	}
 
@@ -129,13 +137,13 @@ func (e *Executor) executeR2(dkg *coordinatorcontract.DKG, validatorIdx uint16, 
 			r1Pkgs[frost.Identifier([]byte(identifier))] = frost.NewPackage(pkg)
 		}
 
-		r2Packages, r2Secret, err := frost.DkgPart2(e.artifacts.r1.secret, r1Pkgs)
+		r2Packages, r2SecretPtr, err := frost.DkgPart2(e.artifacts.r1.secret.ptr, r1Pkgs)
 		if err != nil {
 			return
 		}
 		e.artifacts.r2 = &Round2Result{
 			pkgs:   r2Packages,
-			secret: r2Secret,
+			secret: NewSecret(r2SecretPtr),
 		}
 	}
 
@@ -182,7 +190,7 @@ func (e *Executor) executeR3(dkg *coordinatorcontract.DKG, validatorIdx uint16, 
 			r2Packages[frost.Identifier([]byte(toIdentifier))] = frost.NewPackage(pkg)
 		}
 
-		keyPackage, publicKeyPackage, err := frost.DkgPart3(e.artifacts.r2.secret, r1Packages, r2Packages)
+		keyPackage, publicKeyPackage, err := frost.DkgPart3(e.artifacts.r2.secret.ptr, r1Packages, r2Packages)
 		if err != nil {
 			return
 		}
