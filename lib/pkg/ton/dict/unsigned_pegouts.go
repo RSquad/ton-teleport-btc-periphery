@@ -32,7 +32,7 @@ func (p *PegoutRecord) CommitmentsCount() int {
 
 // HasSigningShare checks if a signing share exists for the given identifier
 func (p *PegoutRecord) HasSigningShare(identifier []byte) bool {
-	_, exists := p.SigningShares[hex.EncodeToString(identifier)]
+	_, exists := p.SigningShares[string(identifier)]
 	return exists
 }
 

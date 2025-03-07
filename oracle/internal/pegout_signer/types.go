@@ -1,37 +1,10 @@
-package signer
+package pegoutsigner
 
 import (
 	"context"
 	"encoding/hex"
 	"fmt"
 )
-
-// Address represents a TON blockchain address
-type Address interface {
-	String() string
-}
-
-// ParseAddress parses a string into an Address
-func ParseAddress(addr string) (Address, error) {
-	// This is a placeholder. The actual implementation would need to be provided
-	return nil, fmt.Errorf("not implemented")
-}
-
-// DKG represents a Distributed Key Generation state
-type DKG struct {
-	MaxSigners int
-	R3Package  R3Package
-}
-
-// R3Package represents round 3 package data
-type R3Package struct {
-	PubkeyData PubkeyData
-}
-
-// PubkeyData represents public key data
-type PubkeyData struct {
-	PubkeyPackage []byte
-}
 
 // ValidatorKey represents a validator's key information
 type ValidatorKey struct {
@@ -91,18 +64,6 @@ type TxInput struct {
 	TaprootMerkleRoot []byte
 }
 
-// ConfigService defines the interface for configuration service
-type ConfigService interface {
-	GetOrThrow(key string) string
-}
-
-// TonService defines the interface for TON blockchain service
-type TonService interface {
-	GetPrevDKG(ctx context.Context) (*DKG, error)
-	OpenCoordinator(addr Address) CoordinatorContract
-	OpenPegoutTx(addr Address) PegoutTxContract
-}
-
 // KeystoreService defines the interface for keystore service
 type KeystoreService interface {
 	LoadTemp(key string) []byte
@@ -115,16 +76,6 @@ type KeystoreService interface {
 type ValidatorService interface {
 	GetValidatorKey(ctx context.Context, dkg *DKG) (*ValidatorKey, error)
 	GetSigner(validatorID int) interface{}
-}
-
-// CoordinatorContract defines the interface for coordinator contract
-type CoordinatorContract interface {
-	GetUnsignedPegouts(ctx context.Context) (map[uint64]PegoutRecord, error)
-	GetPrevDKG(ctx context.Context) (*DKG, error)
-	Connect(ctx context.Context, signer interface{}) error
-	SendCommitments(ctx context.Context, req *CommitmentRequest) error
-	SendSigningShare(ctx context.Context, req *SigningShareRequest) error
-	SendSignatures(ctx context.Context, req *SignaturesRequest) error
 }
 
 // PegoutTxContract defines the interface for pegout transaction contract

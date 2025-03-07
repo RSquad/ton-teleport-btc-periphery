@@ -1,4 +1,4 @@
-package signer
+package pegoutsigner
 
 import (
 	"context"
@@ -16,7 +16,7 @@ import (
 type SignService struct {
 	logger           *log.Logger
 	mu               sync.Mutex
-	dkgService       *dkg.DkgService
+	dkgService       *dkg.Client
 	config           *cfg.Cfg
 	keyStore         keystore.Keystore
 	coordinator      *coordinatorcontract.CoordinatorContract
@@ -24,7 +24,7 @@ type SignService struct {
 	ctx              context.Context
 }
 
-func NewSignService(
+func NewService(
 	config *cfg.Cfg,
 	dkgService *dkg.DkgService,
 	keyStore keystore.Keystore,

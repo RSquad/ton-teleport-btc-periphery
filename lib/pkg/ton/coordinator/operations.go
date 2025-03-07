@@ -57,3 +57,15 @@ func (c *CoordinatorContract) sendBodyCell(bodyCell *cell.Cell) (*tlb.Transactio
 	tx, _, _, err := c.tonClient.API.SendExternalMessageWaitTransaction(c.ctx, msg)
 	return tx, err
 }
+
+func (c *CoordinatorContract) Connect(signer interface{}) error {
+}
+
+func (c *CoordinatorContract) SendCommitments(req *CommitmentRequest) error {
+}
+
+func (c *CoordinatorContract) SendSigningShare(req *SigningShareRequest) error {
+}
+
+func (c *CoordinatorContract) SendSignatures(req *SignaturesRequest) error {
+}

@@ -67,3 +67,30 @@ func (dkg *DKG) Round2Completed() bool {
 func (dkg *DKG) Round3Completed() bool {
 	return dkg.Status == DKGStatusFinished
 }
+
+// CommitmentRequest represents a request to send commitments
+type CommitmentRequest struct {
+	PegoutID     uint64
+	ValidatorIdx int
+	Identifier   []byte
+	Commitments  []byte
+	Lifetime     int
+}
+
+// SigningShareRequest represents a request to send signing shares
+type SigningShareRequest struct {
+	PegoutID      uint64
+	ValidatorIdx  int
+	Identifier    []byte
+	SigningShares [][]byte
+	Lifetime      int
+}
+
+// SignaturesRequest represents a request to send signatures
+type SignaturesRequest struct {
+	PegoutID     uint64
+	ValidatorIdx int
+	Identifier   []byte
+	Signatures   [][]byte
+	Lifetime     int
+}
