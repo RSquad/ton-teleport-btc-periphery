@@ -5,18 +5,18 @@ import (
 	"time"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinatorcontract"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
 	"github.com/xssnick/tonutils-go/ton"
 )
 
 type Fetcher struct {
-	coordinatorContract *coordinatorcontract.CoordinatorContract
-	outChan             chan *coordinatorcontract.DKG
+	coordinatorContract *coordinator.CoordinatorContract
+	outChan             chan *coordinator.DKG
 }
 
 func NewFetcher(
-	coordinatorContract *coordinatorcontract.CoordinatorContract,
-	outChan chan *coordinatorcontract.DKG,
+	coordinatorContract *coordinator.CoordinatorContract,
+	outChan chan *coordinator.DKG,
 ) *Fetcher {
 	return &Fetcher{
 		coordinatorContract: coordinatorContract,
@@ -39,6 +39,6 @@ func (f *Fetcher) Work(ctx context.Context) (err error) {
 	}
 }
 
-func (f *Fetcher) Fetch(block *ton.BlockIDExt) (*coordinatorcontract.DKG, error) {
+func (f *Fetcher) Fetch(block *ton.BlockIDExt) (*coordinator.DKG, error) {
 	return f.coordinatorContract.GetDkg(block)
 }

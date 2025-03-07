@@ -5,15 +5,15 @@ import (
 	"sync"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinatorcontract"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
 )
 
 type Service struct {
-	coordinatorContract *coordinatorcontract.CoordinatorContract
+	coordinatorContract *coordinator.CoordinatorContract
 }
 
 func NewService(
-	coordinatorContract *coordinatorcontract.CoordinatorContract,
+	coordinatorContract *coordinator.CoordinatorContract,
 ) *Service {
 	return &Service{
 		coordinatorContract: coordinatorContract,
@@ -24,7 +24,7 @@ func (s *Service) Work(ctx context.Context) (err error) {
 	logger.DefaultLogStartWork("DKGService")
 	defer logger.DefaultLogFinishWork("DKGService", err)
 
-	outChan := make(chan *coordinatorcontract.DKG)
+	outChan := make(chan *coordinator.DKG)
 	fetcher := NewFetcher(s.coordinatorContract, outChan)
 	executor := NewExecutor(outChan, s.coordinatorContract)
 

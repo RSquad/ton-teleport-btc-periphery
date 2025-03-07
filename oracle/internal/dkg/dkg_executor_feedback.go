@@ -4,10 +4,10 @@ import (
 	"time"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinatorcontract"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
 )
 
-func (e *Executor) logStartExecuting(dkg *coordinatorcontract.DKG) {
+func (e *Executor) logStartExecuting(dkg *coordinator.DKG) {
 	logger.Log.Info().
 		Str("component", "DKGExecutor").
 		Str("dkg_status", dkg.Status.String()).
@@ -15,7 +15,7 @@ func (e *Executor) logStartExecuting(dkg *coordinatorcontract.DKG) {
 		Msg("Start executing DKG")
 }
 
-func (e *Executor) logFinishExecuting(dkg *coordinatorcontract.DKG) {
+func (e *Executor) logFinishExecuting(dkg *coordinator.DKG) {
 	logger.Log.Info().
 		Str("component", "DKGExecutor").
 		Str("dkg_status", dkg.Status.String()).
@@ -23,7 +23,7 @@ func (e *Executor) logFinishExecuting(dkg *coordinatorcontract.DKG) {
 		Msg("Finish executing DKG")
 }
 
-func (e *Executor) logDKGFinished(dkg *coordinatorcontract.DKG) {
+func (e *Executor) logDKGFinished(dkg *coordinator.DKG) {
 	logger.Log.Info().
 		Str("component", "DKGExecutor").
 		Str("dkg_status", dkg.Status.String()).
@@ -31,7 +31,7 @@ func (e *Executor) logDKGFinished(dkg *coordinatorcontract.DKG) {
 		Msg("DKG finished")
 }
 
-func (e *Executor) logNewDKGStarted(dkg *coordinatorcontract.DKG) {
+func (e *Executor) logNewDKGStarted(dkg *coordinator.DKG) {
 	logger.Log.Info().
 		Str("component", "DKGExecutor").
 		Str("dkg_status", dkg.Status.String()).
@@ -39,7 +39,7 @@ func (e *Executor) logNewDKGStarted(dkg *coordinatorcontract.DKG) {
 		Msg("New DKG started")
 }
 
-func (e *Executor) logDKGProcess(dkg *coordinatorcontract.DKG, msg string) {
+func (e *Executor) logDKGProcess(dkg *coordinator.DKG, msg string) {
 	logger.Log.Info().
 		Str("component", "DKGExecutor").
 		Str("dkg_status", dkg.Status.String()).
@@ -47,7 +47,7 @@ func (e *Executor) logDKGProcess(dkg *coordinatorcontract.DKG, msg string) {
 		Msg(msg)
 }
 
-func (e *Executor) logDKGPart1Failed(dkg *coordinatorcontract.DKG, err error) {
+func (e *Executor) logDKGPart1Failed(dkg *coordinator.DKG, err error) {
 	logger.Log.Error().
 		Str("component", "DKGExecutor").
 		Str("dkg_status", dkg.Status.String()).

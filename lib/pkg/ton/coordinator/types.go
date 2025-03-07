@@ -1,4 +1,4 @@
-package coordinatorcontract
+package coordinator
 
 import (
 	"math/big"

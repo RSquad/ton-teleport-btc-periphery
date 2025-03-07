@@ -1,4 +1,4 @@
-package coordinatorcontract
+package coordinator
 
 import (
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/parseddict"

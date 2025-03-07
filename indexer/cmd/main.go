@@ -23,7 +23,7 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/pegoutmanager"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinatorcontract"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/teleportcontract"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
@@ -36,7 +36,7 @@ type App struct {
 	BitcoinClient       *bitcoin.Client
 	EventService        *events.EventService
 	TeleportContract    *teleportcontract.TeleportContract
-	CoordinatorContract *coordinatorcontract.CoordinatorContract
+	CoordinatorContract *coordinator.CoordinatorContract
 	PegoutManager       *pegoutmanager.PegoutManager
 	MintService         *mintservice.MintService
 }
@@ -89,7 +89,7 @@ func initialize() (*App, error) {
 	)
 
 	coordinatorContractAddr := address.MustParseAddr(indexerConfig.CoordinatorContractAddr)
-	coordinatorContract := coordinatorcontract.New(
+	coordinatorContract := coordinator.New(
 		coordinatorContractAddr,
 		tonClient,
 		nil,

@@ -8,7 +8,7 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/tontx"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton"
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinatorcontract"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/teleportcontract"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
 	"github.com/xssnick/tonutils-go/address"
@@ -19,14 +19,14 @@ type EventService struct {
 	tonClient           *tonclient.TonClient
 	repo                *ent.Client
 	teleportContract    *teleportcontract.TeleportContract
-	coordinatorContract *coordinatorcontract.CoordinatorContract
+	coordinatorContract *coordinator.CoordinatorContract
 }
 
 func NewEventService(
 	tonClient *tonclient.TonClient,
 	repo *ent.Client,
 	teleportContract *teleportcontract.TeleportContract,
-	coordinatorContract *coordinatorcontract.CoordinatorContract,
+	coordinatorContract *coordinator.CoordinatorContract,
 ) *EventService {
 	return &EventService{
 		tonClient:           tonClient,
@@ -126,7 +126,7 @@ func (es *EventService) createEventDispatcher(
 		eventWriter,
 		map[string]ton.EventParserInterface{
 			es.teleportContract.GetAddr().String():    teleportcontract.NewEventParser(),
-			es.coordinatorContract.GetAddr().String(): coordinatorcontract.NewEventParser(),
+			es.coordinatorContract.GetAddr().String(): coordinator.NewEventParser(),
 		},
 	)
 }
