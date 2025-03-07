@@ -10,32 +10,32 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinatorcontract"
 )
 
-type r1Step struct {
+type Round1Result struct {
 	pkg    []byte
 	secret uintptr
 }
 
-type r2Step struct {
+type Round2Result struct {
 	pkgs   map[frost.Identifier]frost.Package
 	secret uintptr
 }
 
-type r3Step struct {
+type Round3Result struct {
 	pkg              []byte
 	publicKeyPackage []byte
 }
 
-type ExecutorState struct {
-	r1 *r1Step
-	r2 *r2Step
-	r3 *r3Step
+type ExecutionArtifacts struct {
+	r1 *Round1Result
+	r2 *Round2Result
+	r3 *Round3Result
 }
 
 type Executor struct {
 	inChan              chan *coordinatorcontract.DKG
 	until               time.Time
 	coordinatorContract *coordinatorcontract.CoordinatorContract
-	frostState          *ExecutorState
+	artifacts           ExecutionArtifacts
 }
 
 func NewExecutor(inChan chan *coordinatorcontract.DKG, coordinatorContract *coordinatorcontract.CoordinatorContract) *Executor {
@@ -43,7 +43,7 @@ func NewExecutor(inChan chan *coordinatorcontract.DKG, coordinatorContract *coor
 		inChan:              inChan,
 		until:               time.Unix(0, 0),
 		coordinatorContract: coordinatorContract,
-		frostState:          &ExecutorState{},
+		artifacts:           ExecutionArtifacts{},
 	}
 }
 
@@ -88,7 +88,7 @@ func (e *Executor) executeR1(dkg *coordinatorcontract.DKG, validatorIdx uint16, 
 		return
 	}
 
-	if e.frostState.r1 == nil {
+	if e.artifacts.r1 == nil {
 		r1Package, r1Secret, err := frost.DkgPart1(
 			localIdentifier,
 			uint16(math.Floor(float64(dkg.MaxSigners)*2/3)),
@@ -97,7 +97,7 @@ func (e *Executor) executeR1(dkg *coordinatorcontract.DKG, validatorIdx uint16, 
 		if err != nil {
 			return
 		}
-		e.frostState.r1 = &r1Step{
+		e.artifacts.r1 = &Round1Result{
 			pkg:    r1Package,
 			secret: r1Secret,
 		}
@@ -107,7 +107,7 @@ func (e *Executor) executeR1(dkg *coordinatorcontract.DKG, validatorIdx uint16, 
 		int64(coordinatorcontract.DefaultDGKTTL),
 		validatorIdx,
 		localIdentifier,
-		e.frostState.r1.pkg,
+		e.artifacts.r1.pkg,
 	)
 }
 
@@ -119,7 +119,7 @@ func (e *Executor) executeR2(dkg *coordinatorcontract.DKG, validatorIdx uint16, 
 		return
 	}
 
-	if e.frostState.r2 == nil {
+	if e.artifacts.r2 == nil {
 		r1Pkgs := map[frost.Identifier]frost.Package{}
 
 		for identifier, pkg := range dkg.GetR1Packages() {
@@ -130,23 +130,23 @@ func (e *Executor) executeR2(dkg *coordinatorcontract.DKG, validatorIdx uint16, 
 			r1Pkgs[frost.Identifier([]byte(identifier))] = frost.NewPackage(pkg)
 		}
 
-		r2Packages, r2Secret, err := frost.DkgPart2(e.frostState.r1.secret, r1Pkgs)
+		r2Packages, r2Secret, err := frost.DkgPart2(e.artifacts.r1.secret, r1Pkgs)
 		if err != nil {
 			return
 		}
-		e.frostState.r2 = &r2Step{
+		e.artifacts.r2 = &Round2Result{
 			pkgs:   r2Packages,
 			secret: r2Secret,
 		}
 	}
 
-	for identifierTo := range e.frostState.r2.pkgs {
+	for identifierTo := range e.artifacts.r2.pkgs {
 		e.coordinatorContract.SendRound2(
 			int64(coordinatorcontract.DefaultDGKTTL),
 			validatorIdx,
 			localIdentifier,
 			identifierTo.ToBytes(),
-			e.frostState.r2.pkgs[identifierTo].ToBytes(),
+			e.artifacts.r2.pkgs[identifierTo].ToBytes(),
 		)
 	}
 }
@@ -163,7 +163,7 @@ func (e *Executor) executeR3(dkg *coordinatorcontract.DKG, validatorIdx uint16, 
 		return
 	}
 
-	if e.frostState.r3 == nil {
+	if e.artifacts.r3 == nil {
 
 		r1Packages := map[frost.Identifier]frost.Package{}
 
@@ -184,11 +184,11 @@ func (e *Executor) executeR3(dkg *coordinatorcontract.DKG, validatorIdx uint16, 
 			r2Packages[frost.Identifier([]byte(toIdentifier))] = frost.NewPackage(pkg)
 		}
 
-		keyPackage, publicKeyPackage, err := frost.DkgPart3(e.frostState.r2.secret, r1Packages, r2Packages)
+		keyPackage, publicKeyPackage, err := frost.DkgPart3(e.artifacts.r2.secret, r1Packages, r2Packages)
 		if err != nil {
 			return
 		}
-		e.frostState.r3 = &r3Step{
+		e.artifacts.r3 = &Round3Result{
 			pkg:              keyPackage,
 			publicKeyPackage: publicKeyPackage,
 		}
@@ -197,8 +197,8 @@ func (e *Executor) executeR3(dkg *coordinatorcontract.DKG, validatorIdx uint16, 
 	e.coordinatorContract.SendPubkeyPackage(
 		int64(coordinatorcontract.DefaultDGKTTL),
 		validatorIdx,
-		e.frostState.r3.pkg,
+		e.artifacts.r3.pkg,
 		localIdentifier,
-		e.frostState.r3.publicKeyPackage,
+		e.artifacts.r3.publicKeyPackage,
 	)
 }
