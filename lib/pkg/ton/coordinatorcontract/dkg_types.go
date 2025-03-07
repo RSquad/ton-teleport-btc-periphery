@@ -53,3 +53,17 @@ func (dkg *DKG) GetR1Packages() DKGPkgs {
 func (dkg *DKG) GetR2Packages(fromIdentifier []byte) DKGPkgs {
 	return dkg.R2.Packages[string(fromIdentifier)]
 }
+
+func (dkg *DKG) Round1Completed() bool {
+	return dkg.Status == DKGStatusFinished ||
+		dkg.Status >= DKGStatusPart1Finished
+}
+
+func (dkg *DKG) Round2Completed() bool {
+	return dkg.Status == DKGStatusFinished ||
+		dkg.Status >= DKGStatusPart2Finished
+}
+
+func (dkg *DKG) Round3Completed() bool {
+	return dkg.Status == DKGStatusFinished
+}

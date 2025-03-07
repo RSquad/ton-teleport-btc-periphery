@@ -84,8 +84,7 @@ func (e *Executor) Execute(dkg *coordinatorcontract.DKG) {
 
 func (e *Executor) executeR1(dkg *coordinatorcontract.DKG, validatorIdx uint16, localIdentifier []byte) {
 	e.logDKGProcess(dkg, "Start executing R1")
-	if dkg.Status == coordinatorcontract.DKGStatusFinished ||
-		dkg.Status >= coordinatorcontract.DKGStatusPart1Finished {
+	if dkg.Round1Completed() {
 		e.logDKGProcess(dkg, "R1 completed")
 		return
 	}
@@ -120,8 +119,7 @@ func (e *Executor) executeR1(dkg *coordinatorcontract.DKG, validatorIdx uint16, 
 
 func (e *Executor) executeR2(dkg *coordinatorcontract.DKG, validatorIdx uint16, localIdentifier []byte) {
 	e.logDKGProcess(dkg, "Start executing R2")
-	if dkg.Status == coordinatorcontract.DKGStatusFinished ||
-		dkg.Status >= coordinatorcontract.DKGStatusPart2Finished {
+	if dkg.Round2Completed() {
 		e.logDKGProcess(dkg, "R2 completed")
 		return
 	}
@@ -159,12 +157,11 @@ func (e *Executor) executeR2(dkg *coordinatorcontract.DKG, validatorIdx uint16, 
 
 func (e *Executor) executeR3(dkg *coordinatorcontract.DKG, validatorIdx uint16, localIdentifier []byte) {
 	e.logDKGProcess(dkg, "Start executing R3")
-	if dkg.Status == coordinatorcontract.DKGStatusFinished {
+	if dkg.Round3Completed() {
 		e.logDKGProcess(dkg, "R3 completed")
 		return
 	}
-
-	if dkg.Status < coordinatorcontract.DKGStatusPart2Finished {
+	if !dkg.Round2Completed() {
 		e.logDKGProcess(dkg, "R2 not yet completed, waiting for more packages.")
 		return
 	}
