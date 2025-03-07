@@ -7,12 +7,12 @@ import (
 )
 
 type DKGR1 struct {
-	mask  *big.Int
-	count uint64
-	pkgs  *DKGPkgs
+	mask     *big.Int
+	count    uint64
+	Packages DKGPkgs
 }
 
 func NewDKGR1(d *cell.Dictionary, p *DKGRoundState) (*DKGR1, error) {
 	pkg, err := NewDKGPkgs(d)
-	return &DKGR1{mask: p.mask, count: p.count, pkgs: pkg}, err
+	return &DKGR1{mask: p.mask, count: p.count, Packages: pkg}, err
 }

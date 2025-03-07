@@ -2,67 +2,67 @@ package main
 
 import (
 	"context"
-	"log"
+	"sync"
 
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinatorcontract"
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/signer"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
-	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/config"
+	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/cfg"
+	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/dkg"
 	"github.com/xssnick/tonutils-go/address"
 )
 
 type App struct {
-	TonClient           *tonclient.TonClient
-	CoordinatorContract *coordinatorcontract.CoordinatorContract
+	TonClient *tonclient.TonClient
 }
 
 func initialize() (*App, error) {
-	oracleConfig, err := utils.LoadConfig[config.OracleConfig]()
+	logger.Init()
+
+	logger.Log.Info().
+		Str("component", "main").
+		Msg("Initializing")
+
+	cfg, err := utils.LoadCfg[cfg.Cfg]()
 	if err != nil {
 		return nil, err
 	}
 
-	tonClient, err := tonclient.New(oracleConfig.TonConfigUrl)
+	tonClient, err := tonclient.New(cfg.TonConfigUrl)
 	if err != nil {
 		return nil, err
 	}
 
-	coordinatorContract := coordinatorcontract.New(
-		signer.New(),
-		address.MustParseAddr(oracleConfig.CoordinatorContractAddr),
-		tonClient,
-		context.Background(),
-	)
+	coordinatorContractAddr, err := address.ParseAddr(cfg.CoordinatorContractAddr)
+	if err != nil {
+		return nil, err
+	}
+	coordinatorContract := coordinatorcontract.New(coordinatorContractAddr, tonClient, nil, context.Background())
+	dkgService := dkg.NewService(coordinatorContract)
+
+	wg := sync.WaitGroup{}
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		dkgService.Work(context.Background())
+	}()
+
+	wg.Wait()
 
 	return &App{
-		TonClient:           tonClient,
-		CoordinatorContract: coordinatorContract,
+		TonClient: tonClient,
 	}, nil
 }
 
 func main() {
-	app, err := initialize()
+	_, err := initialize()
 	if err != nil {
-		log.Fatalf("failed to initialize: %v", err)
+		logger.Log.Error().
+			Err(err).
+			Str("component", "main").
+			Msg("Failed to initialize")
+		return
 	}
-
-	block, err := app.TonClient.API.CurrentMasterchainInfo(context.Background())
-	if err != nil {
-		log.Fatalf("failed to get current masterchain info: %v", err)
-	}
-
-	dkg, err := app.CoordinatorContract.GetDkg(block)
-	if err != nil {
-		log.Fatalf("failed to get dkg: %v", err)
-	}
-
-	log.Printf("dkg: %+v", dkg)
-
-	tx, err := app.CoordinatorContract.SendStartDKG(0)
-	if err != nil {
-		log.Fatalf("failed to send start dkg: %v", err)
-	}
-
-	log.Printf("tx: %+v", tx)
 }

@@ -1,9 +1,9 @@
 package frost
 
 /*
-#cgo CFLAGS: -I./rust
-#cgo LDFLAGS: ./rust/target/debug/libfrost.a
-#include "./rust/frost.h"
+#cgo CFLAGS: -I${SRCDIR}/rust
+#cgo LDFLAGS: ${SRCDIR}/rust/target/debug/libfrost.a
+#include "rust/frost.h"
 #include <stdlib.h>
 */
 import "C"
@@ -27,8 +27,20 @@ type Pkg struct {
 	len        C.int
 }
 
+func NewPackage(buf []byte) Package {
+	return Package{buf: buf}
+}
+
+func (id Identifier) ToBytes() []byte {
+	return id[:]
+}
+
 func newBuffer(p unsafe.Pointer, len int) C.Buffer {
 	return C.Buffer{(*C.uint8_t)(p), C.size_t(len)}
+}
+
+func (p Package) ToBytes() []byte {
+	return p.buf
 }
 
 func newEmptyBuffer() C.Buffer {

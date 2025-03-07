@@ -2,18 +2,19 @@ package coordinatorcontract
 
 import (
 	"math/big"
+	"time"
 )
 
 type DKG struct {
-	status     DKGStatus
-	vSet       *VSet
-	maxSigners uint64
-	r1         *DKGR1
-	r2         *DKGR2
+	Status     DKGStatus
+	VSet       *VSet
+	MaxSigners uint64
+	R1         *DKGR1
+	R2         *DKGR2
+	Until      time.Time
 	// r3Pkg  R3Pkg
 	// cfgHash    []byte
 	// attempts   uint64
-	// until      uint64
 }
 
 type DKGRoundState struct {
@@ -43,4 +44,26 @@ func (s DKGStatus) String() string {
 	default:
 		return "UNKNOWN"
 	}
+}
+
+func (dkg *DKG) GetR1Packages() DKGPkgs {
+	return dkg.R1.Packages
+}
+
+func (dkg *DKG) GetR2Packages(fromIdentifier []byte) DKGPkgs {
+	return dkg.R2.Packages[string(fromIdentifier)]
+}
+
+func (dkg *DKG) Round1Completed() bool {
+	return dkg.Status == DKGStatusFinished ||
+		dkg.Status >= DKGStatusPart1Finished
+}
+
+func (dkg *DKG) Round2Completed() bool {
+	return dkg.Status == DKGStatusFinished ||
+		dkg.Status >= DKGStatusPart2Finished
+}
+
+func (dkg *DKG) Round3Completed() bool {
+	return dkg.Status == DKGStatusFinished
 }

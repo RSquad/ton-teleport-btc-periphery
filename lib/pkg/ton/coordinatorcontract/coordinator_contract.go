@@ -2,6 +2,7 @@ package coordinatorcontract
 
 import (
 	"context"
+	"time"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/signer"
@@ -19,25 +20,37 @@ const (
 	OpCodePegOutTxSendCommitments = 0x58e40000
 )
 
+const DefaultDGKTTL = time.Minute
+
 type CoordinatorContract struct {
 	ton.Contract
 	signer    *signer.Signer
 	tonClient *tonclient.TonClient
 	ctx       context.Context
+	ttl       time.Duration
 }
 
 func New(
-	signer *signer.Signer,
 	addr *address.Address,
 	tonClient *tonclient.TonClient,
+	signer *signer.Signer,
 	ctx context.Context,
 ) *CoordinatorContract {
+	ttl := DefaultDGKTTL
 	return &CoordinatorContract{
-		ton.Contract{Addr: addr}, signer, tonClient, ctx,
+		ton.Contract{Addr: addr}, signer, tonClient, ctx, ttl,
 	}
 }
 
 func (c *CoordinatorContract) GetDkg(block *tonutils.BlockIDExt) (*DKG, error) {
+	if block == nil {
+		var err error
+		block, err = c.tonClient.API.CurrentMasterchainInfo(c.ctx)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	result, err := c.tonClient.API.RunGetMethod(c.ctx, block, c.Addr, "get_dkg")
 	if err != nil {
 		return nil, err
@@ -83,11 +96,11 @@ func parseDGKSlice(dkgSlice *cell.Slice) (*DKG, error) {
 	}
 
 	return &DKG{
-		status:     status,
-		vSet:       vSet,
-		maxSigners: maxSigners,
-		r1:         r1,
-		r2:         r2,
+		Status:     status,
+		VSet:       vSet,
+		MaxSigners: maxSigners,
+		R1:         r1,
+		R2:         r2,
 	}, nil
 }
 
