@@ -1,11 +1,45 @@
 package dict
 
 import (
+	"encoding/hex"
 	"math/big"
 
 	"github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/tvm/cell"
 )
+
+// PegoutRecord represents a pegout transaction record
+type PegoutRecord struct {
+	ID                uint64
+	PegoutAddress     address.Address
+	InternalKey       []byte
+	Commitments       map[string][]byte
+	CommitmentsMask   []byte
+	SigningShares     map[string]map[string][]byte
+	SigningSharesMask []byte
+}
+
+// HasCommitment checks if a commitment exists for the given identifier
+func (p *PegoutRecord) HasCommitment(identifier []byte) bool {
+	_, exists := p.Commitments[hex.EncodeToString(identifier)]
+	return exists
+}
+
+// CommitmentsCount returns the number of commitments
+func (p *PegoutRecord) CommitmentsCount() int {
+	return len(p.Commitments)
+}
+
+// HasSigningShare checks if a signing share exists for the given identifier
+func (p *PegoutRecord) HasSigningShare(identifier []byte) bool {
+	_, exists := p.SigningShares[hex.EncodeToString(identifier)]
+	return exists
+}
+
+// SigningSharesCount returns the number of signing shares
+func (p *PegoutRecord) SigningSharesCount() int {
+	return len(p.SigningShares)
+}
 
 type (
 	UnsignedPegout struct {

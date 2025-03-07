@@ -64,6 +64,39 @@ func (c *CoordinatorContract) GetDkg(block *tonutils.BlockIDExt) (*DKG, error) {
 	return dkg, nil
 }
 
+func (c *CoordinatorContract) GetPrevDKG() (*DKG, error) {
+	block, err := c.tonClient.API.CurrentMasterchainInfo(c.ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	result, err := c.tonClient.API.RunGetMethod(c.ctx, block, c.Addr, "get_prev_dkg")
+	if err != nil {
+		return nil, err
+	}
+
+	return parseDGKSlice(result.MustCell(0).BeginParse())
+}
+
+func (c *CoordinatorContract) GetUnsignedPegouts() ([]PegoutRecord, error) {
+	block, err := c.tonClient.API.CurrentMasterchainInfo(c.ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	result, err := c.tonClient.API.RunGetMethod(c.ctx, block, c.Addr, "get_pegout_records")
+	if err != nil {
+		return nil, err
+	}
+
+	cell, err := result.Cell(0)
+	if err != nil {
+		return nil, err
+	}
+	slice := cell.BeginParse()
+	slice.MustLoadDict(64)
+}
+
 func parseDGKSlice(dkgSlice *cell.Slice) (*DKG, error) {
 	status := DKGStatus(dkgSlice.MustLoadUInt(2))
 
