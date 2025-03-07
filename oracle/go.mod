@@ -4,7 +4,10 @@ go 1.23.1
 
 replace github.com/rsquad/ton-teleport-btc-periphery/lib => ../lib
 
+replace github.com/rsquad/ton-teleport-btc-periphery/frost => ../frost
+
 require (
+	github.com/rsquad/ton-teleport-btc-periphery/frost v0.0.0-00010101000000-000000000000
 	github.com/rsquad/ton-teleport-btc-periphery/lib v0.0.0-00010101000000-000000000000
 	github.com/xssnick/tonutils-go v1.10.2
 )
