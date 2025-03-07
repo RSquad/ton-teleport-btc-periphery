@@ -141,8 +141,8 @@ func (e *Executor) executeR2(dkg *coordinatorcontract.DKG, validatorIdx uint16, 
 			int64(coordinatorcontract.DefaultDGKTTL),
 			validatorIdx,
 			identifier,
-			frost.IdentifierToBytes(identifierTo),
-			frost.PackageToBytes(e.frostState.r2.pkgs[identifierTo]),
+			identifierTo.ToBytes(),
+			e.frostState.r2.pkgs[identifierTo].ToBytes(),
 		)
 	}
 }

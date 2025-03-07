@@ -1,9 +1,9 @@
 package frost
 
 /*
-#cgo CFLAGS: -I./rust
-#cgo LDFLAGS: ./rust/target/debug/libfrost.a
-#include "./rust/frost.h"
+#cgo CFLAGS: -I${SRCDIR}/rust
+#cgo LDFLAGS: ${SRCDIR}/rust/target/debug/libfrost.a
+#include "rust/frost.h"
 #include <stdlib.h>
 */
 import "C"
@@ -31,15 +31,15 @@ func NewPackage(buf []byte) Package {
 	return Package{buf: buf}
 }
 
-func IdentifierToBytes(ident Identifier) []byte {
-	return ident[:]
+func (id Identifier) ToBytes() []byte {
+	return id[:]
 }
 
 func newBuffer(p unsafe.Pointer, len int) C.Buffer {
 	return C.Buffer{(*C.uint8_t)(p), C.size_t(len)}
 }
 
-func PackageToBytes(p Package) []byte {
+func (p Package) ToBytes() []byte {
 	return p.buf
 }
 
