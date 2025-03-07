@@ -104,7 +104,6 @@ func (e *Executor) executeR1(dkg *coordinatorcontract.DKG, validatorIdx uint16, 
 	}
 
 	e.coordinatorContract.SendRound1(
-		int64(coordinatorcontract.DefaultDGKTTL),
 		validatorIdx,
 		localIdentifier,
 		e.artifacts.r1.pkg,
@@ -142,7 +141,6 @@ func (e *Executor) executeR2(dkg *coordinatorcontract.DKG, validatorIdx uint16, 
 
 	for identifierTo := range e.artifacts.r2.pkgs {
 		e.coordinatorContract.SendRound2(
-			int64(coordinatorcontract.DefaultDGKTTL),
 			validatorIdx,
 			localIdentifier,
 			identifierTo.ToBytes(),
@@ -195,7 +193,6 @@ func (e *Executor) executeR3(dkg *coordinatorcontract.DKG, validatorIdx uint16, 
 	}
 
 	e.coordinatorContract.SendPubkeyPackage(
-		int64(coordinatorcontract.DefaultDGKTTL),
 		validatorIdx,
 		e.artifacts.r3.pkg,
 		localIdentifier,
