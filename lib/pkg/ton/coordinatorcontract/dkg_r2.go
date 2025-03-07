@@ -10,11 +10,11 @@ import (
 
 type (
 	DKGR2 struct {
-		mask  *big.Int
-		count uint64
-		pkgs  *DKGR2Pkgs
+		mask     *big.Int
+		count    uint64
+		Packages DKGR2Pkgs
 	}
-	DKGR2Pkgs map[string]*DKGPkgs
+	DKGR2Pkgs map[string]DKGPkgs
 )
 
 func parseR2PkgKey(keySlice *cell.Slice, keySize uint) string {
@@ -22,7 +22,7 @@ func parseR2PkgKey(keySlice *cell.Slice, keySize uint) string {
 	return fmt.Sprintf("%x", key.Bytes())
 }
 
-func parseR2PkgValue(valueSlice *cell.Slice) (*DKGPkgs, error) {
+func parseR2PkgValue(valueSlice *cell.Slice) (DKGPkgs, error) {
 	valueSlice.MustLoadUInt(256)
 
 	dict := valueSlice.MustLoadDict(256)
@@ -33,13 +33,13 @@ func parseR2PkgValue(valueSlice *cell.Slice) (*DKGPkgs, error) {
 	return result, nil
 }
 
-func NewR2Pkgs(dict *cell.Dictionary) (*DKGR2Pkgs, error) {
+func NewR2Pkgs(dict *cell.Dictionary) (DKGR2Pkgs, error) {
 	result, err := parseddict.New(dict, parseR2PkgKey, parseR2PkgValue)
 	if err != nil {
 		return nil, err
 	}
 	dkgR2Pkgs := DKGR2Pkgs(*result)
-	return &dkgR2Pkgs, nil
+	return dkgR2Pkgs, nil
 }
 
 func NewDKGR2(dict *cell.Dictionary, params *DKGRoundState) (*DKGR2, error) {
@@ -47,14 +47,5 @@ func NewDKGR2(dict *cell.Dictionary, params *DKGRoundState) (*DKGR2, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &DKGR2{mask: params.mask, count: params.count, pkgs: pkgs}, nil
-}
-
-func (d *DKGR2) GetPkgs() *DKGR2Pkgs {
-	return d.pkgs
-}
-
-func (d *DKGR2Pkgs) GetPkgsByIdentifier(identifier string) map[string][]byte {
-	pkgs := (*d)[identifier]
-	return pkgs.GetAll()
+	return &DKGR2{mask: params.mask, count: params.count, Packages: pkgs}, nil
 }

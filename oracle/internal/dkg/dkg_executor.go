@@ -74,7 +74,7 @@ func (e *Executor) Execute(dkg *coordinatorcontract.DKG) {
 	}
 }
 
-func (e *Executor) executeR1(dkg *coordinatorcontract.DKG, validatorIdx uint16, identifier []byte) {
+func (e *Executor) executeR1(dkg *coordinatorcontract.DKG, validatorIdx uint16, localIdentifier []byte) {
 	e.logDKGProcess(dkg, "Start executing R1")
 	if dkg.Status == coordinatorcontract.DKGStatusFinished ||
 		dkg.Status >= coordinatorcontract.DKGStatusPart1Finished {
@@ -82,19 +82,23 @@ func (e *Executor) executeR1(dkg *coordinatorcontract.DKG, validatorIdx uint16, 
 		return
 	}
 
-	packages := dkg.R1.GetPkgs()
-	if packages.Get(string(identifier)) != nil {
+	packages := dkg.GetR1Packages()
+	if packages[string(localIdentifier)] != nil {
 		e.logDKGProcess(dkg, "R1 package already sent")
 		return
 	}
 
 	if e.frostState.r1 == nil {
-		part1Result, r1Secret, err := frost.DkgPart1(identifier, uint16(math.Floor(float64(dkg.MaxSigners)*2/3)), uint16(dkg.MaxSigners))
+		r1Package, r1Secret, err := frost.DkgPart1(
+			localIdentifier,
+			uint16(math.Floor(float64(dkg.MaxSigners)*2/3)),
+			uint16(dkg.MaxSigners),
+		)
 		if err != nil {
 			return
 		}
 		e.frostState.r1 = &r1Step{
-			pkg:    part1Result,
+			pkg:    r1Package,
 			secret: r1Secret,
 		}
 	}
@@ -102,12 +106,12 @@ func (e *Executor) executeR1(dkg *coordinatorcontract.DKG, validatorIdx uint16, 
 	e.coordinatorContract.SendRound1(
 		int64(coordinatorcontract.DefaultDGKTTL),
 		validatorIdx,
-		identifier,
+		localIdentifier,
 		e.frostState.r1.pkg,
 	)
 }
 
-func (e *Executor) executeR2(dkg *coordinatorcontract.DKG, validatorIdx uint16, identifier []byte) {
+func (e *Executor) executeR2(dkg *coordinatorcontract.DKG, validatorIdx uint16, localIdentifier []byte) {
 	e.logDKGProcess(dkg, "Start executing R2")
 	if dkg.Status == coordinatorcontract.DKGStatusFinished ||
 		dkg.Status >= coordinatorcontract.DKGStatusPart2Finished {
@@ -118,20 +122,20 @@ func (e *Executor) executeR2(dkg *coordinatorcontract.DKG, validatorIdx uint16, 
 	if e.frostState.r2 == nil {
 		r1Pkgs := map[frost.Identifier]frost.Package{}
 
-		for ident, pkg := range dkg.R1.GetPkgs().GetAll() {
-			if ident == string(identifier) {
+		for identifier, pkg := range dkg.GetR1Packages() {
+			if identifier == string(localIdentifier) {
 				continue
 			}
 
-			r1Pkgs[frost.Identifier([]byte(ident))] = frost.NewPackage(pkg)
+			r1Pkgs[frost.Identifier([]byte(identifier))] = frost.NewPackage(pkg)
 		}
 
-		pkgs, r2Secret, err := frost.DkgPart2(e.frostState.r1.secret, r1Pkgs)
+		r2Packages, r2Secret, err := frost.DkgPart2(e.frostState.r1.secret, r1Pkgs)
 		if err != nil {
 			return
 		}
 		e.frostState.r2 = &r2Step{
-			pkgs:   pkgs,
+			pkgs:   r2Packages,
 			secret: r2Secret,
 		}
 	}
@@ -140,21 +144,21 @@ func (e *Executor) executeR2(dkg *coordinatorcontract.DKG, validatorIdx uint16, 
 		e.coordinatorContract.SendRound2(
 			int64(coordinatorcontract.DefaultDGKTTL),
 			validatorIdx,
-			identifier,
+			localIdentifier,
 			identifierTo.ToBytes(),
 			e.frostState.r2.pkgs[identifierTo].ToBytes(),
 		)
 	}
 }
 
-func (e *Executor) executeR3(dkg *coordinatorcontract.DKG, validatorIdx uint16, identifier []byte) {
+func (e *Executor) executeR3(dkg *coordinatorcontract.DKG, validatorIdx uint16, localIdentifier []byte) {
 	e.logDKGProcess(dkg, "Start executing R3")
 	if dkg.Status == coordinatorcontract.DKGStatusFinished {
 		e.logDKGProcess(dkg, "R3 completed")
 		return
 	}
 
-	if dkg.Status >= coordinatorcontract.DKGStatusPart2Finished {
+	if dkg.Status < coordinatorcontract.DKGStatusPart2Finished {
 		e.logDKGProcess(dkg, "R2 not yet completed, waiting for more packages.")
 		return
 	}
@@ -163,21 +167,21 @@ func (e *Executor) executeR3(dkg *coordinatorcontract.DKG, validatorIdx uint16, 
 
 		r1Packages := map[frost.Identifier]frost.Package{}
 
-		for ident, pkg := range dkg.R1.GetPkgs().GetAll() {
-			if ident == string(identifier) {
+		for identifier, pkg := range dkg.GetR1Packages() {
+			if identifier == string(localIdentifier) {
 				continue
 			}
 
-			r1Packages[frost.Identifier([]byte(ident))] = frost.NewPackage(pkg)
+			r1Packages[frost.Identifier([]byte(identifier))] = frost.NewPackage(pkg)
 		}
 
 		r2Packages := map[frost.Identifier]frost.Package{}
 
-		for ident, pkg := range dkg.R2.GetPkgs().GetPkgsByIdentifier(string(identifier)) {
-			if ident == string(identifier) {
+		for toIdentifier, pkg := range dkg.GetR2Packages(localIdentifier) {
+			if toIdentifier == string(localIdentifier) {
 				continue
 			}
-			r2Packages[frost.Identifier([]byte(ident))] = frost.NewPackage(pkg)
+			r2Packages[frost.Identifier([]byte(toIdentifier))] = frost.NewPackage(pkg)
 		}
 
 		keyPackage, publicKeyPackage, err := frost.DkgPart3(e.frostState.r2.secret, r1Packages, r2Packages)
@@ -194,7 +198,7 @@ func (e *Executor) executeR3(dkg *coordinatorcontract.DKG, validatorIdx uint16, 
 		int64(coordinatorcontract.DefaultDGKTTL),
 		validatorIdx,
 		e.frostState.r3.pkg,
-		identifier,
+		localIdentifier,
 		e.frostState.r3.publicKeyPackage,
 	)
 }

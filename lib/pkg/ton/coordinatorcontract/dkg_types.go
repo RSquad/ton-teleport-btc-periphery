@@ -45,3 +45,11 @@ func (s DKGStatus) String() string {
 		return "UNKNOWN"
 	}
 }
+
+func (dkg *DKG) GetR1Packages() DKGPkgs {
+	return dkg.R1.Packages
+}
+
+func (dkg *DKG) GetR2Packages(fromIdentifier []byte) DKGPkgs {
+	return dkg.R2.Packages[string(fromIdentifier)]
+}
