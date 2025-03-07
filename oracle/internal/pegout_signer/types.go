@@ -26,33 +26,6 @@ type SigningShare struct {
 	Index      string
 }
 
-// CommitmentRequest represents a request to send commitments
-type CommitmentRequest struct {
-	PegoutID     uint64
-	ValidatorIdx int
-	Identifier   []byte
-	Commitments  []byte
-	Lifetime     int
-}
-
-// SigningShareRequest represents a request to send signing shares
-type SigningShareRequest struct {
-	PegoutID      uint64
-	ValidatorIdx  int
-	Identifier    []byte
-	SigningShares [][]byte
-	Lifetime      int
-}
-
-// SignaturesRequest represents a request to send signatures
-type SignaturesRequest struct {
-	PegoutID     uint64
-	ValidatorIdx int
-	Identifier   []byte
-	Signatures   [][]byte
-	Lifetime     int
-}
-
 // TxParts represents transaction parts
 type TxParts struct {
 	Inputs     []TxInput
