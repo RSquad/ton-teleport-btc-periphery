@@ -46,3 +46,11 @@ func (e *Executor) logDKGProcess(dkg *coordinatorcontract.DKG, msg string) {
 		Str("dkg_until", dkg.Until.Format(time.RFC3339)).
 		Msg(msg)
 }
+
+func (e *Executor) logDKGPart1Failed(dkg *coordinatorcontract.DKG, err error) {
+	logger.Log.Error().
+		Str("component", "DKGExecutor").
+		Str("dkg_status", dkg.Status.String()).
+		Str("dkg_until", dkg.Until.Format(time.RFC3339)).
+		Msgf("part1 failed: %e", err)
+}

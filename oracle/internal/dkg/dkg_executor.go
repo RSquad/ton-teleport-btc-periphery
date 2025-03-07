@@ -102,6 +102,7 @@ func (e *Executor) executeR1(dkg *coordinatorcontract.DKG, validatorIdx uint16, 
 			uint16(dkg.MaxSigners),
 		)
 		if err != nil {
+			e.logDKGPart1Failed(dkg, err)
 			return
 		}
 		e.artifacts.r1 = &Round1Result{
