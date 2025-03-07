@@ -2,6 +2,7 @@ package coordinatorcontract
 
 import (
 	"context"
+	"time"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/signer"
@@ -19,11 +20,14 @@ const (
 	OpCodePegOutTxSendCommitments = 0x58e40000
 )
 
+const DefaultDGKTTL = time.Minute
+
 type CoordinatorContract struct {
 	ton.Contract
 	signer    *signer.Signer
 	tonClient *tonclient.TonClient
 	ctx       context.Context
+	ttl       time.Duration
 }
 
 func New(
@@ -32,8 +36,9 @@ func New(
 	signer *signer.Signer,
 	ctx context.Context,
 ) *CoordinatorContract {
+	ttl := DefaultDGKTTL
 	return &CoordinatorContract{
-		ton.Contract{Addr: addr}, signer, tonClient, ctx,
+		ton.Contract{Addr: addr}, signer, tonClient, ctx, ttl,
 	}
 }
 
