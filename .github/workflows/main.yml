@@ -4,24 +4,25 @@ on:
   push:
     branches:
       - develop
+      - sandbox
 
 jobs:
-  indexer-develop:
+  develop:
     if: github.ref == 'refs/heads/develop'
     uses: ./.github/workflows/build-and-deploy.yml
     with:
-      APP_NAME: indexer
+      APPS: '["indexer", "relayer"]'
       STAGE: develop
       APP_NAMESPACE: ton-teleport-dev
     secrets:
       KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
 
-  relayer-develop:
-    if: github.ref == 'refs/heads/develop'
+  sandbox:
+    if: github.ref == 'refs/heads/sandbox'
     uses: ./.github/workflows/build-and-deploy.yml
     with:
-      APP_NAME: relayer
-      STAGE: develop
-      APP_NAMESPACE: ton-teleport-dev
+      APPS: '["indexer", "relayer"]'
+      STAGE: sandbox
+      APP_NAMESPACE: ton-teleport-sand
     secrets:
       KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
