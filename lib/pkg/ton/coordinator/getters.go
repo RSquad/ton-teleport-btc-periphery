@@ -20,8 +20,8 @@ const (
 	OpCodeCoordinatorRound2           = 0x0000bb50
 	OpCodeCoordinatorRound3           = 0x00008bc6
 	OpCodeCoordinatorSendCommitments  = 0x58e40000
-	OpCodeCoordinatorSendSigningShare = 0x58e40000
-	OpCodeCoordinatorSendSignature    = 0x58e40000
+	OpCodeCoordinatorSendSigningShare = 0x706b0000
+	OpCodeCoordinatorSendSignature    = 0xd0720000
 )
 
 const DefaultDGKTTL = time.Minute
@@ -32,18 +32,6 @@ type CoordinatorContract struct {
 	tonClient *tonclient.TonClient
 	ctx       context.Context
 	ttl       time.Duration
-}
-
-func readBuffer(value *cell.Slice) ([]byte, error) {
-	return utils.WriteSlicesToBuffer(value.MustLoadRef()), nil
-}
-
-func loadSharesMap(value *cell.Slice) (map[string][]byte, error) {
-	dict, _ := value.MustLoadRef().ToDict(64)
-	sharesMap, err := parseddict.New(dict, parseddict.ParseKey, func(s *cell.Slice) ([]byte, error) {
-		return utils.WriteSlicesToBuffer(s), nil
-	})
-	return *sharesMap, err
 }
 
 func New(
@@ -213,4 +201,18 @@ func loadRoundMaskAndCount(dkgSlice *cell.Slice) (*DKGRoundState, error) {
 	}
 
 	return &DKGRoundState{mask, count}, nil
+}
+
+// Helpers
+
+func readBuffer(value *cell.Slice) ([]byte, error) {
+	return utils.WriteSlicesToBuffer(value.MustLoadRef()), nil
+}
+
+func loadSharesMap(value *cell.Slice) (map[string][]byte, error) {
+	dict, _ := value.MustLoadRef().ToDict(64)
+	sharesMap, err := parseddict.New(dict, parseddict.ParseKey, func(s *cell.Slice) ([]byte, error) {
+		return utils.WriteSlicesToBuffer(s), nil
+	})
+	return *sharesMap, err
 }
