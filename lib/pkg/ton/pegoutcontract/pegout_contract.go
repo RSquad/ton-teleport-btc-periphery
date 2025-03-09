@@ -6,6 +6,7 @@ import (
 	"math/big"
 
 	tonclient "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
 	"github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/tlb"
 	"github.com/xssnick/tonutils-go/ton"
@@ -136,4 +137,31 @@ func (c *PegoutContract) GetTxParts(block *ton.BlockIDExt) (*TxParts, error) {
 		Signatures:  signatures,
 		InternalKey: internalKey.Bytes(),
 	}, nil
+}
+
+func (c *PegoutContract) GetSigningHashes(block *ton.BlockIDExt) ([][]byte, error) {
+	result, err := c.tonClient.API.RunGetMethod(c.ctx, block, c.Addr, "get_signing_hashes")
+	if err != nil {
+		return nil, fmt.Errorf("failed to get tx parts: %w", err)
+	}
+	cell, err := result.Cell(0)
+	if err != nil {
+		return nil, err
+	}
+
+	dict, err := cell.BeginParse().ToDict(16)
+	if err != nil {
+		return nil, err
+	}
+
+	entries, err := dict.LoadAll()
+	if err != nil {
+		return nil, err
+	}
+	hashes := make([][]byte, 0, len(entries))
+	for _, kv := range entries {
+		hashes = append(hashes, utils.WriteSlicesToBuffer(kv.Value))
+	}
+
+	return hashes, nil
 }

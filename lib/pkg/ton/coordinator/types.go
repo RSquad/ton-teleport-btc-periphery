@@ -14,7 +14,7 @@ type DKG struct {
 	R1         *DKGR1
 	R2         *DKGR2
 	Until      time.Time
-	// r3Pkg  R3Pkg
+	R3         *DKGR3
 	// cfgHash    []byte
 	// attempts   uint64
 }

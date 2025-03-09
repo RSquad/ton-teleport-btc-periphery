@@ -157,7 +157,7 @@ func parseDGKSlice(dkgSlice *cell.Slice) (*DKG, error) {
 
 	maxSigners := dkgSlice.MustLoadUInt(16)
 
-	r1State, err := loadDKGRoundState(dkgSlice)
+	r1State, err := loadRoundMaskAndCount(dkgSlice)
 	if err != nil {
 		return nil, err
 	}
@@ -167,12 +167,17 @@ func parseDGKSlice(dkgSlice *cell.Slice) (*DKG, error) {
 		return nil, err
 	}
 
-	r2State, err := loadDKGRoundState(dkgSlice)
+	r2State, err := loadRoundMaskAndCount(dkgSlice)
 	if err != nil {
 		return nil, err
 	}
 	r2PkgDictCell := dkgSlice.MustLoadDict(256)
 	r2, err := NewDKGR2(r2PkgDictCell, r2State)
+	if err != nil {
+		return nil, err
+	}
+
+	r3, err := LoadDKGR3(dkgSlice.MustLoadRef())
 	if err != nil {
 		return nil, err
 	}
@@ -183,10 +188,11 @@ func parseDGKSlice(dkgSlice *cell.Slice) (*DKG, error) {
 		MaxSigners: maxSigners,
 		R1:         r1,
 		R2:         r2,
+		R3:         r3,
 	}, nil
 }
 
-func loadDKGRoundState(dkgSlice *cell.Slice) (*DKGRoundState, error) {
+func loadRoundMaskAndCount(dkgSlice *cell.Slice) (*DKGRoundState, error) {
 	mask, err := dkgSlice.LoadBigUInt(256)
 	if err != nil {
 		return nil, err
