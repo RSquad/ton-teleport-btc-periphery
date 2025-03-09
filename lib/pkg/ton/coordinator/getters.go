@@ -116,8 +116,8 @@ func (c *CoordinatorContract) GetUnsignedPegouts() ([]PegoutRecord, error) {
 		Commitments := parseddict.New(
 			commitmentsDict,
 			parseddict.ParseKey,
-			func(s *cell.Slice) ([]byte, error) {
-				return utils.WriteSlicesToBuffer(s.MustLoadRef()), nil
+			func(value *cell.Slice) ([]byte, error) {
+				return utils.WriteSlicesToBuffer(value.MustLoadRef()), nil
 			},
 		)
 		SigningSharesMask := value.MustLoadSlice(256)
@@ -126,8 +126,8 @@ func (c *CoordinatorContract) GetUnsignedPegouts() ([]PegoutRecord, error) {
 		SigningShares := parseddict.New(
 			signingSharesDict,
 			parseddict.ParseKey,
-			func(s *cell.Slice) (*cell.Cell, error) {
-				return s.LoadRef()
+			func(value *cell.Slice) (*cell.Cell, error) {
+				return value.LoadRef()
 			},
 		)
 		PegoutAddress := value.MustLoadAddr()

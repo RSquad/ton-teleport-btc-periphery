@@ -19,8 +19,8 @@ func (c *Client) Commit(internalKey []byte) ([]byte, []byte, error) {
 	return result.Nonce, result.Commitments, nil
 }
 
-func (c *Client) Sign(internalKey []byte, signPkg []byte, nonce []byte, merkleRoot []byte) ([]byte, error) {
-	c.endpoint.SignRequestCh <- &SignRequest{internalKey, signPkg, nonce, merkleRoot}
+func (c *Client) Sign(internalKey []byte, tapTweak []byte, pegoutAddr string, message []byte) ([]byte, error) {
+	c.endpoint.SignRequestCh <- &SignRequest{internalKey, tapTweak, pegoutAddr, message}
 	result, ok := <-c.endpoint.SignResultCh
 	if !ok {
 		return nil, fmt.Errorf("failed to read from SignResultCh")

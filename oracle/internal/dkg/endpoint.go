@@ -11,9 +11,9 @@ type CommitResult struct {
 
 type SignRequest struct {
 	internalKey []byte
-	signPkg     []byte
-	nonce       []byte
-	merkleRoot  []byte
+	tapTweak    []byte
+	pegoutAddr  string
+	message     []byte
 }
 
 type SignResult struct {

@@ -67,29 +67,39 @@ func (e *Executor) Work(ctx context.Context) (err error) {
 	}
 }
 
-func (e *Executor) startCommitServer(ctx context.Context, endpoint *Endpoint) (err error) {
-	logger.DefaultLogStartWork("Commit Server")
-	defer logger.DefaultLogFinishWork("Commit Server", err)
-	for {
-		req, ok := <-endpoint.CommitRequestCh
-		if !ok {
-			return nil
-		}
-		Nonce, Commitments, _ := e.Commit(req.internalKey)
-		endpoint.CommitResultCh <- &CommitResult{Nonce, Commitments}
-	}
-}
+func (e *Executor) startDkgServer(ctx context.Context, endpoint *Endpoint) (err error) {
+	logger.DefaultLogStartWork("DKG Server")
+	defer logger.DefaultLogFinishWork("DKG Server", err)
 
-func (e *Executor) startSignServer(ctx context.Context, endpoint *Endpoint) (err error) {
-	logger.DefaultLogStartWork("Sign Server")
-	defer logger.DefaultLogFinishWork("Sign Server", err)
 	for {
-		req, ok := <-endpoint.SignRequestCh
-		if !ok {
-			return nil
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case request, ok := <-endpoint.CommitRequestCh:
+			if !ok {
+				continue
+			}
+			nonce, commitments, err := e.Commit(request.internalKey)
+			if err != nil {
+				return err
+			}
+			endpoint.CommitResultCh <- &CommitResult{
+				Nonce:       nonce,
+				Commitments: commitments,
+			}
+
+		case request, ok := <-endpoint.SignRequestCh:
+			if !ok {
+				continue
+			}
+			signingShare, err := e.Sign(request.internalKey)
+			if err != nil {
+				return err
+			}
+			endpoint.SignResultCh <- &SignResult{
+				signingShare: signingShare,
+			}
 		}
-		signingShare, _ := e.Sign(req.internalKey)
-		endpoint.SignResultCh <- &SignResult{signingShare}
 	}
 }
 
@@ -160,7 +170,7 @@ func (e *Executor) executeR2(dkg *coordinator.DKG, validatorIdx uint16, localIde
 	}
 
 	if e.artifacts.r2 == nil {
-		r1Pkgs := map[frost.Identifier]frost.Package{}
+		r1Pkgs := make(map[frost.Identifier]frost.Package)
 
 		for identifier, pkg := range dkg.GetR1Packages() {
 			if identifier == string(localIdentifier) {

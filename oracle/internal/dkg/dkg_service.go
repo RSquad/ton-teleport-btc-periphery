@@ -57,18 +57,9 @@ func (s *Service) Work(ctx context.Context) (err error) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		err = executor.startCommitServer(ctx, s.endpoint)
+		err = executor.startDkgServer(ctx, s.endpoint)
 		if err != nil {
-			logger.Log.Error().Err(err).Msg("Commit Server failed")
-		}
-	}()
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		err = executor.startSignServer(ctx, s.endpoint)
-		if err != nil {
-			logger.Log.Error().Err(err).Msg("Sign Server failed")
+			logger.Log.Error().Err(err).Msg("DKG Server failed")
 		}
 	}()
 
