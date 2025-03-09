@@ -48,7 +48,7 @@ func initialize() (*App, error) {
 	coordinatorContract := coordinator.New(coordinatorContractAddr, tonClient, nil, context.Background())
 	dkgService := dkg.NewService(coordinatorContract)
 	dkgClient := dkgService.GetClient()
-	signService := pegoutsigner.NewService(&cfg, dkgClient, keystore, nil, coordinatorContract, context.Background())
+	signService := pegoutsigner.NewService(&cfg, dkgClient, keystore, nil, coordinatorContract, tonClient)
 
 	wg := sync.WaitGroup{}
 

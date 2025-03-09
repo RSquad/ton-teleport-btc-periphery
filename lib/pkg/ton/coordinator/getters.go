@@ -34,6 +34,18 @@ type CoordinatorContract struct {
 	ttl       time.Duration
 }
 
+func readBuffer(value *cell.Slice) ([]byte, error) {
+	return utils.WriteSlicesToBuffer(value.MustLoadRef()), nil
+}
+
+func loadSharesMap(value *cell.Slice) (map[string][]byte, error) {
+	dict, _ := value.MustLoadRef().ToDict(64)
+	sharesMap, err := parseddict.New(dict, parseddict.ParseKey, func(s *cell.Slice) ([]byte, error) {
+		return utils.WriteSlicesToBuffer(s), nil
+	})
+	return *sharesMap, err
+}
+
 func New(
 	addr *address.Address,
 	tonClient *tonclient.TonClient,
@@ -113,23 +125,21 @@ func (c *CoordinatorContract) GetUnsignedPegouts() ([]PegoutRecord, error) {
 		CommitmentsMask := value.MustLoadSlice(256)
 		value.MustLoadUInt(16)
 		commitmentsDict := value.MustLoadDict(256)
-		Commitments := parseddict.New(
+		commitmentsPtr, _ := parseddict.New(
 			commitmentsDict,
 			parseddict.ParseKey,
-			func(value *cell.Slice) ([]byte, error) {
-				return utils.WriteSlicesToBuffer(value.MustLoadRef()), nil
-			},
+			readBuffer,
 		)
+		Commitments := *commitmentsPtr
 		SigningSharesMask := value.MustLoadSlice(256)
 		value.MustLoadUInt(16)
 		signingSharesDict := value.MustLoadDict(256)
-		SigningShares := parseddict.New(
+		signingSharesPtr, _ := parseddict.New(
 			signingSharesDict,
 			parseddict.ParseKey,
-			func(value *cell.Slice) (*cell.Cell, error) {
-				return value.LoadRef()
-			},
+			loadSharesMap,
 		)
+		SigningShares := *signingSharesPtr
 		PegoutAddress := value.MustLoadAddr()
 		InternalKey := value.MustLoadRef().MustLoadSlice(256)
 

@@ -2,7 +2,6 @@ package pegoutsigner
 
 import (
 	"context"
-	"encoding/hex"
 	"fmt"
 	"math"
 	"sync"
@@ -152,9 +151,8 @@ func (s *SignService) doCommit(
 				return false
 			}
 
-			// TODO
-			// s.keyStore.StoreNonce(pegoutAddressStr, nonce)
-			// s.keyStore.StoreCommitments(pegoutAddressStr, commitments)
+			s.keyStore.StoreNonce(pegoutAddressStr, nonce)
+			s.keyStore.StoreCommitments(pegoutAddressStr, commitments)
 		} else {
 			s.logErrNullNonceOrCommitments(nonce, commitments, pegoutAddressStr)
 			return false
