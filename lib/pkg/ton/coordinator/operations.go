@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/signer"
 	"github.com/xssnick/tonutils-go/tlb"
 	"github.com/xssnick/tonutils-go/tvm/cell"
 )
@@ -47,6 +48,45 @@ func (c *CoordinatorContract) SendPubkeyPackage(validatorIdx uint16, internalKey
 	return c.sendBodyCell(BuildSendRound3Body(
 		int64(c.ttl.Seconds()), validatorIdx, internalKeyXY, Identifier, pubkeyPackage,
 	))
+}
+
+func (c *CoordinatorContract) SendCommitments(
+	PegoutID uint64,
+	ValidatorIdx int,
+	Identifier, Commitments []byte,
+) (*tlb.Transaction, error) {
+	return c.sendBodyCell(BuildSendCommitmentsBody(
+		int64(c.ttl.Seconds()),
+		&CommitmentRequest{PegoutID, ValidatorIdx, Identifier, Commitments},
+	))
+}
+
+func (c *CoordinatorContract) SendSigningShare(
+	PegoutID uint64,
+	ValidatorIdx int,
+	Identifier []byte,
+	SigningShares [][]byte,
+) (*tlb.Transaction, error) {
+	return c.sendBodyCell(BuildSendSigningShareBody(
+		int64(c.ttl.Seconds()),
+		&SigningShareRequest{PegoutID, ValidatorIdx, Identifier, SigningShares},
+	))
+}
+
+func (c *CoordinatorContract) SendSignatures(
+	PegoutID uint64,
+	ValidatorIdx int,
+	Identifier []byte,
+	Signatures [][]byte,
+) (*tlb.Transaction, error) {
+	return c.sendBodyCell(BuildSendSignaturesBody(
+		int64(c.ttl.Seconds()),
+		&SignaturesRequest{PegoutID, ValidatorIdx, Identifier, Signatures},
+	))
+}
+
+func (c *CoordinatorContract) ConnectSigner(signer *signer.Signer) {
+	c.signer = signer
 }
 
 func (c *CoordinatorContract) sendBodyCell(bodyCell *cell.Cell) (*tlb.Transaction, error) {

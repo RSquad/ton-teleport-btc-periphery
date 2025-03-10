@@ -10,6 +10,8 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
 	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/cfg"
 	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/dkg"
+	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/keystore"
+	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/pegout_signer"
 	"github.com/xssnick/tonutils-go/address"
 )
 
@@ -28,6 +30,10 @@ func initialize() (*App, error) {
 	if err != nil {
 		return nil, err
 	}
+	keystore, err := keystore.New(cfg.KeystorePath)
+	if err != nil {
+		return nil, err
+	}
 
 	tonClient, err := tonclient.New(cfg.TonConfigUrl)
 	if err != nil {
@@ -38,8 +44,11 @@ func initialize() (*App, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	coordinatorContract := coordinator.New(coordinatorContractAddr, tonClient, nil, context.Background())
 	dkgService := dkg.NewService(coordinatorContract)
+	dkgClient := dkgService.GetClient()
+	signService := pegoutsigner.NewService(&cfg, dkgClient, keystore, nil, coordinatorContract, tonClient)
 
 	wg := sync.WaitGroup{}
 
@@ -47,6 +56,12 @@ func initialize() (*App, error) {
 	go func() {
 		defer wg.Done()
 		dkgService.Work(context.Background())
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		signService.Work(context.Background())
 	}()
 
 	wg.Wait()

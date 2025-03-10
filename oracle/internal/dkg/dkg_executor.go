@@ -67,6 +67,50 @@ func (e *Executor) Work(ctx context.Context) (err error) {
 	}
 }
 
+func (e *Executor) startDkgServer(ctx context.Context, endpoint *Endpoint) (err error) {
+	logger.DefaultLogStartWork("DKG Server")
+	defer logger.DefaultLogFinishWork("DKG Server", err)
+
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case request, ok := <-endpoint.CommitRequestCh:
+			if !ok {
+				continue
+			}
+			nonce, commitments, err := e.Commit(request.internalKey)
+			if err != nil {
+				return err
+			}
+			endpoint.CommitResultCh <- &CommitResult{
+				Nonce:       nonce,
+				Commitments: commitments,
+			}
+
+		case request, ok := <-endpoint.SignRequestCh:
+			if !ok {
+				continue
+			}
+			signingShare, err := e.Sign(request.internalKey)
+			if err != nil {
+				return err
+			}
+			endpoint.SignResultCh <- &SignResult{
+				signingShare: signingShare,
+			}
+		}
+	}
+}
+
+func (e *Executor) Sign(key []byte) ([]byte, error) {
+	panic("unimplemented")
+}
+
+func (e *Executor) Commit(key []byte) ([]byte, []byte, error) {
+	panic("unimplemented")
+}
+
 func (e *Executor) Execute(dkg *coordinator.DKG) {
 	e.logStartExecuting(dkg)
 	defer e.logFinishExecuting(dkg)
@@ -126,7 +170,7 @@ func (e *Executor) executeR2(dkg *coordinator.DKG, validatorIdx uint16, localIde
 	}
 
 	if e.artifacts.r2 == nil {
-		r1Pkgs := map[frost.Identifier]frost.Package{}
+		r1Pkgs := make(map[frost.Identifier]frost.Package)
 
 		for identifier, pkg := range dkg.GetR1Packages() {
 			if identifier == string(localIdentifier) {

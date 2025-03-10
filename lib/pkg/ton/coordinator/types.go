@@ -3,6 +3,8 @@ package coordinator
 import (
 	"math/big"
 	"time"
+
+	"github.com/xssnick/tonutils-go/address"
 )
 
 type DKG struct {
@@ -12,7 +14,7 @@ type DKG struct {
 	R1         *DKGR1
 	R2         *DKGR2
 	Until      time.Time
-	// r3Pkg  R3Pkg
+	R3         *DKGR3
 	// cfgHash    []byte
 	// attempts   uint64
 }
@@ -66,4 +68,54 @@ func (dkg *DKG) Round2Completed() bool {
 
 func (dkg *DKG) Round3Completed() bool {
 	return dkg.Status == DKGStatusFinished
+}
+
+// CommitmentRequest represents a request to send commitments
+type CommitmentRequest struct {
+	PegoutID     uint64
+	ValidatorIdx int
+	Identifier   []byte
+	Commitments  []byte
+}
+
+type SigningShareRequest struct {
+	PegoutID      uint64
+	ValidatorIdx  int
+	Identifier    []byte
+	SigningShares [][]byte
+}
+
+type SignaturesRequest struct {
+	PegoutID     uint64
+	ValidatorIdx int
+	Identifier   []byte
+	Signatures   [][]byte
+}
+
+type PegoutRecord struct {
+	ID                uint64
+	PegoutAddress     *address.Address
+	InternalKey       []byte
+	Commitments       map[string][]byte
+	CommitmentsMask   []byte
+	SigningShares     map[string]map[string][]byte
+	SigningSharesMask []byte
+}
+
+func (p *PegoutRecord) HasCommitment(identifier []byte) bool {
+	_, exists := p.Commitments[string(identifier)]
+	return exists
+}
+
+func (p *PegoutRecord) CommitmentsCount() int {
+	return len(p.Commitments)
+}
+
+func (p *PegoutRecord) HasSigningShare(identifier []byte) bool {
+	_, exists := p.SigningShares[string(identifier)]
+	return exists
+}
+
+func (p *PegoutRecord) SigningSharesCount() int {
+	return len(p.SigningShares)
 }
