@@ -9,7 +9,7 @@ import (
 
 type DKG struct {
 	Status     DKGStatus
-	VSet       *VSet
+	VSet       VSet
 	MaxSigners uint64
 	R1         *DKGR1
 	R2         *DKGR2
@@ -73,21 +73,21 @@ func (dkg *DKG) Round3Completed() bool {
 // CommitmentRequest represents a request to send commitments
 type CommitmentRequest struct {
 	PegoutID     uint64
-	ValidatorIdx int
+	ValidatorIdx uint16
 	Identifier   []byte
 	Commitments  []byte
 }
 
 type SigningShareRequest struct {
 	PegoutID      uint64
-	ValidatorIdx  int
+	ValidatorIdx  uint16
 	Identifier    []byte
 	SigningShares [][]byte
 }
 
 type SignaturesRequest struct {
 	PegoutID     uint64
-	ValidatorIdx int
+	ValidatorIdx uint16
 	Identifier   []byte
 	Signatures   [][]byte
 }
@@ -98,7 +98,7 @@ type PegoutRecord struct {
 	InternalKey       []byte
 	Commitments       map[string][]byte
 	CommitmentsMask   []byte
-	SigningShares     map[string]map[string][]byte
+	SigningShares     map[string]map[uint8][]byte
 	SigningSharesMask []byte
 }
 

@@ -11,7 +11,19 @@ func ParseKey(s *cell.Slice, keySize uint) string {
 	return fmt.Sprintf("%x", s.MustLoadBigUInt(keySize).Bytes())
 }
 
-func New[V any](dict *cell.Dictionary, parseKey func(*cell.Slice, uint) string, parseValue func(*cell.Slice) (V, error)) (*map[string]V, error) {
+func New[V any](
+	dict *cell.Dictionary,
+	parseKey func(*cell.Slice, uint) string,
+	parseValue func(*cell.Slice) (V, error),
+) (*map[string]V, error) {
+	return ParseDict(dict, parseKey, parseValue)
+}
+
+func ParseDict[K comparable, V any](
+	dict *cell.Dictionary,
+	parseKey func(*cell.Slice, uint) K,
+	parseValue func(*cell.Slice) (V, error),
+) (*map[K]V, error) {
 	if dict == nil {
 		return nil, errors.New("dict cell is nil")
 	}
@@ -21,13 +33,13 @@ func New[V any](dict *cell.Dictionary, parseKey func(*cell.Slice, uint) string, 
 		return nil, fmt.Errorf("failed to load dictionary: %w", err)
 	}
 
-	result := make(map[string]V)
+	result := make(map[K]V)
 	for _, kv := range dictKV {
 		key := parseKey(kv.Key, dict.GetKeySize())
 
 		value, err := parseValue(kv.Value)
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse value for key %s: %w", key, err)
+			return nil, fmt.Errorf("failed to parse value for key %w", err)
 		}
 
 		result[key] = value

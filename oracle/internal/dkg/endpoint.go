@@ -1,7 +1,7 @@
 package dkg
 
 type CommitRequest struct {
-	internalKey []byte
+	publicKey []byte
 }
 
 type CommitResult struct {
@@ -11,9 +11,10 @@ type CommitResult struct {
 
 type SignRequest struct {
 	internalKey []byte
-	tapTweak    []byte
-	pegoutAddr  string
 	message     []byte
+	nonceName   string
+	commitments map[string][]byte
+	tapTweak    []byte
 }
 
 type SignResult struct {

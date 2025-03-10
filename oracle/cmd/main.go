@@ -44,24 +44,26 @@ func initialize() (*App, error) {
 	if err != nil {
 		return nil, err
 	}
+	ctx, cancel := context.WithCancel(context.Background())
 
-	coordinatorContract := coordinator.New(coordinatorContractAddr, tonClient, nil, context.Background())
+	coordinatorContract := coordinator.New(coordinatorContractAddr, tonClient, nil, ctx)
 	dkgService := dkg.NewService(coordinatorContract)
 	dkgClient := dkgService.GetClient()
-	signService := pegoutsigner.NewService(&cfg, dkgClient, keystore, nil, coordinatorContract, tonClient)
+	signService := pegoutsigner.NewService(dkgClient, keystore, nil, coordinatorContract, tonClient)
 
+	defer cancel()
 	wg := sync.WaitGroup{}
 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		dkgService.Work(context.Background())
+		dkgService.Work(ctx, keystore)
 	}()
 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		signService.Work(context.Background())
+		signService.Work(ctx)
 	}()
 
 	wg.Wait()

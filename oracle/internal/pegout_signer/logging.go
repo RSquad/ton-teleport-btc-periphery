@@ -8,8 +8,18 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
 )
 
+func strPegoutID(pegoutID uint64) string {
+	return fmt.Sprintf("%x", pegoutID)
+}
+
 func infoEvent() *zerolog.Event {
 	return logger.Log.Info().Str("component", "SignService")
+}
+
+func infoEventWithPegoutID(pegoutID uint64) *zerolog.Event {
+	return logger.Log.Info().
+		Str("component", "SignService").
+		Str("PegoutId", strPegoutID(pegoutID))
 }
 
 func errorEvent() *zerolog.Event {
@@ -29,12 +39,11 @@ func (s *SignService) logError(msg string, err error) {
 }
 
 func (s *SignService) logCommitPegout(pegoutID uint64) {
-	infoEvent().Msgf("Commit pegout %x", pegoutID)
+	infoEventWithPegoutID(pegoutID).Msg("Commit pegout")
 }
 
 func (s *SignService) logProcessingPegout(pegout *coordinator.PegoutRecord) {
-	infoEvent().Msgf("Processing pegout ID: %x", pegout.ID)
-	infoEvent().Msgf("Pegout address: %s", pegout.PegoutAddress)
+	infoEventWithPegoutID(pegout.ID).Msgf("Processing pegout with address %s", pegout.PegoutAddress)
 }
 
 func (s *SignService) logOracleNotValidator(pegoutID uint64) {
@@ -58,5 +67,45 @@ func (s *SignService) logErrNoOracleCommitments(pegoutID uint64) {
 }
 
 func (s *SignService) logPegoutSigned(pegoutID uint64) {
-	infoEvent().Msgf("Pegout %x signed", pegoutID)
+	infoEventWithPegoutID(pegoutID).Msg("Pegout signed")
+}
+
+func (s *SignService) logSigningShareSent(pegoutID uint64) {
+	infoEventWithPegoutID(pegoutID).Msg("Signing share sent")
+}
+
+func (s *SignService) logGetPrevDKGError(err error) {
+	errorEvent().Err(err).Msg("failed to get previous DKG")
+}
+
+func (s *SignService) logUnsignedPegoutsError(err error) {
+	errorEvent().Err(err).Msg("failed to get unsigned pegouts")
+}
+
+func (s *SignService) logSigningRequestsCount(count int) {
+	infoEvent().Msgf("%d signing requests", count)
+}
+
+func (s *SignService) logCommitSent(pegoutID uint64) {
+	infoEventWithPegoutID(pegoutID).Msg("Commit sent")
+}
+
+func (s *SignService) logMinimalSharesReached(pegoutID uint64) {
+	infoEventWithPegoutID(pegoutID).Msg("Minimal required number of signing shares is reached")
+}
+
+func (s *SignService) logAggregateSignShares(pegoutID uint64) {
+	infoEventWithPegoutID(pegoutID).Msg("Aggregate sign shares")
+}
+
+func (s *SignService) logSignatureSent(pegoutID uint64) {
+	infoEventWithPegoutID(pegoutID).Msg("Signature sent")
+}
+
+func (s *SignService) logSignatureSendError(err error) {
+	errorEvent().Err(err).Msg("failed to send signatures")
+}
+
+func (s *SignService) logAggregateSignSharesError(err error) {
+	errorEvent().Err(err).Msg("failed to aggregate sign shares")
 }
