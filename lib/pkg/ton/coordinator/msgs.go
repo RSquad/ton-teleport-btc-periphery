@@ -14,7 +14,7 @@ func BuildSendRound1Body(ttl int64, validatorIdx uint16, Identifier []byte, roun
 		MustStoreUInt(uint64(validatorIdx), 16).
 		MustStoreRef(
 			cell.BeginCell().
-				MustStoreSlice(Identifier, 32).
+				MustStoreSlice(Identifier, 256).
 				MustStoreRef(
 					utils.SplitBytesToCells(round1Package),
 				).
@@ -30,8 +30,8 @@ func BuildSendRound2Body(ttl int64, validatorIdx uint16, fromIdentifier []byte, 
 		MustStoreUInt(uint64(validatorIdx), 16).
 		MustStoreRef(
 			cell.BeginCell().
-				MustStoreSlice(fromIdentifier, 32).
-				MustStoreSlice(toIdentifier, 32).
+				MustStoreSlice(fromIdentifier, 256).
+				MustStoreSlice(toIdentifier, 256).
 				MustStoreRef(
 					utils.SplitBytesToCells(round2Package),
 				).
@@ -47,8 +47,8 @@ func BuildSendRound3Body(ttl int64, validatorIdx uint16, internalKeyXY []byte, I
 		MustStoreUInt(uint64(validatorIdx), 16).
 		MustStoreRef(
 			cell.BeginCell().
-				MustStoreSlice(Identifier, 32).
-				MustStoreSlice(internalKeyXY[1:65], 64).
+				MustStoreSlice(Identifier, 256).
+				MustStoreSlice(internalKeyXY[1:65], 64*8).
 				MustStoreRef(
 					utils.SplitBytesToCells(pubkeyPackage),
 				).

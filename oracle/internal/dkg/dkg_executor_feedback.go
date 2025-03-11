@@ -12,7 +12,7 @@ func (e *Executor) logStartExecuting(dkg *coordinator.DKG) {
 		Str("component", "DKGExecutor").
 		Str("dkg_status", dkg.Status.String()).
 		Str("dkg_until", dkg.Until.Format(time.RFC3339)).
-		Msg("Start executing DKG")
+		Msg("start")
 }
 
 func (e *Executor) logFinishExecuting(dkg *coordinator.DKG) {
@@ -20,7 +20,7 @@ func (e *Executor) logFinishExecuting(dkg *coordinator.DKG) {
 		Str("component", "DKGExecutor").
 		Str("dkg_status", dkg.Status.String()).
 		Str("dkg_until", dkg.Until.Format(time.RFC3339)).
-		Msg("Finish executing DKG")
+		Msg("stop")
 }
 
 func (e *Executor) logDKGFinished(dkg *coordinator.DKG) {

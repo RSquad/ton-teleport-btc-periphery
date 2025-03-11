@@ -10,14 +10,10 @@ import (
 	"github.com/xssnick/tonutils-go/tvm/cell"
 )
 
-func (c *CoordinatorContract) SendStartDKG(ttl int64) (*tlb.Transaction, error) {
-	if ttl == 0 {
-		ttl = int64(DefaultDGKTTL.Seconds())
-	}
-
+func (c *CoordinatorContract) SendStartDKG() (*tlb.Transaction, error) {
 	unsignedMsgBody := cell.BeginCell().
 		MustStoreUInt(OpCodeStartDKG, 32).
-		MustStoreUInt(uint64(time.Now().Unix()+ttl), 32).
+		MustStoreUInt(uint64(time.Now().Unix()+int64(c.ttl.Seconds())), 32).
 		EndCell()
 	msg, err := ton.BuildExtMsg(unsignedMsgBody, c.Addr, c.signer)
 	if err != nil {
