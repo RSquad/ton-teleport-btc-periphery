@@ -10,13 +10,13 @@ import (
 type DKG struct {
 	Status     DKGStatus
 	VSet       VSet
-	MaxSigners uint64
+	MaxSigners uint16
 	R1         *DKGR1
 	R2         *DKGR2
-	Until      time.Time
 	R3         *DKGR3
-	// cfgHash    []byte
-	// attempts   uint64
+	Until      time.Time
+	CfgHash    []byte
+	Attempts   uint64
 }
 
 type DKGRoundState struct {
@@ -107,8 +107,8 @@ func (p *PegoutRecord) HasCommitment(identifier []byte) bool {
 	return exists
 }
 
-func (p *PegoutRecord) CommitmentsCount() int {
-	return len(p.Commitments)
+func (p *PegoutRecord) CommitmentsCount() uint16 {
+	return uint16(len(p.Commitments))
 }
 
 func (p *PegoutRecord) HasSigningShare(identifier []byte) bool {
@@ -116,6 +116,6 @@ func (p *PegoutRecord) HasSigningShare(identifier []byte) bool {
 	return exists
 }
 
-func (p *PegoutRecord) SigningSharesCount() int {
-	return len(p.SigningShares)
+func (p *PegoutRecord) SigningSharesCount() uint16 {
+	return uint16(len(p.SigningShares))
 }

@@ -31,7 +31,7 @@ func (s *SignService) logMessage(msg string) {
 }
 
 func (s *SignService) logMsgf(format string, v ...interface{}) {
-	infoEvent().Msgf(format, v)
+	infoEvent().Msgf(format, v...)
 }
 
 func (s *SignService) logError(msg string, err error) {

@@ -3,7 +3,6 @@ package pegoutsigner
 import (
 	"context"
 	"fmt"
-	"math"
 	"time"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/frost"
@@ -48,16 +47,16 @@ func (s *SignService) Work(ctx context.Context) {
 
 	for {
 		s.ExecuteSign(ctx)
-		time.Sleep(3 * time.Second)
+		time.Sleep(6 * time.Second)
 	}
 }
 
 func (s *SignService) ExecuteSign(ctx context.Context) {
 	defer func() {
-		s.logMessage("completed")
+		s.logMessage("stop")
 	}()
 
-	s.logMessage("started")
+	s.logMessage("start")
 
 	dkg, err := s.coordinator.GetPrevDKG()
 	if err != nil {
@@ -105,7 +104,11 @@ func (s *SignService) execute(ctx context.Context, dkg *coordinator.DKG) {
 
 	s.coordinator.ConnectSigner(s.validator.GetSigner(validatorKeyInfo.KeyID))
 
-	minSigners := int(math.Floor(float64(dkg.MaxSigners) * 2 / 3))
+	minSigners, err := helpers.CalcMinSigners(dkg.MaxSigners)
+	if err != nil {
+		s.logError("failed to calculate min signers", err)
+		return
+	}
 
 	// Execute signing steps
 	if s.doCommit(validatorKeyInfo, &unsignedPegout, minSigners) {
@@ -120,7 +123,7 @@ func (s *SignService) execute(ctx context.Context, dkg *coordinator.DKG) {
 func (s *SignService) doCommit(
 	validatorKey *validator.ValidatorKeyInfo,
 	pegoutRecord *coordinator.PegoutRecord,
-	minSigners int,
+	minSigners uint16,
 ) bool {
 	s.logCommitPegout(pegoutRecord.ID)
 	identifier := validatorKey.PublicKey
@@ -174,7 +177,7 @@ func (s *SignService) doSign(
 	ctx context.Context,
 	validatorKey *validator.ValidatorKeyInfo,
 	pegoutRecord *coordinator.PegoutRecord,
-	minSigners int,
+	minSigners uint16,
 ) bool {
 	s.logMsgf("Sign pegout %x", pegoutRecord.ID)
 	identifier := validatorKey.PublicKey

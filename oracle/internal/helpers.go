@@ -1,6 +1,13 @@
 package helpers
 
-import "github.com/rsquad/ton-teleport-btc-periphery/frost"
+import (
+	"errors"
+	"math"
+	"regexp"
+	"strconv"
+
+	"github.com/rsquad/ton-teleport-btc-periphery/frost"
+)
 
 // Helpers
 
@@ -11,4 +18,43 @@ func ConvertMapToFrostPackages(origMap map[string][]byte) (frostMap map[frost.Id
 		frostMap[*id] = frost.NewPackage(v)
 	}
 	return
+}
+
+func CalcMinSigners(maxSigners uint16) (uint16, error) {
+	if maxSigners < 2 {
+		return 0, errors.New("maxSigners must be greater than 1")
+	}
+	minSigners := uint16(math.Floor(float64(maxSigners) * 2 / 3))
+	return max(minSigners, 2), nil
+}
+
+// ExtractExitCode extracts the exitcode value from a TON VM error log
+func ExtractExitCode(errorLog string) (int, error) {
+	exitCodePattern := regexp.MustCompile(`exitcode=(\d+)`)
+	matches := exitCodePattern.FindStringSubmatch(errorLog)
+
+	if len(matches) >= 2 {
+		exitCode, err := strconv.Atoi(matches[1])
+		if err != nil {
+			return 0, errors.New("failed to parse exitcode")
+		}
+		return exitCode, nil
+	}
+
+	// If we reach here, we couldn't find an exitcode
+	return 0, errors.New("exitcode not found in error log")
+}
+
+func HandleTvmError(err error) string {
+	exitCode, err := ExtractExitCode(err.Error())
+	if err != nil {
+		return err.Error()
+	}
+
+	switch exitCode {
+	case 114:
+		return "R1 package already sent"
+	default:
+		return "Unknown error"
+	}
 }

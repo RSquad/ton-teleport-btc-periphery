@@ -11,5 +11,5 @@ type Cfg struct {
 	ServerPublicKeyPath        string `env:"ORACLE_SERVER_PUBLIC_KEY_PATH"`
 	ClientPrivateKeyPath       string `env:"ORACLE_CLIENT_PRIVATE_KEY_PATH"`
 	ValidatorServerAddr        string `env:"ORACLE_VALIDATOR_SERVER_ADDR"`
-	KeystorePath               string `env:"KEYSTORE_PATH"`
+	KeystorePath               string `env:"ORACLE_KEYSTORE_PATH"`
 }
