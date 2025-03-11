@@ -52,7 +52,7 @@ func (c *CoordinatorContract) SendPubkeyPackage(validatorIdx uint16, internalKey
 
 func (c *CoordinatorContract) SendCommitments(
 	PegoutID uint64,
-	ValidatorIdx int,
+	ValidatorIdx uint16,
 	Identifier, Commitments []byte,
 ) (*tlb.Transaction, error) {
 	return c.sendBodyCell(BuildSendCommitmentsBody(
@@ -63,7 +63,7 @@ func (c *CoordinatorContract) SendCommitments(
 
 func (c *CoordinatorContract) SendSigningShare(
 	PegoutID uint64,
-	ValidatorIdx int,
+	ValidatorIdx uint16,
 	Identifier []byte,
 	SigningShares [][]byte,
 ) (*tlb.Transaction, error) {
@@ -75,7 +75,7 @@ func (c *CoordinatorContract) SendSigningShare(
 
 func (c *CoordinatorContract) SendSignatures(
 	PegoutID uint64,
-	ValidatorIdx int,
+	ValidatorIdx uint16,
 	Identifier []byte,
 	Signatures [][]byte,
 ) (*tlb.Transaction, error) {

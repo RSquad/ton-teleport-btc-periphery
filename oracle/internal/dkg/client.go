@@ -10,8 +10,8 @@ func CreateClient(endpoint *Endpoint) *Client {
 	return &Client{endpoint}
 }
 
-func (c *Client) Commit(internalKey []byte) ([]byte, []byte, error) {
-	c.endpoint.CommitRequestCh <- &CommitRequest{internalKey}
+func (c *Client) Commit(publicKey []byte) ([]byte, []byte, error) {
+	c.endpoint.CommitRequestCh <- &CommitRequest{publicKey}
 	result, ok := <-c.endpoint.CommitResultCh
 	if !ok {
 		return nil, nil, fmt.Errorf("failed to read from CommitResultCh")
@@ -19,8 +19,14 @@ func (c *Client) Commit(internalKey []byte) ([]byte, []byte, error) {
 	return result.Nonce, result.Commitments, nil
 }
 
-func (c *Client) Sign(internalKey []byte, tapTweak []byte, pegoutAddr string, message []byte) ([]byte, error) {
-	c.endpoint.SignRequestCh <- &SignRequest{internalKey, tapTweak, pegoutAddr, message}
+func (c *Client) Sign(
+	internalKey []byte,
+	message []byte,
+	nonceName string,
+	commitments map[string][]byte,
+	tapTweak []byte,
+) ([]byte, error) {
+	c.endpoint.SignRequestCh <- &SignRequest{internalKey, message, nonceName, commitments, tapTweak}
 	result, ok := <-c.endpoint.SignResultCh
 	if !ok {
 		return nil, fmt.Errorf("failed to read from SignResultCh")

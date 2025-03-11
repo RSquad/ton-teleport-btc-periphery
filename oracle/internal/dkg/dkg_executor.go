@@ -2,12 +2,15 @@ package dkg
 
 import (
 	"context"
+	"fmt"
 	"math"
 	"time"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/frost"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
+	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal"
+	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/keystore"
 )
 
 type Secret struct {
@@ -44,14 +47,20 @@ type Executor struct {
 	until               time.Time
 	coordinatorContract *coordinator.CoordinatorContract
 	artifacts           ExecutionArtifacts
+	keystore            keystore.Keystore
 }
 
-func NewExecutor(inChan chan *coordinator.DKG, coordinatorContract *coordinator.CoordinatorContract) *Executor {
+func NewExecutor(
+	inChan chan *coordinator.DKG,
+	coordinatorContract *coordinator.CoordinatorContract,
+	keystore keystore.Keystore,
+) *Executor {
 	return &Executor{
 		inChan:              inChan,
 		until:               time.Unix(0, 0),
 		coordinatorContract: coordinatorContract,
 		artifacts:           ExecutionArtifacts{},
+		keystore:            keystore,
 	}
 }
 
@@ -79,7 +88,7 @@ func (e *Executor) startDkgServer(ctx context.Context, endpoint *Endpoint) (err 
 			if !ok {
 				continue
 			}
-			nonce, commitments, err := e.Commit(request.internalKey)
+			nonce, commitments, err := e.Commit(request.publicKey)
 			if err != nil {
 				return err
 			}
@@ -92,7 +101,8 @@ func (e *Executor) startDkgServer(ctx context.Context, endpoint *Endpoint) (err 
 			if !ok {
 				continue
 			}
-			signingShare, err := e.Sign(request.internalKey)
+			signingShare, err := e.Sign(request.internalKey, request.tapTweak,
+				request.commitments, request.nonceName, request.message)
 			if err != nil {
 				return err
 			}
@@ -103,12 +113,31 @@ func (e *Executor) startDkgServer(ctx context.Context, endpoint *Endpoint) (err 
 	}
 }
 
-func (e *Executor) Sign(key []byte) ([]byte, error) {
-	panic("unimplemented")
+func (e *Executor) Sign(
+	publicKey []byte,
+	tapTweak []byte,
+	commitments map[string][]byte,
+	nonceName string,
+	message []byte,
+) ([]byte, error) {
+	secret := e.keystore.LoadSecret(publicKey)
+	if secret == nil {
+		return nil, fmt.Errorf("failed to load secret by key %x", publicKey)
+	}
+	nonce := e.keystore.LoadNonce(nonceName)
+	if nonce == nil {
+		return nil, fmt.Errorf("failed to load nonce by name %s", nonceName)
+	}
+	frostCommitments := helpers.ConvertMapToFrostPackages(commitments)
+	return frost.SignWithTweak(frost.NewPackage(secret), message, frostCommitments, frost.NewPackage(nonce))
 }
 
-func (e *Executor) Commit(key []byte) ([]byte, []byte, error) {
-	panic("unimplemented")
+func (e *Executor) Commit(publicKey []byte) ([]byte, []byte, error) {
+	secret := e.keystore.LoadSecret(publicKey)
+	if secret == nil {
+		return nil, nil, fmt.Errorf("failed to load secret by key %x", publicKey)
+	}
+	return frost.Commit(frost.NewPackage(secret))
 }
 
 func (e *Executor) Execute(dkg *coordinator.DKG) {

@@ -6,6 +6,7 @@ import (
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
+	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/keystore"
 )
 
 type Service struct {
@@ -26,13 +27,13 @@ func NewService(
 	}
 }
 
-func (s *Service) Work(ctx context.Context) (err error) {
+func (s *Service) Work(ctx context.Context, keystore keystore.Keystore) (err error) {
 	logger.DefaultLogStartWork("DKGService")
 	defer logger.DefaultLogFinishWork("DKGService", err)
 
 	outChan := make(chan *coordinator.DKG)
 	fetcher := NewFetcher(s.coordinatorContract, outChan)
-	executor := NewExecutor(outChan, s.coordinatorContract)
+	executor := NewExecutor(outChan, s.coordinatorContract, keystore)
 
 	wg := sync.WaitGroup{}
 
