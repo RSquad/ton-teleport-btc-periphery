@@ -2,6 +2,7 @@ package helpers
 
 import (
 	"errors"
+	"fmt"
 	"math"
 	"regexp"
 	"strconv"
@@ -53,8 +54,12 @@ func HandleTvmError(err error) string {
 
 	switch exitCode {
 	case 114:
-		return "R1 package already sent"
+		return "package already sent"
+	case 127:
+		return "R1 is not completed yet"
+	case 150:
+		return "Coordinator balance is not enough to continue"
 	default:
-		return "Unknown error"
+		return fmt.Sprintf("Unknown error: %d", exitCode)
 	}
 }

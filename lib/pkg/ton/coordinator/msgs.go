@@ -40,7 +40,7 @@ func BuildSendRound2Body(ttl int64, validatorIdx uint16, fromIdentifier []byte, 
 		EndCell()
 }
 
-func BuildSendRound3Body(ttl int64, validatorIdx uint16, internalKeyXY []byte, Identifier []byte, pubkeyPackage []byte) *cell.Cell {
+func BuildSendRound3Body(ttl int64, validatorIdx uint16, internalKeyX []byte, Identifier []byte, pubkeyPackage []byte) *cell.Cell {
 	return cell.BeginCell().
 		MustStoreUInt(OpCodeCoordinatorRound3, 32).
 		MustStoreUInt(uint64(time.Now().Unix()+ttl), 32).
@@ -48,7 +48,7 @@ func BuildSendRound3Body(ttl int64, validatorIdx uint16, internalKeyXY []byte, I
 		MustStoreRef(
 			cell.BeginCell().
 				MustStoreSlice(Identifier, 256).
-				MustStoreSlice(internalKeyXY[1:65], 64*8).
+				MustStoreSlice(internalKeyX, 256).
 				MustStoreRef(
 					utils.SplitBytesToCells(pubkeyPackage),
 				).

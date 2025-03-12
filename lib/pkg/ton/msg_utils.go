@@ -12,7 +12,10 @@ func BuildExtMsg(
 	dstAddr *address.Address,
 	signer *signer.Signer,
 ) (*tlb.ExternalMessage, error) {
-	signature := signer.SignCell(unsignedMsgBody)
+	signature := make([]byte, 64)
+	if signer != nil {
+		signature = signer.SignCell(unsignedMsgBody)
+	}
 
 	msgBody := cell.BeginCell().
 		MustStoreSlice(signature, uint(len(signature)*8)).
