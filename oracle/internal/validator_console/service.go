@@ -68,8 +68,6 @@ func (v *ValidatorConsole) runCommand(c string) ([]byte, error) {
 
 	out, err := res.CombinedOutput()
 	if err != nil {
-		fmt.Println(err)
-		fmt.Println(string(out))
 		return nil, err
 	}
 
@@ -91,38 +89,31 @@ func (v *ValidatorConsole) GetValidatorKeys() ([]ValidatorConsoleKey, error) {
 
 	command, err := v.runCommand("getconfig")
 	if err != nil {
-		fmt.Println(err)
 		return nil, err
 	}
 
 	fixedStr, err := extractJSON((string(command)))
 	if err != nil {
-		fmt.Println(err)
 		return nil, err
 	}
 
 	var obj ValidatorEngineConfig
 	err1 := json.Unmarshal([]byte(fixedStr), &obj)
 	if err1 != nil {
-		fmt.Println(err1)
 		return nil, err1
 	}
 
-	fmt.Println("GetValidatorKeys")
 	validatorConsoleKeys := []ValidatorConsoleKey{}
 	for _, validator := range obj.Validators {
-		fmt.Println(validator.Id)
 		pubKey, err := v.exportPub(validator.Id)
 		if err != nil {
 			return nil, err
 		}
-		fmt.Println("GetValidatorKeys")
 		base64Id, err := base64.StdEncoding.DecodeString(validator.Id)
 
 		if err != nil {
 			return nil, err
 		}
-		fmt.Println("GetValidatorKeys")
 		validatorId := hex.EncodeToString(base64Id)
 
 		validatorConsoleKey := ValidatorConsoleKey{
@@ -131,7 +122,6 @@ func (v *ValidatorConsole) GetValidatorKeys() ([]ValidatorConsoleKey, error) {
 		}
 		validatorConsoleKeys = append(validatorConsoleKeys, validatorConsoleKey)
 	}
-	fmt.Println("GetValidatorKeys END")
 	return validatorConsoleKeys, nil
 }
 
@@ -162,9 +152,7 @@ func (v *ValidatorConsole) exportPub(validatorIdBase64 string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println(string(result))
 	base64Result := extractPublicKey(string(result))
-	fmt.Println(base64Result)
 	d, err := base64.StdEncoding.DecodeString(base64Result)
 
 	if err != nil {

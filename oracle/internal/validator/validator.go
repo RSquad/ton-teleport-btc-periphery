@@ -92,7 +92,7 @@ func (v *Validator) GetSigner(keyID []byte) *signer.Signer {
 		return signer.New(hex.EncodeToString(v.standalonePrivateKey))
 	}
 	// else {
-	// 	return v.validatorConsole.NewValidatorSigner(keyID)
+	// 	return v.validatorConsole.NewValidatorSigner(hex.EncodeToString(keyID))
 	// }
 	panic("not implemented")
 }
