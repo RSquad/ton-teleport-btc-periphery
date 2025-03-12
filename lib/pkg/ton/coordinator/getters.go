@@ -28,7 +28,7 @@ const DefaultDGKTTL = time.Minute
 
 type CoordinatorContract struct {
 	ton.Contract
-	signer    *signer.Signer
+	signer    signer.Signer
 	tonClient *tonclient.TonClient
 	ctx       context.Context
 	ttl       time.Duration
@@ -37,7 +37,7 @@ type CoordinatorContract struct {
 func New(
 	addr *address.Address,
 	tonClient *tonclient.TonClient,
-	signer *signer.Signer,
+	signer signer.Signer,
 	ctx context.Context,
 ) *CoordinatorContract {
 	ttl := DefaultDGKTTL
