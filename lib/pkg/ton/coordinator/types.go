@@ -1,6 +1,7 @@
 package coordinator
 
 import (
+	"encoding/hex"
 	"math/big"
 	"time"
 
@@ -53,7 +54,7 @@ func (dkg *DKG) GetR1Packages() DKGPkgs {
 }
 
 func (dkg *DKG) GetR2Packages(fromIdentifier []byte) DKGPkgs {
-	return dkg.R2.Packages[string(fromIdentifier)]
+	return dkg.R2.Packages[hex.EncodeToString(fromIdentifier)]
 }
 
 func (dkg *DKG) Round1Completed() bool {

@@ -52,10 +52,7 @@ func (s *SignService) Work(ctx context.Context) {
 }
 
 func (s *SignService) ExecuteSign(ctx context.Context) {
-	defer func() {
-		s.logMessage("stop")
-	}()
-
+	defer s.logMessage("stop")
 	s.logMessage("start")
 
 	dkg, err := s.coordinator.GetPrevDKG()
@@ -65,7 +62,7 @@ func (s *SignService) ExecuteSign(ctx context.Context) {
 	}
 
 	if dkg == nil {
-		s.logMessage("DKG not yet completed")
+		s.logMessage("previous DKG is not yet initialized")
 		return
 	}
 	s.execute(ctx, dkg)
