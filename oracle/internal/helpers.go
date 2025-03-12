@@ -46,10 +46,10 @@ func ExtractExitCode(errorLog string) (int, error) {
 	return 0, errors.New("exitcode not found in error log")
 }
 
-func HandleTvmError(err error) string {
-	exitCode, err := ExtractExitCode(err.Error())
+func HandleTvmError(tvmError error) string {
+	exitCode, err := ExtractExitCode(tvmError.Error())
 	if err != nil {
-		return err.Error()
+		return tvmError.Error()
 	}
 
 	switch exitCode {
@@ -57,6 +57,10 @@ func HandleTvmError(err error) string {
 		return "package already sent"
 	case 127:
 		return "R1 is not completed yet"
+	case 128:
+		return "R2 is not completed yet"
+	case 147:
+		return "R1 is already completed"
 	case 150:
 		return "Coordinator balance is not enough to continue"
 	default:

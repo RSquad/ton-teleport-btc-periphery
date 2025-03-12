@@ -33,8 +33,9 @@ type Round2Result struct {
 }
 
 type Round3Result struct {
-	pkg              []byte
+	secretPackage    []byte
 	publicKeyPackage []byte
+	publicKey        []byte // 33 bytes with prefix
 }
 
 type ExecutionArtifacts struct {
@@ -256,19 +257,28 @@ func (e *Executor) executeR2(dkg *coordinator.DKG, validatorIdx uint16, localIde
 		}
 	}
 
+	withErrors := false
+	r2Packages := dkg.GetR2Packages(localIdentifier)
 	for identifierTo := range e.artifacts.r2.pkgs {
-		_, err := e.coordinatorContract.SendRound2(
-			validatorIdx,
-			localIdentifier,
-			identifierTo.ToBytes(),
-			e.artifacts.r2.pkgs[identifierTo].ToBytes(),
-		)
-		if err != nil {
-			e.logSendRound2Package(dkg, err)
-			return false
+		_, exists := r2Packages[hex.EncodeToString(identifierTo.ToBytes())]
+		if !exists {
+			_, err := e.coordinatorContract.SendRound2(
+				validatorIdx,
+				localIdentifier,
+				identifierTo.ToBytes(),
+				e.artifacts.r2.pkgs[identifierTo].ToBytes(),
+			)
+			if err != nil {
+				e.logSendRound2Package(dkg, err)
+				withErrors = true
+			}
 		}
 	}
-	e.logDKGProcess(dkg, "R2 packages sent")
+	if withErrors {
+		e.logError(dkg, "R2 packages sent with errors", nil)
+	} else {
+		e.logDKGProcess(dkg, "R2 packages sent")
+	}
 	return false
 }
 
@@ -300,20 +310,27 @@ func (e *Executor) executeR3(dkg *coordinator.DKG, validatorIdx uint16, localIde
 			e.logDKGProcess(dkg, fmt.Sprintf("R3 failed: %v", err))
 			return false
 		}
+
+		publicKey, err := frost.ExtractPublicKeyFromPackage(publicKeyPackage)
+		if err != nil {
+			e.logError(dkg, "failed to extract public key from package", err)
+			return false
+		}
 		e.artifacts.r3 = &Round3Result{
-			pkg:              keyPackage,
+			secretPackage:    keyPackage,
 			publicKeyPackage: publicKeyPackage,
+			publicKey:        publicKey,
+		}
+		err = e.keystore.StoreSecret(publicKey[1:], keyPackage)
+		if err != nil {
+			e.logError(dkg, "failed to store secret", err)
+			return false
 		}
 	}
 
-	publicKey, err := frost.ExtractPublicKeyFromPackage(e.artifacts.r3.publicKeyPackage)
-	if err != nil {
-		e.logError(dkg, "failed to extract public key from package", err)
-		return false
-	}
-	if _, err = e.coordinatorContract.SendPubkeyPackage(
+	if _, err := e.coordinatorContract.SendPubkeyPackage(
 		validatorIdx,
-		publicKey[1:], // skip prefix byte (0x03)
+		e.artifacts.r3.publicKey[1:], // skip prefix byte
 		localIdentifier,
 		e.artifacts.r3.publicKeyPackage,
 	); err != nil {
