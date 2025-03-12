@@ -1,4 +1,4 @@
-package validatorconsole
+package validator
 
 import (
 	"encoding/base64"
@@ -8,8 +8,6 @@ import (
 	"os/exec"
 	"regexp"
 	"strings"
-
-	"github.com/xssnick/tonutils-go/tvm/cell"
 )
 
 type ValidatorTempKey struct {
@@ -22,7 +20,7 @@ type ValidatorAdnlAddress struct {
 	ExpireAt int64  `json:"expire_at"`
 }
 
-type Validator struct {
+type ValidatorJson struct {
 	Id           string                 `json:"id"`
 	TempKeys     []ValidatorTempKey     `json:"temp_keys"`
 	AdnlAddrs    []ValidatorAdnlAddress `json:"adnl_addrs"`
@@ -32,7 +30,7 @@ type Validator struct {
 
 type ValidatorEngineConfig struct {
 	OutPort    int64
-	Validators []Validator
+	Validators []ValidatorJson
 }
 
 type ValidatorConsole struct {
@@ -40,11 +38,6 @@ type ValidatorConsole struct {
 	serverPublicKeyPath        string
 	clientPrivateKeyPath       string
 	serverAddress              string
-}
-
-type ValidatorConsoleKey struct {
-	ValidatorKey []byte
-	ValidatorId  string
 }
 
 func NewValidatorConsole(
@@ -78,7 +71,7 @@ func (v *ValidatorConsole) buildCommand(c string) []string {
 	}
 }
 
-func (v *ValidatorConsole) GetValidatorKeys() ([]ValidatorConsoleKey, error) {
+func (v *ValidatorConsole) GetValidatorKeys() ([]KeyInfo, error) {
 	command, err := v.runCommand("getconfig")
 	if err != nil {
 		return nil, err
@@ -94,23 +87,18 @@ func (v *ValidatorConsole) GetValidatorKeys() ([]ValidatorConsoleKey, error) {
 		return nil, err
 	}
 
-	validatorConsoleKeys := make([]ValidatorConsoleKey, 0, len(config.Validators))
-	for _, validator := range config.Validators {
-		pubKey, err := v.exportPub(validator.Id)
+	validatorConsoleKeys := make([]KeyInfo, 0, len(config.Validators))
+	for _, validatorJson := range config.Validators {
+		pubKey, err := v.exportPub(validatorJson.Id)
 		if err != nil {
 			return nil, err
 		}
 
-		base64Id, err := base64.StdEncoding.DecodeString(validator.Id)
+		base64Id, err := base64.StdEncoding.DecodeString(validatorJson.Id)
 		if err != nil {
 			return nil, err
 		}
-
-		validatorConsoleKey := ValidatorConsoleKey{
-			ValidatorKey: pubKey,
-			ValidatorId:  hex.EncodeToString(base64Id),
-		}
-		validatorConsoleKeys = append(validatorConsoleKeys, validatorConsoleKey)
+		validatorConsoleKeys = append(validatorConsoleKeys, NewKeyInfo(base64Id, pubKey))
 	}
 	return validatorConsoleKeys, nil
 }
@@ -165,23 +153,4 @@ func (v *ValidatorConsole) Sign(validatorId string, hash string) (string, error)
 		return "", err
 	}
 	return extractSignature(string(result)), nil
-}
-
-type ValidatorSigner struct {
-	validatorEngineCondole ValidatorConsole
-	publicKey              string
-}
-
-func (v *ValidatorConsole) NewValidatorSigner(publicKey string) *ValidatorSigner {
-	return &ValidatorSigner{validatorEngineCondole: *v, publicKey: publicKey}
-}
-
-func (s *ValidatorSigner) SignCell(cell *cell.Cell) []byte {
-	cellHex := hex.EncodeToString(cell.Hash())
-	result, err := s.validatorEngineCondole.Sign(s.publicKey, cellHex)
-	if err != nil {
-		return nil
-	}
-
-	return []byte(result)
 }

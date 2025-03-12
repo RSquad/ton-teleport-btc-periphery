@@ -118,7 +118,7 @@ func (s *SignService) execute(ctx context.Context, dkg *coordinator.DKG) {
 }
 
 func (s *SignService) doCommit(
-	validatorKey *validator.ValidatorKeyInfo,
+	validatorKey *validator.KeyInfo,
 	pegoutRecord *coordinator.PegoutRecord,
 	minSigners uint16,
 ) bool {
@@ -172,7 +172,7 @@ func (s *SignService) doCommit(
 
 func (s *SignService) doSign(
 	ctx context.Context,
-	validatorKey *validator.ValidatorKeyInfo,
+	validatorKey *validator.KeyInfo,
 	pegoutRecord *coordinator.PegoutRecord,
 	minSigners uint16,
 ) bool {
@@ -257,7 +257,7 @@ func (s *SignService) doSign(
 
 func (s *SignService) doAggregate(
 	ctx context.Context,
-	validatorKey *validator.ValidatorKeyInfo,
+	validatorKey *validator.KeyInfo,
 	pegoutRecord *coordinator.PegoutRecord,
 	pubkeyPackage []byte,
 ) bool {

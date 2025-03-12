@@ -81,7 +81,7 @@ func (c *CoordinatorContract) SendSignatures(
 	))
 }
 
-func (c *CoordinatorContract) ConnectSigner(signer *signer.Signer) {
+func (c *CoordinatorContract) ConnectSigner(signer signer.Signer) {
 	c.signer = signer
 }
 

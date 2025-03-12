@@ -10,7 +10,7 @@ import (
 func BuildExtMsg(
 	unsignedMsgBody *cell.Cell,
 	dstAddr *address.Address,
-	signer *signer.Signer,
+	signer signer.Signer,
 ) (*tlb.ExternalMessage, error) {
 	signature := make([]byte, 64)
 	if signer != nil {
