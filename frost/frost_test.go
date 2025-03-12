@@ -6,6 +6,14 @@ import (
 	"testing"
 )
 
+func GetIdentifierFromHex(hexStr string) []byte {
+	data, err := hex.DecodeString(hexStr)
+	if err != nil {
+		panic(err)
+	}
+	return data
+}
+
 func TestHex(t *testing.T) {
 	hexStr := "46447381F0"
 	data, err := hex.DecodeString(hexStr)

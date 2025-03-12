@@ -9,7 +9,6 @@ package frost
 import "C"
 
 import (
-	"encoding/hex"
 	"fmt"
 	"runtime"
 	"unsafe"
@@ -18,8 +17,6 @@ import (
 type Package struct {
 	buf []byte
 }
-
-type Identifier [32]byte
 
 type Pkg struct {
 	identifier [32]byte
@@ -31,62 +28,8 @@ func NewPackage(buf []byte) Package {
 	return Package{buf: buf}
 }
 
-func (id Identifier) ToBytes() []byte {
-	return id[:]
-}
-
-func newBuffer(p unsafe.Pointer, len int) C.Buffer {
-	return C.Buffer{(*C.uint8_t)(p), C.size_t(len)}
-}
-
 func (p Package) ToBytes() []byte {
 	return p.buf
-}
-
-func newEmptyBuffer() C.Buffer {
-	return newBuffer(unsafe.Pointer(nil), 0)
-}
-
-func newBufferFromSlice(s []byte) C.Buffer {
-	return newBuffer(unsafe.Pointer(&s[0]), len(s))
-}
-
-func newBufferFromPackage(p Package) C.Buffer {
-	return newBufferFromSlice(p.buf)
-}
-
-func extractSlice(buf C.Buffer) []byte {
-	s := make([]byte, buf.len)
-	copy(s, unsafe.Slice((*byte)(buf.data), buf.len))
-	C.free_package_ptr((*C.uint8_t)(buf.data), buf.len)
-	return s
-}
-
-func DecodeIdentifier(s string) (*Identifier, error) {
-	var identifier Identifier
-	id, err := hex.DecodeString(s)
-	if err != nil {
-		return nil, err
-	}
-	copy(identifier[:], id)
-	return &identifier, nil
-}
-
-func GetIdentifier(key uint16) []byte {
-	buf := make([]byte, 32)
-	_ = C.ext_get_identifier(
-		C.uint16_t(key),
-		(*[32]C.uint8_t)(unsafe.Pointer(&buf[0])),
-	)
-	return buf
-}
-
-func GetIdentifierFromHex(hexStr string) []byte {
-	data, err := hex.DecodeString(hexStr)
-	if err != nil {
-		panic(err)
-	}
-	return data
 }
 
 func DkgPart1(identifier []byte, min_signers uint16, max_signers uint16) ([]byte, uintptr, error) {
@@ -189,27 +132,6 @@ func DkgPart3(
 	return KeyPackage, publicKeyPackage, nil
 }
 
-func makeCPackageSlice(packages map[Identifier]Package) ([]C.Pkg, runtime.Pinner) {
-	pinner := runtime.Pinner{}
-	i := 0
-	pkgs := make([]C.Pkg, len(packages))
-	for sender, pkg := range packages {
-		bufPtr := (*C.uint8_t)(unsafe.Pointer(&pkg.buf[0]))
-		bufLen := C.size_t(len(pkg.buf))
-		// If we will not pin the pointer then
-		// we'll get runtime error
-		// `cgo argument has Go pointer to unpinned Go pointer`
-		pinner.Pin(bufPtr)
-		pkgs[i] = C.Pkg{
-			*(*[32]C.uint8_t)(unsafe.Pointer(&sender[0])),
-			bufPtr,
-			bufLen,
-		}
-		i += 1
-	}
-	return pkgs, pinner
-}
-
 func Commit(keyPackage Package) ([]byte, []byte, error) {
 	nonces := newEmptyBuffer()
 	commitments := newEmptyBuffer()
@@ -303,4 +225,37 @@ func Verify(
 	}
 
 	return true, nil
+}
+
+func ExtractPublicKeyFromPackage(pkg Package) ([]byte, error) {
+	publicKey := newEmptyBuffer()
+	ret := C.extract_public_key_from_package(
+		newBufferFromPackage(pkg),
+		&publicKey,
+	)
+	if ret < 0 {
+		return nil, fmt.Errorf("%d", ret)
+	}
+	return extractSlice(publicKey), nil
+}
+
+func makeCPackageSlice(packages map[Identifier]Package) ([]C.Pkg, runtime.Pinner) {
+	pinner := runtime.Pinner{}
+	i := 0
+	pkgs := make([]C.Pkg, len(packages))
+	for sender, pkg := range packages {
+		bufPtr := (*C.uint8_t)(unsafe.Pointer(&pkg.buf[0]))
+		bufLen := C.size_t(len(pkg.buf))
+		// If we will not pin the pointer then
+		// we'll get runtime error
+		// `cgo argument has Go pointer to unpinned Go pointer`
+		pinner.Pin(bufPtr)
+		pkgs[i] = C.Pkg{
+			*(*[32]C.uint8_t)(unsafe.Pointer(&sender[0])),
+			bufPtr,
+			bufLen,
+		}
+		i += 1
+	}
+	return pkgs, pinner
 }
