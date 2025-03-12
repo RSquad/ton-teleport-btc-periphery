@@ -32,6 +32,15 @@ func (p Package) ToBytes() []byte {
 	return p.buf
 }
 
+func GetIdentifier(key uint16) []byte {
+	buf := make([]byte, 32)
+	_ = C.ext_get_identifier(
+		C.uint16_t(key),
+		(*[32]C.uint8_t)(unsafe.Pointer(&buf[0])),
+	)
+	return buf
+}
+
 func DkgPart1(identifier []byte, min_signers uint16, max_signers uint16) ([]byte, uintptr, error) {
 	var secret unsafe.Pointer
 	pkgLen := C.int(0)
@@ -227,10 +236,10 @@ func Verify(
 	return true, nil
 }
 
-func ExtractPublicKeyFromPackage(pkg Package) ([]byte, error) {
+func ExtractPublicKeyFromPackage(pkg []byte) ([]byte, error) {
 	publicKey := newEmptyBuffer()
 	ret := C.extract_public_key_from_package(
-		newBufferFromPackage(pkg),
+		newBufferFromSlice(pkg),
 		&publicKey,
 	)
 	if ret < 0 {
