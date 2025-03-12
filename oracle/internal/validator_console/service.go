@@ -63,62 +63,52 @@ func NewValidatorConsole(
 
 func (v *ValidatorConsole) runCommand(c string) ([]byte, error) {
 	args := v.buildCommand(c)
+	cmd := exec.Command(v.validatorEngineConsolePath+"/validator-engine-console", args...)
 
-	res := exec.Command(v.validatorEngineConsolePath+"/validator-engine-console", args...)
-
-	out, err := res.CombinedOutput()
-	if err != nil {
-		return nil, err
-	}
-
-	return out, nil
+	return cmd.CombinedOutput()
 }
-func (v *ValidatorConsole) buildCommand(c string) []string {
-	command := []string{}
-	command = append(command, "-c", c)
-	command = append(command, "-p", v.serverPublicKeyPath)
-	command = append(command, "-k", v.clientPrivateKeyPath)
-	command = append(command, "-a", v.serverAddress)
-	command = append(command, "-v", "\"0\"")
 
-	res := command
-	return res
+func (v *ValidatorConsole) buildCommand(c string) []string {
+	return []string{
+		"-c", c,
+		"-p", v.serverPublicKeyPath,
+		"-k", v.clientPrivateKeyPath,
+		"-a", v.serverAddress,
+		"-v", "\"0\"",
+	}
 }
 
 func (v *ValidatorConsole) GetValidatorKeys() ([]ValidatorConsoleKey, error) {
-
 	command, err := v.runCommand("getconfig")
 	if err != nil {
 		return nil, err
 	}
 
-	fixedStr, err := extractJSON((string(command)))
+	fixedStr, err := extractJSON(string(command))
 	if err != nil {
 		return nil, err
 	}
 
-	var obj ValidatorEngineConfig
-	err1 := json.Unmarshal([]byte(fixedStr), &obj)
-	if err1 != nil {
-		return nil, err1
+	var config ValidatorEngineConfig
+	if err := json.Unmarshal([]byte(fixedStr), &config); err != nil {
+		return nil, err
 	}
 
-	validatorConsoleKeys := []ValidatorConsoleKey{}
-	for _, validator := range obj.Validators {
+	validatorConsoleKeys := make([]ValidatorConsoleKey, 0, len(config.Validators))
+	for _, validator := range config.Validators {
 		pubKey, err := v.exportPub(validator.Id)
 		if err != nil {
 			return nil, err
 		}
-		base64Id, err := base64.StdEncoding.DecodeString(validator.Id)
 
+		base64Id, err := base64.StdEncoding.DecodeString(validator.Id)
 		if err != nil {
 			return nil, err
 		}
-		validatorId := hex.EncodeToString(base64Id)
 
 		validatorConsoleKey := ValidatorConsoleKey{
 			ValidatorKey: pubKey,
-			ValidatorId:  validatorId,
+			ValidatorId:  hex.EncodeToString(base64Id),
 		}
 		validatorConsoleKeys = append(validatorConsoleKeys, validatorConsoleKey)
 	}
