@@ -18,10 +18,10 @@ func NewValidatorSigner(validatorConsole *ValidatorConsole, publicKeyID string) 
 
 func (s *ValidatorSigner) SignCell(cell *cell.Cell) []byte {
 	cellHex := hex.EncodeToString(cell.Hash())
-	result, err := s.validatorConsole.Sign(s.publicKeyID, cellHex)
+	signature, err := s.validatorConsole.Sign(s.publicKeyID, cellHex)
 	if err != nil {
 		return nil
 	}
 
-	return []byte(result)
+	return signature
 }

@@ -98,7 +98,7 @@ func (v *ValidatorConsole) GetValidatorKeys() ([]KeyInfo, error) {
 		if err != nil {
 			return nil, err
 		}
-		validatorConsoleKeys = append(validatorConsoleKeys, NewKeyInfo(base64Id, pubKey))
+		validatorConsoleKeys = append(validatorConsoleKeys, NewKeyInfo(base64Id, pubKey[4:]))
 	}
 	return validatorConsoleKeys, nil
 }
@@ -114,9 +114,11 @@ func extractJSON(input string) (string, error) {
 
 func extractPublicKey(output string) string {
 	regex := regexp.MustCompile(`got public key:\s*([A-Za-z0-9+/=]+)`)
-	match := regex.FindString(output)
-	match = strings.Trim(match, "got public key: ")
-	return match
+	match := regex.FindStringSubmatch(output)
+	if match != nil {
+		return match[1]
+	}
+	return ""
 }
 
 func (v *ValidatorConsole) exportPub(validatorIdBase64 string) ([]byte, error) {
@@ -132,25 +134,30 @@ func (v *ValidatorConsole) exportPub(validatorIdBase64 string) ([]byte, error) {
 	}
 	base64Result := extractPublicKey(string(result))
 	d, err := base64.StdEncoding.DecodeString(base64Result)
-
 	if err != nil {
 		return nil, err
 	}
-
 	return d, nil
 }
 
 func extractSignature(output string) string {
 	regex := regexp.MustCompile(`got signature\s+([A-Za-z0-9+/=]+)`)
-	match := regex.FindString(output)
-	match = strings.Trim(match, "got signature: ")
-	return match
+	match := regex.FindStringSubmatch(output)
+	if match != nil {
+		return match[1]
+	}
+	return ""
 }
 
-func (v *ValidatorConsole) Sign(validatorId string, hash string) (string, error) {
+func (v *ValidatorConsole) Sign(validatorId string, hash string) ([]byte, error) {
 	result, err := v.runCommand(fmt.Sprintf("sign %s %s", validatorId, hash))
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return extractSignature(string(result)), nil
+	sigStr := extractSignature(string(result))
+	signature, err := base64.StdEncoding.DecodeString(sigStr)
+	if err != nil {
+		return nil, err
+	}
+	return signature, nil
 }
