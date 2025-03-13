@@ -13,21 +13,19 @@ import (
 const (
 	eventIdMint   = 0x77a80ef3
 	eventIdBurn   = 0xca444ce6
-	eventIdReinit = 0x84d432ba
+	eventIdReinit = 0x27756729
 )
 
 type EventWithPegoutInterface interface {
 	ton.EventInterface
-	GetID() uint32
 	GetAmount() *big.Int
-	GetBitcoinScript() []byte
+	GetPegoutAddr() *address.Address
 }
 
 type EventWithPegout struct {
-	Raw           *ton.RawEvent
-	ID            uint32
-	Amount        *big.Int
-	BitcoinScript []byte
+	Raw        *ton.RawEvent
+	Amount     *big.Int
+	PegoutAddr *address.Address
 }
 
 type MintEvent struct {
@@ -39,24 +37,22 @@ type MintEvent struct {
 
 type BurnEvent struct {
 	EventWithPegout
-	BitcoinTxID *chainhash.Hash
-	SenderAddr  *address.Address
+	SenderAddr *address.Address
 }
 
 type ReinitEvent struct {
 	EventWithPegout
-	BitcoinTxID *chainhash.Hash
+	NewInternalKey []byte
 }
 
-func (e *EventWithPegout) GetID() uint32            { return e.ID }
-func (e *EventWithPegout) GetAmount() *big.Int      { return e.Amount }
-func (e *EventWithPegout) GetBitcoinScript() []byte { return e.BitcoinScript }
-func (e *MintEvent) GetEventID() uint32             { return eventIdMint }
-func (e *BurnEvent) GetEventID() uint32             { return eventIdBurn }
-func (e *ReinitEvent) GetEventID() uint32           { return eventIdReinit }
-func (e *MintEvent) GetRaw() *ton.RawEvent          { return e.Raw }
-func (e *BurnEvent) GetRaw() *ton.RawEvent          { return e.Raw }
-func (e *ReinitEvent) GetRaw() *ton.RawEvent        { return e.Raw }
+func (e *EventWithPegout) GetAmount() *big.Int             { return e.Amount }
+func (e *EventWithPegout) GetPegoutAddr() *address.Address { return e.PegoutAddr }
+func (e *MintEvent) GetEventID() uint32                    { return eventIdMint }
+func (e *BurnEvent) GetEventID() uint32                    { return eventIdBurn }
+func (e *ReinitEvent) GetEventID() uint32                  { return eventIdReinit }
+func (e *MintEvent) GetRaw() *ton.RawEvent                 { return e.Raw }
+func (e *BurnEvent) GetRaw() *ton.RawEvent                 { return e.Raw }
+func (e *ReinitEvent) GetRaw() *ton.RawEvent               { return e.Raw }
 
 type EventParser struct{}
 
@@ -72,9 +68,9 @@ func (ep *EventParser) Parse(raw *ton.RawEvent) (ton.EventInterface, error) {
 	case eventIdMint:
 		return ep.parseMintEvent(s, raw)
 	case eventIdBurn:
-		return ep.parseBurnLog(s, raw)
+		return ep.parseBurnEvent(s, raw)
 	case eventIdReinit:
-		return ep.parseReinitLog(s, raw)
+		return ep.parseReinitEvent(s, raw)
 	default:
 		return nil, fmt.Errorf("unknown event type with id %x", eventId)
 	}
@@ -92,34 +88,20 @@ func (ep *EventParser) parseMintEvent(s *cell.Slice, raw *ton.RawEvent) (*MintEv
 	}, nil
 }
 
-func (ep *EventParser) parseBurnLog(s *cell.Slice, raw *ton.RawEvent) (*BurnEvent, error) {
-	id := uint32(s.MustLoadUInt(32))
+func (ep *EventParser) parseBurnEvent(s *cell.Slice, raw *ton.RawEvent) (*BurnEvent, error) {
 	amount := s.MustLoadBigCoins()
-	bitcoinTxID, err := chainhash.NewHash(s.MustLoadSlice(256))
-	if err != nil {
-		return nil, err
-	}
 	senderAddr := s.MustLoadAddr()
-	bitcoinScriptSlice := s.MustLoadRef()
-	bitcoinScript := bitcoinScriptSlice.MustLoadSlice(uint(bitcoinScriptSlice.MustLoadUInt(8) * 8))
+	pegoutAddr := s.MustLoadAddr()
 	return &BurnEvent{
-		EventWithPegout{raw, id, amount, bitcoinScript}, bitcoinTxID, senderAddr,
+		EventWithPegout{raw, amount, pegoutAddr}, senderAddr,
 	}, nil
 }
 
-func (ep *EventParser) parseReinitLog(s *cell.Slice, raw *ton.RawEvent) (*ReinitEvent, error) {
-	id := uint32(s.MustLoadUInt(32))
+func (ep *EventParser) parseReinitEvent(s *cell.Slice, raw *ton.RawEvent) (*ReinitEvent, error) {
 	amount := s.MustLoadBigCoins()
-	bitcoinTxID, err := chainhash.NewHash(s.MustLoadSlice(256))
-	if err != nil {
-		return nil, err
-	}
-	bitcoinScriptSlice := s.MustLoadRef()
-	var bitcoinScript []byte
-	if bitcoinScriptSlice.BitsLeft() > 2 {
-		bitcoinScript = bitcoinScriptSlice.MustLoadSlice(bitcoinScriptSlice.BitsLeft())
-	}
+	newInternalKey := s.MustLoadSlice(256)
+	pegoutAddr := s.MustLoadAddr()
 	return &ReinitEvent{
-		EventWithPegout{raw, id, amount, bitcoinScript}, bitcoinTxID,
+		EventWithPegout{raw, amount, pegoutAddr}, newInternalKey,
 	}, nil
 }

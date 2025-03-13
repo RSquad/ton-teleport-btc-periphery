@@ -14,16 +14,10 @@ type Reinit struct {
 
 func (Reinit) Fields() []ent.Field {
 	return []ent.Field{
-		field.Int64("external_id").
-			Unique().
-			Immutable(),
 		field.Text("amount").
 			NotEmpty().
 			Immutable(),
-		field.Text("bitcoin_tx_id").
-			NotEmpty().
-			Immutable(),
-		field.Text("bitcoin_script").
+		field.Text("new_internal_key").
 			Immutable(),
 	}
 }
