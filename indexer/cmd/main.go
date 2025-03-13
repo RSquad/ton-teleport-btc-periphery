@@ -13,6 +13,7 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
 	_ "github.com/lib/pq"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/cors"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/config"
 	ent "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated"
@@ -21,6 +22,7 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/gql"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/mintservice"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/pegoutmanager"
+	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/prometheus"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
@@ -39,6 +41,7 @@ type App struct {
 	CoordinatorContract *coordinator.CoordinatorContract
 	PegoutManager       *pegoutmanager.PegoutManager
 	MintService         *mintservice.MintService
+	Prometheus          *prometheus.Prometheus
 }
 
 func main() {
@@ -133,6 +136,8 @@ func initialize() (*App, error) {
 		coordinatorContract,
 	)
 
+	prometheus := prometheus.New(tonClient, indexerConfig)
+
 	logger.Log.Info().
 		Str("component", "main").
 		Msg("initialized")
@@ -146,6 +151,7 @@ func initialize() (*App, error) {
 		PegoutManager:       pegoutManager,
 		MintService:         mintService,
 		EventService:        eventService,
+		Prometheus: 				 prometheus,
 	}, nil
 }
 
@@ -165,6 +171,7 @@ func run(app *App) error {
 		mux := http.NewServeMux()
 		mux.Handle("/indexer/graphql", srv)
 		mux.Handle("/", playground.ApolloSandboxHandler("Indexer", "/indexer/graphql"))
+		mux.Handle("/metrics", promhttp.Handler())
 
 		c := cors.New(cors.Options{
 			AllowedOrigins:   []string{"*"},
@@ -202,6 +209,12 @@ func run(app *App) error {
 	go func() {
 		defer wg.Done()
 		app.MintService.Work(context.Background())
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		app.Prometheus.Work(context.Background())
 	}()
 
 	wg.Wait()
