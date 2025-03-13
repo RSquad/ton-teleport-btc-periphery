@@ -18,6 +18,7 @@ func (Reinit) Fields() []ent.Field {
 			NotEmpty().
 			Immutable(),
 		field.Text("new_internal_key").
+			Optional().
 			Immutable(),
 	}
 }
