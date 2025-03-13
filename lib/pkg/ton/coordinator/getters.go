@@ -111,6 +111,15 @@ func (c *CoordinatorContract) GetUnsignedPegouts() ([]PegoutRecord, error) {
 		return nil, err
 	}
 
+	isNullCell, err := result.IsNil(0)
+	if err != nil {
+		return nil, err
+	}
+
+	if isNullCell {
+		return nil, nil
+	}
+
 	cell, err := result.Cell(0)
 	if err != nil {
 		return nil, err

@@ -77,7 +77,7 @@ func (e *Executor) logExecuteR3(dkg *coordinator.DKG) {
 
 func (e *Executor) logSendRound1Package(dkg *coordinator.DKG, err error) {
 	msg := helpers.HandleTvmError(err)
-	errorEventWithDkg(dkg).Msg("failed to send round1 package: " + msg)
+	errorEventWithDkg(dkg).Err(err).Msg("failed to send round1 package: " + msg)
 }
 
 func (e *Executor) logSendRound2Package(dkg *coordinator.DKG, err error) {
