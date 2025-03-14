@@ -1,0 +1,184 @@
+name: Universal Build and Deploy
+
+on:
+  workflow_call:
+    inputs:
+      STAGE:
+        description: 'Deployment stage (e.g., develop, production)'
+        required: true
+        type: string
+      APP_NAMESPACE:
+        description: 'Kubernetes namespace for the deployment'
+        required: true
+        type: string
+      APPS:
+        description: 'JSON array of app names to build and deploy'
+        required: true
+        type: string
+    secrets:
+      KUBE_CONFIG:
+        description: 'Kubeconfig for the target cluster'
+        required: true
+
+jobs:
+  build:
+    name: Build and Push Images
+    runs-on: self-hosted
+    environment: ${{ inputs.STAGE }}
+    strategy:
+      matrix:
+        app: ${{ fromJson(inputs.APPS) }}
+    env:
+      STAGE: ${{ inputs.STAGE }}
+      APP_NAMESPACE: ${{ inputs.APP_NAMESPACE }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Setup Kubectl
+        shell: bash
+        run: |
+          sudo apt-get update && sudo apt-get install -y ca-certificates curl jq
+          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+          sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+      - name: Configure Kubeconfig
+        env:
+          KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
+        shell: bash
+        run: |
+          echo "$KUBE_CONFIG" > "$(pwd)/kubeconfig.yaml"
+          echo "KUBECONFIG=$(pwd)/kubeconfig.yaml" >> $GITHUB_ENV
+          CONTEXT_COUNT=$(kubectl --kubeconfig=$(pwd)/kubeconfig.yaml config get-contexts -o name | wc -l)
+          if [ "$CONTEXT_COUNT" -eq 1 ]; then
+            CONTEXT_NAME=$(kubectl --kubeconfig=$(pwd)/kubeconfig.yaml config get-contexts -o name)
+            kubectl --kubeconfig=$(pwd)/kubeconfig.yaml config use-context "$CONTEXT_NAME"
+          else
+            echo "ERROR: Found $CONTEXT_COUNT contexts; cannot pick automatically."
+            exit 1
+          fi
+      - name: Fetch Environment Configs from ConfigMap and Create .env File
+        shell: bash
+        run: |
+          kubectl get configmap envs-config -n "${APP_NAMESPACE}" -o json > config.json
+          jq -r '.data | to_entries[] | "\(.key)=\(.value)"' config.json >> $GITHUB_ENV
+          jq -r '.data | to_entries[] | "\(.key)=\(.value)"' config.json > .env
+      - name: Fetch Docker Registry Credentials from Kubernetes Secret
+        shell: bash
+        run: |
+          dockerConfig=$(kubectl get secret docker-registry-creds -n "${{ inputs.APP_NAMESPACE }}" -o jsonpath='{.data.\.dockerconfigjson}' | base64 -d)
+          DOCKER_REGISTRY_URL=$(echo "$dockerConfig" | jq -r '.auths | to_entries[0].key')
+          DOCKER_REGISTRY_USERNAME=$(echo "$dockerConfig" | jq -r '.auths | to_entries[0].value.username')
+          DOCKER_REGISTRY_PASSWORD=$(echo "$dockerConfig" | jq -r '.auths | to_entries[0].value.password')
+          echo "::add-mask::$DOCKER_REGISTRY_USERNAME"
+          echo "::add-mask::$DOCKER_REGISTRY_PASSWORD"
+          echo "DOCKER_REGISTRY_URL=$DOCKER_REGISTRY_URL" >> $GITHUB_ENV
+          echo "DOCKER_REGISTRY_USERNAME=$DOCKER_REGISTRY_USERNAME" >> $GITHUB_ENV
+          echo "DOCKER_REGISTRY_PASSWORD=$DOCKER_REGISTRY_PASSWORD" >> $GITHUB_ENV
+      - name: Docker Login
+        shell: bash
+        run: |
+          docker login "$DOCKER_REGISTRY_URL" \
+            --username "$DOCKER_REGISTRY_USERNAME" \
+            --password "$DOCKER_REGISTRY_PASSWORD"
+      - name: Build and Push Image for ${{ matrix.app }}
+        run: |
+          SHORT_SHA="${GITHUB_SHA:0:7}"
+          IMAGE_NAME="$DOCKER_REGISTRY_URL/${{ matrix.app }}-${STAGE}"
+          docker build -f ${{ matrix.app }}/Dockerfile \
+            --platform linux/amd64 \
+            -t $IMAGE_NAME:latest \
+            -t $IMAGE_NAME:$SHORT_SHA .
+          docker push $IMAGE_NAME:latest
+          docker push $IMAGE_NAME:$SHORT_SHA
+  deploy:
+    name: Deploy via Helm
+    needs: build
+    runs-on: self-hosted
+    environment: ${{ inputs.STAGE }}
+    env:
+      STAGE: ${{ inputs.STAGE }}
+      APP_NAMESPACE: ${{ inputs.APP_NAMESPACE }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Setup Kubernetes Tools and Helm
+        run: |
+          sudo apt-get update && sudo apt-get install -y ca-certificates curl jq
+          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+          sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+          curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+      - name: Configure Kubeconfig
+        env:
+          KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
+        run: |
+          echo "$KUBE_CONFIG" > kubeconfig.yaml
+          export KUBECONFIG=$(pwd)/kubeconfig.yaml
+          echo "KUBECONFIG=$(pwd)/kubeconfig.yaml" >> $GITHUB_ENV
+          CONTEXT_COUNT=$(kubectl config get-contexts -o name | wc -l)
+          if [ "$CONTEXT_COUNT" -eq 1 ]; then
+            CONTEXT_NAME=$(kubectl config get-contexts -o name)
+            kubectl config use-context "$CONTEXT_NAME"
+          else
+            echo "ERROR: Found $CONTEXT_COUNT contexts; cannot pick automatically."
+            exit 1
+          fi
+      - name: Fetch Docker Registry URL
+        run: |
+          dockerConfig=$(kubectl get secret docker-registry-creds -n "${APP_NAMESPACE}" -o jsonpath='{.data.\.dockerconfigjson}' | base64 -d)
+          DOCKER_REGISTRY_URL=$(echo "$dockerConfig" | jq -r '.auths | to_entries[0].key')
+          echo "DOCKER_REGISTRY_URL=$DOCKER_REGISTRY_URL" >> $GITHUB_ENV
+      - name: Deploy All Apps
+        env:
+          DOCKER_REGISTRY_URL: ${{ env.DOCKER_REGISTRY_URL }}
+          APPS: ${{ inputs.APPS }}
+          STAGE: ${{ inputs.STAGE }}
+          APP_NAMESPACE: ${{ inputs.APP_NAMESPACE }}
+        run: |
+          set -e
+          SHORT_SHA="${GITHUB_SHA:0:7}"
+          declare -A pids
+          declare -A statuses
+          failed=0
+          for app in $(echo "$APPS" | jq -r '.[]'); do
+            echo "Processing app: $app"
+            SECRET_NAME="$app-secrets"
+            SECRET_PARAM=""
+            if kubectl get secret "$SECRET_NAME" -n "${APP_NAMESPACE}" &>/dev/null; then
+              SECRET_PARAM="--set secretName=${SECRET_NAME}"
+            fi
+            ADDITIONAL_VALUES=""
+            FILE="${app}/${app}-${STAGE}.yml"
+            if [ -f "$FILE" ]; then
+              ADDITIONAL_VALUES="-f $FILE"
+            fi
+            helm upgrade --install "${app}-${STAGE}" "./helm" \
+              --namespace "${APP_NAMESPACE}" \
+              --set image.repository="$DOCKER_REGISTRY_URL/${app}-${STAGE}" \
+              --set image.tag="$SHORT_SHA" \
+              --set app.name="${app}-${STAGE}" \
+              --set configMapName="envs-config" \
+              $SECRET_PARAM \
+              --atomic --timeout 5m \
+              --history-max 2 \
+              $ADDITIONAL_VALUES &
+            pids[$app]=$!
+          done
+          for app in "${!pids[@]}"; do
+            wait ${pids[$app]}
+            statuses[$app]=$?
+            if [ ${statuses[$app]} -ne 0 ]; then
+              echo "Deployment for $app FAILED with exit code ${statuses[$app]}"
+              failed=1
+            fi
+          done
+          if [ $failed -ne 0 ]; then
+            echo "One or more deployments failed. Rolling back entire stack..."
+            for app in $(echo "$APPS" | jq -r '.[]'); do
+              echo "Rolling back $app..."
+              if ! helm rollback "${app}-${STAGE}" 1; then
+                echo "Rollback not possible for $app"
+              fi
+            done
+            exit 1
+          fi

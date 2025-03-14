@@ -10,21 +10,20 @@ import (
 type TxPartsSignatures map[string][]byte
 
 func parseTxPartsSignatureKey(keySlice *cell.Slice, keySize uint) string {
-	key := keySlice.MustLoadBigUInt(keySize)
-	return key.String()
+	return keySlice.MustLoadBigUInt(keySize).String()
 }
 
 func parseTxPartsSignatureValue(valueSlice *cell.Slice) ([]byte, error) {
 	if valueSlice == nil {
-		return nil, errors.New("valueSlice is nil")
+		return nil, errors.New("value slice is nil")
 	}
 
-	signatureBytes := valueSlice.MustLoadSlice(65 * 8)
+	signatureBytes := valueSlice.MustLoadSlice(valueSlice.BitsLeft())
 	return signatureBytes, nil
 }
 
-func NewTxPartsSignaturesFromDictCell(dictCell *cell.Dictionary) (*TxPartsSignatures, error) {
-	result, err := parseddict.NewFromDictCell(dictCell, parseTxPartsSignatureKey, parseTxPartsSignatureValue)
+func NewTxPartsSignatures(dict *cell.Dictionary) (*TxPartsSignatures, error) {
+	result, err := parseddict.New(dict, parseTxPartsSignatureKey, parseTxPartsSignatureValue)
 	if err != nil {
 		return nil, err
 	}

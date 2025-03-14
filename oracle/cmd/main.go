@@ -2,83 +2,89 @@ package main
 
 import (
 	"context"
-	"fmt"
-	"log"
-	"strings"
+	"sync"
 
-	jwv4r2contract "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/jw_v4r2_contract"
-	"github.com/xssnick/tonutils-go/address"
-	"github.com/xssnick/tonutils-go/ton/wallet"
-
-	coordinatorcontract "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator_contract"
-	tonclient "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/ton_client"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
-	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/config"
+	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/cfg"
+	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/dkg"
+	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/keystore"
+	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/pegout_signer"
+	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/validator"
+	"github.com/xssnick/tonutils-go/address"
 )
 
 type App struct {
-	TonClient           *tonclient.TonClient
-	CoordinatorContract *coordinatorcontract.CoordinatorContract
+	TonClient *tonclient.TonClient
 }
 
 func initialize() (*App, error) {
-	oracleConfig, err := utils.LoadConfig[config.OracleConfig]()
+	logger.Init()
+
+	logger.Log.Info().
+		Str("component", "main").
+		Msg("Initializing")
+
+	cfg, err := utils.LoadCfg[cfg.Cfg]()
+	if err != nil {
+		return nil, err
+	}
+	keystore, err := keystore.New(cfg.KeystorePath)
 	if err != nil {
 		return nil, err
 	}
 
-	tonClient, err := tonclient.NewTonClient(oracleConfig.TonConfigUrl)
+	tonClient, err := tonclient.New(cfg.TonConfigUrl)
 	if err != nil {
 		return nil, err
 	}
-  
-	// jwV4R2Secret, err := hex.DecodeString(oracleConfig.OracleWalletSecret)
-	words := strings.Split(oracleConfig.OracleWalletSecret, " ")
 
-	w, err := wallet.FromSeed(tonClient.API, words, wallet.V4R2)
-	jwV4R2Secret := w.PrivateKey()
+	validator, err := validator.NewValidator(&cfg)
 	if err != nil {
-		return nil, fmt.Errorf("[App] failed to decode jwv4r2 secret: %w", err)
+		return nil, err
 	}
 
-	jwV4R2Contract, err := jwv4r2contract.NewJWV4R2Contract(
-		tonClient.API,
-		jwV4R2Secret,
-		context.Background(),
-	)
+	coordinatorContractAddr, err := address.ParseAddr(cfg.CoordinatorContractAddr)
 	if err != nil {
-		return nil, fmt.Errorf("[App] failed to create jwv4r2 contract: %w", err)
+		return nil, err
 	}
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	coordinatorContract := coordinator.New(coordinatorContractAddr, tonClient, nil, ctx)
+	dkgService := dkg.NewService(coordinatorContract, validator)
+	dkgClient := dkgService.GetClient()
+	signService := pegoutsigner.NewService(dkgClient, keystore, validator, coordinatorContract, tonClient)
 
-	coordinatorContract, err := coordinatorcontract.NewCoordinatorContract(
-		address.MustParseAddr(oracleConfig.CoordinatorContractAddr),
-		tonClient,
-		jwV4R2Contract,
-		context.Background(),
-	)
+	wg := sync.WaitGroup{}
 
-	log.Println("[App] initialized")
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		dkgService.Work(ctx, keystore)
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		signService.Work(ctx)
+	}()
+
+	wg.Wait()
 
 	return &App{
-		TonClient:           tonClient,
-		CoordinatorContract: coordinatorContract,
+		TonClient: tonClient,
 	}, nil
 }
 
 func main() {
-	app, err := initialize()
+	_, err := initialize()
 	if err != nil {
-		log.Fatalf("[App] failed to initialize: %v", err)
+		logger.Log.Error().
+			Err(err).
+			Str("component", "main").
+			Msg("Failed to initialize")
+		return
 	}
-
-	//dkg, err := app.CoordinatorContract.GetDKG()
-	//if err != nil {
-	//	log.Fatalf("[App] Get dkg  error: %v", err)
-	//}
-	//log.Printf("fDKG = %v", dkg)
-	prevDkg, err := app.CoordinatorContract.GetPrevDKG()
-	if err != nil {
-		log.Fatalf("[App] Get prev dkg error: %v", err)
-	}
-	log.Printf("PrevDKG = %v", prevDkg)
 }

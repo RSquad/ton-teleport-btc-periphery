@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
-	"log"
 	"sort"
 	"strconv"
 	"sync"
@@ -19,20 +18,20 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/pegoutcontract"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/teleportcontract"
-	tonclient "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/ton_client"
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/toncenterv3"
+	tonclient "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
 	"github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/ton"
 )
 
+const RBF_SEQUENCE uint32 = 0xFFFFFFFD
+
 type PegoutManager struct {
-	ctx               context.Context
-	repo              *ent.Client
-	bitcoinClient     *bitcoin.Client
-	tonClient         *tonclient.TonClient
-	tonCenterV3Client *toncenterv3.Client
-	teleportContract  *teleportcontract.TeleportContract
+	ctx              context.Context
+	repo             *ent.Client
+	bitcoinClient    *bitcoin.Client
+	tonClient        *tonclient.TonClient
+	teleportContract *teleportcontract.TeleportContract
 }
 
 func New(
@@ -40,37 +39,33 @@ func New(
 	repo *ent.Client,
 	bitcoinClient *bitcoin.Client,
 	tonClient *tonclient.TonClient,
-	tonCenterV3Client *toncenterv3.Client,
 	teleportContract *teleportcontract.TeleportContract,
 ) (
 	*PegoutManager,
 	error,
 ) {
 	pegoutManager := &PegoutManager{
-		ctx:               ctx,
-		repo:              repo,
-		bitcoinClient:     bitcoinClient,
-		tonClient:         tonClient,
-		tonCenterV3Client: tonCenterV3Client,
-		teleportContract:  teleportContract,
+		ctx:              ctx,
+		repo:             repo,
+		bitcoinClient:    bitcoinClient,
+		tonClient:        tonClient,
+		teleportContract: teleportContract,
 	}
 
 	return pegoutManager, nil
 }
 
-func (pm *PegoutManager) Run() {
+func (c *PegoutManager) Run() {
 	const sleepDuration = 3 * time.Second
 	for {
-		if err := pm.processPegouts(); err != nil {
-			log.Printf("failed to process pegouts: %v", err)
-		}
+		c.processPegouts()
 		time.Sleep(sleepDuration)
 	}
 }
 
 func (c *PegoutManager) processPegouts() error {
 	pegouts, err := c.repo.Pegout.Query().
-		Where(entpegout.StatusNEQ(entpegout.StatusConfirmed)).
+		Where(entpegout.StatusNEQ(entpegout.StatusConfirmed), entpegout.AddrNEQ("NONE")).
 		Limit(512).
 		All(c.ctx)
 	if err != nil || len(pegouts) == 0 {
@@ -88,7 +83,11 @@ func (c *PegoutManager) processPegouts() error {
 		go func(pegout *ent.Pegout) {
 			defer wg.Done()
 			if err := c.processPegout(block, pegout); err != nil {
-				log.Printf("failed to process pegout id=%v addr=%v: %v", pegout.ID, pegout.Addr, err)
+				// logger.Log.Error().
+				// 	Err(err).
+				// 	Str("component", "PegoutManager").
+				// 	Str("addr", pegout.Addr).
+				// 	Msg("Failed to process pegout")
 			}
 		}(pegout)
 	}
@@ -146,7 +145,7 @@ func (c *PegoutManager) handleSigningPegout(
 	err = c.repo.Pegout.Update().
 		SetStatus(entpegout.StatusSigned).
 		SetBitcoinTxRaw(txHex).
-		SetBitcoinTxId(pegoutTx.TxID()).
+		SetBitcoinTxID(pegoutTx.TxID()).
 		Where(entpegout.ID(pegout.ID)).
 		Exec(c.ctx)
 	if err != nil {
@@ -159,7 +158,7 @@ func (c *PegoutManager) handleSigningPegout(
 func (c *PegoutManager) handleSignedPegout(
 	pegout *ent.Pegout,
 ) error {
-	txHash, err := chainhash.NewHashFromStr(pegout.BitcoinTxId)
+	txHash, err := chainhash.NewHashFromStr(pegout.BitcoinTxID)
 	if err != nil {
 		return fmt.Errorf("failed to parse tx hash: %w", err)
 	}
@@ -229,6 +228,7 @@ func (c *PegoutManager) buildPegoutTx(txParts *pegoutcontract.TxParts) (*wire.Ms
 			Hash:  *hash,
 			Index: uint32(input.Index),
 		}, nil, nil)
+		txIn.Sequence = RBF_SEQUENCE
 		packet.UnsignedTx.AddTxIn(txIn)
 
 		pInput := psbt.PInput{
@@ -242,6 +242,9 @@ func (c *PegoutManager) buildPegoutTx(txParts *pegoutcontract.TxParts) (*wire.Ms
 			pInput.TaprootMerkleRoot = input.BitcoinMerkleRoot
 		}
 		signature := (*txParts.Signatures)[strconv.Itoa(i)]
+		if len(signature) < 64 {
+			return nil, fmt.Errorf("signature is too short")
+		}
 		pInput.TaprootKeySpendSig = signature[len(signature)-64:]
 		packet.Inputs = append(packet.Inputs, pInput)
 	}

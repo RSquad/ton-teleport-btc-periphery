@@ -1,8 +1,9 @@
 go 1.23.1
 
 use (
+	./frost
 	./indexer
 	./lib
-	// ./oracle
+	./oracle
 	./relayer
 )

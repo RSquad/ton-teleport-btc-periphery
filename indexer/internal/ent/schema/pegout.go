@@ -14,10 +14,6 @@ type Pegout struct {
 
 func (Pegout) Fields() []ent.Field {
 	return []ent.Field{
-		field.Int64("externalId").
-			Unique().
-			Immutable().
-			Annotations(entgql.MapsTo("externalId")),
 		field.Text("addr").
 			NotEmpty().
 			Immutable(),
@@ -28,15 +24,12 @@ func (Pegout) Fields() []ent.Field {
 				"Confirmed", "CONFIRMED",
 			).
 			Default("SIGNING"),
-		field.Text("bitcoinTxRaw").
-			Default("").
-			Annotations(entgql.MapsTo("bitcoinTxRaw")),
-		field.Text("bitcoinTxId").
-			Default("").
-			Annotations(entgql.MapsTo("bitcoinTxId")),
-		field.Text("bitcoinBlockHash").
-			Default("").
-			Annotations(entgql.MapsTo("bitcoinBlockHash")),
+		field.Text("bitcoin_tx_raw").
+			Default(""),
+		field.Text("bitcoin_tx_id").
+			Default(""),
+		field.Text("bitcoin_block_hash").
+			Default(""),
 	}
 }
 
@@ -53,6 +46,5 @@ func (Pegout) Annotations() []schema.Annotation {
 	return []schema.Annotation{
 		entgql.RelayConnection(),
 		entgql.QueryField(),
-		entgql.Mutations(entgql.MutationCreate()),
 	}
 }

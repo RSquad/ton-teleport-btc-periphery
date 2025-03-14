@@ -5,8 +5,10 @@ import (
 	"encoding/hex"
 	"fmt"
 
+	"github.com/btcsuite/btcd/btcjson"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/wire"
+	"github.com/xssnick/tonutils-go/address"
 )
 
 func SliceOfHashesContains(haystack []*chainhash.Hash, needle *chainhash.Hash) bool {
@@ -47,4 +49,22 @@ func HexToTx(txHex string, version int32) (*wire.MsgTx, error) {
 	}
 
 	return tx, nil
+}
+
+func TonAddrToBytesForTapLeaf(addr *address.Address) []byte {
+	suffix := byte(0x00)
+	if addr.Workchain() != 0 {
+		suffix = byte(0xff)
+	}
+
+	return append(addr.Data(), suffix)
+}
+
+func TxContainsOutWithAddr(tx *btcjson.TxRawResult, addr string) (bool, *btcjson.Vout) {
+	for _, vout := range tx.Vout {
+		if vout.ScriptPubKey.Address == addr {
+			return true, &vout
+		}
+	}
+	return false, nil
 }

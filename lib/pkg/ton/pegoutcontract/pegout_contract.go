@@ -3,13 +3,11 @@ package pegoutcontract
 import (
 	"context"
 	"fmt"
-	"math/big"
 
-	tonclient "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/ton_client"
+	tonclient "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
 	"github.com/xssnick/tonutils-go/address"
-	"github.com/xssnick/tonutils-go/tlb"
 	"github.com/xssnick/tonutils-go/ton"
-	"github.com/xssnick/tonutils-go/tvm/cell"
 )
 
 const (
@@ -26,50 +24,12 @@ type PegoutContract struct {
 	ctx       context.Context
 }
 
-type StateInit struct {
-	InitData *InitData
-	Code     *cell.Cell
-}
-
-type InitData struct {
-	ID                   uint32
-	Amount               *big.Int
-	BitcoinScript        []byte
-	TeleportContractAddr *address.Address
-}
-
-func InitDataToCell(initData InitData) *cell.Cell {
-	bitcoinScriptLen := len(initData.BitcoinScript)
-	return cell.BeginCell().
-		MustStoreUInt(0, 1).
-		MustStoreUInt(uint64(initData.ID), 32).
-		MustStoreUInt(initData.Amount.Uint64(), 64).
-		MustStoreUInt(uint64(bitcoinScriptLen), 8).
-		MustStoreSlice(initData.BitcoinScript, uint(bitcoinScriptLen)*8).
-		MustStoreAddr(initData.TeleportContractAddr).
-		EndCell()
-}
-
 func New(
 	addr *address.Address,
 	tonClient *tonclient.TonClient,
 	ctx context.Context,
 ) *PegoutContract {
 	return &PegoutContract{addr, tonClient, ctx}
-}
-
-func NewFromStateInit(
-	stateInit *StateInit,
-	tonClient *tonclient.TonClient,
-	ctx context.Context,
-) (*PegoutContract, error) {
-	initDataCell := InitDataToCell(*stateInit.InitData)
-	stateInitCell, err := tlb.ToCell(tlb.StateInit{Code: stateInit.Code, Data: initDataCell})
-	if err != nil {
-		return nil, fmt.Errorf("[PegoutContract] failed to build state init cell: %w", err)
-	}
-	addr := address.NewAddress(0, byte(stateInit.InitData.TeleportContractAddr.Workchain()), stateInitCell.Hash())
-	return &PegoutContract{addr, tonClient, ctx}, nil
 }
 
 func (c *PegoutContract) GetTxParts(block *ton.BlockIDExt) (*TxParts, error) {
@@ -82,7 +42,7 @@ func (c *PegoutContract) GetTxParts(block *ton.BlockIDExt) (*TxParts, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to get inputs dict cell: %w", err)
 	}
-	inputs, err := NewTxPartsInputsFromDictCell(inputsDictCell.AsDict(256))
+	inputs, err := NewTxPartsInputs(inputsDictCell.AsDict(256))
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode inputs: %w", err)
 	}
@@ -110,7 +70,7 @@ func (c *PegoutContract) GetTxParts(block *ton.BlockIDExt) (*TxParts, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to get signatures dict cell: %w", err)
 	}
-	signatures, err := NewTxPartsSignaturesFromDictCell(signaturesDictCell.AsDict(16))
+	signatures, err := NewTxPartsSignatures(signaturesDictCell.AsDict(16))
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode signatures: %w", err)
 	}
@@ -126,4 +86,31 @@ func (c *PegoutContract) GetTxParts(block *ton.BlockIDExt) (*TxParts, error) {
 		Signatures:  signatures,
 		InternalKey: internalKey.Bytes(),
 	}, nil
+}
+
+func (c *PegoutContract) GetSigningHashes(block *ton.BlockIDExt) ([][]byte, error) {
+	result, err := c.tonClient.API.RunGetMethod(c.ctx, block, c.Addr, "get_signing_hashes")
+	if err != nil {
+		return nil, fmt.Errorf("failed to get tx parts: %w", err)
+	}
+	cell, err := result.Cell(0)
+	if err != nil {
+		return nil, err
+	}
+
+	dict, err := cell.BeginParse().ToDict(16)
+	if err != nil {
+		return nil, err
+	}
+
+	entries, err := dict.LoadAll()
+	if err != nil {
+		return nil, err
+	}
+	hashes := make([][]byte, 0, len(entries))
+	for _, kv := range entries {
+		hashes = append(hashes, utils.WriteSlicesToBuffer(kv.Value))
+	}
+
+	return hashes, nil
 }
