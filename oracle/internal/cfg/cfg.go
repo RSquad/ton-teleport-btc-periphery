@@ -1,7 +1,6 @@
 package cfg
 
 type Cfg struct {
-	TonCenterEndpoint          string `env:"COMMON_TON_CENTER_ENDPOINT,required"`
 	TonConfigUrl               string `env:"COMMON_TON_CONFIG_URL,required"`
 	CoordinatorContractAddr    string `env:"COMMON_TON_CONTRACT_COORDINATOR,required"`
 	StandaloneMode             bool   `env:"ORACLE_STANDALONE_MODE,required"`
