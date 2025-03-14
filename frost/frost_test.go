@@ -1,10 +1,19 @@
 package frost
 
 import (
+	"bytes"
 	"encoding/hex"
 	"fmt"
 	"testing"
 )
+
+func GetIdentifierFromHex(hexStr string) []byte {
+	data, err := hex.DecodeString(hexStr)
+	if err != nil {
+		panic(err)
+	}
+	return data
+}
 
 func TestHex(t *testing.T) {
 	hexStr := "46447381F0"
@@ -181,4 +190,25 @@ func TestDKG(t *testing.T) {
 		t.Error(err)
 	}
 	fmt.Printf("Verify -> %t\n", res)
+}
+
+func TestExtractPublicKeyFromPackage(t *testing.T) {
+	packageBytes, err := hex.DecodeString("00230f8ab30329573dedfaa8f3ac724687387289224816d16fa934b4f5fd6ebcffe55a1f0c28029ac4c63d4c19a79538c5f31e44f50eae094fde0b386bc4a49229af2b1899e74387c848293689b356a7cf032b1c97d56955c0e1ba5d87ed36c4d6557520c3e0e602170dbbd41953a7a1cd4331e77202b5f09dcae73a9d0fa12e0405c3def65f07e6900924ca1a6d37bd613419f55038d4e210c4e347cf9a8f128181c823684a212f036036859d56dfc075895e48167fc3aa1590214437328427edf5f08a2f5e71728603e97416fe4929907f260a2fdc10f752d96ec70d465aa93e467a2a1c5028d82340")
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	publicKey, err := ExtractPublicKeyFromPackage(packageBytes)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	if len(publicKey) != 33 {
+		t.Error("Public key is not 33 bytes")
+		return
+	}
+	fmt.Printf("PublicKey %x\n", publicKey)
+	if !bytes.Equal(publicKey[1:], packageBytes[len(packageBytes)-32:]) {
+		t.Error("Public key is not equal to the last 32 bytes of the package")
+	}
 }

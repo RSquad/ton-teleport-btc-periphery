@@ -53,6 +53,9 @@ int32_t dkg_part3(const void *r2_secret,
 
 int32_t ext_get_identifier(uint16_t key, uint8_t (*identifier)[32]);
 
+int32_t extract_public_key_from_package(struct Buffer pubkey_package_buf,
+                                        struct Buffer *public_key);
+
 void free_package_ptr(const uint8_t *ptr, size_t len);
 
 void free_r1_secret(void *r1_secret);

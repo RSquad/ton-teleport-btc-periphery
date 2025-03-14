@@ -107,6 +107,8 @@ func initialize() (*App, error) {
 	if err := repo.Schema.Create(
 		context.Background(),
 		migrate.WithGlobalUniqueID(true),
+		migrate.WithDropIndex(true),
+		migrate.WithDropColumn(true),
 	); err != nil {
 		log.Fatalf("failed creating repos schema: %v", err)
 	}

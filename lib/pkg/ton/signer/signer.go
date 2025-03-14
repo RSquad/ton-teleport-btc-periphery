@@ -7,18 +7,22 @@ import (
 	"github.com/xssnick/tonutils-go/tvm/cell"
 )
 
-type Signer struct {
+type Signer interface {
+	SignCell(cell *cell.Cell) []byte
+}
+
+type KeySigner struct {
 	secret ed25519.PrivateKey
 }
 
-func New(secretStr string) *Signer {
-	secret, err := hex.DecodeString(secretStr)
+func NewKeySigner(secretKey string) Signer {
+	secret, err := hex.DecodeString(secretKey)
 	if err != nil {
 		panic(err)
 	}
-	return &Signer{secret: secret}
+	return &KeySigner{secret: secret}
 }
 
-func (s *Signer) SignCell(cell *cell.Cell) []byte {
+func (s *KeySigner) SignCell(cell *cell.Cell) []byte {
 	return cell.Sign(s.secret)
 }

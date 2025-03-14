@@ -12,6 +12,7 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/dkg"
 	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/keystore"
 	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/pegout_signer"
+	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/validator"
 	"github.com/xssnick/tonutils-go/address"
 )
 
@@ -40,18 +41,22 @@ func initialize() (*App, error) {
 		return nil, err
 	}
 
+	validator, err := validator.NewValidator(&cfg)
+	if err != nil {
+		return nil, err
+	}
+
 	coordinatorContractAddr, err := address.ParseAddr(cfg.CoordinatorContractAddr)
 	if err != nil {
 		return nil, err
 	}
 	ctx, cancel := context.WithCancel(context.Background())
-
-	coordinatorContract := coordinator.New(coordinatorContractAddr, tonClient, nil, ctx)
-	dkgService := dkg.NewService(coordinatorContract)
-	dkgClient := dkgService.GetClient()
-	signService := pegoutsigner.NewService(dkgClient, keystore, nil, coordinatorContract, tonClient)
-
 	defer cancel()
+	coordinatorContract := coordinator.New(coordinatorContractAddr, tonClient, nil, ctx)
+	dkgService := dkg.NewService(coordinatorContract, validator)
+	dkgClient := dkgService.GetClient()
+	signService := pegoutsigner.NewService(dkgClient, keystore, validator, coordinatorContract, tonClient)
+
 	wg := sync.WaitGroup{}
 
 	wg.Add(1)

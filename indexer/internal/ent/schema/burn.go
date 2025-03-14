@@ -14,16 +14,10 @@ type Burn struct {
 
 func (Burn) Fields() []ent.Field {
 	return []ent.Field{
-		field.Int64("external_id").
-			Unique().
-			Immutable(),
 		field.Text("sender_addr").
 			NotEmpty().
 			Immutable(),
 		field.Text("amount").
-			NotEmpty().
-			Immutable(),
-		field.Text("bitcoin_script").
 			NotEmpty().
 			Immutable(),
 	}

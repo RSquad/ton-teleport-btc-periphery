@@ -14,9 +14,6 @@ type Pegout struct {
 
 func (Pegout) Fields() []ent.Field {
 	return []ent.Field{
-		field.Int64("external_id").
-			Unique().
-			Immutable(),
 		field.Text("addr").
 			NotEmpty().
 			Immutable(),

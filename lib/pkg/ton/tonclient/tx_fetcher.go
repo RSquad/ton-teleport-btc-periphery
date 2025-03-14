@@ -79,9 +79,10 @@ func (tf *TxFetcher) Work(ctx context.Context) (err error) {
 				tf.lt = tx.PrevTxLT
 				tf.hash = tx.PrevTxHash
 			}
-			if tf.lt == 0 {
-				return nil
-			}
+		}
+
+		if tf.lt == 0 {
+			return nil
 		}
 	}
 }

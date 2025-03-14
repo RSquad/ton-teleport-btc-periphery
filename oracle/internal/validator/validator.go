@@ -10,22 +10,32 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/cfg"
 )
 
-type ValidatorKeyInfo struct {
+type KeyInfo struct {
 	KeyID     []byte
 	VsetIdx   uint16
 	PublicKey []byte
+}
+
+func NewKeyInfo(keyID []byte, publicKey []byte) KeyInfo {
+	return KeyInfo{
+		KeyID:     keyID,
+		VsetIdx:   0,
+		PublicKey: publicKey,
+	}
 }
 
 type Validator struct {
 	standaloneMode       bool
 	standalonePrivateKey []byte
 	standalonePublicKey  []byte
+	validatorConsole     *ValidatorConsole
 }
 
 func NewValidator(cfg *cfg.Cfg) (*Validator, error) {
 	var standalonePublicKey []byte = nil
 	var standalonePrivateKey []byte = nil
 	var err error = nil
+	var console *ValidatorConsole
 	if cfg.StandaloneMode {
 		standalonePublicKey, err = hex.DecodeString(cfg.Pubkey)
 		if err != nil {
@@ -35,20 +45,28 @@ func NewValidator(cfg *cfg.Cfg) (*Validator, error) {
 		if err != nil {
 			return nil, err
 		}
+	} else {
+		console = NewValidatorConsole(
+			cfg.ValidatorEngineConsolePath,
+			cfg.ServerPublicKeyPath,
+			cfg.ClientPrivateKeyPath,
+			cfg.ValidatorServerAddr,
+		)
 	}
 	return &Validator{
 		standaloneMode:       cfg.StandaloneMode,
 		standalonePublicKey:  standalonePublicKey,
 		standalonePrivateKey: standalonePrivateKey,
+		validatorConsole:     console,
 	}, nil
 }
 
-func (v *Validator) FindKeyInfo(vset coordinator.VSet) (*ValidatorKeyInfo, error) {
+func (v *Validator) FindKeyInfo(vset coordinator.VSet) (*KeyInfo, error) {
 	if v.standaloneMode {
 		// find vset idx by public key in dkg.VSet
 		for idx, pubkey := range vset {
 			if bytes.Equal(pubkey, v.standalonePublicKey) {
-				return &ValidatorKeyInfo{
+				return &KeyInfo{
 					KeyID:     v.standalonePublicKey,
 					VsetIdx:   idx,
 					PublicKey: v.standalonePublicKey,
@@ -57,12 +75,25 @@ func (v *Validator) FindKeyInfo(vset coordinator.VSet) (*ValidatorKeyInfo, error
 		}
 		return nil, errors.New("validator key not found")
 	}
-	panic("not implemented")
+	validatorKeys, err := v.validatorConsole.GetValidatorKeys()
+	if err != nil {
+		return nil, err
+	}
+	for _, keyInfo := range validatorKeys {
+		for idx, pubkey := range vset {
+			if bytes.Equal(pubkey, keyInfo.PublicKey) {
+				keyInfo.VsetIdx = idx
+				return &keyInfo, nil
+			}
+		}
+	}
+
+	return nil, errors.New("validator key not found")
 }
 
-func (v *Validator) GetSigner(keyID []byte) *signer.Signer {
+func (v *Validator) GetSigner(keyID []byte) signer.Signer {
 	if v.standaloneMode {
-		return signer.New(hex.EncodeToString(v.standalonePrivateKey))
+		return signer.NewKeySigner(hex.EncodeToString(v.standalonePrivateKey))
 	}
-	panic("not implemented")
+	return NewValidatorSigner(v.validatorConsole, hex.EncodeToString(keyID))
 }

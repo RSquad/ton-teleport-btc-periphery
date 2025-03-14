@@ -115,10 +115,8 @@ func (ew *EventWriter) writeBurn(tonTx *ent.TonTx, event *teleportcontract.BurnE
 			return err
 		}
 		_, err = tx.Burn.Create().
-			SetExternalID(int64(event.ID)).
 			SetSenderAddr(utils.AddrToRawString(event.SenderAddr)).
 			SetAmount(event.Amount.String()).
-			SetBitcoinScript(hex.EncodeToString(event.BitcoinScript)).
 			SetTonTx(tonTx).
 			SetPegout(pegout).
 			Save(ew.ctx)
@@ -133,10 +131,8 @@ func (ew *EventWriter) writeReinit(tonTx *ent.TonTx, event *teleportcontract.Rei
 			return err
 		}
 		_, err = tx.Reinit.Create().
-			SetExternalID(int64(event.ID)).
 			SetAmount(event.Amount.String()).
-			SetBitcoinTxID(event.BitcoinTxID.String()).
-			SetBitcoinScript(hex.EncodeToString(event.BitcoinScript)).
+			SetNewInternalKey(hex.EncodeToString(event.NewInternalKey)).
 			SetTonTx(tonTx).
 			SetPegout(pegout).
 			Save(ew.ctx)

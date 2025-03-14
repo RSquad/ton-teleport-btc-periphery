@@ -1,6 +1,8 @@
 package ton
 
 import (
+	"errors"
+
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/signer"
 	"github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/tlb"
@@ -10,9 +12,16 @@ import (
 func BuildExtMsg(
 	unsignedMsgBody *cell.Cell,
 	dstAddr *address.Address,
-	signer *signer.Signer,
+	signer signer.Signer,
 ) (*tlb.ExternalMessage, error) {
-	signature := signer.SignCell(unsignedMsgBody)
+	signature := make([]byte, 64)
+	if signer != nil {
+		signature = signer.SignCell(unsignedMsgBody)
+	}
+
+	if signature == nil {
+		return nil, errors.New("signature is nil")
+	}
 
 	msgBody := cell.BeginCell().
 		MustStoreSlice(signature, uint(len(signature)*8)).

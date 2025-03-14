@@ -31,11 +31,12 @@ func (f *Fetcher) Work(ctx context.Context) (err error) {
 		dkg, err := f.Fetch(nil)
 		if err != nil {
 			logger.Log.Error().Err(err).Msg("Fetcher failed")
-			time.Sleep(3 * time.Second)
-			continue
+		} else {
+			if dkg != nil {
+				f.outChan <- dkg
+			}
 		}
-		f.outChan <- dkg
-		time.Sleep(3 * time.Second)
+		time.Sleep(6 * time.Second)
 	}
 }
 

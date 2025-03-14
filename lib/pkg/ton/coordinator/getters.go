@@ -28,7 +28,7 @@ const DefaultDGKTTL = time.Minute
 
 type CoordinatorContract struct {
 	ton.Contract
-	signer    *signer.Signer
+	signer    signer.Signer
 	tonClient *tonclient.TonClient
 	ctx       context.Context
 	ttl       time.Duration
@@ -37,7 +37,7 @@ type CoordinatorContract struct {
 func New(
 	addr *address.Address,
 	tonClient *tonclient.TonClient,
-	signer *signer.Signer,
+	signer signer.Signer,
 	ctx context.Context,
 ) *CoordinatorContract {
 	ttl := DefaultDGKTTL
@@ -60,6 +60,15 @@ func (c *CoordinatorContract) GetDkg(block *tonutils.BlockIDExt) (*DKG, error) {
 		return nil, err
 	}
 
+	dkgNotExists, err := result.IsNil(0)
+	if err != nil {
+		return nil, err
+	}
+
+	if dkgNotExists {
+		return nil, nil
+	}
+
 	dkg, err := parseDGKSlice(result.MustCell(0).BeginParse())
 	if err != nil {
 		return nil, err
@@ -79,6 +88,15 @@ func (c *CoordinatorContract) GetPrevDKG() (*DKG, error) {
 		return nil, err
 	}
 
+	dkgNotExists, err := result.IsNil(0)
+	if err != nil {
+		return nil, err
+	}
+
+	if dkgNotExists {
+		return nil, nil
+	}
+
 	return parseDGKSlice(result.MustCell(0).BeginParse())
 }
 
@@ -91,6 +109,15 @@ func (c *CoordinatorContract) GetUnsignedPegouts() ([]PegoutRecord, error) {
 	result, err := c.tonClient.API.RunGetMethod(c.ctx, block, c.Addr, "get_pegout_records")
 	if err != nil {
 		return nil, err
+	}
+
+	isNullCell, err := result.IsNil(0)
+	if err != nil {
+		return nil, err
+	}
+
+	if isNullCell {
+		return nil, nil
 	}
 
 	cell, err := result.Cell(0)
@@ -153,7 +180,7 @@ func parseDGKSlice(dkgSlice *cell.Slice) (*DKG, error) {
 		return nil, err
 	}
 
-	maxSigners := dkgSlice.MustLoadUInt(16)
+	maxSigners := uint16(dkgSlice.MustLoadUInt(16))
 
 	r1State, err := loadRoundMaskAndCount(dkgSlice)
 	if err != nil {
@@ -175,6 +202,11 @@ func parseDGKSlice(dkgSlice *cell.Slice) (*DKG, error) {
 		return nil, err
 	}
 
+	cfgHash := dkgSlice.MustLoadSlice(256)
+	attempts := dkgSlice.MustLoadUInt(8)
+	untilUnix := dkgSlice.MustLoadUInt(32)
+	until := time.Unix(int64(untilUnix), 0)
+
 	r3, err := LoadDKGR3(dkgSlice.MustLoadRef())
 	if err != nil {
 		return nil, err
@@ -187,6 +219,9 @@ func parseDGKSlice(dkgSlice *cell.Slice) (*DKG, error) {
 		R1:         r1,
 		R2:         r2,
 		R3:         r3,
+		Until:      until,
+		CfgHash:    cfgHash,
+		Attempts:   attempts,
 	}, nil
 }
 
