@@ -56,7 +56,7 @@ func NewValidatorConsole(
 
 func (v *ValidatorConsole) runCommand(c string) ([]byte, error) {
 	args := v.buildCommand(c)
-	cmd := exec.Command(v.validatorEngineConsolePath+"/validator-engine-console", args...)
+	cmd := exec.Command(v.validatorEngineConsolePath, args...)
 
 	return cmd.CombinedOutput()
 }

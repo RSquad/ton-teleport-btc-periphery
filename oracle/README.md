@@ -51,7 +51,7 @@ The Oracle is configured using environment variables. You can set these in a `.e
 
 #### Validator Mode Variables (required if ORACLE_STANDALONE_MODE=false)
 
-- `ORACLE_VALIDATOR_ENGINE_CONSOLE_PATH` - Path to the validator engine console (without base filename `validator-engine-console`)
+- `ORACLE_VALIDATOR_ENGINE_CONSOLE_PATH` - Path to the validator engine console (including binary validator-engine-console)
 - `ORACLE_SERVER_PUBLIC_KEY_PATH` - Path to the server public key
 - `ORACLE_CLIENT_PRIVATE_KEY_PATH` - Path to the client private key
 - `ORACLE_VALIDATOR_SERVER_ADDR` - Address of the validator server
@@ -63,9 +63,10 @@ Example for ORACLE_STANDALONE_MODE=false
 COMMON_TON_CONFIG_URL=https://ton-blockchain.github.io/testnet-global.config.json
 COMMON_TON_CONTRACT_COORDINATOR=EQD5URgpjt00h5x4i9MFHWX1UjmuniYPMWnYVGwmZguJ0tMh
 ORACLE_STANDALONE_MODE=false
-ORACLE_PUBKEY=""
-ORACLE_SECRET=""
+ORACLE_PUBKEY=
+ORACLE_SECRET=
 ORACLE_KEYSTORE_PATH=/path/to/keystore
+ORACLE_VALIDATOR_ENGINE_CONSOLE_PATH=/path/to/validator-engine-console
 ORACLE_SERVER_PUBLIC_KEY_PATH=/path/to/certs/server.pub
 ORACLE_CLIENT_PRIVATE_KEY_PATH=/path/to/certs/client
 ORACLE_VALIDATOR_SERVER_ADDR=127.0.0.1:4441
