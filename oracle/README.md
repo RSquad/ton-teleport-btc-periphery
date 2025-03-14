@@ -12,6 +12,7 @@ The Oracle uses the FROST (Flexible Round-Optimized Schnorr Threshold) signature
 
 ### Prerequisites
 
+- [Go-FROST library](../frost/README.md) - Must be built first (see FROST README for instructions)
 - Access to TON blockchain (via lite client)
 - Access to validator-engine-console (if not running in standalone mode)
 
