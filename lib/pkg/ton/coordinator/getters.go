@@ -28,7 +28,7 @@ const DefaultDGKTTL = time.Minute
 
 type CoordinatorContract struct {
 	ton.Contract
-	signer    *signer.Signer
+	signer    signer.Signer
 	tonClient *tonclient.TonClient
 	ctx       context.Context
 	ttl       time.Duration
@@ -37,7 +37,7 @@ type CoordinatorContract struct {
 func New(
 	addr *address.Address,
 	tonClient *tonclient.TonClient,
-	signer *signer.Signer,
+	signer signer.Signer,
 	ctx context.Context,
 ) *CoordinatorContract {
 	ttl := DefaultDGKTTL
@@ -109,6 +109,15 @@ func (c *CoordinatorContract) GetUnsignedPegouts() ([]PegoutRecord, error) {
 	result, err := c.tonClient.API.RunGetMethod(c.ctx, block, c.Addr, "get_pegout_records")
 	if err != nil {
 		return nil, err
+	}
+
+	isNullCell, err := result.IsNil(0)
+	if err != nil {
+		return nil, err
+	}
+
+	if isNullCell {
+		return nil, nil
 	}
 
 	cell, err := result.Cell(0)

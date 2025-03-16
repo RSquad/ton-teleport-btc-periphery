@@ -37,12 +37,12 @@ func (c *CoordinatorContract) SendRound2(validatorIdx uint16, fromIdentifier []b
 	))
 }
 
-func (c *CoordinatorContract) SendPubkeyPackage(validatorIdx uint16, internalKeyXY []byte, Identifier []byte, pubkeyPackage []byte) (*tlb.Transaction, error) {
-	if (len(internalKeyXY) != 65) || (internalKeyXY[0] != 0x04) {
-		return nil, fmt.Errorf("internalKeyXY must be 65 bytes and has prefix 0x04")
+func (c *CoordinatorContract) SendPubkeyPackage(validatorIdx uint16, internalKeyX []byte, Identifier []byte, pubkeyPackage []byte) (*tlb.Transaction, error) {
+	if len(internalKeyX) != 32 {
+		return nil, fmt.Errorf("internalKeyX must be 32 bytes long, got %d", len(internalKeyX))
 	}
 	return c.sendBodyCell(BuildSendRound3Body(
-		int64(c.ttl.Seconds()), validatorIdx, internalKeyXY, Identifier, pubkeyPackage,
+		int64(c.ttl.Seconds()), validatorIdx, internalKeyX, Identifier, pubkeyPackage,
 	))
 }
 
@@ -81,7 +81,7 @@ func (c *CoordinatorContract) SendSignatures(
 	))
 }
 
-func (c *CoordinatorContract) ConnectSigner(signer *signer.Signer) {
+func (c *CoordinatorContract) ConnectSigner(signer signer.Signer) {
 	c.signer = signer
 }
 

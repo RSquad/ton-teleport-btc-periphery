@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	ent "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated"
+	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated/tontx"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton"
 )
 
@@ -31,4 +32,15 @@ func (ew *TonTxWriter) Write(
 		SetHash(fmt.Sprintf("%x", rawEvent.TxHash)).
 		SetCreatedAt(rawEvent.TxUtime).
 		Save(ew.ctx)
+}
+
+func (ew *TonTxWriter) GetTonTxWithoutRelationsByHash(hash string) (*ent.TonTx, error) {
+	return ew.repo.TonTx.
+		Query().
+		Where(tontx.Hash(hash),
+			tontx.Not(tontx.HasBurn()),
+			tontx.Not(tontx.HasReinit()),
+			tontx.Not(tontx.HasMint()),
+			tontx.Not(tontx.HasInternalKey()),
+		).First(ew.ctx)
 }

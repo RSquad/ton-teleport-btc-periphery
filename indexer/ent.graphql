@@ -2,10 +2,8 @@ directive @goField(forceResolver: Boolean, name: String, omittable: Boolean) on 
 directive @goModel(model: String, models: [String!], forceGenerate: Boolean) on OBJECT | INPUT_OBJECT | SCALAR | ENUM | INTERFACE | UNION
 type Burn implements Node {
   id: ID!
-  externalID: Int!
   senderAddr: String!
   amount: String!
-  bitcoinScript: String!
   tonTx: TonTx!
   pegout: Pegout!
 }
@@ -59,17 +57,6 @@ input BurnWhereInput {
   idLT: ID
   idLTE: ID
   """
-  external_id field predicates
-  """
-  externalID: Int
-  externalIDNEQ: Int
-  externalIDIn: [Int!]
-  externalIDNotIn: [Int!]
-  externalIDGT: Int
-  externalIDGTE: Int
-  externalIDLT: Int
-  externalIDLTE: Int
-  """
   sender_addr field predicates
   """
   senderAddr: String
@@ -101,22 +88,6 @@ input BurnWhereInput {
   amountHasSuffix: String
   amountEqualFold: String
   amountContainsFold: String
-  """
-  bitcoin_script field predicates
-  """
-  bitcoinScript: String
-  bitcoinScriptNEQ: String
-  bitcoinScriptIn: [String!]
-  bitcoinScriptNotIn: [String!]
-  bitcoinScriptGT: String
-  bitcoinScriptGTE: String
-  bitcoinScriptLT: String
-  bitcoinScriptLTE: String
-  bitcoinScriptContains: String
-  bitcoinScriptHasPrefix: String
-  bitcoinScriptHasSuffix: String
-  bitcoinScriptEqualFold: String
-  bitcoinScriptContainsFold: String
   """
   ton_tx edge predicates
   """
@@ -536,7 +507,6 @@ input PeginWhereInput {
 }
 type Pegout implements Node {
   id: ID!
-  externalID: Int!
   addr: String!
   status: PegoutStatus!
   bitcoinTxRaw: String!
@@ -602,17 +572,6 @@ input PegoutWhereInput {
   idGTE: ID
   idLT: ID
   idLTE: ID
-  """
-  external_id field predicates
-  """
-  externalID: Int
-  externalIDNEQ: Int
-  externalIDIn: [Int!]
-  externalIDNotIn: [Int!]
-  externalIDGT: Int
-  externalIDGTE: Int
-  externalIDLT: Int
-  externalIDLTE: Int
   """
   addr field predicates
   """
@@ -899,10 +858,8 @@ type Query {
 }
 type Reinit implements Node {
   id: ID!
-  externalID: Int!
   amount: String!
-  bitcoinTxID: String!
-  bitcoinScript: String!
+  newInternalKey: String!
   tonTx: TonTx!
   pegout: Pegout!
 }
@@ -956,17 +913,6 @@ input ReinitWhereInput {
   idLT: ID
   idLTE: ID
   """
-  external_id field predicates
-  """
-  externalID: Int
-  externalIDNEQ: Int
-  externalIDIn: [Int!]
-  externalIDNotIn: [Int!]
-  externalIDGT: Int
-  externalIDGTE: Int
-  externalIDLT: Int
-  externalIDLTE: Int
-  """
   amount field predicates
   """
   amount: String
@@ -983,37 +929,21 @@ input ReinitWhereInput {
   amountEqualFold: String
   amountContainsFold: String
   """
-  bitcoin_tx_id field predicates
+  new_internal_key field predicates
   """
-  bitcoinTxID: String
-  bitcoinTxIDNEQ: String
-  bitcoinTxIDIn: [String!]
-  bitcoinTxIDNotIn: [String!]
-  bitcoinTxIDGT: String
-  bitcoinTxIDGTE: String
-  bitcoinTxIDLT: String
-  bitcoinTxIDLTE: String
-  bitcoinTxIDContains: String
-  bitcoinTxIDHasPrefix: String
-  bitcoinTxIDHasSuffix: String
-  bitcoinTxIDEqualFold: String
-  bitcoinTxIDContainsFold: String
-  """
-  bitcoin_script field predicates
-  """
-  bitcoinScript: String
-  bitcoinScriptNEQ: String
-  bitcoinScriptIn: [String!]
-  bitcoinScriptNotIn: [String!]
-  bitcoinScriptGT: String
-  bitcoinScriptGTE: String
-  bitcoinScriptLT: String
-  bitcoinScriptLTE: String
-  bitcoinScriptContains: String
-  bitcoinScriptHasPrefix: String
-  bitcoinScriptHasSuffix: String
-  bitcoinScriptEqualFold: String
-  bitcoinScriptContainsFold: String
+  newInternalKey: String
+  newInternalKeyNEQ: String
+  newInternalKeyIn: [String!]
+  newInternalKeyNotIn: [String!]
+  newInternalKeyGT: String
+  newInternalKeyGTE: String
+  newInternalKeyLT: String
+  newInternalKeyLTE: String
+  newInternalKeyContains: String
+  newInternalKeyHasPrefix: String
+  newInternalKeyHasSuffix: String
+  newInternalKeyEqualFold: String
+  newInternalKeyContainsFold: String
   """
   ton_tx edge predicates
   """

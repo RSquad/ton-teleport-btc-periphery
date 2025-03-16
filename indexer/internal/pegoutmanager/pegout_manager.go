@@ -58,16 +58,14 @@ func New(
 func (c *PegoutManager) Run() {
 	const sleepDuration = 3 * time.Second
 	for {
-		if err := c.processPegouts(); err != nil {
-			// log.Printf("failed to process pegouts: %v", err)
-		}
+		c.processPegouts()
 		time.Sleep(sleepDuration)
 	}
 }
 
 func (c *PegoutManager) processPegouts() error {
 	pegouts, err := c.repo.Pegout.Query().
-		Where(entpegout.StatusNEQ(entpegout.StatusConfirmed)).
+		Where(entpegout.StatusNEQ(entpegout.StatusConfirmed), entpegout.AddrNEQ("NONE")).
 		Limit(512).
 		All(c.ctx)
 	if err != nil || len(pegouts) == 0 {
@@ -88,7 +86,6 @@ func (c *PegoutManager) processPegouts() error {
 				// logger.Log.Error().
 				// 	Err(err).
 				// 	Str("component", "PegoutManager").
-				// 	Int64("id", pegout.ExternalID).
 				// 	Str("addr", pegout.Addr).
 				// 	Msg("Failed to process pegout")
 			}

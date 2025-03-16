@@ -5,6 +5,8 @@ on:
     branches:
       - develop
       - sandbox
+    paths-ignore:
+      - '**/*.md'
 
 jobs:
   develop:
