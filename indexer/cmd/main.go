@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"sync"
+	"time"
 
 	"entgo.io/contrib/entgql"
 	"entgo.io/ent/dialect"
@@ -29,6 +30,9 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/teleportcontract"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
+	"github.com/ulule/limiter/v3"
+	"github.com/ulule/limiter/v3/drivers/middleware/stdlib"
+	"github.com/ulule/limiter/v3/drivers/store/memory"
 	"github.com/xssnick/tonutils-go/address"
 )
 
@@ -170,10 +174,18 @@ func run(app *App) error {
 		)
 		srv.Use(entgql.Transactioner{TxOpener: app.Repo})
 
+		rate := limiter.Rate{
+			Period: 1 * time.Second,
+			Limit:  10,
+		}
+		store := memory.NewStore()
+		limiter := limiter.New(store, rate)
+		middleware := stdlib.NewMiddleware(limiter)
+
 		mux := http.NewServeMux()
 		mux.Handle("/indexer/graphql", srv)
 		mux.Handle("/", playground.ApolloSandboxHandler("Indexer", "/indexer/graphql"))
-		mux.Handle("/metrics", promhttp.Handler())
+		mux.Handle("/metrics", middleware.Handler(promhttp.Handler()))
 
 		c := cors.New(cors.Options{
 			AllowedOrigins:   []string{"*"},
