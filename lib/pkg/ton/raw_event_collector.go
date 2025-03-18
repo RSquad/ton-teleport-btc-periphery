@@ -31,7 +31,7 @@ func (ec *RawEventCollector) Work(ctx context.Context) (err error) {
 	ec.logStartWork()
 	defer ec.logFinishWork(err)
 
-	txChan := make(chan *tlb.Transaction)
+	txChan := make(chan *tlb.Transaction, 128)
 	txCollector, err := tonclient.NewTxCollector(ec.tonClient, ec.addr, txChan)
 	if err != nil {
 		return err
