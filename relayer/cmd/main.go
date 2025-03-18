@@ -45,7 +45,7 @@ func main() {
 func initialize() (*App, error) {
 	log.Println("[App] initializing...")
 
-	relayerConfig, err := utils.LoadConfig[config.RelayerConfig]()
+	relayerConfig, err := utils.LoadCfg[config.RelayerConfig]()
 	if err != nil {
 		log.Fatalf("[App] Failed to load env: %v", err)
 	}

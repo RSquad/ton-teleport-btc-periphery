@@ -59,8 +59,8 @@ macro_rules! from_bytes_for {
                 unsafe {
                     let packages = slice::from_raw_parts(ptr, len);
                     for p in packages {
-                        let identifier = Identifier::deserialize(&p.identifier).unwrap();
-                        let pkg = $T::from_raw_parts(p.buf, p.len).unwrap();
+                        let identifier = Identifier::deserialize(&p.identifier).expect("Cannot deserialize Identifier");
+                        let pkg = $T::from_raw_parts(p.buf, p.len).expect("Cannot deserialize Package");
                         map.insert(identifier, pkg);
                     }
                 }
@@ -335,7 +335,7 @@ pub extern "C" fn aggregate_with_tweak(
         message_buf.to_slice(),
     );
 
-    let mut signature_shares_map =
+    let signature_shares_map =
         SignatureShare::make_map(signature_shares_ptr, signature_shares_len);
 
     let aggregate_with_tweak_result = frost_aggregate_with_tweak(
@@ -389,4 +389,26 @@ pub extern "C" fn verify(
             }
         }
     }
+}
+
+#[no_mangle]
+pub extern "C" fn extract_public_key_from_package(
+    pubkey_package_buf: Buffer,
+    public_key: *mut Buffer,
+) -> i32 {
+    let pubkey_package = match PublicKeyPackage::from_buf(pubkey_package_buf) {
+        Ok(x) => x,
+        Err(_) => return -1,
+    };
+    
+    let key_vec = match pubkey_package.verifying_key().serialize() {
+        Ok(x) => x,
+        Err(_) => return -2,
+    };
+    
+    unsafe {
+        (*public_key).len = key_vec.len();
+        (*public_key).data = key_vec.leak().as_ptr();
+    }
+    0
 }

@@ -7,7 +7,7 @@ import (
 	"github.com/joho/godotenv"
 )
 
-func LoadConfig[T any]() (T, error) {
+func LoadCfg[T any]() (T, error) {
 	var cfg T
 
 	if err := godotenv.Load(); err != nil {

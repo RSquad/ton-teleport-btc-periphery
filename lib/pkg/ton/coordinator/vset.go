@@ -1,4 +1,4 @@
-package coordinatorcontract
+package coordinator
 
 import (
 	"errors"
@@ -9,12 +9,14 @@ import (
 
 const Ed25519PubkeyTag = 0x8e81278a
 
-type VSet map[string][]byte
+type VSet map[uint16][]byte
 
-func NewVSet(dict *cell.Dictionary) (*VSet, error) {
-	result, err := parseddict.New(
+func NewVSet(dict *cell.Dictionary) (VSet, error) {
+	result, err := parseddict.ParseDict(
 		dict,
-		parseddict.ParseKey,
+		func(keySlice *cell.Slice, _ uint) uint16 {
+			return uint16(keySlice.MustLoadUInt(16))
+		},
 		func(valueSlice *cell.Slice) ([]byte, error) {
 			tag, err := valueSlice.LoadUInt(8)
 			if err != nil {
@@ -35,5 +37,5 @@ func NewVSet(dict *cell.Dictionary) (*VSet, error) {
 		},
 	)
 
-	return (*VSet)(result), err
+	return *result, err
 }

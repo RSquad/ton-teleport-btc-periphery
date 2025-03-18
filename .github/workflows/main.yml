@@ -1,0 +1,30 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches:
+      - develop
+      - sandbox
+    paths-ignore:
+      - '**/*.md'
+
+jobs:
+  develop:
+    if: github.ref == 'refs/heads/develop'
+    uses: ./.github/workflows/build-and-deploy.yml
+    with:
+      APPS: '["indexer", "relayer"]'
+      STAGE: develop
+      APP_NAMESPACE: ton-teleport-dev
+    secrets:
+      KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
+
+  sandbox:
+    if: github.ref == 'refs/heads/sandbox'
+    uses: ./.github/workflows/build-and-deploy.yml
+    with:
+      APPS: '["indexer", "relayer"]'
+      STAGE: sandbox
+      APP_NAMESPACE: ton-teleport-sand
+    secrets:
+      KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}

@@ -1,6 +1,7 @@
 package dict
 
 import (
+	"encoding/hex"
 	"math/big"
 
 	"github.com/xssnick/tonutils-go/address"

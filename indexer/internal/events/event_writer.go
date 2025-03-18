@@ -9,7 +9,7 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated/pegin"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/pegout"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton"
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinatorcontract"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/teleportcontract"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
 )
@@ -64,7 +64,7 @@ func (ew *EventWriter) writeEvent(tonTx *ent.TonTx, event ton.EventInterface) er
 		return ew.writeBurn(tonTx, event)
 	case *teleportcontract.ReinitEvent:
 		return ew.writeReinit(tonTx, event)
-	case *coordinatorcontract.DKGCompletedEvent:
+	case *coordinator.DKGCompletedEvent:
 		return ew.writeInternalKey(tonTx, event)
 	}
 	return ew.formatUnknownEventError(event)
@@ -115,10 +115,8 @@ func (ew *EventWriter) writeBurn(tonTx *ent.TonTx, event *teleportcontract.BurnE
 			return err
 		}
 		_, err = tx.Burn.Create().
-			SetExternalID(int64(event.ID)).
 			SetSenderAddr(utils.AddrToRawString(event.SenderAddr)).
 			SetAmount(event.Amount.String()).
-			SetBitcoinScript(hex.EncodeToString(event.BitcoinScript)).
 			SetTonTx(tonTx).
 			SetPegout(pegout).
 			Save(ew.ctx)
@@ -133,10 +131,8 @@ func (ew *EventWriter) writeReinit(tonTx *ent.TonTx, event *teleportcontract.Rei
 			return err
 		}
 		_, err = tx.Reinit.Create().
-			SetExternalID(int64(event.ID)).
 			SetAmount(event.Amount.String()).
-			SetBitcoinTxID(event.BitcoinTxID.String()).
-			SetBitcoinScript(hex.EncodeToString(event.BitcoinScript)).
+			SetNewInternalKey(hex.EncodeToString(event.NewInternalKey)).
 			SetTonTx(tonTx).
 			SetPegout(pegout).
 			Save(ew.ctx)
@@ -144,7 +140,7 @@ func (ew *EventWriter) writeReinit(tonTx *ent.TonTx, event *teleportcontract.Rei
 	})
 }
 
-func (ew *EventWriter) writeInternalKey(tonTx *ent.TonTx, event *coordinatorcontract.DKGCompletedEvent) error {
+func (ew *EventWriter) writeInternalKey(tonTx *ent.TonTx, event *coordinator.DKGCompletedEvent) error {
 	_, err := ew.repo.InternalKey.Create().
 		SetCompletedAt(event.CompletedAt).
 		SetKey(hex.EncodeToString(event.Key)).
