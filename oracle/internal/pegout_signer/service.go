@@ -185,7 +185,7 @@ func (s *SignService) doSign(
 		return false
 	}
 
-	if pegoutRecord.SigningSharesCount() >= minSigners {
+	if pegoutRecord.SigningSharesCount() >= int(minSigners) {
 		s.logMinimalSharesReached(pegoutRecord.ID)
 		return true
 	}
@@ -196,13 +196,13 @@ func (s *SignService) doSign(
 
 	pegoutContract := pegoutcontract.New(pegoutRecord.PegoutAddress, s.ton, ctx)
 	block := s.getLatestBlock(ctx)
-	signHashes, err := pegoutContract.GetSigningHashes(block)
+	signingHashes, err := pegoutContract.GetSigningHashes(block)
 	if err != nil {
 		s.logError("failed to get signing hashes", err)
 		return false
 	}
 
-	if len(signHashes) == 0 {
+	if len(signingHashes) == 0 {
 		s.logError("", fmt.Errorf("(pegoutId %x) no signing hashes", pegoutRecord.ID))
 		return false
 	}
@@ -220,14 +220,14 @@ func (s *SignService) doSign(
 		// Public key (X coord) used to get secret package from keystore
 		publicKey := txParts.InternalKey
 		// array with sign shares for each sign hash
-		signShares = make([][]byte, 0, len(signHashes))
+		signShares = make([][]byte, 0, len(signingHashes))
 		i := 0
 		// call frost.sign for each signing hash (or for each input)
 		for _, input := range *txParts.Inputs {
 			// tap tweak to tweak secret package before signing.
 			tapTweak := input.BitcoinMerkleRoot
 			// message to sign.
-			message := signHashes[i]
+			message := signingHashes[i]
 			// nonce name used to load nonce from keystore
 			nonceName := pegoutName
 			signShare, err := s.dkgClient.Sign(publicKey, message, nonceName, pegoutRecord.Commitments, tapTweak)
@@ -248,10 +248,10 @@ func (s *SignService) doSign(
 		signShares,
 	); err != nil {
 		s.logError("failed to send signing share", err)
-		return false
+	} else {
+		s.logSigningShareSent(pegoutRecord.ID)
 	}
 
-	s.logSigningShareSent(pegoutRecord.ID)
 	return false
 }
 
@@ -263,7 +263,6 @@ func (s *SignService) doAggregate(
 ) bool {
 	s.logAggregateSignShares(pegoutRecord.ID)
 
-	identifier := validatorKey.PublicKey
 	pegoutContract := pegoutcontract.New(pegoutRecord.PegoutAddress, s.ton, ctx)
 	block := s.getLatestBlock(ctx)
 	txParts, err := pegoutContract.GetTxParts(block)
@@ -276,16 +275,20 @@ func (s *SignService) doAggregate(
 		return true
 	}
 
-	signHashes, err := pegoutContract.GetSigningHashes(block)
+	signingHashes, err := pegoutContract.GetSigningHashes(block)
+	if err != nil {
+		s.logError("failed to get signing hashes", err)
+		return false
+	}
 
 	commitmentsMap := helpers.ConvertMapToFrostPackages(pegoutRecord.Commitments)
 
-	signatures := make([][]byte, 0, len(signHashes))
+	signatures := make([][]byte, 0, len(signingHashes))
 
-	for i, hash := range signHashes {
-		frostShares := filterSharesByIndex(pegoutRecord.SigningShares, uint8(i))
+	for hashIndex, hash := range signingHashes {
+		hashOnlyShares := filterSharesByHashIndex(pegoutRecord.SigningShares, hashIndex)
 		// TODO tapTweak := (*txParts.Inputs)[i].BitcoinMerkleRoot
-		signature, err := frost.AggregateWithTweak(hash, commitmentsMap, frostShares, frost.NewPackage(pubkeyPackage))
+		signature, err := frost.AggregateWithTweak(hash, commitmentsMap, hashOnlyShares, frost.NewPackage(pubkeyPackage))
 		if err != nil {
 			s.logAggregateSignSharesError(err)
 			return false
@@ -296,7 +299,6 @@ func (s *SignService) doAggregate(
 	if _, err := s.coordinator.SendSignatures(
 		pegoutRecord.ID,
 		validatorKey.VsetIdx,
-		identifier,
 		signatures,
 	); err != nil {
 		s.logSignatureSendError(err)
@@ -313,16 +315,16 @@ func (s *SignService) doAggregate(
 
 // Helper function to filter shares by all identifiers but
 // for the given signing hash index
-func filterSharesByIndex(
+func filterSharesByHashIndex(
 	// first key is the oracle identifier,
 	// second key is the signing hash index
-	shares map[string]map[uint8][]byte,
-	signingHashIndex uint8,
+	shares map[string]map[int][]byte,
+	index int,
 ) map[frost.Identifier]frost.Package {
 	sharesMap := make(map[frost.Identifier]frost.Package)
-	for identifier, shares := range shares {
+	for identifier, participantShares := range shares {
 		frostIdentifier, _ := frost.DecodeIdentifier(identifier)
-		sharesMap[*frostIdentifier] = frost.NewPackage(shares[signingHashIndex])
+		sharesMap[*frostIdentifier] = frost.NewPackage(participantShares[index])
 	}
 	return sharesMap
 }

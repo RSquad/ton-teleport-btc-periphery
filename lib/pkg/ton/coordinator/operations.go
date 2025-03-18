@@ -72,12 +72,11 @@ func (c *CoordinatorContract) SendSigningShare(
 func (c *CoordinatorContract) SendSignatures(
 	PegoutID uint64,
 	ValidatorIdx uint16,
-	Identifier []byte,
 	Signatures [][]byte,
 ) (*tlb.Transaction, error) {
 	return c.sendBodyCell(BuildSendSignaturesBody(
 		int64(c.ttl.Seconds()),
-		&SignaturesRequest{PegoutID, ValidatorIdx, Identifier, Signatures},
+		&SignaturesRequest{PegoutID, ValidatorIdx, Signatures},
 	))
 }
 

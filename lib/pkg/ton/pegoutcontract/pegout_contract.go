@@ -66,13 +66,22 @@ func (c *PegoutContract) GetTxParts(block *ton.BlockIDExt) (*TxParts, error) {
 		outputs = append(outputs, changeOutput)
 	}
 
-	signaturesDictCell, err := res.Cell(txPartsIndexSignaturesDictCell)
+	noSignaturesYet, err := res.IsNil(txPartsIndexSignaturesDictCell)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get signatures dict cell: %w", err)
+		return nil, fmt.Errorf("failed to check if signature cell is null: %w", err)
 	}
-	signatures, err := NewTxPartsSignatures(signaturesDictCell.AsDict(16))
-	if err != nil {
-		return nil, fmt.Errorf("failed to decode signatures: %w", err)
+	var signatures *TxPartsSignatures
+	if noSignaturesYet {
+		signatures = &TxPartsSignatures{}
+	} else {
+		signaturesDictCell, err := res.Cell(txPartsIndexSignaturesDictCell)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get signatures dict cell: %w", err)
+		}
+		signatures, err = NewTxPartsSignatures(signaturesDictCell.AsDict(16))
+		if err != nil {
+			return nil, fmt.Errorf("failed to decode signatures: %w", err)
+		}
 	}
 
 	internalKey, err := res.Int(txPartsIndexInternalKey)
