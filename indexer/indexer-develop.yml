@@ -2,7 +2,7 @@ ingress:
   enabled: true
   letsencrypt-issuer: "letsencrypt-prod"
   hosts:
-    - host: ton-teleport-develop.rsquad.solutions
+    - host: ton-teleport.dev.rsquad.solutions
       paths:
         - /indexer
 
