@@ -6,7 +6,6 @@ import (
 	"log"
 	"net/http"
 	"sync"
-	"time"
 
 	"entgo.io/contrib/entgql"
 	"entgo.io/ent/dialect"
@@ -21,18 +20,15 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated/migrate"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/events"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/gql"
+	metrics "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/metrics"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/mintservice"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/pegoutmanager"
-	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/prometheus"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/teleportcontract"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
-	"github.com/ulule/limiter/v3"
-	"github.com/ulule/limiter/v3/drivers/middleware/stdlib"
-	"github.com/ulule/limiter/v3/drivers/store/memory"
 	"github.com/xssnick/tonutils-go/address"
 )
 
@@ -45,7 +41,7 @@ type App struct {
 	CoordinatorContract *coordinator.CoordinatorContract
 	PegoutManager       *pegoutmanager.PegoutManager
 	MintService         *mintservice.MintService
-	Prometheus          *prometheus.Prometheus
+	Metrics             *metrics.Metrics
 }
 
 func main() {
@@ -142,7 +138,7 @@ func initialize() (*App, error) {
 		coordinatorContract,
 	)
 
-	prometheus := prometheus.New(tonClient, indexerConfig)
+	metrics := metrics.New(tonClient, indexerConfig)
 
 	logger.Log.Info().
 		Str("component", "main").
@@ -157,7 +153,7 @@ func initialize() (*App, error) {
 		PegoutManager:       pegoutManager,
 		MintService:         mintService,
 		EventService:        eventService,
-		Prometheus: 				 prometheus,
+		Metrics:             metrics,
 	}, nil
 }
 
@@ -174,18 +170,10 @@ func run(app *App) error {
 		)
 		srv.Use(entgql.Transactioner{TxOpener: app.Repo})
 
-		rate := limiter.Rate{
-			Period: 1 * time.Second,
-			Limit:  10,
-		}
-		store := memory.NewStore()
-		limiter := limiter.New(store, rate)
-		middleware := stdlib.NewMiddleware(limiter)
-
 		mux := http.NewServeMux()
 		mux.Handle("/indexer/graphql", srv)
 		mux.Handle("/", playground.ApolloSandboxHandler("Indexer", "/indexer/graphql"))
-		mux.Handle("/metrics", middleware.Handler(promhttp.Handler()))
+		mux.Handle("/metrics", promhttp.Handler())
 
 		c := cors.New(cors.Options{
 			AllowedOrigins:   []string{"*"},
@@ -228,7 +216,7 @@ func run(app *App) error {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		app.Prometheus.Work(context.Background())
+		app.Metrics.Work(context.Background())
 	}()
 
 	wg.Wait()
