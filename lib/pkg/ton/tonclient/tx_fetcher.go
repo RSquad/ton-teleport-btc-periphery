@@ -49,6 +49,7 @@ func (tf *TxFetcher) Work(ctx context.Context) (err error) {
 	}()
 
 	for {
+		time.Sleep(150 * time.Millisecond)
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
