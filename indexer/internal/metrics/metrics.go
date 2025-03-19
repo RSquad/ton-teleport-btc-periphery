@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"math/big"
-	"reflect"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -15,60 +14,54 @@ import (
 )
 
 type Metrics struct {
-	tonClient *tonclient.TonClient
-	config    config.IndexerConfig
+	tonClient         *tonclient.TonClient
+	contractAddresses map[string]string
 }
 
 func New(tonClient *tonclient.TonClient, config config.IndexerConfig) *Metrics {
 	return &Metrics{
 		tonClient: tonClient,
-		config:    config,
+		contractAddresses: map[string]string{
+			"teleport":    config.TeleportContractAddr,
+			"coordinator": config.CoordinatorContractAddr,
+			"test":        "0QD3CxqLkN5V-jk24kdOlIIhNfGZYWH0y0ato9U_6pMBotZl",
+		},
 	}
 }
 
 var (
 	contractBalances = promauto.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "teleport_contracts_balances",
-		Help: "Current contracts balances",
-	}, []string{"contract_name"})
+		Name: "contract_balance",
+		Help: "Contract balance",
+	}, []string{"contract"})
 )
 
-func (m *Metrics) fetchDynamicValue() (map[string]float64, error) {
-	v := reflect.ValueOf(m.config)
-	typeOfC := v.Type()
+func (m *Metrics) getBalances() (map[string]float64, error) {
 	balances := make(map[string]float64)
 
-	for i := range v.NumField() {
-		field := v.Field(i)
-		var fieldValue string = field.Interface().(string)
-		fieldName := typeOfC.Field(i).Name
-		contractAddress, err := address.ParseAddr(fieldValue)
+	for key, value := range m.contractAddresses {
+		contractAddress, err := address.ParseAddr(value)
 		if err != nil {
 			continue
 		}
-
+		fmt.Println("contractAddress: ", contractAddress)
 		balance, err := m.tonClient.GetBalance(contractAddress)
+		fmt.Println("balance: ", balance)
 		if err != nil {
-			return balances, fmt.Errorf("failed to get contract balance: %v", err)
+			return balances, fmt.Errorf(getBalanceError, err)
 		}
 
 		balanceFloat, _ := new(big.Float).SetInt(balance).Float64()
 
-		balances[fieldName] = balanceFloat / 1000000000
+		balances[key] = balanceFloat / 1000000000
 	}
 	return balances, nil
 }
 
-func (m *Metrics) recordMetrics() (err error) {
-	balances, err := m.fetchDynamicValue()
-	if err != nil {
-		return err
+func (m *Metrics) recordMetrics(balances map[string]float64) (err error) {
+	for key, value := range balances {
+		contractBalances.With(prometheus.Labels{"contract": key}).Set(value)
 	}
-	go func() {
-		for key, value := range balances {
-			contractBalances.With(prometheus.Labels{"contract_name": key}).Set(value)
-		}
-	}()
 	return nil
 }
 
@@ -78,7 +71,12 @@ func (m *Metrics) Work(ctx context.Context) (err error) {
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
-			m.recordMetrics()
+			balances, err := m.getBalances()
+			if err != nil {
+				return err
+			}
+			fmt.Println("balances: ", balances["teleport"], " ", balances["coordinator"])
+			m.recordMetrics(balances)
 			time.Sleep(10 * time.Second)
 		}
 	}
