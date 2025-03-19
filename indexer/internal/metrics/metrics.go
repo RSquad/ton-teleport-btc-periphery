@@ -2,7 +2,7 @@ package metrics
 
 import (
 	"context"
-	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -38,17 +38,19 @@ func (m *Metrics) getBalances() (map[string]float64, error) {
 	balances := make(map[string]float64)
 
 	for key, value := range m.contractAddr {
-		contractAddress := address.MustParseAddr(value)
-		balance, err := m.tonClient.GetBalance(contractAddress)
+		contractAddr := address.MustParseAddr(value)
+		balance, err := m.tonClient.GetBalance(contractAddr)
 		if err != nil {
-			m.formatGetBalanceError(contractAddress)
+			m.formatGetBalanceError(contractAddr)
 		}
 
-		fmt.Println("balance: ", balance)
+		balanceFloat, err := strconv.ParseFloat(balance, 64)
 
-		balanceFloat, _ := balance.Float64()
+		if err != nil {
+			m.formatParseFloatError(balance)
+		}
 
-		balances[key] = balanceFloat / 1000000000
+		balances[key] = balanceFloat
 	}
 	return balances, nil
 }

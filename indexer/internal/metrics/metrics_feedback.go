@@ -10,3 +10,7 @@ import (
 func (m *Metrics) formatGetBalanceError(addr *address.Address) error {
 	return fmt.Errorf("can not get balance for contract: %v", utils.AddrToRawString(addr))
 }
+
+func (m *Metrics) formatParseFloatError(s string) error {
+	return fmt.Errorf("can not convert string %v to float", s)
+}
