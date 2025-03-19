@@ -4,7 +4,7 @@ services:
   db-dev:
     image: postgres:latest
     ports:
-      - 65022:5432 # TODO - change to 5432
+      - 5432:5432
     environment:
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: admin

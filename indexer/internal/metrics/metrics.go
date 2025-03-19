@@ -24,7 +24,6 @@ func New(tonClient *tonclient.TonClient, config config.IndexerConfig) *Metrics {
 		contractAddresses: map[string]string{
 			"teleport":    config.TeleportContractAddr,
 			"coordinator": config.CoordinatorContractAddr,
-			"test":        "0QD3CxqLkN5V-jk24kdOlIIhNfGZYWH0y0ato9U_6pMBotZl",
 		},
 	}
 }
