@@ -44,10 +44,10 @@ func (m *Metrics) getBalances() (map[string]float64, error) {
 			m.formatGetBalanceError(contractAddr)
 		}
 
-		balanceFloat, err := strconv.ParseFloat(balance, 64)
+		balanceFloat, err := strconv.ParseFloat(balance.String(), 64)
 
 		if err != nil {
-			m.formatParseFloatError(balance)
+			m.formatParseFloatError(balance.String())
 		}
 
 		balances[key] = balanceFloat
