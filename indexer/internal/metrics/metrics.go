@@ -2,7 +2,6 @@ package metrics
 
 import (
 	"context"
-	"fmt"
 	"math/big"
 	"time"
 
@@ -14,14 +13,14 @@ import (
 )
 
 type Metrics struct {
-	tonClient         *tonclient.TonClient
-	contractAddresses map[string]string
+	tonClient    *tonclient.TonClient
+	contractAddr map[string]string
 }
 
 func New(tonClient *tonclient.TonClient, config config.IndexerConfig) *Metrics {
 	return &Metrics{
 		tonClient: tonClient,
-		contractAddresses: map[string]string{
+		contractAddr: map[string]string{
 			"teleport":    config.TeleportContractAddr,
 			"coordinator": config.CoordinatorContractAddr,
 		},
@@ -38,14 +37,11 @@ var (
 func (m *Metrics) getBalances() (map[string]float64, error) {
 	balances := make(map[string]float64)
 
-	for key, value := range m.contractAddresses {
-		contractAddress, err := address.ParseAddr(value)
-		if err != nil {
-			continue
-		}
+	for key, value := range m.contractAddr {
+		contractAddress := address.MustParseAddr(value)
 		balance, err := m.tonClient.GetBalance(contractAddress)
 		if err != nil {
-			return balances, fmt.Errorf(getBalanceError, err)
+			m.formatGetBalanceError(contractAddress)
 		}
 
 		balanceFloat, _ := new(big.Float).SetInt(balance).Float64()
