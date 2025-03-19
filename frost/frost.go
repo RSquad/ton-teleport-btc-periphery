@@ -32,10 +32,6 @@ func (p Package) ToBytes() []byte {
 	return p.buf
 }
 
-func sliceToCPtrBytes32(slice []byte) *[32]C.uint8_t {
-	return (*[32]C.uint8_t)(unsafe.Pointer(&slice[0]))
-}
-
 func GetIdentifier(key uint16) []byte {
 	buf := make([]byte, 32)
 	_ = C.ext_get_identifier(
