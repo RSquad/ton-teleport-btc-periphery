@@ -151,16 +151,17 @@ func TestDKG(t *testing.T) {
 	strTestHex := "ffeeddccbbaa00112233445566778899ffeeddccbbaa00112233445566778899"
 	message := GetIdentifierFromHex(strTestHex)
 
+	merkleRoot, _ := hex.DecodeString("0102030405000000000000000000000000000000000000000000000000000000")
 	signatureShares := make(map[Identifier]Package)
 	for i := uint16(0); i < maxSigners; i++ {
 		sender, _ := DecodeIdentifier(identifiers[i])
 
 		signatureShare, err := SignWithTweak(
-			// merkleRoot,
 			keyPackages[*sender],
 			message,
 			commitments,
 			nonces[*sender],
+			merkleRoot,
 		)
 		if err != nil {
 			t.Error(err)
@@ -175,6 +176,7 @@ func TestDKG(t *testing.T) {
 		commitments,
 		signatureShares,
 		pubkeyPackages[*sender],
+		merkleRoot,
 	)
 	if err != nil {
 		t.Error(err)
@@ -185,6 +187,7 @@ func TestDKG(t *testing.T) {
 		pubkeyPackages[*sender],
 		message,
 		groupSignature,
+		merkleRoot,
 	)
 	if err != nil {
 		t.Error(err)

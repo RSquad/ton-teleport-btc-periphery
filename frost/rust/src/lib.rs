@@ -342,14 +342,14 @@ pub extern "C" fn aggregate_with_tweak(
     let signature_shares_map =
         SignatureShare::make_map(signature_shares_ptr, signature_shares_len);
 
-    let aggregate_with_tweak_result = frost_aggregate_with_tweak(
+    let result = frost_aggregate_with_tweak(
         &signing_package,
         &signature_shares_map,
         &PublicKeyPackage::from_buf(pubkey_package_buf).unwrap(),
         Some(merkle_root_buf.to_slice()),
     );
 
-    match aggregate_with_tweak_result {
+    match result {
         Err(err) => {
             println!("[FROST] error: {}", err);
             return -2;
