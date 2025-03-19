@@ -2,7 +2,7 @@ package metrics
 
 import (
 	"context"
-	"math/big"
+	"fmt"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -44,7 +44,9 @@ func (m *Metrics) getBalances() (map[string]float64, error) {
 			m.formatGetBalanceError(contractAddress)
 		}
 
-		balanceFloat, _ := new(big.Float).SetInt(balance).Float64()
+		fmt.Println("balance: ", balance)
+
+		balanceFloat, _ := balance.Float64()
 
 		balances[key] = balanceFloat
 	}
