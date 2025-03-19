@@ -17,12 +17,22 @@ import (
 	"github.com/xssnick/tonutils-go/ton"
 )
 
+type CachedPegout struct {
+	ID            uint64
+	name          string
+	inputs        []pegoutcontract.TxPartsInput
+	tx            *pegoutcontract.TxParts
+	signingHashes [][]byte
+	artifacts     *coordinator.PegoutRecord
+}
+
 type SignService struct {
-	dkgClient   *dkg.Client
-	keyStore    keystore.Keystore
-	coordinator *coordinator.CoordinatorContract
-	validator   *validator.Validator
-	ton         *tonclient.TonClient
+	dkgClient    *dkg.Client
+	keyStore     keystore.Keystore
+	coordinator  *coordinator.CoordinatorContract
+	validator    *validator.Validator
+	ton          *tonclient.TonClient
+	cachedPegout *CachedPegout
 }
 
 func NewService(
@@ -49,6 +59,45 @@ func (s *SignService) Work(ctx context.Context) {
 		s.ExecuteSign(ctx)
 		time.Sleep(6 * time.Second)
 	}
+}
+
+func (s *SignService) cachePegout(
+	ctx context.Context,
+	unsignedPegout coordinator.PegoutRecord,
+) (*CachedPegout, error) {
+	if s.cachedPegout != nil && s.cachedPegout.ID == unsignedPegout.ID {
+		return s.cachedPegout, nil
+	}
+
+	pegoutContract := pegoutcontract.New(unsignedPegout.PegoutAddress, s.ton, ctx)
+	block := s.getLatestBlock(ctx)
+	txParts, err := pegoutContract.GetTxParts(block)
+	if err != nil {
+		s.logError("failed to cache pegout", err)
+		return nil, err
+	}
+	txInputs, err := pegoutContract.GetInputs(block)
+	if err != nil {
+		s.logError("failed to cache pegout", err)
+		return nil, err
+	}
+	signingHashes, err := pegoutContract.GetSigningHashes(block)
+	if err != nil {
+		s.logError("failed to get signing hashes", err)
+		return nil, err
+	}
+
+	name := unsignedPegout.PegoutAddress.String()
+
+	s.cachedPegout = &CachedPegout{
+		ID:            unsignedPegout.ID,
+		name:          name,
+		tx:            txParts,
+		inputs:        txInputs,
+		signingHashes: signingHashes,
+		artifacts:     &unsignedPegout,
+	}
+	return s.cachedPegout, nil
 }
 
 func (s *SignService) ExecuteSign(ctx context.Context) {
@@ -82,9 +131,17 @@ func (s *SignService) execute(ctx context.Context, dkg *coordinator.DKG) {
 
 	s.logSigningRequestsCount(len(pegoutRecords))
 
-	// Get first pegout record
+	// Get oldest unsigned pegout record
 	unsignedPegout := pegoutRecords[0]
 	s.logProcessingPegout(&unsignedPegout)
+	cachedPegout, err := s.cachePegout(ctx, unsignedPegout)
+	if err != nil {
+		s.logError("failed to cache pegout", err)
+		return
+	}
+	if cachedPegout == nil {
+		panic("cached pegout is nil")
+	}
 
 	pubkeyPackage := dkg.R3.Data.PubkeyPackage
 
@@ -108,9 +165,9 @@ func (s *SignService) execute(ctx context.Context, dkg *coordinator.DKG) {
 	}
 
 	// Execute signing steps
-	if s.doCommit(validatorKeyInfo, &unsignedPegout, minSigners) {
-		if s.doSign(ctx, validatorKeyInfo, &unsignedPegout, minSigners) {
-			if s.doAggregate(ctx, validatorKeyInfo, &unsignedPegout, pubkeyPackage) {
+	if s.doCommit(validatorKeyInfo, s.cachedPegout, minSigners) {
+		if s.doSign(ctx, validatorKeyInfo, s.cachedPegout, minSigners) {
+			if s.doAggregate(ctx, validatorKeyInfo, s.cachedPegout, pubkeyPackage) {
 				s.logPegoutSigned(unsignedPegout.ID)
 			}
 		}
@@ -119,52 +176,50 @@ func (s *SignService) execute(ctx context.Context, dkg *coordinator.DKG) {
 
 func (s *SignService) doCommit(
 	validatorKey *validator.KeyInfo,
-	pegoutRecord *coordinator.PegoutRecord,
+	pegout *CachedPegout,
 	minSigners uint16,
 ) bool {
-	s.logCommitPegout(pegoutRecord.ID)
+	s.logCommitPegout(pegout.ID)
 	identifier := validatorKey.PublicKey
 
-	pegoutName := pegoutRecord.PegoutAddress.String()
-
-	if pegoutRecord.HasCommitment(identifier) {
+	if pegout.artifacts.HasCommitment(identifier) {
 		s.logMessage("Commitment already exists")
-		if pegoutRecord.CommitmentsCount() >= minSigners {
+		if pegout.artifacts.CommitmentsCount() >= minSigners {
 			s.logMessage("Commitment round completed")
 			return true
 		}
 		return false
 	}
 
-	nonce := s.keyStore.LoadNonce(pegoutName)
-	commitments := s.keyStore.LoadCommitments(pegoutName)
+	nonce := s.keyStore.LoadNonce(pegout.name)
+	commitments := s.keyStore.LoadCommitments(pegout.name)
 
 	if nonce == nil || commitments == nil {
 		// If both nonce & commitments are not found in keystore
 		if nonce == nil && commitments == nil {
-			nonce, commitments, err := s.dkgClient.Commit(pegoutRecord.InternalKey)
+			nonce, commitments, err := s.dkgClient.Commit(pegout.tx.InternalKey)
 			if err != nil {
 				s.logError("commit call return error", err)
 				return false
 			}
 
-			s.keyStore.StoreNonce(pegoutName, nonce)
-			s.keyStore.StoreCommitments(pegoutName, commitments)
+			s.keyStore.StoreNonce(pegout.name, nonce)
+			s.keyStore.StoreCommitments(pegout.name, commitments)
 		} else {
-			s.logErrNullNonceOrCommitments(nonce, commitments, pegoutName)
+			s.logErrNullNonceOrCommitments(nonce, commitments, pegout.name)
 			return false
 		}
 	}
 
 	if _, err := s.coordinator.SendCommitments(
-		pegoutRecord.ID,
+		pegout.ID,
 		validatorKey.VsetIdx,
 		identifier,
 		commitments,
 	); err != nil {
 		s.logError("failed to send commitments", err)
 	} else {
-		s.logCommitSent(pegoutRecord.ID)
+		s.logCommitSent(pegout.ID)
 	}
 
 	return false
@@ -173,83 +228,68 @@ func (s *SignService) doCommit(
 func (s *SignService) doSign(
 	ctx context.Context,
 	validatorKey *validator.KeyInfo,
-	pegoutRecord *coordinator.PegoutRecord,
+	pegout *CachedPegout,
 	minSigners uint16,
 ) bool {
-	s.logMsgf("Sign pegout %x", pegoutRecord.ID)
+	s.logSignPegout(pegout.ID)
 	identifier := validatorKey.PublicKey
-	pegoutName := pegoutRecord.PegoutAddress.String()
 
-	if !pegoutRecord.HasCommitment(identifier) {
-		s.logErrNoOracleCommitments(pegoutRecord.ID)
+	if !pegout.artifacts.HasCommitment(identifier) {
+		s.logErrNoOracleCommitments(pegout.ID)
 		return false
 	}
 
-	if pegoutRecord.SigningSharesCount() >= int(minSigners) {
-		s.logMinimalSharesReached(pegoutRecord.ID)
+	if pegout.artifacts.SigningSharesCount() >= int(minSigners) {
+		s.logMinimalSharesReached(pegout.ID)
 		return true
 	}
 
-	if pegoutRecord.HasSigningShare(identifier) {
+	if pegout.artifacts.HasSigningShare(identifier) {
+		s.logSigningShareAlreadyExists(pegout.ID)
 		return false
 	}
 
-	pegoutContract := pegoutcontract.New(pegoutRecord.PegoutAddress, s.ton, ctx)
-	block := s.getLatestBlock(ctx)
-	signingHashes, err := pegoutContract.GetSigningHashes(block)
-	if err != nil {
-		s.logError("failed to get signing hashes", err)
+	if len(pegout.signingHashes) == 0 {
+		s.logErrNothingToSign(pegout.ID)
 		return false
 	}
 
-	if len(signingHashes) == 0 {
-		s.logError("", fmt.Errorf("(pegoutId %x) no signing hashes", pegoutRecord.ID))
-		return false
-	}
-
-	signShares := s.keyStore.LoadSigningShares(pegoutName)
+	signShares := s.keyStore.LoadSigningShares(pegout.name)
 	if signShares == nil {
 		// Share for each signing hash is not generated yet.
 		// Call frost.Sign for each signing hash
 
-		txParts, err := pegoutContract.GetTxParts(block)
-		if err != nil {
-			s.logError("failed to get tx parts", err)
-			return false
-		}
 		// Public key (X coord) used to get secret package from keystore
-		publicKey := txParts.InternalKey
+		publicKey := pegout.tx.InternalKey
 		// array with sign shares for each sign hash
-		signShares = make([][]byte, 0, len(signingHashes))
-		i := 0
+		signShares = make([][]byte, 0, len(pegout.signingHashes))
 		// call frost.sign for each signing hash (or for each input)
-		for _, input := range *txParts.Inputs {
+		for i, input := range pegout.inputs {
 			// tap tweak to tweak secret package before signing.
 			tapTweak := input.BitcoinMerkleRoot
 			// message to sign.
-			message := signingHashes[i]
-			// nonce name used to load nonce from keystore
-			nonceName := pegoutName
-			signShare, err := s.dkgClient.Sign(publicKey, message, nonceName, pegoutRecord.Commitments, tapTweak)
+			message := pegout.signingHashes[i]
+			// nonce name used to load nonce
+			nonceName := pegout.name
+			signShare, err := s.dkgClient.Sign(publicKey, message, nonceName, pegout.artifacts.Commitments, tapTweak)
 			if err != nil {
 				s.logError(fmt.Sprintf("failed to sign hash %d", i), err)
 				return false
 			}
 			signShares = append(signShares, signShare)
-			i = i + 1
 		}
-		s.keyStore.StoreSigningShares(pegoutName, signShares)
+		s.keyStore.StoreSigningShares(pegout.name, signShares)
 	}
 
 	if _, err := s.coordinator.SendSigningShare(
-		pegoutRecord.ID,
+		pegout.ID,
 		validatorKey.VsetIdx,
 		identifier,
 		signShares,
 	); err != nil {
 		s.logError("failed to send signing share", err)
 	} else {
-		s.logSigningShareSent(pegoutRecord.ID)
+		s.logSigningShareSent(pegout.ID)
 	}
 
 	return false
@@ -258,37 +298,28 @@ func (s *SignService) doSign(
 func (s *SignService) doAggregate(
 	ctx context.Context,
 	validatorKey *validator.KeyInfo,
-	pegoutRecord *coordinator.PegoutRecord,
+	pegout *CachedPegout,
 	pubkeyPackage []byte,
 ) bool {
-	s.logAggregateSignShares(pegoutRecord.ID)
+	s.logAggregateSignShares(pegout.ID)
 
-	pegoutContract := pegoutcontract.New(pegoutRecord.PegoutAddress, s.ton, ctx)
-	block := s.getLatestBlock(ctx)
-	txParts, err := pegoutContract.GetTxParts(block)
-	if err != nil {
-		s.logError("failed to get tx parts", err)
-		return false
-	}
-
-	if len(*txParts.Signatures) > 0 {
+	if len(*pegout.tx.Signatures) > 0 {
 		return true
 	}
 
-	signingHashes, err := pegoutContract.GetSigningHashes(block)
-	if err != nil {
-		s.logError("failed to get signing hashes", err)
-		return false
-	}
+	commitmentsPackages := helpers.ConvertMapToFrostPackages(pegout.artifacts.Commitments)
+	signatures := make([][]byte, 0, len(pegout.signingHashes))
 
-	commitmentsMap := helpers.ConvertMapToFrostPackages(pegoutRecord.Commitments)
-
-	signatures := make([][]byte, 0, len(signingHashes))
-
-	for hashIndex, hash := range signingHashes {
-		hashOnlyShares := filterSharesByHashIndex(pegoutRecord.SigningShares, hashIndex)
-		// TODO tapTweak := (*txParts.Inputs)[i].BitcoinMerkleRoot
-		signature, err := frost.AggregateWithTweak(hash, commitmentsMap, hashOnlyShares, frost.NewPackage(pubkeyPackage))
+	for hashIndex, hash := range pegout.signingHashes {
+		hashOnlyShares := filterSharesByHashIndex(pegout.artifacts.SigningShares, hashIndex)
+		tapTweak := pegout.inputs[hashIndex].BitcoinMerkleRoot
+		signature, err := frost.AggregateWithTweak(
+			hash,
+			commitmentsPackages,
+			hashOnlyShares,
+			frost.NewPackage(pubkeyPackage),
+			tapTweak,
+		)
 		if err != nil {
 			s.logAggregateSignSharesError(err)
 			return false
@@ -297,13 +328,13 @@ func (s *SignService) doAggregate(
 	}
 
 	if _, err := s.coordinator.SendSignatures(
-		pegoutRecord.ID,
+		pegout.ID,
 		validatorKey.VsetIdx,
 		signatures,
 	); err != nil {
 		s.logSignatureSendError(err)
 	} else {
-		s.logSignatureSent(pegoutRecord.ID)
+		s.logSignatureSent(pegout.ID)
 	}
 
 	return false
