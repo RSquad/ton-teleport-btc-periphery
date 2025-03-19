@@ -41,15 +41,15 @@ func (s *SignService) logError(msg string, err error) {
 }
 
 func (s *SignService) logCommitPegout(pegoutID uint64) {
-	infoEventWithPegoutID(pegoutID).Msg("Commit pegout")
+	infoEventWithPegoutID(pegoutID).Msg("commit")
 }
 
 func (s *SignService) logSignPegout(pegoutID uint64) {
-	infoEventWithPegoutID(pegoutID).Msg("Sign pegout")
+	infoEventWithPegoutID(pegoutID).Msg("sign")
 }
 
 func (s *SignService) logProcessingPegout(pegout *coordinator.PegoutRecord) {
-	infoEventWithPegoutID(pegout.ID).Msgf("Processing pegout with address %s", pegout.PegoutAddress)
+	infoEventWithPegoutID(pegout.ID).Msgf("address %s", pegout.PegoutAddress)
 }
 
 func (s *SignService) logOracleNotValidator(pegoutID uint64) {
@@ -73,11 +73,11 @@ func (s *SignService) logErrNoOracleCommitments(pegoutID uint64) {
 }
 
 func (s *SignService) logPegoutSigned(pegoutID uint64) {
-	infoEventWithPegoutID(pegoutID).Msg("Pegout signed")
+	infoEventWithPegoutID(pegoutID).Msg("pegout signed")
 }
 
 func (s *SignService) logSigningShareSent(pegoutID uint64) {
-	infoEventWithPegoutID(pegoutID).Msg("Signing share sent")
+	infoEventWithPegoutID(pegoutID).Msg("signing share sent")
 }
 
 func (s *SignService) logGetPrevDKGError(err error) {

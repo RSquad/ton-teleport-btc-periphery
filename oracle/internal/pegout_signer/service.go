@@ -3,6 +3,7 @@ package pegoutsigner
 import (
 	"context"
 	"fmt"
+	"math/big"
 	"time"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/frost"
@@ -63,9 +64,10 @@ func (s *SignService) Work(ctx context.Context) {
 
 func (s *SignService) cachePegout(
 	ctx context.Context,
-	unsignedPegout coordinator.PegoutRecord,
+	unsignedPegout *coordinator.PegoutRecord,
 ) (*CachedPegout, error) {
 	if s.cachedPegout != nil && s.cachedPegout.ID == unsignedPegout.ID {
+		s.cachedPegout.artifacts = unsignedPegout
 		return s.cachedPegout, nil
 	}
 
@@ -95,7 +97,7 @@ func (s *SignService) cachePegout(
 		tx:            txParts,
 		inputs:        txInputs,
 		signingHashes: signingHashes,
-		artifacts:     &unsignedPegout,
+		artifacts:     unsignedPegout,
 	}
 	return s.cachedPegout, nil
 }
@@ -134,7 +136,7 @@ func (s *SignService) execute(ctx context.Context, dkg *coordinator.DKG) {
 	// Get oldest unsigned pegout record
 	unsignedPegout := pegoutRecords[0]
 	s.logProcessingPegout(&unsignedPegout)
-	cachedPegout, err := s.cachePegout(ctx, unsignedPegout)
+	cachedPegout, err := s.cachePegout(ctx, &unsignedPegout)
 	if err != nil {
 		s.logError("failed to cache pegout", err)
 		return
@@ -152,7 +154,7 @@ func (s *SignService) execute(ctx context.Context, dkg *coordinator.DKG) {
 	}
 
 	if validatorKeyInfo == nil {
-		s.logOracleNotValidator(unsignedPegout.ID)
+		s.logOracleNotValidator(cachedPegout.ID)
 		return
 	}
 
@@ -165,10 +167,10 @@ func (s *SignService) execute(ctx context.Context, dkg *coordinator.DKG) {
 	}
 
 	// Execute signing steps
-	if s.doCommit(validatorKeyInfo, s.cachedPegout, minSigners) {
-		if s.doSign(ctx, validatorKeyInfo, s.cachedPegout, minSigners) {
-			if s.doAggregate(ctx, validatorKeyInfo, s.cachedPegout, pubkeyPackage) {
-				s.logPegoutSigned(unsignedPegout.ID)
+	if s.doCommit(validatorKeyInfo, cachedPegout, minSigners) {
+		if s.doSign(ctx, validatorKeyInfo, cachedPegout, minSigners) {
+			if s.doAggregate(ctx, validatorKeyInfo, cachedPegout, pubkeyPackage) {
+				s.logPegoutSigned(cachedPegout.ID)
 			}
 		}
 	}
@@ -188,6 +190,7 @@ func (s *SignService) doCommit(
 			s.logMessage("Commitment round completed")
 			return true
 		}
+		s.logMessage("Waiting for other oracles to commit")
 		return false
 	}
 
@@ -303,18 +306,14 @@ func (s *SignService) doAggregate(
 ) bool {
 	s.logAggregateSignShares(pegout.ID)
 
-	if len(*pegout.tx.Signatures) > 0 {
-		return true
-	}
-
 	commitmentsPackages := helpers.ConvertMapToFrostPackages(pegout.artifacts.Commitments)
 	signatures := make([][]byte, 0, len(pegout.signingHashes))
 
-	for hashIndex, hash := range pegout.signingHashes {
-		hashOnlyShares := filterSharesByHashIndex(pegout.artifacts.SigningShares, hashIndex)
-		tapTweak := pegout.inputs[hashIndex].BitcoinMerkleRoot
+	for i, input := range pegout.inputs {
+		hashOnlyShares := filterSharesByHashIndex(pegout.artifacts.SigningShares, i)
+		tapTweak := input.BitcoinMerkleRoot
 		signature, err := frost.AggregateWithTweak(
-			hash,
+			pegout.signingHashes[i],
 			commitmentsPackages,
 			hashOnlyShares,
 			frost.NewPackage(pubkeyPackage),
