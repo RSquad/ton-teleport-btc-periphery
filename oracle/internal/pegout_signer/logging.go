@@ -22,16 +22,18 @@ func infoEventWithPegoutID(pegoutID uint64) *zerolog.Event {
 		Str("PegoutId", strPegoutID(pegoutID))
 }
 
+func errorEventWithPegoutID(pegoutID uint64) *zerolog.Event {
+	return logger.Log.Error().
+		Str("component", "SignService").
+		Str("PegoutId", strPegoutID(pegoutID))
+}
+
 func errorEvent() *zerolog.Event {
 	return logger.Log.Error().Str("component", "SignService")
 }
 
 func (s *SignService) logMessage(msg string) {
 	infoEvent().Msg(msg)
-}
-
-func (s *SignService) logMsgf(format string, v ...interface{}) {
-	infoEvent().Msgf(format, v...)
 }
 
 func (s *SignService) logError(msg string, err error) {
@@ -42,27 +44,31 @@ func (s *SignService) logCommitPegout(pegoutID uint64) {
 	infoEventWithPegoutID(pegoutID).Msg("Commit pegout")
 }
 
+func (s *SignService) logSignPegout(pegoutID uint64) {
+	infoEventWithPegoutID(pegoutID).Msg("Sign pegout")
+}
+
 func (s *SignService) logProcessingPegout(pegout *coordinator.PegoutRecord) {
 	infoEventWithPegoutID(pegout.ID).Msgf("Processing pegout with address %s", pegout.PegoutAddress)
 }
 
 func (s *SignService) logOracleNotValidator(pegoutID uint64) {
-	err := fmt.Errorf("Oracle is not a validator. Cannot participate in signing pegout: %x", pegoutID)
+	err := fmt.Errorf("oracle is not a validator. Cannot participate in signing pegout: %x", pegoutID)
 	errorEvent().Err(err)
 }
 
 func (s *SignService) logErrNullNonceOrCommitments(nonce []byte, commitments []byte, pegoutAddrStr string) {
 	var err error = nil
 	if nonce == nil {
-		err = fmt.Errorf("Failed to load nonce for %s", pegoutAddrStr)
+		err = fmt.Errorf("failed to load nonce for %s", pegoutAddrStr)
 	} else if commitments == nil {
-		err = fmt.Errorf("Failed to load commitments for %s", pegoutAddrStr)
+		err = fmt.Errorf("failed to load commitments for %s", pegoutAddrStr)
 	}
 	errorEvent().Err(err)
 }
 
 func (s *SignService) logErrNoOracleCommitments(pegoutID uint64) {
-	err := fmt.Errorf("Oracle didn't send commitment and cannot participate in signing for pegout %x", pegoutID)
+	err := fmt.Errorf("oracle didn't send commitment and cannot participate in signing for pegout %x", pegoutID)
 	errorEvent().Err(err)
 }
 
@@ -92,6 +98,14 @@ func (s *SignService) logCommitSent(pegoutID uint64) {
 
 func (s *SignService) logMinimalSharesReached(pegoutID uint64) {
 	infoEventWithPegoutID(pegoutID).Msg("Minimal required number of signing shares is reached")
+}
+
+func (s *SignService) logSigningShareAlreadyExists(pegoutID uint64) {
+	infoEventWithPegoutID(pegoutID).Msg("Signing share already exists")
+}
+
+func (s *SignService) logErrNothingToSign(pegoutID uint64) {
+	errorEventWithPegoutID(pegoutID).Msg("pegout has no signing hashes")
 }
 
 func (s *SignService) logAggregateSignShares(pegoutID uint64) {
