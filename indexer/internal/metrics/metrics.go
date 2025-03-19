@@ -48,7 +48,7 @@ func (m *Metrics) getBalances() (map[string]float64, error) {
 
 		balanceFloat, _ := balance.Float64()
 
-		balances[key] = balanceFloat
+		balances[key] = balanceFloat / 1000000000
 	}
 	return balances, nil
 }
