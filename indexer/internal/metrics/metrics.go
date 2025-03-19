@@ -1,4 +1,4 @@
-package prometheus
+package metrics
 
 import (
 	"context"
@@ -44,9 +44,7 @@ func (m *Metrics) getBalances() (map[string]float64, error) {
 		if err != nil {
 			continue
 		}
-		fmt.Println("contractAddress: ", contractAddress)
 		balance, err := m.tonClient.GetBalance(contractAddress)
-		fmt.Println("balance: ", balance)
 		if err != nil {
 			return balances, fmt.Errorf(getBalanceError, err)
 		}
@@ -75,7 +73,6 @@ func (m *Metrics) Work(ctx context.Context) (err error) {
 			if err != nil {
 				return err
 			}
-			fmt.Println("balances: ", balances["teleport"], " ", balances["coordinator"])
 			m.recordMetrics(balances)
 			time.Sleep(10 * time.Second)
 		}

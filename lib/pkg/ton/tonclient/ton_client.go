@@ -2,6 +2,7 @@ package tonclient
 
 import (
 	"context"
+	"math/big"
 
 	"github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/liteclient"
@@ -43,4 +44,14 @@ func (tc *TonClient) FetchAcc(
 	}
 
 	return tc.API.GetAccount(context.Background(), block, addr)
+}
+
+func (tc *TonClient) GetBalance(addr *address.Address) (*big.Int, error) {
+
+	account, err := tc.FetchAcc(addr, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return account.State.Balance.Nano(), nil
 }
