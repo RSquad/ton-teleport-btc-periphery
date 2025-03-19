@@ -32,6 +32,10 @@ func (p Package) ToBytes() []byte {
 	return p.buf
 }
 
+func sliceToCPtrBytes32(slice []byte) *[32]C.uint8_t {
+	return (*[32]C.uint8_t)(unsafe.Pointer(&slice[0]))
+}
+
 func GetIdentifier(key uint16) []byte {
 	buf := make([]byte, 32)
 	_ = C.ext_get_identifier(
@@ -158,22 +162,22 @@ func Commit(keyPackage Package) ([]byte, []byte, error) {
 }
 
 func SignWithTweak(
-	// merkleRoot []byte,
 	keyPackage Package,
 	message []byte,
 	commitments map[Identifier]Package,
 	nonces Package,
+	merkleToot []byte,
 ) ([]byte, error) {
 	commitmentsPkgs, commitmentsPin := makeCPackageSlice(commitments)
-	signatureShares := newEmptyBuffer()
+	signingShares := newEmptyBuffer()
 	ret := C.sign_with_tweak(
-		// (*[32]C.uint8_t)(unsafe.Pointer(&merkleRoot[0])),
 		newBufferFromPackage(keyPackage),
 		newBufferFromSlice(message),
 		(*C.Pkg)(&commitmentsPkgs[0]),
 		C.size_t(len(commitmentsPkgs)),
 		newBufferFromPackage(nonces),
-		&signatureShares,
+		newBufferFromSlice(merkleToot),
+		&signingShares,
 	)
 	commitmentsPin.Unpin()
 
@@ -181,28 +185,28 @@ func SignWithTweak(
 		return nil, fmt.Errorf("%d", ret)
 	}
 
-	return extractSlice(signatureShares), nil
+	return extractSlice(signingShares), nil
 }
 
 func AggregateWithTweak(
-	// merkleRoot []byte,
 	message []byte,
 	commitments map[Identifier]Package,
 	signatureShares map[Identifier]Package,
 	pubkeyPackage Package,
+	merkleRoot []byte,
 ) ([]byte, error) {
 	commitmentsPkgs, commitmentsPin := makeCPackageSlice(commitments)
 	signatureSharesPkgs, signatureSharesPin := makeCPackageSlice(signatureShares)
 	signature := newEmptyBuffer()
 
 	ret := C.aggregate_with_tweak(
-		// (*[32]C.uint8_t)(unsafe.Pointer(&merkleRoot[0])),
 		newBufferFromSlice(message),
 		(*C.Pkg)(&commitmentsPkgs[0]),
 		C.size_t(len(commitmentsPkgs)),
 		(*C.Pkg)(&signatureSharesPkgs[0]),
 		C.size_t(len(signatureSharesPkgs)),
 		newBufferFromPackage(pubkeyPackage),
+		newBufferFromSlice(merkleRoot),
 		&signature,
 	)
 
@@ -220,13 +224,13 @@ func Verify(
 	pubkeyPackage Package,
 	message []byte,
 	signature []byte,
-	// merkleRoot []byte,
+	merkleRoot []byte,
 ) (bool, error) {
 	ret := C.verify(
-		// (*[32]C.uint8_t)(unsafe.Pointer(&merkleRoot[0])),
 		newBufferFromSlice(message),
 		newBufferFromPackage(pubkeyPackage),
 		newBufferFromSlice(signature),
+		newBufferFromSlice(merkleRoot),
 	)
 
 	if ret < 0 {

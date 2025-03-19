@@ -7,7 +7,7 @@ use frost_secp256k1_tr::{
             round1::{Package as Round1Package, SecretPackage as Round1SecretPackage},
             round2::{Package as Round2Package, SecretPackage as Round2SecretPackage},
         },
-        KeyPackage, PublicKeyPackage,
+        KeyPackage, PublicKeyPackage, Tweak,
     },
     round1::{commit as frost_round1_commit, SigningCommitments, SigningNonces},
     round2::{sign_with_tweak as frost_round2_sign_with_tweak, SignatureShare},
@@ -34,8 +34,12 @@ pub struct Buffer {
 
 impl Buffer {
     fn to_slice<'a>(self) -> &'a [u8] {
-        let slice = unsafe { slice::from_raw_parts(self.data, self.len) };
-        slice
+        if self.data.is_null() {
+            return &[];
+        } else {
+            let slice = unsafe { slice::from_raw_parts(self.data, self.len) };
+            slice
+        }
     }
 }
 
@@ -277,12 +281,12 @@ pub extern "C" fn commit(
 
 #[no_mangle]
 pub extern "C" fn sign_with_tweak(
-    // merkle_root: &[u8; 32],
     key_package_buf: Buffer,
     message_buf: Buffer,
     commitments_ptr: *const Pkg,
     commitments_len: usize,
     nonces_buf: Buffer,
+    merkle_root_buf: Buffer,
     signature_share_buf: *mut Buffer,
 ) -> i32 {
     match KeyPackage::from_buf(key_package_buf) {
@@ -298,7 +302,7 @@ pub extern "C" fn sign_with_tweak(
                 ),
                 &SigningNonces::from_buf(nonces_buf).unwrap(),
                 &key_package,
-                None,
+                Some(merkle_root_buf.to_slice()),
             ) {
                 Err(err) => {
                     println!("[FROST] error: {}", err);
@@ -321,13 +325,13 @@ pub extern "C" fn sign_with_tweak(
 
 #[no_mangle]
 pub extern "C" fn aggregate_with_tweak(
-    // merkle_root: &[u8; 32],
     message_buf: Buffer,
     commitments_ptr: *const Pkg,
     commitments_len: usize,
     signature_shares_ptr: *const Pkg,
     signature_shares_len: usize,
     pubkey_package_buf: Buffer,
+    merkle_root_buf: Buffer,
     signature_buf: *mut Buffer,
 ) -> i32 {
     let signing_package = SigningPackage::new(
@@ -342,7 +346,7 @@ pub extern "C" fn aggregate_with_tweak(
         &signing_package,
         &signature_shares_map,
         &PublicKeyPackage::from_buf(pubkey_package_buf).unwrap(),
-        None,
+        Some(merkle_root_buf.to_slice()),
     );
 
     match aggregate_with_tweak_result {
@@ -365,10 +369,10 @@ pub extern "C" fn aggregate_with_tweak(
 
 #[no_mangle]
 pub extern "C" fn verify(
-    // merkle_root: &[u8; 32],
     message_buf: Buffer,
     pubkey_package_buf: Buffer,
     signature_buf: Buffer,
+    merkle_root_buf: Buffer,
 ) -> i32 {
     match Signature::from_buf(signature_buf) {
         Err(err) => {
@@ -377,6 +381,7 @@ pub extern "C" fn verify(
         }
         Ok(signature) => {
             let pubkey = PublicKeyPackage::from_buf(pubkey_package_buf).unwrap();
+            let pubkey = pubkey.tweak(Some(merkle_root_buf.to_slice()));
             match pubkey
                 .verifying_key()
                 .verify(message_buf.to_slice(), &signature)
