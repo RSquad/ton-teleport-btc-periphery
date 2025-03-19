@@ -166,7 +166,7 @@ func SignWithTweak(
 	message []byte,
 	commitments map[Identifier]Package,
 	nonces Package,
-	merkleToot []byte,
+	merkleRoot []byte,
 ) ([]byte, error) {
 	commitmentsPkgs, commitmentsPin := makeCPackageSlice(commitments)
 	signingShares := newEmptyBuffer()
@@ -176,7 +176,7 @@ func SignWithTweak(
 		(*C.Pkg)(&commitmentsPkgs[0]),
 		C.size_t(len(commitmentsPkgs)),
 		newBufferFromPackage(nonces),
-		newBufferFromSlice(merkleToot),
+		newBufferFromSlice(merkleRoot),
 		&signingShares,
 	)
 	commitmentsPin.Unpin()

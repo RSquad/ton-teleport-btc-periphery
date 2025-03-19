@@ -123,3 +123,11 @@ func (s *SignService) logSignatureSendError(err error) {
 func (s *SignService) logAggregateSignSharesError(err error) {
 	errorEvent().Err(err).Msg("failed to aggregate sign shares")
 }
+
+func (s *SignService) logSendCommitments(pegoutID uint64, commitments []byte) {
+	infoEventWithPegoutID(pegoutID).Msgf("send commitments: %x", commitments)
+}
+
+func (s *SignService) logSendSigningShare(pegoutID uint64, signShares [][]byte) {
+	infoEventWithPegoutID(pegoutID).Msgf("send %d signing shares", len(signShares))
+}

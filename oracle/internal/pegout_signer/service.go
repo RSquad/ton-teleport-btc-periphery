@@ -3,7 +3,6 @@ package pegoutsigner
 import (
 	"context"
 	"fmt"
-	"math/big"
 	"time"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/frost"
@@ -200,12 +199,13 @@ func (s *SignService) doCommit(
 	if nonce == nil || commitments == nil {
 		// If both nonce & commitments are not found in keystore
 		if nonce == nil && commitments == nil {
-			nonce, commitments, err := s.dkgClient.Commit(pegout.tx.InternalKey)
+			s.logMessage("generate commitments")
+			var err error
+			nonce, commitments, err = s.dkgClient.Commit(pegout.tx.InternalKey)
 			if err != nil {
 				s.logError("commit call return error", err)
 				return false
 			}
-
 			s.keyStore.StoreNonce(pegout.name, nonce)
 			s.keyStore.StoreCommitments(pegout.name, commitments)
 		} else {
@@ -214,6 +214,7 @@ func (s *SignService) doCommit(
 		}
 	}
 
+	s.logSendCommitments(pegout.ID, commitments)
 	if _, err := s.coordinator.SendCommitments(
 		pegout.ID,
 		validatorKey.VsetIdx,
@@ -259,6 +260,7 @@ func (s *SignService) doSign(
 
 	signShares := s.keyStore.LoadSigningShares(pegout.name)
 	if signShares == nil {
+		s.logMessage("generate signing share")
 		// Share for each signing hash is not generated yet.
 		// Call frost.Sign for each signing hash
 
@@ -284,6 +286,7 @@ func (s *SignService) doSign(
 		s.keyStore.StoreSigningShares(pegout.name, signShares)
 	}
 
+	s.logSendSigningShare(pegout.ID, signShares)
 	if _, err := s.coordinator.SendSigningShare(
 		pegout.ID,
 		validatorKey.VsetIdx,
