@@ -22,6 +22,7 @@ int32_t aggregate_with_tweak(struct Buffer message_buf,
                              const struct Pkg *signature_shares_ptr,
                              size_t signature_shares_len,
                              struct Buffer pubkey_package_buf,
+                             struct Buffer merkle_root_buf,
                              struct Buffer *signature_buf);
 
 int32_t commit(struct Buffer key_package_buf,
@@ -69,8 +70,10 @@ int32_t sign_with_tweak(struct Buffer key_package_buf,
                         const struct Pkg *commitments_ptr,
                         size_t commitments_len,
                         struct Buffer nonces_buf,
+                        struct Buffer merkle_root_buf,
                         struct Buffer *signature_share_buf);
 
 int32_t verify(struct Buffer message_buf,
                struct Buffer pubkey_package_buf,
-               struct Buffer signature_buf);
+               struct Buffer signature_buf,
+               struct Buffer merkle_root_buf);

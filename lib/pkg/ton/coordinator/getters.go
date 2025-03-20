@@ -244,12 +244,12 @@ func readBuffer(value *cell.Slice) ([]byte, error) {
 	return utils.WriteSlicesToBuffer(value.MustLoadRef()), nil
 }
 
-func loadSharesMap(value *cell.Slice) (map[uint8][]byte, error) {
-	dict, _ := value.MustLoadRef().ToDict(8)
+func loadSharesMap(value *cell.Slice) (map[int][]byte, error) {
+	dict, _ := value.MustLoadRef().ToDict(64)
 	sharesMap, err := parseddict.ParseDict(
 		dict,
-		func(s *cell.Slice, keyLenBits uint) uint8 {
-			return uint8(s.MustLoadUInt(keyLenBits))
+		func(s *cell.Slice, keyLenBits uint) int {
+			return int(s.MustLoadUInt(keyLenBits))
 		},
 		func(s *cell.Slice) ([]byte, error) {
 			return utils.WriteSlicesToBuffer(s), nil

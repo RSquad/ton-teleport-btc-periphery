@@ -66,13 +66,22 @@ func (c *PegoutContract) GetTxParts(block *ton.BlockIDExt) (*TxParts, error) {
 		outputs = append(outputs, changeOutput)
 	}
 
-	signaturesDictCell, err := res.Cell(txPartsIndexSignaturesDictCell)
+	noSignaturesYet, err := res.IsNil(txPartsIndexSignaturesDictCell)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get signatures dict cell: %w", err)
+		return nil, fmt.Errorf("failed to check if signature cell is null: %w", err)
 	}
-	signatures, err := NewTxPartsSignatures(signaturesDictCell.AsDict(16))
-	if err != nil {
-		return nil, fmt.Errorf("failed to decode signatures: %w", err)
+	var signatures *TxPartsSignatures
+	if noSignaturesYet {
+		signatures = &TxPartsSignatures{}
+	} else {
+		signaturesDictCell, err := res.Cell(txPartsIndexSignaturesDictCell)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get signatures dict cell: %w", err)
+		}
+		signatures, err = NewTxPartsSignatures(signaturesDictCell.AsDict(16))
+		if err != nil {
+			return nil, fmt.Errorf("failed to decode signatures: %w", err)
+		}
 	}
 
 	internalKey, err := res.Int(txPartsIndexInternalKey)
@@ -86,6 +95,31 @@ func (c *PegoutContract) GetTxParts(block *ton.BlockIDExt) (*TxParts, error) {
 		Signatures:  signatures,
 		InternalKey: internalKey.Bytes(),
 	}, nil
+}
+
+func (c *PegoutContract) GetInputs(block *ton.BlockIDExt) ([]TxPartsInput, error) {
+	res, err := c.tonClient.API.RunGetMethod(c.ctx, block, c.Addr, "get_tx_parts")
+	if err != nil {
+		return nil, fmt.Errorf("failed to get inputs: %w", err)
+	}
+	inputsDictCell, err := res.Cell(txPartsIndexInputsDictCell)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get inputs dict cell: %w", err)
+	}
+	inputsKV, err := inputsDictCell.AsDict(256).LoadAll()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load inputs from dict: %w", err)
+	}
+
+	inputsSlice := make([]TxPartsInput, 0, len(inputsKV))
+	for _, input := range inputsKV {
+		parsedInput, err := parseTxPartsInputValue(input.Value)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse input: %w", err)
+		}
+		inputsSlice = append(inputsSlice, *parsedInput)
+	}
+	return inputsSlice, nil
 }
 
 func (c *PegoutContract) GetSigningHashes(block *ton.BlockIDExt) ([][]byte, error) {
