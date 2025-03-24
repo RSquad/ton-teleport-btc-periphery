@@ -34,7 +34,7 @@ jobs:
 
       - name: Set environment variables
         run: |
-          echo "${{ vars.DEV_PARAMS }}" | tr ' ' '\n' >> ${{ env.WORKSPACE }}/oracle/.env
+          echo "${{ vars.DEV_PARAMS }}" | tr ' ' '\n' >> .env
 
       - name: Build and push Docker image
         run: |
