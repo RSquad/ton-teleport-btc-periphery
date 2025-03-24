@@ -49,7 +49,6 @@ profile.out
 .idea/**/usage.statistics.xml
 .idea/**/dictionaries
 .idea/**/shelf
-.vscode/settings.json
 
 # AWS User-specific
 .idea/**/aws.xml
