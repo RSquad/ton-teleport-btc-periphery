@@ -4,6 +4,7 @@ import (
 	"context"
 
 	ent "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated"
+	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/metrics"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/pegout"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/tontx"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
@@ -20,6 +21,7 @@ type EventService struct {
 	repo                *ent.Client
 	teleportContract    *teleportcontract.TeleportContract
 	coordinatorContract *coordinator.CoordinatorContract
+	metrics             *metrics.Metrics
 }
 
 func NewEventService(
@@ -27,12 +29,14 @@ func NewEventService(
 	repo *ent.Client,
 	teleportContract *teleportcontract.TeleportContract,
 	coordinatorContract *coordinator.CoordinatorContract,
+	metrics *metrics.Metrics,
 ) *EventService {
 	return &EventService{
 		tonClient:           tonClient,
 		repo:                repo,
 		teleportContract:    teleportContract,
 		coordinatorContract: coordinatorContract,
+		metrics:             metrics,
 	}
 }
 
@@ -112,7 +116,7 @@ func (es *EventService) createEventWriter(
 	ctx context.Context,
 	pegoutWriter *pegout.PegoutWriter,
 ) *EventWriter {
-	return NewEventWriter(ctx, es.repo, pegoutWriter)
+	return NewEventWriter(ctx, es.repo, pegoutWriter, es.metrics)
 }
 
 func (es *EventService) createEventDispatcher(

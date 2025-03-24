@@ -7,6 +7,7 @@ import (
 
 	ent "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated/pegin"
+	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/metrics"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/pegout"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
@@ -18,15 +19,17 @@ type EventWriter struct {
 	ctx          context.Context
 	repo         *ent.Client
 	pegoutWriter *pegout.PegoutWriter
+	metrics      *metrics.Metrics
 }
 
 func NewEventWriter(
 	ctx context.Context,
 	repo *ent.Client,
 	pegoutWriter *pegout.PegoutWriter,
+	metrics *metrics.Metrics,
 ) *EventWriter {
 	return &EventWriter{
-		ctx, repo, pegoutWriter,
+		ctx, repo, pegoutWriter, metrics,
 	}
 }
 
@@ -95,6 +98,7 @@ func (ew *EventWriter) writeMint(tonTx *ent.TonTx, event *teleportcontract.MintE
 			SetCreatedAt(tonTx.CreatedAt).
 			SetTonTx(tonTx).
 			Save(ew.ctx)
+		ew.metrics.AddOperation("mint")
 		if err != nil {
 			return err
 		}
@@ -120,6 +124,7 @@ func (ew *EventWriter) writeBurn(tonTx *ent.TonTx, event *teleportcontract.BurnE
 			SetTonTx(tonTx).
 			SetPegout(pegout).
 			Save(ew.ctx)
+		ew.metrics.AddOperation("burn")
 		return err
 	})
 }
@@ -136,6 +141,7 @@ func (ew *EventWriter) writeReinit(tonTx *ent.TonTx, event *teleportcontract.Rei
 			SetTonTx(tonTx).
 			SetPegout(pegout).
 			Save(ew.ctx)
+		ew.metrics.AddOperation("reinit")
 		return err
 	})
 }

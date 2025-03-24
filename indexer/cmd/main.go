@@ -131,14 +131,15 @@ func initialize() (*App, error) {
 		return nil, fmt.Errorf("failed to create pegout manager: %w", err)
 	}
 
+	metrics := metrics.New(tonClient, indexerConfig)
+
 	eventService := events.NewEventService(
 		tonClient,
 		repo,
 		teleportContract,
 		coordinatorContract,
+		metrics,
 	)
-
-	metrics := metrics.New(tonClient, indexerConfig)
 
 	logger.Log.Info().
 		Str("component", "main").

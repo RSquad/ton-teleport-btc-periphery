@@ -27,11 +27,26 @@ func New(tonClient *tonclient.TonClient, config config.IndexerConfig) *Metrics {
 	}
 }
 
+func (m *Metrics) AddOperation(operation string) error {
+	switch operation {
+	case "mint", "burn", "reinit":
+		counterVec.With(prometheus.Labels{"operation": operation}).Inc()
+	default:
+		return m.fromatAddOperationError(operation)
+	}
+	return nil
+}
+
 var (
 	contractBalances = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "contract_balance",
 		Help: "Contract balance",
 	}, []string{"contract"})
+
+	counterVec = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "operations",
+		Help: "Number of operations",
+	}, []string{"operation"})
 )
 
 func (m *Metrics) getBalances() (map[string]float64, error) {
@@ -41,13 +56,13 @@ func (m *Metrics) getBalances() (map[string]float64, error) {
 		contractAddr := address.MustParseAddr(value)
 		balance, err := m.tonClient.GetBalance(contractAddr)
 		if err != nil {
-			m.formatGetBalanceError(contractAddr)
+			return balances, m.formatGetBalanceError(contractAddr)
 		}
 
 		balanceFloat, err := strconv.ParseFloat(balance.String(), 64)
 
 		if err != nil {
-			m.formatParseFloatError(balance.String())
+			return balances, m.formatParseFloatError(balance.String())
 		}
 
 		balances[key] = balanceFloat
