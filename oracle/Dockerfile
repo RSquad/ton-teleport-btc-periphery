@@ -38,7 +38,7 @@ COPY --from=rust-builder /app/frost/rust/target ./frost/rust/target
 # Build frost
 RUN cd frost && go build
 # Build the Oracle
-RUN go build -o /app/out/bin ./oracle/cmd/main.go
+RUN go build -o ./bin ./oracle/cmd/main.go
 
 # Final stage
 FROM alpine:latest
@@ -55,7 +55,7 @@ RUN mkdir -p /app/keystore/secrets /app/keystore/temp && \
     chmod 700 /app/keystore
 
 # Copy the binary from builder
-COPY --from=go-builder /app/out/bin /app/
+COPY --from=go-builder /app/bin /app/
 
 # Set working directory
 WORKDIR /app
@@ -64,4 +64,4 @@ WORKDIR /app
 USER oracle
 
 # Command to run the oracle
-CMD ["/app/bin"] 
+CMD ["./bin"] 
