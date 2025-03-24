@@ -2,7 +2,7 @@ package frost
 
 /*
 #cgo CFLAGS: -I${SRCDIR}/rust
-#cgo LDFLAGS: ${SRCDIR}/rust/target/debug/libfrost.a
+#cgo LDFLAGS: ${SRCDIR}/rust/target/release/libfrost.a
 #include "rust/frost.h"
 #include <stdlib.h>
 */
