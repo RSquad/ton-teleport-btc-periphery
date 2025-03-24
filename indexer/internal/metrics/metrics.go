@@ -27,7 +27,7 @@ func New(tonClient *tonclient.TonClient, config config.IndexerConfig) *Metrics {
 	}
 }
 
-func (m *Metrics) AddOperation(operation string) error {
+func (m *Metrics) RecordOperation(operation string) error {
 	switch operation {
 	case "mint", "burn", "reinit":
 		counterVec.With(prometheus.Labels{"operation": operation}).Inc()
@@ -70,7 +70,7 @@ func (m *Metrics) getBalances() (map[string]float64, error) {
 	return balances, nil
 }
 
-func (m *Metrics) recordMetrics(balances map[string]float64) (err error) {
+func (m *Metrics) recordBalances(balances map[string]float64) (err error) {
 	for key, value := range balances {
 		contractBalances.With(prometheus.Labels{"contract": key}).Set(value)
 	}
@@ -87,7 +87,7 @@ func (m *Metrics) Work(ctx context.Context) (err error) {
 			if err != nil {
 				return err
 			}
-			m.recordMetrics(balances)
+			m.recordBalances(balances)
 			time.Sleep(10 * time.Second)
 		}
 	}

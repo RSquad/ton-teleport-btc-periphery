@@ -98,7 +98,7 @@ func (ew *EventWriter) writeMint(tonTx *ent.TonTx, event *teleportcontract.MintE
 			SetCreatedAt(tonTx.CreatedAt).
 			SetTonTx(tonTx).
 			Save(ew.ctx)
-		ew.metrics.AddOperation("mint")
+		ew.metrics.RecordOperation("mint")
 		if err != nil {
 			return err
 		}
@@ -124,7 +124,7 @@ func (ew *EventWriter) writeBurn(tonTx *ent.TonTx, event *teleportcontract.BurnE
 			SetTonTx(tonTx).
 			SetPegout(pegout).
 			Save(ew.ctx)
-		ew.metrics.AddOperation("burn")
+		ew.metrics.RecordOperation("burn")
 		return err
 	})
 }
@@ -141,7 +141,7 @@ func (ew *EventWriter) writeReinit(tonTx *ent.TonTx, event *teleportcontract.Rei
 			SetTonTx(tonTx).
 			SetPegout(pegout).
 			Save(ew.ctx)
-		ew.metrics.AddOperation("reinit")
+		ew.metrics.RecordOperation("reinit")
 		return err
 	})
 }
