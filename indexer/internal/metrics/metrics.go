@@ -32,7 +32,7 @@ func (m *Metrics) RecordOperation(operation string) error {
 	case "mint", "burn", "reinit":
 		counterVec.With(prometheus.Labels{"operation": operation}).Inc()
 	default:
-		return m.fromatAddOperationError(operation)
+		return m.fromatRecordOperationError(operation)
 	}
 	return nil
 }

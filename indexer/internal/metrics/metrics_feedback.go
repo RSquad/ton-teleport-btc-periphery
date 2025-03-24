@@ -15,6 +15,6 @@ func (m *Metrics) formatParseFloatError(s string) error {
 	return fmt.Errorf("can not convert string %v to float", s)
 }
 
-func (m *Metrics) fromatAddOperationError(operation string) error {
-	return fmt.Errorf("can not add operation: %v", operation)
+func (m *Metrics) fromatRecordOperationError(operation string) error {
+	return fmt.Errorf("can not record operation: %v", operation)
 }
