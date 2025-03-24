@@ -38,7 +38,7 @@ COPY --from=rust-builder /app/frost/rust/target ./frost/rust/target
 # Build frost
 RUN cd frost && go build
 # Build the Oracle
-RUN go build -o /app/oracle ./oracle/cmd/main.go
+RUN go build -o /app/out/bin ./oracle/cmd/main.go
 
 # Final stage
 FROM alpine:latest
@@ -55,7 +55,7 @@ RUN mkdir -p /app/keystore/secrets /app/keystore/temp && \
     chmod 700 /app/keystore
 
 # Copy the binary from builder
-COPY --from=go-builder /app/oracle /app/oracle
+COPY --from=go-builder /app/out/bin /app/
 
 # Set working directory
 WORKDIR /app
@@ -63,8 +63,5 @@ WORKDIR /app
 # Switch to oracle user
 USER oracle
 
-# Environment variables will be provided at runtime via docker-compose or docker run
-ENV ORACLE_KEYSTORE_PATH=/app/keystore
-
 # Command to run the oracle
-CMD ["/app/oracle"] 
+CMD ["/app/bin"] 
