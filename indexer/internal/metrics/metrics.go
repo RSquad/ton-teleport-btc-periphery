@@ -23,6 +23,8 @@ func New(tonClient *tonclient.TonClient, config config.IndexerConfig) *Metrics {
 		contractAddr: map[string]string{
 			"teleport":    config.TeleportContractAddr,
 			"coordinator": config.CoordinatorContractAddr,
+			"bitclient":   config.BitcoinClientContractAddr,
+			"minter":      config.JettonMinterContractAddr,
 		},
 	}
 }
