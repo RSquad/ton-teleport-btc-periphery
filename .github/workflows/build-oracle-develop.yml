@@ -32,10 +32,6 @@ jobs:
           username: ${{ secrets.DOCR_USERNAME }}
           password: ${{ secrets.DOCR_PASSWORD }}
 
-      - name: Set environment variables
-        run: |
-          echo "${{ vars.DEV_PARAMS }}" | tr ' ' '\n' >> .env
-
       - name: Build and push Docker image
         run: |
           docker build -t registry.digitalocean.com/rsquad-dev/ton-teleport-btc-oracle:latest -f ${{ env.WORKSPACE }}/oracle/Dockerfile .
