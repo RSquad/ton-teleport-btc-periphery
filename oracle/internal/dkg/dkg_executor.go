@@ -134,7 +134,7 @@ func (e *Executor) Sign(
 		return nil, fmt.Errorf("failed to load nonce by name %s", nonceName)
 	}
 	frostCommitments := helpers.ConvertMapToFrostPackages(commitments)
-	return frost.SignWithTweak(frost.NewPackage(secret), message, frostCommitments, frost.NewPackage(nonce))
+	return frost.SignWithTweak(frost.NewPackage(secret), message, frostCommitments, frost.NewPackage(nonce), tapTweak)
 }
 
 func (e *Executor) Commit(publicKey []byte) ([]byte, []byte, error) {

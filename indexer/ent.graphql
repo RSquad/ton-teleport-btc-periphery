@@ -859,7 +859,7 @@ type Query {
 type Reinit implements Node {
   id: ID!
   amount: String!
-  newInternalKey: String!
+  newInternalKey: String
   tonTx: TonTx!
   pegout: Pegout!
 }
@@ -942,6 +942,8 @@ input ReinitWhereInput {
   newInternalKeyContains: String
   newInternalKeyHasPrefix: String
   newInternalKeyHasSuffix: String
+  newInternalKeyIsNil: Boolean
+  newInternalKeyNotNil: Boolean
   newInternalKeyEqualFold: String
   newInternalKeyContainsFold: String
   """

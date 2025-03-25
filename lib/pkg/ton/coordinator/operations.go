@@ -51,6 +51,12 @@ func (c *CoordinatorContract) SendCommitments(
 	ValidatorIdx uint16,
 	Identifier, Commitments []byte,
 ) (*tlb.Transaction, error) {
+	if len(Commitments) == 0 {
+		return nil, fmt.Errorf("commitments are empty")
+	}
+	if len(Identifier) == 0 {
+		return nil, fmt.Errorf("identifier is empty")
+	}
 	return c.sendBodyCell(BuildSendCommitmentsBody(
 		int64(c.ttl.Seconds()),
 		&CommitmentRequest{PegoutID, ValidatorIdx, Identifier, Commitments},
@@ -72,12 +78,11 @@ func (c *CoordinatorContract) SendSigningShare(
 func (c *CoordinatorContract) SendSignatures(
 	PegoutID uint64,
 	ValidatorIdx uint16,
-	Identifier []byte,
 	Signatures [][]byte,
 ) (*tlb.Transaction, error) {
 	return c.sendBodyCell(BuildSendSignaturesBody(
 		int64(c.ttl.Seconds()),
-		&SignaturesRequest{PegoutID, ValidatorIdx, Identifier, Signatures},
+		&SignaturesRequest{PegoutID, ValidatorIdx, Signatures},
 	))
 }
 

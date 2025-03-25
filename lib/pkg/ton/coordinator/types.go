@@ -89,7 +89,6 @@ type SigningShareRequest struct {
 type SignaturesRequest struct {
 	PegoutID     uint64
 	ValidatorIdx uint16
-	Identifier   []byte
 	Signatures   [][]byte
 }
 
@@ -99,12 +98,12 @@ type PegoutRecord struct {
 	InternalKey       []byte
 	Commitments       map[string][]byte
 	CommitmentsMask   []byte
-	SigningShares     map[string]map[uint8][]byte
+	SigningShares     map[string]map[int][]byte
 	SigningSharesMask []byte
 }
 
 func (p *PegoutRecord) HasCommitment(identifier []byte) bool {
-	_, exists := p.Commitments[string(identifier)]
+	_, exists := p.Commitments[hex.EncodeToString(identifier)]
 	return exists
 }
 
@@ -113,10 +112,10 @@ func (p *PegoutRecord) CommitmentsCount() uint16 {
 }
 
 func (p *PegoutRecord) HasSigningShare(identifier []byte) bool {
-	_, exists := p.SigningShares[string(identifier)]
+	_, exists := p.SigningShares[hex.EncodeToString(identifier)]
 	return exists
 }
 
-func (p *PegoutRecord) SigningSharesCount() uint16 {
-	return uint16(len(p.SigningShares))
+func (p *PegoutRecord) SigningSharesCount() int {
+	return len(p.SigningShares)
 }

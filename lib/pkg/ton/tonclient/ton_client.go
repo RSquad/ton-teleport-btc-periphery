@@ -44,3 +44,13 @@ func (tc *TonClient) FetchAcc(
 
 	return tc.API.GetAccount(context.Background(), block, addr)
 }
+
+func (tc *TonClient) GetBalance(addr *address.Address) (tlb.Coins, error) {
+
+	account, err := tc.FetchAcc(addr, nil)
+	if err != nil {
+		return tlb.Coins{}, err
+	}
+
+	return account.State.Balance, nil
+}

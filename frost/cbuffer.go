@@ -19,6 +19,9 @@ func newEmptyBuffer() C.Buffer {
 }
 
 func newBufferFromSlice(s []byte) C.Buffer {
+	if len(s) == 0 {
+		return newEmptyBuffer()
+	}
 	return newBuffer(unsafe.Pointer(&s[0]), len(s))
 }
 
