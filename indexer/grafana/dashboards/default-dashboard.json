@@ -112,10 +112,10 @@
                     },
                     "disableTextWrap": false,
                     "editorMode": "builder",
-                    "expr": "contract_balance{contract=\"coordinator\"}",
+                    "expr": "contract_balance{name=\"coordinator\"}",
                     "fullMetaSearch": false,
                     "includeNullMetadata": true,
-                    "legendFormat": "__auto",
+                    "legendFormat": "{{name}} {{addr}}",
                     "range": true,
                     "refId": "Coordinator",
                     "useBackend": false
@@ -127,14 +127,48 @@
                     },
                     "disableTextWrap": false,
                     "editorMode": "builder",
-                    "expr": "contract_balance{contract=\"teleport\"}",
+                    "expr": "contract_balance{name=\"teleport\"}",
                     "fullMetaSearch": false,
                     "hide": false,
                     "includeNullMetadata": true,
                     "instant": false,
-                    "legendFormat": "__auto",
+                    "legendFormat": "{{name}} {{addr}}",
                     "range": true,
                     "refId": "Teleport",
+                    "useBackend": false
+                },
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "PBFA97CFB590B2093"
+                    },
+                    "disableTextWrap": false,
+                    "editorMode": "builder",
+                    "expr": "contract_balance{name=\"bitclient\"}",
+                    "fullMetaSearch": false,
+                    "hide": false,
+                    "includeNullMetadata": true,
+                    "instant": false,
+                    "legendFormat": "{{name}} {{addr}}",
+                    "range": true,
+                    "refId": "Bitclient",
+                    "useBackend": false
+                },
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "PBFA97CFB590B2093"
+                    },
+                    "disableTextWrap": false,
+                    "editorMode": "builder",
+                    "expr": "contract_balance{name=\"minter\"}",
+                    "fullMetaSearch": false,
+                    "hide": false,
+                    "includeNullMetadata": true,
+                    "instant": false,
+                    "legendFormat": "{{name}} {{addr}}",
+                    "range": true,
+                    "refId": "B",
                     "useBackend": false
                 }
             ],
@@ -157,6 +191,6 @@
     "timezone": "browser",
     "title": "Contract Balances",
     "uid": "ceg7mjhvro3r4f",
-    "version": 1,
+    "version": 2,
     "weekStart": ""
 }

@@ -31,7 +31,7 @@ var (
 	contractBalances = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "contract_balance",
 		Help: "Contract balance",
-	}, []string{"contract"})
+	}, []string{"addr", "name"})
 )
 
 func (m *Metrics) getBalances() (map[string]float64, error) {
@@ -57,7 +57,7 @@ func (m *Metrics) getBalances() (map[string]float64, error) {
 
 func (m *Metrics) recordMetrics(balances map[string]float64) (err error) {
 	for key, value := range balances {
-		contractBalances.With(prometheus.Labels{"contract": key}).Set(value)
+		contractBalances.WithLabelValues(address.MustParseAddr(m.contractAddr[key]).StringRaw(), key).Set(value)
 	}
 	return nil
 }
