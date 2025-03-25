@@ -115,7 +115,7 @@
                     "expr": "contract_balance{contract=\"coordinator\"}",
                     "fullMetaSearch": false,
                     "includeNullMetadata": true,
-                    "legendFormat": "__auto",
+                    "legendFormat": "coordinator",
                     "range": true,
                     "refId": "Coordinator",
                     "useBackend": false
@@ -132,9 +132,43 @@
                     "hide": false,
                     "includeNullMetadata": true,
                     "instant": false,
-                    "legendFormat": "__auto",
+                    "legendFormat": "teleport",
                     "range": true,
                     "refId": "Teleport",
+                    "useBackend": false
+                },
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "PBFA97CFB590B2093"
+                    },
+                    "disableTextWrap": false,
+                    "editorMode": "builder",
+                    "expr": "contract_balance{contract=\"bitclient\"}",
+                    "fullMetaSearch": false,
+                    "hide": false,
+                    "includeNullMetadata": true,
+                    "instant": false,
+                    "legendFormat": "bitclient",
+                    "range": true,
+                    "refId": "Bitclient",
+                    "useBackend": false
+                },
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "PBFA97CFB590B2093"
+                    },
+                    "disableTextWrap": false,
+                    "editorMode": "builder",
+                    "expr": "contract_balance{contract=\"minter\"}",
+                    "fullMetaSearch": false,
+                    "hide": false,
+                    "includeNullMetadata": true,
+                    "instant": false,
+                    "legendFormat": "minter",
+                    "range": true,
+                    "refId": "B",
                     "useBackend": false
                 }
             ],
