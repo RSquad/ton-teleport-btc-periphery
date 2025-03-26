@@ -138,7 +138,10 @@ func initialize() (*App, error) {
 		coordinatorContract,
 	)
 
-	metrics := metrics.New(tonClient, indexerConfig)
+	metrics := metrics.New(
+		tonClient,
+		teleportContract,
+		indexerConfig)
 
 	logger.Log.Info().
 		Str("component", "main").
