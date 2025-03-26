@@ -179,12 +179,3 @@ func (c *TeleportContract) storeHashesToCell(
 
 	return store(hashes, builder)
 }
-
-func (c *TeleportContract)GetPegoutChainCounter() (uint64, error) {
-	storage, err := c.GetStorage(nil)
-	if err != nil {
-		return 0, err
-	}
-
-	return storage.PegoutChainCounter, nil
-}

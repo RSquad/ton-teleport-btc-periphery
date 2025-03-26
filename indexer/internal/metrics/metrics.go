@@ -8,6 +8,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/config"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/teleportcontract"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
@@ -16,17 +17,25 @@ import (
 
 type Metrics struct {
 	tonClient        *tonclient.TonClient
+	bitcoinClient    *bitcoin.Client
 	teleportContract *teleportcontract.TeleportContract
 	contractAddr     map[string]string
 }
 
+type txStatus struct {
+	isCreated float64
+	txID      string
+}
+
 func New(
 	tonClient *tonclient.TonClient,
+	bitcoinClient *bitcoin.Client,
 	teleportContract *teleportcontract.TeleportContract,
 	config config.IndexerConfig,
 ) *Metrics {
 	return &Metrics{
 		tonClient:        tonClient,
+		bitcoinClient:    bitcoinClient,
 		teleportContract: teleportContract,
 		contractAddr: map[string]string{
 			"teleport":    config.TeleportContractAddr,
@@ -47,6 +56,11 @@ var (
 		Name: "pegout_counter",
 		Help: "Pegout counter",
 	})
+
+	txCreated = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "tx_created",
+		Help: "Is transaction in mempool (1) or not (0)",
+	}, []string{"tx_id"})
 )
 
 func (m *Metrics) getBalances() (map[string]float64, error) {
@@ -70,11 +84,33 @@ func (m *Metrics) getBalances() (map[string]float64, error) {
 	return balances, nil
 }
 
-func (m *Metrics) recordMetrics(balances map[string]float64, pegouts float64) (err error) {
+func (m *Metrics) getTxStatus(storage teleportcontract.Storage) (txStatus, error) {
+	isTxFound := 0
+	result, err := m.bitcoinClient.RPCClient.GetTransaction(storage.LastPegoutTxID)
+	if err == nil {
+		return txStatus{0, storage.LastPegoutTxID.String()},
+			m.formatGetTxError(storage.LastPegoutTxID.String())
+	}
+	if result != nil {
+		isTxFound = 1
+	}
+
+	return txStatus{float64(isTxFound), storage.LastPegoutTxID.String()}, nil
+}
+
+func (m *Metrics) recordMetrics(
+	balances map[string]float64,
+	pegouts float64,
+	txStatus txStatus,
+) (err error) {
 	for key, value := range balances {
-		contractBalances.WithLabelValues(utils.AddrToRawString(address.MustParseAddr(m.contractAddr[key])), key).Set(value)
+		contractBalances.WithLabelValues(
+			utils.AddrToRawString(address.MustParseAddr(m.contractAddr[key])),
+			key,
+		).Set(value)
 	}
 	pegoutCounter.Set(pegouts)
+	txCreated.WithLabelValues(txStatus.txID).Set(txStatus.isCreated)
 	return nil
 }
 
@@ -88,11 +124,19 @@ func (m *Metrics) Work(ctx context.Context) (err error) {
 			if err != nil {
 				return err
 			}
-			counter, err := m.teleportContract.GetPegoutChainCounter()
+			storage, err := m.teleportContract.GetStorage(nil)
 			if err != nil {
 				return err
 			}
-			m.recordMetrics(balances, float64(counter))
+			txStatus, err := m.getTxStatus(storage)
+			if err != nil {
+				return err
+			}
+			m.recordMetrics(
+				balances,
+				float64(storage.PegoutChainCounter),
+				txStatus,
+			)
 			time.Sleep(10 * time.Second)
 		}
 	}

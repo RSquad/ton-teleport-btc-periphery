@@ -140,8 +140,10 @@ func initialize() (*App, error) {
 
 	metrics := metrics.New(
 		tonClient,
+		bitcoinClient,
 		teleportContract,
-		indexerConfig)
+		indexerConfig,
+	)
 
 	logger.Log.Info().
 		Str("component", "main").
