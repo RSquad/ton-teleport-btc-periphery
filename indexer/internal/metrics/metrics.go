@@ -9,6 +9,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/config"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
 	"github.com/xssnick/tonutils-go/address"
 )
 
@@ -59,7 +60,7 @@ func (m *Metrics) getBalances() (map[string]float64, error) {
 
 func (m *Metrics) recordMetrics(balances map[string]float64) (err error) {
 	for key, value := range balances {
-		contractBalances.WithLabelValues(address.MustParseAddr(m.contractAddr[key]).StringRaw(), key).Set(value)
+		contractBalances.WithLabelValues(utils.AddrToRawString(address.MustParseAddr(m.contractAddr[key])), key).Set(value)
 	}
 	return nil
 }
