@@ -86,12 +86,12 @@ func (m *Metrics) getBalances() (map[string]float64, error) {
 
 func (m *Metrics) getTxStatus(storage teleportcontract.Storage) (txStatus, error) {
 	isTxFound := 0
-	result, err := m.bitcoinClient.RPCClient.GetTransaction(storage.LastPegoutTxID)
-	if err == nil {
+	txVerbose, err := m.bitcoinClient.RPCClient.GetRawTransaction(storage.LastPegoutTxID)
+	if err != nil {
 		return txStatus{0, storage.LastPegoutTxID.String()},
 			m.formatGetTxError(storage.LastPegoutTxID.String())
 	}
-	if result != nil {
+	if txVerbose != nil {
 		isTxFound = 1
 	}
 
