@@ -157,6 +157,7 @@ func (e *Executor) executeR1(dkg *coordinator.DKG, validatorIdx uint16, localIde
 		validatorIdx,
 		localIdentifier,
 		e.artifacts.r1.pkg,
+		localIdentifier, // sessionPublicKey
 	)
 	if err != nil {
 		e.logSendRound1Package(dkg, err)
