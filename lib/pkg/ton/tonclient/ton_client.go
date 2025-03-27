@@ -2,6 +2,7 @@ package tonclient
 
 import (
 	"context"
+	"strings"
 
 	"github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/liteclient"
@@ -14,12 +15,18 @@ type TonClient struct {
 	API  *ton.APIClient
 }
 
-func New(configURL string) (*TonClient, error) {
+func New(configPathOrURL string) (*TonClient, error) {
 	pool := liteclient.NewConnectionPool()
-
-	err := pool.AddConnectionsFromConfigUrl(context.Background(), configURL)
-	if err != nil {
-		return nil, err
+	if strings.HasPrefix(configPathOrURL, "http://") || strings.HasPrefix(configPathOrURL, "https://") {
+		err := pool.AddConnectionsFromConfigUrl(context.Background(), configPathOrURL)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		err := pool.AddConnectionsFromConfigFile(configPathOrURL)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	api := ton.NewAPIClient(pool).WithRetry(5)
@@ -46,7 +53,6 @@ func (tc *TonClient) FetchAcc(
 }
 
 func (tc *TonClient) GetBalance(addr *address.Address) (tlb.Coins, error) {
-
 	account, err := tc.FetchAcc(addr, nil)
 	if err != nil {
 		return tlb.Coins{}, err

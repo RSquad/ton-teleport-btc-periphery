@@ -36,7 +36,7 @@ func initialize() (*App, error) {
 		return nil, err
 	}
 
-	tonClient, err := tonclient.New(cfg.TonConfigUrl)
+	tonClient, err := tonclient.New(cfg.TonConfigPathOrURL)
 	if err != nil {
 		return nil, err
 	}
