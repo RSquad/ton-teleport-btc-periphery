@@ -1,4 +1,4 @@
-package pegoutsigner
+package signing
 
 import (
 	"fmt"
