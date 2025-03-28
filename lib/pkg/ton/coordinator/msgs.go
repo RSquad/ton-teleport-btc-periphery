@@ -7,11 +7,12 @@ import (
 	"github.com/xssnick/tonutils-go/tvm/cell"
 )
 
-func BuildSendRound1Body(ttl int64, validatorIdx uint16, Identifier []byte, round1Package []byte) *cell.Cell {
+func BuildSendRound1Body(ttl int64, validatorIdx uint16, Identifier []byte, round1Package []byte, sessionPublicKey []byte) *cell.Cell {
 	return cell.BeginCell().
 		MustStoreUInt(OpCodeCoordinatorRound1, 32).
 		MustStoreUInt(uint64(time.Now().Unix()+ttl), 32).
 		MustStoreUInt(uint64(validatorIdx), 16).
+		MustStoreSlice(sessionPublicKey, 256).
 		MustStoreRef(
 			cell.BeginCell().
 				MustStoreSlice(Identifier, 256).

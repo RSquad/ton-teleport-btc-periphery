@@ -25,9 +25,9 @@ func (c *CoordinatorContract) SendStartDKG() (*tlb.Transaction, error) {
 	return tx, err
 }
 
-func (c *CoordinatorContract) SendRound1(validatorIdx uint16, identifier []byte, round1Package []byte) (*tlb.Transaction, error) {
+func (c *CoordinatorContract) SendRound1(validatorIdx uint16, identifier []byte, round1Package []byte, sessionPublicKey []byte) (*tlb.Transaction, error) {
 	return c.sendBodyCell(BuildSendRound1Body(
-		int64(c.ttl.Seconds()), validatorIdx, identifier, round1Package,
+		int64(c.ttl.Seconds()), validatorIdx, identifier, round1Package, sessionPublicKey,
 	))
 }
 

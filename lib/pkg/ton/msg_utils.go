@@ -14,6 +14,7 @@ func BuildExtMsg(
 	dstAddr *address.Address,
 	signer signer.Signer,
 ) (*tlb.ExternalMessage, error) {
+	// TODO: signature := nil
 	signature := make([]byte, 64)
 	if signer != nil {
 		signature = signer.SignCell(unsignedMsgBody)

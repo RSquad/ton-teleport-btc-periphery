@@ -2,6 +2,8 @@ package dkg
 
 import (
 	"context"
+	"crypto/ed25519"
+	"crypto/rand"
 	"encoding/hex"
 	"fmt"
 	"time"
@@ -9,7 +11,7 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/frost"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
-	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal"
+	helpers "github.com/rsquad/ton-teleport-btc-periphery/oracle/internal"
 	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/keystore"
 	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/validator"
 )
@@ -160,7 +162,7 @@ func (e *Executor) Execute(dkg *coordinator.DKG) {
 		e.logNewDKGStarted(dkg)
 	}
 
-	keyInfo, err := e.validator.FindKeyInfo(dkg.VSet)
+	keyInfo, err := e.validator.FindKeyInfo(dkg.VSet, &e.keystore)
 	if err != nil {
 		e.logDKGProcess(dkg, fmt.Sprintf("Error finding key info: %v", err))
 		return
@@ -169,9 +171,18 @@ func (e *Executor) Execute(dkg *coordinator.DKG) {
 		e.logDKGProcess(dkg, "Oracle is not a future validator. Cannot participate in DKG.")
 		return
 	}
-	e.coordinatorContract.ConnectSigner(e.validator.GetSigner(keyInfo.KeyID))
 
-	if e.executeR1(dkg, keyInfo.VsetIdx, keyInfo.PublicKey) {
+	e.coordinatorContract.ConnectSigner(e.validator.GetSigner(keyInfo.KeyID, &e.keystore, validator.SIGNER_VALIDATOR))
+
+	// Generate new Oracle session key
+	sessionPublicKey, err := e.GenerateNewSessionKey(&e.keystore)
+	if err != nil {
+		e.logDKGProcess(dkg, fmt.Sprintf("An error occurred while generating a new session key: %v", err))
+		return
+	}
+
+	if e.executeR1(dkg, keyInfo.VsetIdx, keyInfo.PublicKey, sessionPublicKey) {
+		e.coordinatorContract.ConnectSigner(e.validator.GetSigner(keyInfo.KeyID, &e.keystore, validator.SIGNER_ORACLE))
 		if e.executeR2(dkg, keyInfo.VsetIdx, keyInfo.PublicKey) {
 			if e.executeR3(dkg, keyInfo.VsetIdx, keyInfo.PublicKey) {
 				e.logDKGProcess(dkg, "Successfully completed all DKG rounds")
@@ -180,7 +191,21 @@ func (e *Executor) Execute(dkg *coordinator.DKG) {
 	}
 }
 
-func (e *Executor) executeR1(dkg *coordinator.DKG, validatorIdx uint16, localIdentifier []byte) bool {
+func (e *Executor) GenerateNewSessionKey(keystore *keystore.Keystore) ([]byte, error) {
+	publicKey, privateKey, err := ed25519.GenerateKey(rand.Reader)
+	if err != nil {
+		return nil, err
+	}
+
+	err = (*keystore).StoreSecret(publicKey, privateKey)
+	if err != nil {
+		return nil, err
+	}
+
+	return publicKey, nil
+}
+
+func (e *Executor) executeR1(dkg *coordinator.DKG, validatorIdx uint16, localIdentifier []byte, sessionPublicKey []byte) bool {
 	e.logExecuteR1(dkg)
 	if dkg.Round1Completed() {
 		e.logDKGProcess(dkg, "R1 completed")
@@ -220,6 +245,7 @@ func (e *Executor) executeR1(dkg *coordinator.DKG, validatorIdx uint16, localIde
 		validatorIdx,
 		localIdentifier,
 		e.artifacts.r1.pkg,
+		sessionPublicKey,
 	)
 	if err != nil {
 		e.logSendRound1Package(dkg, err)

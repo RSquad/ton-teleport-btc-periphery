@@ -42,6 +42,7 @@ func (s *Service) Work(ctx context.Context, keystore keystore.Keystore) (err err
 
 	wg := sync.WaitGroup{}
 
+	// Try GetDkg every 6 sec.
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -51,6 +52,7 @@ func (s *Service) Work(ctx context.Context, keystore keystore.Keystore) (err err
 		}
 	}()
 
+	// Process result of GetDkg (->outChan->)
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -60,6 +62,7 @@ func (s *Service) Work(ctx context.Context, keystore keystore.Keystore) (err err
 		}
 	}()
 
+	// Try to sent
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -78,7 +81,9 @@ func (s *Service) Work(ctx context.Context, keystore keystore.Keystore) (err err
 			case <-tick:
 				s.coordinatorContract.SendStartDKG()
 			case <-ctx.Done():
-				break
+				// NOTE: break will exit only from the select statement and continue running the for loop
+				// break
+				return
 			}
 		}
 	}()

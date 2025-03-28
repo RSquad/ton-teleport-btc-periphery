@@ -10,7 +10,7 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/pegoutcontract"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
-	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal"
+	helpers "github.com/rsquad/ton-teleport-btc-periphery/oracle/internal"
 	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/dkg"
 	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/keystore"
 	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/validator"
@@ -146,7 +146,7 @@ func (s *SignService) execute(ctx context.Context, dkg *coordinator.DKG) {
 
 	pubkeyPackage := dkg.R3.Data.PubkeyPackage
 
-	validatorKeyInfo, err := s.validator.FindKeyInfo(dkg.VSet)
+	validatorKeyInfo, err := s.validator.FindKeyInfo(dkg.VSet, &s.keyStore)
 	if err != nil {
 		s.logError("failed to get validator key", err)
 		return
@@ -157,7 +157,8 @@ func (s *SignService) execute(ctx context.Context, dkg *coordinator.DKG) {
 		return
 	}
 
-	s.coordinator.ConnectSigner(s.validator.GetSigner(validatorKeyInfo.KeyID))
+	// TODO: use Oracle sign
+	s.coordinator.ConnectSigner(s.validator.GetSigner(validatorKeyInfo.KeyID, &s.keyStore, validator.SIGNER_ORACLE))
 
 	minSigners, err := helpers.CalcMinSigners(dkg.MaxSigners)
 	if err != nil {
