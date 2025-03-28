@@ -92,6 +92,7 @@ func (s *SignService) cachePegout(
 	}
 
 	addrStr := unsignedPegout.PegoutAddress.String()
+	s.keyStore.Cleanup()
 
 	s.cachedPegout = &CachedPegout{
 		ID:            unsignedPegout.ID,
