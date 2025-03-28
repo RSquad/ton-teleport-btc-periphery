@@ -59,8 +59,6 @@ int32_t extract_public_key_from_package(struct Buffer pubkey_package_buf,
 
 void free_package_ptr(const uint8_t *ptr, size_t len);
 
-void free_r1_secret(void *r1_secret);
-
 void free_r2_pkg_vec(const struct Pkg *ptr, size_t len);
 
 void free_r2_secret(void *r2_secret);

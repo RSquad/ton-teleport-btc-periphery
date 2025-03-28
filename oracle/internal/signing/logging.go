@@ -1,4 +1,4 @@
-package pegoutsigner
+package signing
 
 import (
 	"fmt"
@@ -6,6 +6,7 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
+	helpers "github.com/rsquad/ton-teleport-btc-periphery/oracle/internal"
 )
 
 func strPegoutID(pegoutID uint64) string {
@@ -130,4 +131,9 @@ func (s *SignService) logSendCommitments(pegoutID uint64, commitments []byte) {
 
 func (s *SignService) logSendSigningShare(pegoutID uint64, signShares [][]byte) {
 	infoEventWithPegoutID(pegoutID).Msgf("send %d signing shares", len(signShares))
+}
+
+func (s *SignService) logSendSigningShareError(pegoutID uint64, err error) {
+	msg := helpers.HandleTvmError(err)
+	errorEventWithPegoutID(pegoutID).Err(err).Msg("failed to send signing share: " + msg)
 }
