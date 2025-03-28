@@ -298,7 +298,7 @@ func (s *SignService) doSign(
 		identifier,
 		signShares,
 	); err != nil {
-		s.logError("failed to send signing share", err)
+		s.logSendSigningShareError(pegout.ID, err)
 	} else {
 		s.logSigningShareSent(pegout.ID)
 	}
