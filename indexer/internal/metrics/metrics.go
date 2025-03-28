@@ -9,6 +9,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/config"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
 	"github.com/xssnick/tonutils-go/address"
 )
 
@@ -29,12 +30,10 @@ func New(tonClient *tonclient.TonClient, config config.IndexerConfig) *Metrics {
 	}
 }
 
-var (
-	contractBalances = promauto.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "contract_balance",
-		Help: "Contract balance",
-	}, []string{"addr", "name"})
-)
+var contractBalances = promauto.NewGaugeVec(prometheus.GaugeOpts{
+	Name: "contract_balance",
+	Help: "Contract balance",
+}, []string{"addr", "name"})
 
 func (m *Metrics) getBalances() (map[string]float64, error) {
 	balances := make(map[string]float64)
@@ -47,7 +46,6 @@ func (m *Metrics) getBalances() (map[string]float64, error) {
 		}
 
 		balanceFloat, err := strconv.ParseFloat(balance.String(), 64)
-
 		if err != nil {
 			m.formatParseFloatError(balance.String())
 		}
@@ -59,7 +57,7 @@ func (m *Metrics) getBalances() (map[string]float64, error) {
 
 func (m *Metrics) recordMetrics(balances map[string]float64) (err error) {
 	for key, value := range balances {
-		contractBalances.WithLabelValues(address.MustParseAddr(m.contractAddr[key]).StringRaw(), key).Set(value)
+		contractBalances.WithLabelValues(utils.AddrToRawString(address.MustParseAddr(m.contractAddr[key])), key).Set(value)
 	}
 	return nil
 }

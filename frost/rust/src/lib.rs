@@ -4,7 +4,7 @@ use frost_secp256k1_tr::{
     keys::{
         dkg::{
             part1 as frost_dkg_part1, part2 as frost_dkg_part2, part3 as frost_dkg_part3,
-            round1::{Package as Round1Package, SecretPackage as Round1SecretPackage},
+            round1::Package as Round1Package,
             round2::{Package as Round2Package, SecretPackage as Round2SecretPackage},
         },
         KeyPackage, PublicKeyPackage, Tweak,
@@ -63,8 +63,10 @@ macro_rules! from_bytes_for {
                 unsafe {
                     let packages = slice::from_raw_parts(ptr, len);
                     for p in packages {
-                        let identifier = Identifier::deserialize(&p.identifier).expect("Cannot deserialize Identifier");
-                        let pkg = $T::from_raw_parts(p.buf, p.len).expect("Cannot deserialize Package");
+                        let identifier = Identifier::deserialize(&p.identifier)
+                            .expect("Cannot deserialize Identifier");
+                        let pkg =
+                            $T::from_raw_parts(p.buf, p.len).expect("Cannot deserialize Package");
                         map.insert(identifier, pkg);
                     }
                 }
@@ -147,9 +149,10 @@ pub extern "C" fn dkg_part2(
     {
         return -1;
     }
-    let sp = from_void(r1_secret);
+    let r1_secret_box = from_void(r1_secret);
     let map = Round1Package::make_map(r1_pkgs_ptr, r1_pkgs_len);
-    match frost_dkg_part2(*sp, &map) {
+    let result = frost_dkg_part2(*r1_secret_box, &map);
+    match result {
         Err(err) => {
             println!("[FROST] error: {}", err);
             return -2;
@@ -197,11 +200,13 @@ pub extern "C" fn dkg_part3(
     {
         return -1;
     }
-    match frost_dkg_part3(
-        &from_void(r2_secret),
-        &Round1Package::make_map(r1_pkgs_ptr, r1_pkgs_len),
-        &Round2Package::make_map(r2_pkgs_ptr, r2_pkgs_len),
-    ) {
+    let r2_secret_box = from_void(r2_secret);
+    let r1_pkgs_map = Round1Package::make_map(r1_pkgs_ptr, r1_pkgs_len);
+    let r2_pkgs_map = Round2Package::make_map(r2_pkgs_ptr, r2_pkgs_len);
+    let result = frost_dkg_part3(&r2_secret_box, &r1_pkgs_map, &r2_pkgs_map);
+    // Prevent r2_secret_box from being freed. It must be freed manually.
+    Box::leak(r2_secret_box);
+    match result {
         Err(err) => {
             println!("[FROST] error: {}", err);
             return -2;
@@ -223,13 +228,12 @@ pub extern "C" fn dkg_part3(
 }
 
 #[no_mangle]
-pub extern "C" fn free_r1_secret(r1_secret: *mut c_void) {
-    let _ = unsafe { Box::from_raw(r1_secret as *mut Round1SecretPackage) };
-}
-
-#[no_mangle]
 pub extern "C" fn free_r2_secret(r2_secret: *mut c_void) {
-    let _ = unsafe { Box::from_raw(r2_secret as *mut Round2SecretPackage) };
+    unsafe {
+        if !r2_secret.is_null() {
+            let _ = Box::from_raw(r2_secret as *mut Round2SecretPackage);
+        }
+    };
 }
 
 #[no_mangle]
@@ -339,8 +343,7 @@ pub extern "C" fn aggregate_with_tweak(
         message_buf.to_slice(),
     );
 
-    let signature_shares_map =
-        SignatureShare::make_map(signature_shares_ptr, signature_shares_len);
+    let signature_shares_map = SignatureShare::make_map(signature_shares_ptr, signature_shares_len);
 
     let result = frost_aggregate_with_tweak(
         &signing_package,
@@ -405,12 +408,12 @@ pub extern "C" fn extract_public_key_from_package(
         Ok(x) => x,
         Err(_) => return -1,
     };
-    
+
     let key_vec = match pubkey_package.verifying_key().serialize() {
         Ok(x) => x,
         Err(_) => return -2,
     };
-    
+
     unsafe {
         (*public_key).len = key_vec.len();
         (*public_key).data = key_vec.leak().as_ptr();

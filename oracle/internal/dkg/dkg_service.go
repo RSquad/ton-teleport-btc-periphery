@@ -13,12 +13,7 @@ import (
 
 type Service struct {
 	coordinatorContract *coordinator.CoordinatorContract
-	endpoint            *Endpoint
 	validator           *validator.Validator
-}
-
-func (s *Service) GetClient() *Client {
-	return CreateClient(s.endpoint)
 }
 
 func NewService(
@@ -27,12 +22,12 @@ func NewService(
 ) *Service {
 	return &Service{
 		coordinatorContract: coordinatorContract,
-		endpoint:            CreateEndpoint(),
 		validator:           validator,
 	}
 }
 
-func (s *Service) Work(ctx context.Context, keystore keystore.Keystore) (err error) {
+func (s *Service) Work(ctx context.Context, keystore keystore.Keystore) {
+	var err error = nil
 	logger.DefaultLogStartWork("DKGService")
 	defer logger.DefaultLogFinishWork("DKGService", err)
 
@@ -42,34 +37,20 @@ func (s *Service) Work(ctx context.Context, keystore keystore.Keystore) (err err
 
 	wg := sync.WaitGroup{}
 
-	// Try GetDkg every 6 sec.
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
+		logger.DefaultLogStartWork("DKGFetcher")
 		err = fetcher.Work(ctx)
-		if err != nil {
-			logger.Log.Error().Err(err).Msg("Fetcher failed")
-		}
+		logger.DefaultLogFinishWork("DKGFetcher", err)
 	}()
 
-	// Process result of GetDkg (->outChan->)
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
+		logger.DefaultLogStartWork("DKGExecutor")
 		err = executor.Work(ctx)
-		if err != nil {
-			logger.Log.Error().Err(err).Msg("Executor failed")
-		}
-	}()
-
-	// Try to sent
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		err = executor.startDkgServer(ctx, s.endpoint)
-		if err != nil {
-			logger.Log.Error().Err(err).Msg("DKG Server failed")
-		}
+		logger.DefaultLogFinishWork("DKGExecutor", err)
 	}()
 
 	wg.Add(1)
@@ -78,17 +59,16 @@ func (s *Service) Work(ctx context.Context, keystore keystore.Keystore) (err err
 		tick := time.Tick(10 * time.Second)
 		for {
 			select {
-			case <-tick:
+			case _, ok := <-tick:
+				if !ok {
+					return
+				}
 				s.coordinatorContract.SendStartDKG()
 			case <-ctx.Done():
-				// NOTE: break will exit only from the select statement and continue running the for loop
-				// break
 				return
 			}
 		}
 	}()
 
 	wg.Wait()
-
-	return nil
 }
