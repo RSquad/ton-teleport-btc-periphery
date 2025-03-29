@@ -72,22 +72,28 @@ func DkgPart1(identifier []byte, min_signers uint16, max_signers uint16) ([]byte
 func DkgPart2(
 	r1Secret uintptr,
 	round1Packages map[Identifier]Package,
-) (map[Identifier]Package, uintptr, error) {
+) (map[Identifier]Package, uintptr, []byte, error) {
 	pkgs, pin := makeCPackageSlice(round1Packages)
 	secret := unsafe.Pointer(nil)
 	r2Packages := unsafe.Pointer(nil)
+	r2MaliciousValidatorIdx := make([]byte, 32)
 	r2PackagesLen := C.dkg_part2(
 		unsafe.Pointer(r1Secret),
 		(*C.Pkg)(&pkgs[0]),
 		C.size_t(len(pkgs)),
 		(**C.Pkg)(unsafe.Pointer(&r2Packages)),
 		&secret,
+		(*[32]C.uint8_t)(unsafe.Pointer(&r2MaliciousValidatorIdx[0])),
 	)
 	pin.Unpin()
 	round2Packages := make(map[Identifier]Package)
 
 	if r2PackagesLen <= 0 {
-		return round2Packages, 0, fmt.Errorf("dkg_part2 error %d", r2PackagesLen)
+		if r2PackagesLen != -3 {
+			r2MaliciousValidatorIdx = nil
+		}
+
+		return round2Packages, 0, r2MaliciousValidatorIdx, fmt.Errorf("dkg_part2 error %d", r2PackagesLen)
 	}
 	pkgs = unsafe.Slice((*C.Pkg)(r2Packages), r2PackagesLen)
 	for _, v := range pkgs {
@@ -98,20 +104,21 @@ func DkgPart2(
 		round2Packages[id] = Package{pkg}
 	}
 	C.free_r2_pkg_vec((*C.Pkg)(r2Packages), C.size_t(r2PackagesLen))
-	return round2Packages, uintptr(secret), nil
+	return round2Packages, uintptr(secret), nil, nil
 }
 
 func DkgPart3(
 	r2Secret uintptr,
 	round1Packages map[Identifier]Package,
 	round2Packages map[Identifier]Package,
-) ([]byte, []byte, error) {
+) ([]byte, []byte, []byte, error) {
 	r1Pkgs, pin1 := makeCPackageSlice(round1Packages)
 	r2Pkgs, pin2 := makeCPackageSlice(round2Packages)
 	secretPkgPtr := unsafe.Pointer(nil)
 	secretPkgLen := C.size_t(0)
 	publicPkgPtr := unsafe.Pointer(nil)
 	publicPkgLen := C.size_t(0)
+	r3MaliciousValidatorIdx := make([]byte, 32)
 	ret := C.dkg_part3(
 		unsafe.Pointer(r2Secret),
 		(*C.Pkg)(&r1Pkgs[0]),
@@ -122,13 +129,18 @@ func DkgPart3(
 		&publicPkgLen,
 		(**C.uint8_t)(unsafe.Pointer(&secretPkgPtr)),
 		&secretPkgLen,
+		(*[32]C.uint8_t)(unsafe.Pointer(&r3MaliciousValidatorIdx[0])),
 	)
 
 	pin1.Unpin()
 	pin2.Unpin()
 
 	if ret < 0 {
-		return nil, nil, fmt.Errorf("%d", ret)
+		if ret != -3 {
+			r3MaliciousValidatorIdx = nil
+		}
+
+		return nil, nil, r3MaliciousValidatorIdx, fmt.Errorf("%d", ret)
 	}
 
 	publicKeyPackage := make([]byte, publicPkgLen)
@@ -138,7 +150,7 @@ func DkgPart3(
 	C.free_package_ptr((*C.uint8_t)(publicPkgPtr), publicPkgLen)
 	C.free_package_ptr((*C.uint8_t)(secretPkgPtr), secretPkgLen)
 
-	return KeyPackage, publicKeyPackage, nil
+	return KeyPackage, publicKeyPackage, nil, nil
 }
 
 func Commit(keyPackage Package) ([]byte, []byte, error) {

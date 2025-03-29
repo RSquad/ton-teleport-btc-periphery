@@ -8,6 +8,7 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/signer"
 	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/cfg"
+	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/keystore"
 )
 
 type KeyInfo struct {
@@ -32,7 +33,7 @@ type Validator struct {
 	sessionSigner        *SessionSigner
 }
 
-func NewValidator(cfg *cfg.Cfg) (*Validator, error) {
+func NewValidator(cfg *cfg.Cfg, keystore keystore.Keystore) (*Validator, error) {
 	var standalonePublicKey []byte = nil
 	var standalonePrivateKey []byte = nil
 	var err error = nil
@@ -57,7 +58,7 @@ func NewValidator(cfg *cfg.Cfg) (*Validator, error) {
 		)
 	}
 
-	sessionSigner = NewSessionSigner(cfg.KeystorePath)
+	sessionSigner = NewSessionSigner(keystore)
 
 	return &Validator{
 		standaloneMode:       cfg.StandaloneMode,
@@ -88,8 +89,20 @@ func (v *Validator) FindKeyInfo(vset coordinator.VSet) (*KeyInfo, error) {
 	if err != nil {
 		return nil, err
 	}
-	for _, keyInfo := range validatorKeys {
-		for idx, pubkey := range vset {
+
+	for idx, pubkey := range vset {
+		// Search in session
+		sessionPublicKey := v.sessionSigner.PublicKey()
+		if bytes.Equal(pubkey, sessionPublicKey) {
+			return &KeyInfo{
+				KeyID:     sessionPublicKey,
+				VsetIdx:   idx,
+				PublicKey: sessionPublicKey,
+			}, nil
+		}
+
+		// Search in validators
+		for _, keyInfo := range validatorKeys {
 			if bytes.Equal(pubkey, keyInfo.PublicKey) {
 				keyInfo.VsetIdx = idx
 				return &keyInfo, nil
@@ -97,13 +110,21 @@ func (v *Validator) FindKeyInfo(vset coordinator.VSet) (*KeyInfo, error) {
 		}
 	}
 
-	return nil, errors.New("validator key not found")
+	return nil, errors.New("no key was found")
 }
 
 func (v *Validator) GetSigner(keyID []byte) signer.Signer {
 	if v.standaloneMode {
 		return signer.NewKeySigner(hex.EncodeToString(v.standalonePrivateKey))
 	}
+
+	// Session signer
+	sessionPublicKey := v.sessionSigner.PublicKey()
+	if bytes.Equal(keyID, sessionPublicKey) {
+		return v.sessionSigner
+	}
+
+	// Validator signer
 	return NewValidatorSigner(v.validatorConsole, hex.EncodeToString(keyID))
 }
 

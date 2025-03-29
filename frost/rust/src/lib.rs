@@ -14,6 +14,7 @@ use frost_secp256k1_tr::{
     Error, Identifier, Signature, SigningPackage,
 };
 use rand::thread_rng;
+use std::ptr;
 use std::{collections::BTreeMap, ffi::c_void};
 
 #[inline]
@@ -144,6 +145,7 @@ pub extern "C" fn dkg_part2(
     r1_pkgs_len: usize,
     r2_pkgs_ptr: *mut *const Pkg,
     r2_secret: *mut *const c_void,
+    r2_malicious_validator_idx_out: &mut [u8; 32],
 ) -> i32 {
     if r1_secret.is_null() || r1_pkgs_ptr.is_null() || r2_pkgs_ptr.is_null() || r2_secret.is_null()
     {
@@ -153,6 +155,20 @@ pub extern "C" fn dkg_part2(
     let map = Round1Package::make_map(r1_pkgs_ptr, r1_pkgs_len);
     let result = frost_dkg_part2(*r1_secret_box, &map);
     match result {
+        Err(Error::InvalidProofOfKnowledge { ref culprit }) => {
+            let culprit_data = culprit.serialize();
+
+            if culprit_data.len() != 32 {
+                println!("culprit_data.len() != 32");
+                return -2;
+            }
+
+            unsafe {
+                ptr::copy_nonoverlapping(culprit_data.as_ptr(), r2_malicious_validator_idx_out.as_mut_ptr(), 32);
+            }
+
+            return -3;
+        },
         Err(err) => {
             println!("[FROST] error: {}", err);
             return -2;
@@ -191,6 +207,7 @@ pub extern "C" fn dkg_part3(
     public_key_pkg_len: *mut usize,
     secret_key_pkg_ptr: *mut *const u8,
     secret_key_pkg_len: *mut usize,
+    r2_malicious_validator_idx_out: &mut [u8; 32],
 ) -> i32 {
     if public_key_pkg_ptr.is_null()
         || secret_key_pkg_ptr.is_null()
@@ -207,6 +224,28 @@ pub extern "C" fn dkg_part3(
     // Prevent r2_secret_box from being freed. It must be freed manually.
     Box::leak(r2_secret_box);
     match result {
+        Err(Error::InvalidSecretShare { ref culprit }) => {
+            match culprit {
+                Some(culprit_val) => {
+                    let culprit_data = culprit_val.serialize();
+                    
+                    if culprit_data.len() != 32 {
+                        println!("culprit_data.len() != 32");
+                        return -2;
+                    }
+
+                    unsafe {
+                        ptr::copy_nonoverlapping(culprit_data.as_ptr(), r2_malicious_validator_idx_out.as_mut_ptr(), 32);
+                    }
+
+                    return -3;
+                }
+                None => {
+                    println!("[FROST] error: culprit value empty");
+                    return -2;
+                }
+            }
+        },
         Err(err) => {
             println!("[FROST] error: {}", err);
             return -2;

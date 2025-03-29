@@ -11,62 +11,30 @@ import (
 )
 
 type SessionSigner struct {
-	dkgUntilTimestampLoaded  uint64
-	dkgUntilTimestampCurrent uint64
-	keystoreRootPath         string
-	keystore                 *keystore.Keystore
-	secret                   ed25519.PrivateKey
+	keystore          keystore.Keystore
+	secret            ed25519.PrivateKey
+	dkgUntilTimestamp int64
 }
 
-func NewSessionSigner(keystoreRootPath string) *SessionSigner {
-	return &SessionSigner{dkgUntilTimestampLoaded: 0, dkgUntilTimestampCurrent: 0, keystoreRootPath: keystoreRootPath, keystore: nil, secret: nil}
+func NewSessionSigner(keystore keystore.Keystore) *SessionSigner {
+	return &SessionSigner{keystore: keystore, secret: nil, dkgUntilTimestamp: 0}
 }
 
-func (s *SessionSigner) OnRestartDKG(dkgUntilTimestamp uint64) {
-	s.dkgUntilTimestampCurrent = dkgUntilTimestamp
-}
-
-func (s *SessionSigner) SignCell(cell *cell.Cell) []byte {
-	s.LoadOrGenerateSecret()
-
-	return cell.Sign(s.secret)
-}
-
-func (s *SessionSigner) PublicKey() []byte {
-	s.LoadOrGenerateSecret()
-
-	data, ok := s.secret.Public().([]byte)
-	if !ok {
-		panic("Failed to get public key")
+func (s *SessionSigner) OnNewDKG(dkgUntilTimestamp int64) {
+	// Verify
+	if dkgUntilTimestamp == 0 {
+		panic(errors.New("Failed to generate secret, `dkgUntilTimestamp` == 0"))
 	}
 
-	return data
-}
-
-func (s *SessionSigner) LoadOrGenerateSecret() {
-	// Check cache
-	if s.dkgUntilTimestampCurrent > 0 && s.dkgUntilTimestampCurrent == s.dkgUntilTimestampLoaded {
+	if s.dkgUntilTimestamp == dkgUntilTimestamp {
 		return
 	}
 
 	// Try to load from key storage file
-	if s.dkgUntilTimestampCurrent == 0 {
-		panic(errors.New("Failed to generate secret, `dkgUntilTimestamp` == 0"))
-	}
-
-	if s.keystore == nil {
-		keystore, err := keystore.New(s.keystoreRootPath)
-		if err != nil {
-			panic(fmt.Errorf("Failed to generate secret. %v", err))
-		}
-
-		s.keystore = &keystore
-	}
-
-	secret := (*s.keystore).LoadSession(s.dkgUntilTimestampCurrent)
+	secret := s.keystore.LoadSession(dkgUntilTimestamp)
 	if secret != nil {
 		s.secret = secret
-		s.dkgUntilTimestampLoaded = s.dkgUntilTimestampCurrent
+		s.dkgUntilTimestamp = dkgUntilTimestamp
 		return
 	}
 
@@ -77,5 +45,24 @@ func (s *SessionSigner) LoadOrGenerateSecret() {
 	}
 
 	s.secret = secret
-	s.dkgUntilTimestampLoaded = s.dkgUntilTimestampCurrent
+	s.dkgUntilTimestamp = dkgUntilTimestamp
+
+	// Save to file
+	err = s.keystore.StoreSession(dkgUntilTimestamp, s.secret)
+	if err != nil {
+		panic(fmt.Errorf("Failed to save secret. %v", err))
+	}
+}
+
+func (s *SessionSigner) SignCell(cell *cell.Cell) []byte {
+	return cell.Sign(s.secret)
+}
+
+func (s *SessionSigner) PublicKey() []byte {
+	data, ok := s.secret.Public().([]byte)
+	if !ok {
+		panic("Failed to get public key")
+	}
+
+	return data
 }

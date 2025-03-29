@@ -5,18 +5,17 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 )
 
 type Keystore interface {
 	LoadSecret(pubkey []byte) []byte
-	LoadSession(dkgUntilTimestamp uint64) []byte
+	LoadSession(dkgUntilTimestamp int64) []byte
 	LoadNonce(name string) []byte
 	LoadCommitments(name string) []byte
 	LoadSigningShares(name string) [][]byte
 	StoreSecret(pubkey []byte, secret []byte) error
-	StoreSession(dkgUntilTimestamp uint64, secret []byte) error
+	StoreSession(dkgUntilTimestamp int64, secret []byte) error
 	StoreNonce(name string, nonce []byte) error
 	StoreCommitments(name string, commitments []byte) error
 	StoreSigningShares(name string, pkgs [][]byte) error
@@ -62,8 +61,8 @@ func (ks *FileKeystore) LoadSecret(pubkey []byte) []byte {
 	return ks.load("secrets", fileName)
 }
 
-func (ks *FileKeystore) LoadSession(dkgUntilTimestamp uint64) []byte {
-	fileName := strconv.FormatUint(dkgUntilTimestamp, 10)
+func (ks *FileKeystore) LoadSession(dkgUntilTimestamp int64) []byte {
+	fileName := fmt.Sprintf("%d", dkgUntilTimestamp)
 	return ks.load("sessions", fileName)
 }
 
@@ -103,8 +102,8 @@ func (ks *FileKeystore) StoreSecret(pubkey []byte, secret []byte) error {
 	return os.WriteFile(filePath, secret, 0o600)
 }
 
-func (ks *FileKeystore) StoreSession(dkgUntilTimestamp uint64, secret []byte) error {
-	fileName := strconv.FormatUint(dkgUntilTimestamp, 10)
+func (ks *FileKeystore) StoreSession(dkgUntilTimestamp int64, secret []byte) error {
+	fileName := fmt.Sprintf("%d", dkgUntilTimestamp)
 	filePath := filepath.Join(ks.rootPath, "sessions", fileName)
 	return os.WriteFile(filePath, secret, 0o600)
 }
