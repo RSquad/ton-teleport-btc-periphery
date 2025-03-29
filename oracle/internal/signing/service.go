@@ -150,7 +150,7 @@ func (s *SignService) execute(ctx context.Context, dkg *coordinator.DKG) {
 
 	pubkeyPackage := dkg.R3.Data.PubkeyPackage
 
-	validatorKeyInfo, err := s.validator.FindKeyInfo(dkg.VSet, &s.keyStore)
+	validatorKeyInfo, err := s.validator.FindKeyInfo(dkg.VSet)
 	if err != nil {
 		s.logError("failed to get validator key", err)
 		return
@@ -161,8 +161,9 @@ func (s *SignService) execute(ctx context.Context, dkg *coordinator.DKG) {
 		return
 	}
 
-	// TODO: use Oracle sign
-	s.coordinator.ConnectSigner(s.validator.GetSigner(validatorKeyInfo.KeyID, &s.keyStore, validator.SIGNER_ORACLE))
+	sessionSigner := s.validator.GetSessionSigner()
+	sessionPublicKey := sessionSigner.PublicKey()
+	s.coordinator.ConnectSigner(sessionSigner)
 
 	minSigners, err := helpers.CalcMinSigners(dkg.MaxSigners)
 	if err != nil {
@@ -171,8 +172,8 @@ func (s *SignService) execute(ctx context.Context, dkg *coordinator.DKG) {
 	}
 
 	// Execute signing steps
-	if s.doCommit(validatorKeyInfo, cachedPegout, minSigners) {
-		if s.doSign(ctx, validatorKeyInfo, cachedPegout, minSigners) {
+	if s.doCommit(validatorKeyInfo, cachedPegout, minSigners, sessionPublicKey) {
+		if s.doSign(ctx, validatorKeyInfo, cachedPegout, minSigners, sessionPublicKey) {
 			if s.doAggregate(ctx, validatorKeyInfo, cachedPegout, pubkeyPackage) {
 				s.logPegoutSigned(cachedPegout.ID)
 			}
@@ -184,11 +185,11 @@ func (s *SignService) doCommit(
 	validatorKey *validator.KeyInfo,
 	pegout *CachedPegout,
 	minSigners uint16,
+	sessionPublicKey []byte,
 ) bool {
 	s.logCommitPegout(pegout.ID)
-	identifier := validatorKey.PublicKey
 
-	if pegout.artifacts.HasCommitment(identifier) {
+	if pegout.artifacts.HasCommitment(validatorKey.PublicKey) {
 		s.logMessage("Commitment already exists")
 		if pegout.artifacts.CommitmentsCount() >= minSigners {
 			s.logMessage("Commitment round completed")
@@ -223,7 +224,7 @@ func (s *SignService) doCommit(
 	if _, err := s.coordinator.SendCommitments(
 		pegout.ID,
 		validatorKey.VsetIdx,
-		identifier,
+		sessionPublicKey,
 		commitments,
 	); err != nil {
 		s.logError("failed to send commitments", err)
@@ -239,11 +240,11 @@ func (s *SignService) doSign(
 	validatorKey *validator.KeyInfo,
 	pegout *CachedPegout,
 	minSigners uint16,
+	sessionPublicKey []byte,
 ) bool {
 	s.logSignPegout(pegout.ID)
-	identifier := validatorKey.PublicKey
 
-	if !pegout.artifacts.HasCommitment(identifier) {
+	if !pegout.artifacts.HasCommitment(validatorKey.PublicKey) {
 		s.logErrNoOracleCommitments(pegout.ID)
 		return false
 	}
@@ -253,7 +254,7 @@ func (s *SignService) doSign(
 		return true
 	}
 
-	if pegout.artifacts.HasSigningShare(identifier) {
+	if pegout.artifacts.HasSigningShare(validatorKey.PublicKey) {
 		s.logSigningShareAlreadyExists(pegout.ID)
 		return false
 	}
@@ -296,7 +297,7 @@ func (s *SignService) doSign(
 	if _, err := s.coordinator.SendSigningShare(
 		pegout.ID,
 		validatorKey.VsetIdx,
-		identifier,
+		sessionPublicKey,
 		signShares,
 	); err != nil {
 		s.logSendSigningShareError(pegout.ID, err)

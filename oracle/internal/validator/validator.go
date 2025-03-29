@@ -27,18 +27,12 @@ func NewKeyInfo(keyID []byte, publicKey []byte) KeyInfo {
 
 type SignerType int
 
-const (
-	_ SignerType = iota
-	SIGNER_VALIDATOR
-	SIGNER_ORACLE
-)
-
 type Validator struct {
 	standaloneMode       bool
 	standalonePrivateKey []byte
 	standalonePublicKey  []byte
-	useOracleSign        bool
 	validatorConsole     *ValidatorConsole
+	sessionSigner        *SessionSigner
 }
 
 func NewValidator(cfg *cfg.Cfg) (*Validator, error) {
@@ -46,6 +40,8 @@ func NewValidator(cfg *cfg.Cfg) (*Validator, error) {
 	var standalonePrivateKey []byte = nil
 	var err error = nil
 	var console *ValidatorConsole
+	var sessionSigner *SessionSigner
+
 	if cfg.StandaloneMode {
 		standalonePublicKey, err = hex.DecodeString(cfg.Pubkey)
 		if err != nil {
@@ -63,16 +59,19 @@ func NewValidator(cfg *cfg.Cfg) (*Validator, error) {
 			cfg.ValidatorServerAddr,
 		)
 	}
+
+	sessionSigner = NewSessionSigner(cfg.KeystorePath)
+
 	return &Validator{
 		standaloneMode:       cfg.StandaloneMode,
 		standalonePublicKey:  standalonePublicKey,
 		standalonePrivateKey: standalonePrivateKey,
-		useOracleSign:        false,
 		validatorConsole:     console,
+		sessionSigner:        sessionSigner,
 	}, nil
 }
 
-func (v *Validator) FindKeyInfo(vset coordinator.VSet, keystore *keystore.Keystore) (*KeyInfo, error) {
+func (v *Validator) FindKeyInfo(vset coordinator.VSet) (*KeyInfo, error) {
 	if v.standaloneMode {
 		// find vset idx by public key in dkg.VSet
 		for idx, pubkey := range vset {
@@ -102,30 +101,17 @@ func (v *Validator) FindKeyInfo(vset coordinator.VSet, keystore *keystore.Keysto
 		}
 	}
 
-	// If the key was not found in the validator key set, then try to find it in the oracle session key set
-	for idx, pubkey := range vset {
-		secret := (*keystore).LoadSecret(pubkey)
-		if secret != nil {
-			return &KeyInfo{
-				KeyID:     pubkey,
-				VsetIdx:   idx,
-				PublicKey: pubkey,
-			}, nil
-		}
-	}
-
-	return nil, errors.New("No key was found")
+	return nil, errors.New("no key was found")
 }
 
-func (v *Validator) GetSigner(keyID []byte, keystore *keystore.Keystore, signerType SignerType) signer.Signer {
+func (v *Validator) GetSigner(keyID []byte, keystore *keystore.Keystore) signer.Signer {
 	if v.standaloneMode {
 		return signer.NewKeySigner(hex.EncodeToString(v.standalonePrivateKey))
 	}
 
-	if signerType == SIGNER_ORACLE {
-		return NewOracleSigner(keyID, keystore)
-	}
-
-	// SIGNER_VALIDATOR
 	return NewValidatorSigner(v.validatorConsole, hex.EncodeToString(keyID))
+}
+
+func (v *Validator) GetSessionSigner() *SessionSigner {
+	return v.sessionSigner
 }

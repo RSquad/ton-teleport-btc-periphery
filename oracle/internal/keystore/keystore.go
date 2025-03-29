@@ -5,15 +5,18 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 )
 
 type Keystore interface {
 	LoadSecret(pubkey []byte) []byte
+	LoadSession(dkgUntilTimestamp uint64) []byte
 	LoadNonce(name string) []byte
 	LoadCommitments(name string) []byte
 	LoadSigningShares(name string) [][]byte
 	StoreSecret(pubkey []byte, secret []byte) error
+	StoreSession(dkgUntilTimestamp uint64, secret []byte) error
 	StoreNonce(name string, nonce []byte) error
 	StoreCommitments(name string, commitments []byte) error
 	StoreSigningShares(name string, pkgs [][]byte) error
@@ -30,10 +33,17 @@ func New(rootPath string) (Keystore, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create secrets dir: %w", err)
 	}
+
 	err = os.MkdirAll(filepath.Join(rootPath, "temp"), 0o700)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create temp dir: %w", err)
 	}
+
+	err = os.MkdirAll(filepath.Join(rootPath, "sessions"), 0o700)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create secrets dir: %w", err)
+	}
+
 	return &FileKeystore{rootPath: rootPath}, nil
 }
 
@@ -50,6 +60,11 @@ func (ks *FileKeystore) load(parent string, filename string) []byte {
 func (ks *FileKeystore) LoadSecret(pubkey []byte) []byte {
 	fileName := hex.EncodeToString(pubkey[:32])
 	return ks.load("secrets", fileName)
+}
+
+func (ks *FileKeystore) LoadSession(dkgUntilTimestamp uint64) []byte {
+	fileName := strconv.FormatUint(dkgUntilTimestamp, 10)
+	return ks.load("sessions", fileName)
 }
 
 func (ks *FileKeystore) LoadNonce(name string) []byte {
@@ -85,6 +100,12 @@ func (ks *FileKeystore) LoadSigningShares(name string) [][]byte {
 func (ks *FileKeystore) StoreSecret(pubkey []byte, secret []byte) error {
 	fileName := hex.EncodeToString(pubkey[:32])
 	filePath := filepath.Join(ks.rootPath, "secrets", fileName)
+	return os.WriteFile(filePath, secret, 0o600)
+}
+
+func (ks *FileKeystore) StoreSession(dkgUntilTimestamp uint64, secret []byte) error {
+	fileName := strconv.FormatUint(dkgUntilTimestamp, 10)
+	filePath := filepath.Join(ks.rootPath, "sessions", fileName)
 	return os.WriteFile(filePath, secret, 0o600)
 }
 
