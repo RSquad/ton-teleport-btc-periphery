@@ -6,7 +6,6 @@ import (
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
-	"github.com/xssnick/tonutils-go/ton"
 )
 
 type Fetcher struct {
@@ -24,22 +23,27 @@ func NewFetcher(
 	}
 }
 
-func (f *Fetcher) Work(ctx context.Context) (err error) {
-	logger.DefaultLogStartWork("DKGFetcher")
-	defer logger.DefaultLogFinishWork("DKGFetcher", err)
+func (f *Fetcher) Work(ctx context.Context) error {
+	tick := time.Tick(10 * time.Second)
 	for {
-		dkg, err := f.Fetch(nil)
-		if err != nil {
-			logger.Log.Error().Err(err).Msg("Fetcher failed")
-		} else {
-			if dkg != nil {
-				f.outChan <- dkg
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-tick:
+			dkg, err := f.Fetch()
+			if err != nil {
+				logger.Log.Error().Err(err).
+					Str("component", "DKGFetcher").
+					Msg("fetch failed")
+			} else {
+				if dkg != nil {
+					f.outChan <- dkg
+				}
 			}
 		}
-		time.Sleep(6 * time.Second)
 	}
 }
 
-func (f *Fetcher) Fetch(block *ton.BlockIDExt) (*coordinator.DKG, error) {
-	return f.coordinatorContract.GetDkg(block)
+func (f *Fetcher) Fetch() (*coordinator.DKG, error) {
+	return f.coordinatorContract.GetDkg(nil)
 }

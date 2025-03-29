@@ -25,9 +25,8 @@ func NewTonTxWriter(
 }
 
 func (ew *TonTxWriter) Write(
-	event ton.EventInterface,
+	rawEvent *ton.RawEvent,
 ) (*ent.TonTx, error) {
-	rawEvent := event.GetRaw()
 	return ew.repo.TonTx.Create().
 		SetHash(fmt.Sprintf("%x", rawEvent.TxHash)).
 		SetCreatedAt(rawEvent.TxUtime).

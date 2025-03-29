@@ -7,11 +7,18 @@ import (
 	"github.com/xssnick/tonutils-go/tvm/cell"
 )
 
-func BuildSendRound1Body(ttl int64, validatorIdx uint16, Identifier []byte, round1Package []byte) *cell.Cell {
+func BuildSendRound1Body(
+	ttl int64,
+	validatorIdx uint16,
+	Identifier []byte,
+	round1Package []byte,
+	sessionPublicKey []byte,
+) *cell.Cell {
 	return cell.BeginCell().
 		MustStoreUInt(OpCodeCoordinatorRound1, 32).
 		MustStoreUInt(uint64(time.Now().Unix()+ttl), 32).
 		MustStoreUInt(uint64(validatorIdx), 16).
+		MustStoreSlice(sessionPublicKey, 256).
 		MustStoreRef(
 			cell.BeginCell().
 				MustStoreSlice(Identifier, 256).
@@ -64,7 +71,7 @@ func BuildSendCommitmentsBody(ttl int64, req *CommitmentRequest) *cell.Cell {
 		MustStoreUInt(uint64(req.ValidatorIdx), 16).
 		MustStoreRef(
 			cell.BeginCell().
-				MustStoreSlice(req.Identifier, 32).
+				MustStoreSlice(req.Identifier, 256).
 				MustStoreUInt(req.PegoutID, 64).
 				MustStoreRef(
 					utils.SplitBytesToCells(req.Commitments),
@@ -88,7 +95,7 @@ func BuildSendSigningShareBody(ttl int64, req *SigningShareRequest) *cell.Cell {
 		MustStoreUInt(uint64(req.ValidatorIdx), 16).
 		MustStoreRef(
 			cell.BeginCell().
-				MustStoreSlice(req.Identifier, 32).
+				MustStoreSlice(req.Identifier, 256).
 				MustStoreUInt(req.PegoutID, 64).
 				MustStoreDict(dict).
 				EndCell(),
@@ -100,7 +107,7 @@ func BuildSendSignaturesBody(ttl int64, req *SignaturesRequest) *cell.Cell {
 	dict := cell.NewDict(16)
 
 	for i, signature := range req.Signatures {
-		dict.Set(cell.BeginCell().MustStoreUInt(uint64(i), 64).EndCell(),
+		dict.Set(cell.BeginCell().MustStoreUInt(uint64(i), 16).EndCell(),
 			utils.SplitBytesToCells(signature),
 		)
 	}
@@ -111,8 +118,7 @@ func BuildSendSignaturesBody(ttl int64, req *SignaturesRequest) *cell.Cell {
 		MustStoreUInt(uint64(req.ValidatorIdx), 16).
 		MustStoreRef(
 			cell.BeginCell().
-				MustStoreSlice(req.Identifier, 32).
-				MustStoreUInt(req.PegoutID, 32).
+				MustStoreUInt(req.PegoutID, 64).
 				MustStoreDict(dict).
 				EndCell(),
 		).

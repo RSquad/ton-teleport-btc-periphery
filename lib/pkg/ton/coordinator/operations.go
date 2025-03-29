@@ -25,13 +25,23 @@ func (c *CoordinatorContract) SendStartDKG() (*tlb.Transaction, error) {
 	return tx, err
 }
 
-func (c *CoordinatorContract) SendRound1(validatorIdx uint16, identifier []byte, round1Package []byte) (*tlb.Transaction, error) {
+func (c *CoordinatorContract) SendRound1(
+	validatorIdx uint16,
+	identifier []byte,
+	round1Package []byte,
+	sessionPublicKey []byte,
+) (*tlb.Transaction, error) {
 	return c.sendBodyCell(BuildSendRound1Body(
-		int64(c.ttl.Seconds()), validatorIdx, identifier, round1Package,
+		int64(c.ttl.Seconds()), validatorIdx, identifier, round1Package, sessionPublicKey,
 	))
 }
 
-func (c *CoordinatorContract) SendRound2(validatorIdx uint16, fromIdentifier []byte, toIdentifier []byte, round2Package []byte) (*tlb.Transaction, error) {
+func (c *CoordinatorContract) SendRound2(
+	validatorIdx uint16,
+	fromIdentifier []byte,
+	toIdentifier []byte,
+	round2Package []byte,
+) (*tlb.Transaction, error) {
 	return c.sendBodyCell(BuildSendRound2Body(
 		int64(c.ttl.Seconds()), validatorIdx, fromIdentifier, toIdentifier, round2Package,
 	))
@@ -51,6 +61,12 @@ func (c *CoordinatorContract) SendCommitments(
 	ValidatorIdx uint16,
 	Identifier, Commitments []byte,
 ) (*tlb.Transaction, error) {
+	if len(Commitments) == 0 {
+		return nil, fmt.Errorf("commitments are empty")
+	}
+	if len(Identifier) == 0 {
+		return nil, fmt.Errorf("identifier is empty")
+	}
 	return c.sendBodyCell(BuildSendCommitmentsBody(
 		int64(c.ttl.Seconds()),
 		&CommitmentRequest{PegoutID, ValidatorIdx, Identifier, Commitments},
@@ -72,12 +88,11 @@ func (c *CoordinatorContract) SendSigningShare(
 func (c *CoordinatorContract) SendSignatures(
 	PegoutID uint64,
 	ValidatorIdx uint16,
-	Identifier []byte,
 	Signatures [][]byte,
 ) (*tlb.Transaction, error) {
 	return c.sendBodyCell(BuildSendSignaturesBody(
 		int64(c.ttl.Seconds()),
-		&SignaturesRequest{PegoutID, ValidatorIdx, Identifier, Signatures},
+		&SignaturesRequest{PegoutID, ValidatorIdx, Signatures},
 	))
 }
 

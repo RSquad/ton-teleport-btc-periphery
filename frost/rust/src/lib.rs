@@ -4,10 +4,10 @@ use frost_secp256k1_tr::{
     keys::{
         dkg::{
             part1 as frost_dkg_part1, part2 as frost_dkg_part2, part3 as frost_dkg_part3,
-            round1::{Package as Round1Package, SecretPackage as Round1SecretPackage},
+            round1::Package as Round1Package,
             round2::{Package as Round2Package, SecretPackage as Round2SecretPackage},
         },
-        KeyPackage, PublicKeyPackage,
+        KeyPackage, PublicKeyPackage, Tweak,
     },
     round1::{commit as frost_round1_commit, SigningCommitments, SigningNonces},
     round2::{sign_with_tweak as frost_round2_sign_with_tweak, SignatureShare},
@@ -34,8 +34,12 @@ pub struct Buffer {
 
 impl Buffer {
     fn to_slice<'a>(self) -> &'a [u8] {
-        let slice = unsafe { slice::from_raw_parts(self.data, self.len) };
-        slice
+        if self.data.is_null() {
+            return &[];
+        } else {
+            let slice = unsafe { slice::from_raw_parts(self.data, self.len) };
+            slice
+        }
     }
 }
 
@@ -59,8 +63,10 @@ macro_rules! from_bytes_for {
                 unsafe {
                     let packages = slice::from_raw_parts(ptr, len);
                     for p in packages {
-                        let identifier = Identifier::deserialize(&p.identifier).expect("Cannot deserialize Identifier");
-                        let pkg = $T::from_raw_parts(p.buf, p.len).expect("Cannot deserialize Package");
+                        let identifier = Identifier::deserialize(&p.identifier)
+                            .expect("Cannot deserialize Identifier");
+                        let pkg =
+                            $T::from_raw_parts(p.buf, p.len).expect("Cannot deserialize Package");
                         map.insert(identifier, pkg);
                     }
                 }
@@ -143,9 +149,10 @@ pub extern "C" fn dkg_part2(
     {
         return -1;
     }
-    let sp = from_void(r1_secret);
+    let r1_secret_box = from_void(r1_secret);
     let map = Round1Package::make_map(r1_pkgs_ptr, r1_pkgs_len);
-    match frost_dkg_part2(*sp, &map) {
+    let result = frost_dkg_part2(*r1_secret_box, &map);
+    match result {
         Err(err) => {
             println!("[FROST] error: {}", err);
             return -2;
@@ -193,11 +200,13 @@ pub extern "C" fn dkg_part3(
     {
         return -1;
     }
-    match frost_dkg_part3(
-        &from_void(r2_secret),
-        &Round1Package::make_map(r1_pkgs_ptr, r1_pkgs_len),
-        &Round2Package::make_map(r2_pkgs_ptr, r2_pkgs_len),
-    ) {
+    let r2_secret_box = from_void(r2_secret);
+    let r1_pkgs_map = Round1Package::make_map(r1_pkgs_ptr, r1_pkgs_len);
+    let r2_pkgs_map = Round2Package::make_map(r2_pkgs_ptr, r2_pkgs_len);
+    let result = frost_dkg_part3(&r2_secret_box, &r1_pkgs_map, &r2_pkgs_map);
+    // Prevent r2_secret_box from being freed. It must be freed manually.
+    Box::leak(r2_secret_box);
+    match result {
         Err(err) => {
             println!("[FROST] error: {}", err);
             return -2;
@@ -219,13 +228,12 @@ pub extern "C" fn dkg_part3(
 }
 
 #[no_mangle]
-pub extern "C" fn free_r1_secret(r1_secret: *mut c_void) {
-    let _ = unsafe { Box::from_raw(r1_secret as *mut Round1SecretPackage) };
-}
-
-#[no_mangle]
 pub extern "C" fn free_r2_secret(r2_secret: *mut c_void) {
-    let _ = unsafe { Box::from_raw(r2_secret as *mut Round2SecretPackage) };
+    unsafe {
+        if !r2_secret.is_null() {
+            let _ = Box::from_raw(r2_secret as *mut Round2SecretPackage);
+        }
+    };
 }
 
 #[no_mangle]
@@ -277,12 +285,12 @@ pub extern "C" fn commit(
 
 #[no_mangle]
 pub extern "C" fn sign_with_tweak(
-    // merkle_root: &[u8; 32],
     key_package_buf: Buffer,
     message_buf: Buffer,
     commitments_ptr: *const Pkg,
     commitments_len: usize,
     nonces_buf: Buffer,
+    merkle_root_buf: Buffer,
     signature_share_buf: *mut Buffer,
 ) -> i32 {
     match KeyPackage::from_buf(key_package_buf) {
@@ -298,7 +306,7 @@ pub extern "C" fn sign_with_tweak(
                 ),
                 &SigningNonces::from_buf(nonces_buf).unwrap(),
                 &key_package,
-                None,
+                Some(merkle_root_buf.to_slice()),
             ) {
                 Err(err) => {
                     println!("[FROST] error: {}", err);
@@ -321,13 +329,13 @@ pub extern "C" fn sign_with_tweak(
 
 #[no_mangle]
 pub extern "C" fn aggregate_with_tweak(
-    // merkle_root: &[u8; 32],
     message_buf: Buffer,
     commitments_ptr: *const Pkg,
     commitments_len: usize,
     signature_shares_ptr: *const Pkg,
     signature_shares_len: usize,
     pubkey_package_buf: Buffer,
+    merkle_root_buf: Buffer,
     signature_buf: *mut Buffer,
 ) -> i32 {
     let signing_package = SigningPackage::new(
@@ -335,17 +343,16 @@ pub extern "C" fn aggregate_with_tweak(
         message_buf.to_slice(),
     );
 
-    let signature_shares_map =
-        SignatureShare::make_map(signature_shares_ptr, signature_shares_len);
+    let signature_shares_map = SignatureShare::make_map(signature_shares_ptr, signature_shares_len);
 
-    let aggregate_with_tweak_result = frost_aggregate_with_tweak(
+    let result = frost_aggregate_with_tweak(
         &signing_package,
         &signature_shares_map,
         &PublicKeyPackage::from_buf(pubkey_package_buf).unwrap(),
-        None,
+        Some(merkle_root_buf.to_slice()),
     );
 
-    match aggregate_with_tweak_result {
+    match result {
         Err(err) => {
             println!("[FROST] error: {}", err);
             return -2;
@@ -365,10 +372,10 @@ pub extern "C" fn aggregate_with_tweak(
 
 #[no_mangle]
 pub extern "C" fn verify(
-    // merkle_root: &[u8; 32],
     message_buf: Buffer,
     pubkey_package_buf: Buffer,
     signature_buf: Buffer,
+    merkle_root_buf: Buffer,
 ) -> i32 {
     match Signature::from_buf(signature_buf) {
         Err(err) => {
@@ -377,6 +384,7 @@ pub extern "C" fn verify(
         }
         Ok(signature) => {
             let pubkey = PublicKeyPackage::from_buf(pubkey_package_buf).unwrap();
+            let pubkey = pubkey.tweak(Some(merkle_root_buf.to_slice()));
             match pubkey
                 .verifying_key()
                 .verify(message_buf.to_slice(), &signature)
@@ -400,12 +408,12 @@ pub extern "C" fn extract_public_key_from_package(
         Ok(x) => x,
         Err(_) => return -1,
     };
-    
+
     let key_vec = match pubkey_package.verifying_key().serialize() {
         Ok(x) => x,
         Err(_) => return -2,
     };
-    
+
     unsafe {
         (*public_key).len = key_vec.len();
         (*public_key).data = key_vec.leak().as_ptr();

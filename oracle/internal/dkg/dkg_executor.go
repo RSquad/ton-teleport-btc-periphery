@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/frost"
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
 	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal"
 	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/keystore"
@@ -44,6 +43,15 @@ type ExecutionArtifacts struct {
 	r3 *Round3Result
 }
 
+func (a *ExecutionArtifacts) Cleanup() {
+	if a.r2 != nil && a.r2.secret.ptr != 0 {
+		frost.FreeR2Secret(a.r2.secret.ptr)
+	}
+	a.r1 = nil
+	a.r2 = nil
+	a.r3 = nil
+}
+
 type Executor struct {
 	inChan              chan *coordinator.DKG
 	until               time.Time
@@ -69,80 +77,18 @@ func NewExecutor(
 	}
 }
 
-func (e *Executor) Work(ctx context.Context) (err error) {
-	logger.DefaultLogStartWork("DKGExecutor")
-	defer logger.DefaultLogFinishWork("DKGExecutor", err)
-	for {
-		dkg, ok := <-e.inChan
-		if !ok {
-			return nil
-		}
-		e.Execute(dkg)
-	}
-}
-
-func (e *Executor) startDkgServer(ctx context.Context, endpoint *Endpoint) (err error) {
-	logger.DefaultLogStartWork("DKGServer")
-	defer logger.DefaultLogFinishWork("DKGServer", err)
-
+func (e *Executor) Work(ctx context.Context) error {
 	for {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
-		case request, ok := <-endpoint.CommitRequestCh:
+		case dkg, ok := <-e.inChan:
 			if !ok {
-				continue
+				return fmt.Errorf("channel closed")
 			}
-			nonce, commitments, err := e.Commit(request.publicKey)
-			if err != nil {
-				return err
-			}
-			endpoint.CommitResultCh <- &CommitResult{
-				Nonce:       nonce,
-				Commitments: commitments,
-			}
-
-		case request, ok := <-endpoint.SignRequestCh:
-			if !ok {
-				continue
-			}
-			signingShare, err := e.Sign(request.internalKey, request.tapTweak,
-				request.commitments, request.nonceName, request.message)
-			if err != nil {
-				return err
-			}
-			endpoint.SignResultCh <- &SignResult{
-				signingShare: signingShare,
-			}
+			e.Execute(dkg)
 		}
 	}
-}
-
-func (e *Executor) Sign(
-	publicKey []byte,
-	tapTweak []byte,
-	commitments map[string][]byte,
-	nonceName string,
-	message []byte,
-) ([]byte, error) {
-	secret := e.keystore.LoadSecret(publicKey)
-	if secret == nil {
-		return nil, fmt.Errorf("failed to load secret by key %x", publicKey)
-	}
-	nonce := e.keystore.LoadNonce(nonceName)
-	if nonce == nil {
-		return nil, fmt.Errorf("failed to load nonce by name %s", nonceName)
-	}
-	frostCommitments := helpers.ConvertMapToFrostPackages(commitments)
-	return frost.SignWithTweak(frost.NewPackage(secret), message, frostCommitments, frost.NewPackage(nonce))
-}
-
-func (e *Executor) Commit(publicKey []byte) ([]byte, []byte, error) {
-	secret := e.keystore.LoadSecret(publicKey)
-	if secret == nil {
-		return nil, nil, fmt.Errorf("failed to load secret by key %x", publicKey)
-	}
-	return frost.Commit(frost.NewPackage(secret))
 }
 
 func (e *Executor) Execute(dkg *coordinator.DKG) {
@@ -156,7 +102,7 @@ func (e *Executor) Execute(dkg *coordinator.DKG) {
 
 	if dkg.Until.After(e.until) {
 		e.until = dkg.Until
-		e.artifacts = ExecutionArtifacts{}
+		e.artifacts.Cleanup()
 		e.logNewDKGStarted(dkg)
 	}
 
@@ -220,6 +166,7 @@ func (e *Executor) executeR1(dkg *coordinator.DKG, validatorIdx uint16, localIde
 		validatorIdx,
 		localIdentifier,
 		e.artifacts.r1.pkg,
+		localIdentifier, // sessionPublicKey
 	)
 	if err != nil {
 		e.logSendRound1Package(dkg, err)
@@ -257,19 +204,25 @@ func (e *Executor) executeR2(dkg *coordinator.DKG, validatorIdx uint16, localIde
 		}
 	}
 
+	e.logMessage(dkg, "sending r2 packages...")
 	withErrors := false
-	r2Packages := dkg.GetR2Packages(localIdentifier)
-	for identifierTo := range e.artifacts.r2.pkgs {
-		_, exists := r2Packages[hex.EncodeToString(identifierTo.ToBytes())]
+	// Get r2 packages that are already sent to coordinator.
+	// But only from this oracle to others
+	alreadySentPackages := dkg.GetR2Packages(localIdentifier)
+	// Go through all r2 packages generated locally
+	for identifierTo, r2pkg := range e.artifacts.r2.pkgs {
+		// Check if oracle has already sent this package to coordinator
+		_, exists := alreadySentPackages[hex.EncodeToString(identifierTo.ToBytes())]
 		if !exists {
+			// local r2 package is not sent yet, send it to coordinator
 			_, err := e.coordinatorContract.SendRound2(
 				validatorIdx,
 				localIdentifier,
 				identifierTo.ToBytes(),
-				e.artifacts.r2.pkgs[identifierTo].ToBytes(),
+				r2pkg.ToBytes(),
 			)
 			if err != nil {
-				e.logSendRound2Package(dkg, err)
+				e.logSendRound2Package(dkg, identifierTo.ToBytes(), err)
 				withErrors = true
 			}
 		}
@@ -303,7 +256,6 @@ func (e *Executor) executeR3(dkg *coordinator.DKG, validatorIdx uint16, localIde
 		delete(r1Packages, frost.Identifier(localIdentifier))
 
 		r2Packages := helpers.ConvertMapToFrostPackages(dkg.GetR2Packages(localIdentifier))
-		delete(r2Packages, frost.Identifier(localIdentifier))
 
 		keyPackage, publicKeyPackage, err := frost.DkgPart3(e.artifacts.r2.secret.ptr, r1Packages, r2Packages)
 		if err != nil {

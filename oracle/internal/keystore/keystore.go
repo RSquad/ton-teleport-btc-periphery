@@ -17,6 +17,7 @@ type Keystore interface {
 	StoreNonce(name string, nonce []byte) error
 	StoreCommitments(name string, commitments []byte) error
 	StoreSigningShares(name string, pkgs [][]byte) error
+	Cleanup()
 }
 
 type FileKeystore struct {
@@ -106,4 +107,9 @@ func (ks *FileKeystore) StoreSigningShares(name string, pkgs [][]byte) error {
 	}
 	data := []byte(strings.Join(lines, "\n"))
 	return os.WriteFile(filePath, data, 0o600)
+}
+
+func (ks *FileKeystore) Cleanup() {
+	os.RemoveAll(filepath.Join(ks.rootPath, "temp"))
+	os.MkdirAll(filepath.Join(ks.rootPath, "temp"), 0o700)
 }

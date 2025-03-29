@@ -59,6 +59,8 @@ func HandleTvmError(tvmError error) string {
 		return "R1 is not completed yet"
 	case 128:
 		return "R2 is not completed yet"
+	case 145:
+		return "Commitments threshold is reached"
 	case 147:
 		return "R1 is already completed"
 	case 150:

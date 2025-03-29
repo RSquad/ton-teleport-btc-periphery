@@ -2,7 +2,7 @@ package events
 
 import (
 	"context"
-	"fmt"
+	"strings"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/tontx"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton"
@@ -56,26 +56,19 @@ func (ed *EventDispatcher) handleEvent(rawEvent *ton.RawEvent) error {
 		return ed.formatParserNotFoundError(rawEvent.Addr)
 	}
 
-	event, err := parser.Parse(rawEvent)
-	if err != nil {
-		return err
-	}
-
-	tonTx, err := ed.tonTxWriter.Write(event)
+	tonTx, err := ed.tonTxWriter.Write(rawEvent)
 
 	ok, err := ed.handleTonTxWriteError(err)
 	if !ok {
-		if err != nil {
-			return err
-		}
-		if event.GetEventID() != 0xca444ce6 && event.GetEventID() != 0x27756729 {
+		return err
+	}
+
+	event, err := parser.Parse(rawEvent)
+	if err != nil {
+		if strings.Contains(err.Error(), "unknown event type") {
 			return nil
 		}
-		tonTx, err := ed.tonTxWriter.GetTonTxWithoutRelationsByHash(fmt.Sprintf("%x", event.GetRaw().TxHash))
-		if err != nil {
-			return nil
-		}
-		return ed.eventWriter.Write(tonTx, event)
+		return err
 	}
 
 	return ed.eventWriter.Write(tonTx, event)

@@ -1,4 +1,4 @@
-package pegoutsigner
+package signing
 
 import (
 	"fmt"
@@ -6,6 +6,7 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
+	helpers "github.com/rsquad/ton-teleport-btc-periphery/oracle/internal"
 )
 
 func strPegoutID(pegoutID uint64) string {
@@ -22,6 +23,12 @@ func infoEventWithPegoutID(pegoutID uint64) *zerolog.Event {
 		Str("PegoutId", strPegoutID(pegoutID))
 }
 
+func errorEventWithPegoutID(pegoutID uint64) *zerolog.Event {
+	return logger.Log.Error().
+		Str("component", "SignService").
+		Str("PegoutId", strPegoutID(pegoutID))
+}
+
 func errorEvent() *zerolog.Event {
 	return logger.Log.Error().Str("component", "SignService")
 }
@@ -30,48 +37,48 @@ func (s *SignService) logMessage(msg string) {
 	infoEvent().Msg(msg)
 }
 
-func (s *SignService) logMsgf(format string, v ...interface{}) {
-	infoEvent().Msgf(format, v...)
-}
-
 func (s *SignService) logError(msg string, err error) {
 	errorEvent().Err(err).Msg(msg)
 }
 
 func (s *SignService) logCommitPegout(pegoutID uint64) {
-	infoEventWithPegoutID(pegoutID).Msg("Commit pegout")
+	infoEventWithPegoutID(pegoutID).Msg("commit")
+}
+
+func (s *SignService) logSignPegout(pegoutID uint64) {
+	infoEventWithPegoutID(pegoutID).Msg("sign")
 }
 
 func (s *SignService) logProcessingPegout(pegout *coordinator.PegoutRecord) {
-	infoEventWithPegoutID(pegout.ID).Msgf("Processing pegout with address %s", pegout.PegoutAddress)
+	infoEventWithPegoutID(pegout.ID).Msgf("address %s", pegout.PegoutAddress)
 }
 
 func (s *SignService) logOracleNotValidator(pegoutID uint64) {
-	err := fmt.Errorf("Oracle is not a validator. Cannot participate in signing pegout: %x", pegoutID)
+	err := fmt.Errorf("oracle is not a validator. Cannot participate in signing pegout: %x", pegoutID)
 	errorEvent().Err(err)
 }
 
 func (s *SignService) logErrNullNonceOrCommitments(nonce []byte, commitments []byte, pegoutAddrStr string) {
 	var err error = nil
 	if nonce == nil {
-		err = fmt.Errorf("Failed to load nonce for %s", pegoutAddrStr)
+		err = fmt.Errorf("failed to load nonce for %s", pegoutAddrStr)
 	} else if commitments == nil {
-		err = fmt.Errorf("Failed to load commitments for %s", pegoutAddrStr)
+		err = fmt.Errorf("failed to load commitments for %s", pegoutAddrStr)
 	}
 	errorEvent().Err(err)
 }
 
 func (s *SignService) logErrNoOracleCommitments(pegoutID uint64) {
-	err := fmt.Errorf("Oracle didn't send commitment and cannot participate in signing for pegout %x", pegoutID)
+	err := fmt.Errorf("oracle didn't send commitment and cannot participate in signing for pegout %x", pegoutID)
 	errorEvent().Err(err)
 }
 
 func (s *SignService) logPegoutSigned(pegoutID uint64) {
-	infoEventWithPegoutID(pegoutID).Msg("Pegout signed")
+	infoEventWithPegoutID(pegoutID).Msg("pegout signed")
 }
 
 func (s *SignService) logSigningShareSent(pegoutID uint64) {
-	infoEventWithPegoutID(pegoutID).Msg("Signing share sent")
+	infoEventWithPegoutID(pegoutID).Msg("signing share sent")
 }
 
 func (s *SignService) logGetPrevDKGError(err error) {
@@ -94,6 +101,14 @@ func (s *SignService) logMinimalSharesReached(pegoutID uint64) {
 	infoEventWithPegoutID(pegoutID).Msg("Minimal required number of signing shares is reached")
 }
 
+func (s *SignService) logSigningShareAlreadyExists(pegoutID uint64) {
+	infoEventWithPegoutID(pegoutID).Msg("Signing share already exists")
+}
+
+func (s *SignService) logErrNothingToSign(pegoutID uint64) {
+	errorEventWithPegoutID(pegoutID).Msg("pegout has no signing hashes")
+}
+
 func (s *SignService) logAggregateSignShares(pegoutID uint64) {
 	infoEventWithPegoutID(pegoutID).Msg("Aggregate sign shares")
 }
@@ -108,4 +123,17 @@ func (s *SignService) logSignatureSendError(err error) {
 
 func (s *SignService) logAggregateSignSharesError(err error) {
 	errorEvent().Err(err).Msg("failed to aggregate sign shares")
+}
+
+func (s *SignService) logSendCommitments(pegoutID uint64, commitments []byte) {
+	infoEventWithPegoutID(pegoutID).Msgf("send commitments: %x", commitments)
+}
+
+func (s *SignService) logSendSigningShare(pegoutID uint64, signShares [][]byte) {
+	infoEventWithPegoutID(pegoutID).Msgf("send %d signing shares", len(signShares))
+}
+
+func (s *SignService) logSendSigningShareError(pegoutID uint64, err error) {
+	msg := helpers.HandleTvmError(err)
+	errorEventWithPegoutID(pegoutID).Err(err).Msg("failed to send signing share: " + msg)
 }
