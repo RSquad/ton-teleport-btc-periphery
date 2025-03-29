@@ -8,7 +8,7 @@ import (
 
 	"github.com/rsquad/ton-teleport-btc-periphery/frost"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
-	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal"
+	helpers "github.com/rsquad/ton-teleport-btc-periphery/oracle/internal"
 	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/keystore"
 	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/validator"
 )
@@ -111,22 +111,27 @@ func (e *Executor) Execute(dkg *coordinator.DKG) {
 		e.logDKGProcess(dkg, fmt.Sprintf("Error finding key info: %v", err))
 		return
 	}
+
 	if keyInfo == nil {
 		e.logDKGProcess(dkg, "Oracle is not a future validator. Cannot participate in DKG.")
 		return
 	}
+
 	e.coordinatorContract.ConnectSigner(e.validator.GetSigner(keyInfo.KeyID))
 
-	if e.executeR1(dkg, keyInfo.VsetIdx, keyInfo.PublicKey) {
-		if e.executeR2(dkg, keyInfo.VsetIdx, keyInfo.PublicKey) {
-			if e.executeR3(dkg, keyInfo.VsetIdx, keyInfo.PublicKey) {
+	sessionSigner := e.validator.GetSessionSigner()
+	sessionPublicKey := sessionSigner.PublicKey()
+
+	if e.executeR1(dkg, keyInfo.VsetIdx, keyInfo.PublicKey, sessionPublicKey) {
+		if e.executeR2(dkg, keyInfo.VsetIdx, keyInfo.PublicKey, sessionPublicKey) {
+			if e.executeR3(dkg, keyInfo.VsetIdx, keyInfo.PublicKey, sessionPublicKey) {
 				e.logDKGProcess(dkg, "Successfully completed all DKG rounds")
 			}
 		}
 	}
 }
 
-func (e *Executor) executeR1(dkg *coordinator.DKG, validatorIdx uint16, localIdentifier []byte) bool {
+func (e *Executor) executeR1(dkg *coordinator.DKG, validatorIdx uint16, localIdentifier []byte, sessionPublicKey []byte) bool {
 	e.logExecuteR1(dkg)
 	if dkg.Round1Completed() {
 		e.logDKGProcess(dkg, "R1 completed")
@@ -166,7 +171,7 @@ func (e *Executor) executeR1(dkg *coordinator.DKG, validatorIdx uint16, localIde
 		validatorIdx,
 		localIdentifier,
 		e.artifacts.r1.pkg,
-		localIdentifier, // sessionPublicKey
+		sessionPublicKey,
 	)
 	if err != nil {
 		e.logSendRound1Package(dkg, err)
@@ -176,7 +181,7 @@ func (e *Executor) executeR1(dkg *coordinator.DKG, validatorIdx uint16, localIde
 	return false
 }
 
-func (e *Executor) executeR2(dkg *coordinator.DKG, validatorIdx uint16, localIdentifier []byte) bool {
+func (e *Executor) executeR2(dkg *coordinator.DKG, validatorIdx uint16, localIdentifier []byte, sessionPublicKey []byte) bool {
 	e.logExecuteR2(dkg)
 	if dkg.Round2Completed() {
 		e.logDKGProcess(dkg, "R2 completed")
@@ -217,7 +222,7 @@ func (e *Executor) executeR2(dkg *coordinator.DKG, validatorIdx uint16, localIde
 			// local r2 package is not sent yet, send it to coordinator
 			_, err := e.coordinatorContract.SendRound2(
 				validatorIdx,
-				localIdentifier,
+				sessionPublicKey,
 				identifierTo.ToBytes(),
 				r2pkg.ToBytes(),
 			)
@@ -235,7 +240,7 @@ func (e *Executor) executeR2(dkg *coordinator.DKG, validatorIdx uint16, localIde
 	return false
 }
 
-func (e *Executor) executeR3(dkg *coordinator.DKG, validatorIdx uint16, localIdentifier []byte) bool {
+func (e *Executor) executeR3(dkg *coordinator.DKG, validatorIdx uint16, localIdentifier []byte, sessionPublicKey []byte) bool {
 	e.logExecuteR3(dkg)
 	if dkg.Round3Completed() {
 		e.logDKGProcess(dkg, "R3 completed")
@@ -283,7 +288,7 @@ func (e *Executor) executeR3(dkg *coordinator.DKG, validatorIdx uint16, localIde
 	if _, err := e.coordinatorContract.SendPubkeyPackage(
 		validatorIdx,
 		e.artifacts.r3.publicKey[1:], // skip prefix byte
-		localIdentifier,
+		sessionPublicKey,
 		e.artifacts.r3.publicKeyPackage,
 	); err != nil {
 		e.logSendPubkeyPackageFailed(dkg, err)

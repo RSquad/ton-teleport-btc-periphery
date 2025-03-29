@@ -29,6 +29,7 @@ type Validator struct {
 	standalonePrivateKey []byte
 	standalonePublicKey  []byte
 	validatorConsole     *ValidatorConsole
+	sessionSigner        *SessionSigner
 }
 
 func NewValidator(cfg *cfg.Cfg) (*Validator, error) {
@@ -36,6 +37,8 @@ func NewValidator(cfg *cfg.Cfg) (*Validator, error) {
 	var standalonePrivateKey []byte = nil
 	var err error = nil
 	var console *ValidatorConsole
+	var sessionSigner *SessionSigner
+
 	if cfg.StandaloneMode {
 		standalonePublicKey, err = hex.DecodeString(cfg.Pubkey)
 		if err != nil {
@@ -53,11 +56,15 @@ func NewValidator(cfg *cfg.Cfg) (*Validator, error) {
 			cfg.ValidatorServerAddr,
 		)
 	}
+
+	sessionSigner = NewSessionSigner(cfg.KeystorePath)
+
 	return &Validator{
 		standaloneMode:       cfg.StandaloneMode,
 		standalonePublicKey:  standalonePublicKey,
 		standalonePrivateKey: standalonePrivateKey,
 		validatorConsole:     console,
+		sessionSigner:        sessionSigner,
 	}, nil
 }
 
@@ -75,6 +82,8 @@ func (v *Validator) FindKeyInfo(vset coordinator.VSet) (*KeyInfo, error) {
 		}
 		return nil, errors.New("validator key not found")
 	}
+
+	// Try to get keys from validator console
 	validatorKeys, err := v.validatorConsole.GetValidatorKeys()
 	if err != nil {
 		return nil, err
@@ -96,4 +105,8 @@ func (v *Validator) GetSigner(keyID []byte) signer.Signer {
 		return signer.NewKeySigner(hex.EncodeToString(v.standalonePrivateKey))
 	}
 	return NewValidatorSigner(v.validatorConsole, hex.EncodeToString(keyID))
+}
+
+func (v *Validator) GetSessionSigner() *SessionSigner {
+	return v.sessionSigner
 }
