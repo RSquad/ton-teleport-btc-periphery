@@ -23,14 +23,12 @@ func LoadDKGR3(slice *cell.Slice) (*DKGR3, error) {
 	Count := uint16(slice.MustLoadUInt(16))
 
 	pkgSlice := slice.MustLoadMaybeRef()
-	var pubkeyPackage []byte
+	var Data *PubkeyData
 	if pkgSlice != nil {
-		pubkeyPackage = utils.WriteSlicesToBuffer(pkgSlice)
-	}
-
-	Data := &PubkeyData{
-		PubkeyPackage: pubkeyPackage,
-		InternalKey:   slice.MustLoadSlice(32),
+		Data = &PubkeyData{
+			PubkeyPackage: utils.WriteSlicesToBuffer(pkgSlice.MustLoadRef()),
+			InternalKey:   slice.MustLoadSlice(256),
+		}
 	}
 
 	return &DKGR3{
