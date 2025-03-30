@@ -23,7 +23,7 @@ func NewSessionSigner(keystore keystore.Keystore) *SessionSigner {
 func (s *SessionSigner) OnNewDKG(dkgUntilTimestamp int64) {
 	// Verify
 	if dkgUntilTimestamp == 0 {
-		panic(errors.New("Failed to generate secret, `dkgUntilTimestamp` == 0"))
+		panic(errors.New("failed to generate secret, `dkgUntilTimestamp` == 0"))
 	}
 
 	if s.dkgUntilTimestamp == dkgUntilTimestamp {
@@ -31,7 +31,7 @@ func (s *SessionSigner) OnNewDKG(dkgUntilTimestamp int64) {
 	}
 
 	// Try to load from key storage file
-	secret := s.keystore.LoadSession(dkgUntilTimestamp)
+	secret := s.keystore.LoadSessionTS(dkgUntilTimestamp)
 	if secret != nil {
 		s.secret = secret
 		s.dkgUntilTimestamp = dkgUntilTimestamp
@@ -41,16 +41,22 @@ func (s *SessionSigner) OnNewDKG(dkgUntilTimestamp int64) {
 	// Generate new key pair
 	_, secret, err := ed25519.GenerateKey(rand.Reader)
 	if err != nil {
-		panic(fmt.Errorf("Failed to generate secret. %v", err))
+		panic(fmt.Errorf("failed to generate secret. %v", err))
 	}
 
 	s.secret = secret
 	s.dkgUntilTimestamp = dkgUntilTimestamp
 
-	// Save to file
-	err = s.keystore.StoreSession(dkgUntilTimestamp, s.secret)
+	// Save to file (with dkgUntilTimestamp name)
+	err = s.keystore.StoreSessionTS(dkgUntilTimestamp, s.secret)
 	if err != nil {
-		panic(fmt.Errorf("Failed to save secret. %v", err))
+		panic(fmt.Errorf("failed to save secret. %v", err))
+	}
+
+	// Save to file (with PublicKey name)
+	err = s.keystore.StoreSessionPubKey(s.PublicKey(), s.secret)
+	if err != nil {
+		panic(fmt.Errorf("failed to save secret. %v", err))
 	}
 }
 
@@ -59,10 +65,20 @@ func (s *SessionSigner) SignCell(cell *cell.Cell) []byte {
 }
 
 func (s *SessionSigner) PublicKey() []byte {
-	data, ok := s.secret.Public().([]byte)
+	data, ok := s.secret.Public().(ed25519.PublicKey)
 	if !ok {
-		panic("Failed to get public key")
+		panic("failed to get public key")
 	}
 
 	return data
+}
+
+func (s *SessionSigner) TryLoadFromFile(publicKey []byte) bool {
+	secret := s.keystore.LoadSessionPubKey(publicKey)
+	if secret != nil {
+		s.secret = secret
+		return true
+	}
+
+	return false
 }

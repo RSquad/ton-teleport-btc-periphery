@@ -144,7 +144,7 @@ func (e *Executor) executeR1(dkg *coordinator.DKG, validatorIdx uint16, sessionP
 	}
 
 	packages := dkg.GetR1Packages()
-	localIdentifier := frost.GetIdentifier(validatorIdx)
+	localIdentifier := helpers.ValidatorIdxToFrost(validatorIdx)
 	if packages[hex.EncodeToString(localIdentifier)] != nil {
 		e.logDKGProcess(dkg, "R1 package already stored in DKG")
 		return false
@@ -194,7 +194,7 @@ func (e *Executor) executeR2(dkg *coordinator.DKG, validatorIdx uint16) bool {
 		return true
 	}
 
-	localIdentifier := frost.GetIdentifier(validatorIdx)
+	localIdentifier := helpers.ValidatorIdxToFrost(validatorIdx)
 
 	if e.artifacts.r2 == nil {
 		if e.artifacts.r1 == nil {
@@ -210,6 +210,12 @@ func (e *Executor) executeR2(dkg *coordinator.DKG, validatorIdx uint16) bool {
 		if err != nil {
 			if maliciousValidatorIdx != nil {
 				e.logError(dkg, "Part2 failed. Malicious validator found.", err)
+
+				e.artifacts.r2 = &Round2Result{
+					pkgs:                  nil,
+					secret:                NewSecret(0),
+					maliciousValidatorIdx: maliciousValidatorIdx,
+				}
 			} else {
 				e.logError(dkg, "Part2 failed", err)
 			}
@@ -218,7 +224,7 @@ func (e *Executor) executeR2(dkg *coordinator.DKG, validatorIdx uint16) bool {
 		e.artifacts.r2 = &Round2Result{
 			pkgs:                  r2Packages,
 			secret:                NewSecret(r2SecretPtr),
-			maliciousValidatorIdx: maliciousValidatorIdx,
+			maliciousValidatorIdx: nil,
 		}
 	}
 
@@ -301,7 +307,7 @@ func (e *Executor) executeR3(dkg *coordinator.DKG, validatorIdx uint16) bool {
 		return false
 	}
 
-	localIdentifier := frost.GetIdentifier(validatorIdx)
+	localIdentifier := helpers.ValidatorIdxToFrost(validatorIdx)
 
 	if e.artifacts.r3 == nil {
 		if e.artifacts.r2 == nil {
@@ -318,6 +324,13 @@ func (e *Executor) executeR3(dkg *coordinator.DKG, validatorIdx uint16) bool {
 		if err != nil {
 			if maliciousValidatorIdx != nil {
 				e.logError(dkg, "Part2 failed. Malicious validator found.", err)
+
+				e.artifacts.r3 = &Round3Result{
+					secretPackage:         nil,
+					publicKeyPackage:      nil,
+					publicKey:             nil,
+					maliciousValidatorIdx: maliciousValidatorIdx,
+				}
 			} else {
 				e.logDKGProcess(dkg, fmt.Sprintf("R3 failed: %v", err))
 			}
@@ -333,7 +346,7 @@ func (e *Executor) executeR3(dkg *coordinator.DKG, validatorIdx uint16) bool {
 			secretPackage:         keyPackage,
 			publicKeyPackage:      publicKeyPackage,
 			publicKey:             publicKey,
-			maliciousValidatorIdx: maliciousValidatorIdx,
+			maliciousValidatorIdx: nil,
 		}
 		err = e.keystore.StoreSecret(publicKey[1:], keyPackage)
 		if err != nil {

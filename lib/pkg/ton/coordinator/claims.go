@@ -1,7 +1,6 @@
 package coordinator
 
 import (
-	"errors"
 	"math/big"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/parseddict"
@@ -34,11 +33,6 @@ type DKGClaims struct {
 func LoadDKGClaims(slice *cell.Slice) (*DKGClaims, error) {
 	Mask := slice.MustLoadBigUInt(256)
 	Count := uint16(slice.MustLoadUInt(16))
-
-	claimsSlice := slice.MustLoadMaybeRef()
-	if claimsSlice != nil {
-		return nil, errors.New("claimsSlice is nil")
-	}
 
 	claimsDict := slice.MustLoadDict(16)
 	Counters, err := NewDKGClaimcounters(claimsDict)

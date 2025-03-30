@@ -71,8 +71,8 @@ func NewValidator(cfg *cfg.Cfg, keystore keystore.Keystore) (*Validator, error) 
 
 func (v *Validator) FindKeyInfo(vset coordinator.VSet) (*KeyInfo, error) {
 	if v.standaloneMode {
-		// find vset idx by public key in dkg.VSet
 		for idx, pubkey := range vset {
+			// Standalone
 			if bytes.Equal(pubkey, v.standalonePublicKey) {
 				return &KeyInfo{
 					KeyID:     v.standalonePublicKey,
@@ -81,17 +81,10 @@ func (v *Validator) FindKeyInfo(vset coordinator.VSet) (*KeyInfo, error) {
 				}, nil
 			}
 		}
-		return nil, errors.New("validator key not found")
 	}
 
-	// Try to get keys from validator console
-	validatorKeys, err := v.validatorConsole.GetValidatorKeys()
-	if err != nil {
-		return nil, err
-	}
-
+	// Search in session
 	for idx, pubkey := range vset {
-		// Search in session
 		sessionPublicKey := v.sessionSigner.PublicKey()
 		if bytes.Equal(pubkey, sessionPublicKey) {
 			return &KeyInfo{
@@ -100,13 +93,35 @@ func (v *Validator) FindKeyInfo(vset coordinator.VSet) (*KeyInfo, error) {
 				PublicKey: sessionPublicKey,
 			}, nil
 		}
+	}
 
-		// Search in validators
-		for _, keyInfo := range validatorKeys {
-			if bytes.Equal(pubkey, keyInfo.PublicKey) {
-				keyInfo.VsetIdx = idx
-				return &keyInfo, nil
+	if !v.standaloneMode {
+		// Try to get keys from validator console
+		validatorKeys, err := v.validatorConsole.GetValidatorKeys()
+		if err != nil {
+			return nil, err
+		}
+
+		for idx, pubkey := range vset {
+			// Search in validators
+			for _, keyInfo := range validatorKeys {
+				if bytes.Equal(pubkey, keyInfo.PublicKey) {
+					keyInfo.VsetIdx = idx
+					return &keyInfo, nil
+				}
 			}
+		}
+	}
+
+	// Try searching in the previous session keys
+	for idx, pubkey := range vset {
+		ok := v.sessionSigner.TryLoadFromFile(pubkey)
+		if ok {
+			return &KeyInfo{
+				KeyID:     pubkey,
+				VsetIdx:   idx,
+				PublicKey: pubkey,
+			}, nil
 		}
 	}
 
@@ -114,13 +129,13 @@ func (v *Validator) FindKeyInfo(vset coordinator.VSet) (*KeyInfo, error) {
 }
 
 func (v *Validator) GetSigner(keyID []byte) signer.Signer {
-	if v.standaloneMode {
+	// Standalone
+	if bytes.Equal(keyID, v.standalonePublicKey) {
 		return signer.NewKeySigner(hex.EncodeToString(v.standalonePrivateKey))
 	}
 
 	// Session signer
-	sessionPublicKey := v.sessionSigner.PublicKey()
-	if bytes.Equal(keyID, sessionPublicKey) {
+	if bytes.Equal(keyID, v.sessionSigner.PublicKey()) {
 		return v.sessionSigner
 	}
 

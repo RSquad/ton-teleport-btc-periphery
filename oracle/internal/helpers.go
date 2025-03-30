@@ -69,3 +69,7 @@ func HandleTvmError(tvmError error) string {
 		return fmt.Sprintf("Unknown error: %d", exitCode)
 	}
 }
+
+func ValidatorIdxToFrost(validatorIdx uint16) []byte {
+	return frost.GetIdentifier(validatorIdx | 0x80)
+}
