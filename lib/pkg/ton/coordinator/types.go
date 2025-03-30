@@ -11,13 +11,15 @@ import (
 type DKG struct {
 	Status     DKGStatus
 	VSet       VSet
+	VsetMask   []byte
 	MaxSigners uint16
 	R1         *DKGR1
 	R2         *DKGR2
 	R3         *DKGR3
-	Until      time.Time
+	Claims     *DKGClaims
 	CfgHash    []byte
 	Attempts   uint64
+	Until      time.Time
 }
 
 type DKGRoundState struct {
@@ -28,12 +30,10 @@ type DKGRoundState struct {
 type DKGStatus uint64
 
 const (
-	DKGStatusFinished           DKGStatus = 0
-	DKGStatusInProgress         DKGStatus = 1
-	DKGStatusPart1Finished      DKGStatus = 2
-	DKGStatusPart2Finished      DKGStatus = 3
-	DKGStatusPart2ClaimFinished DKGStatus = 4
-	DKGStatusPart3ClaimFinished DKGStatus = 5
+	DKGStatusFinished      DKGStatus = 0
+	DKGStatusInProgress    DKGStatus = 1
+	DKGStatusPart1Finished DKGStatus = 2
+	DKGStatusPart2Finished DKGStatus = 3
 )
 
 func (s DKGStatus) String() string {
@@ -46,10 +46,6 @@ func (s DKGStatus) String() string {
 		return "PART1_FINISHED"
 	case DKGStatusPart2Finished:
 		return "PART2_FINISHED"
-	case DKGStatusPart2ClaimFinished:
-		return "PART2_CLAIM_FINISHED"
-	case DKGStatusPart3ClaimFinished:
-		return "PART3_CLAIM_FINISHED"
 	default:
 		return "UNKNOWN"
 	}
@@ -73,18 +69,12 @@ func (dkg *DKG) Round2Completed() bool {
 		dkg.Status >= DKGStatusPart2Finished
 }
 
-func (dkg *DKG) Round2ClaimCompleted() bool {
-	return dkg.Status == DKGStatusFinished ||
-		dkg.Status >= DKGStatusPart2ClaimFinished
-}
-
-func (dkg *DKG) Round3ClaimCompleted() bool {
-	return dkg.Status == DKGStatusFinished ||
-		dkg.Status >= DKGStatusPart3ClaimFinished
-}
-
 func (dkg *DKG) Round3Completed() bool {
 	return dkg.Status == DKGStatusFinished
+}
+
+func (dkg *DKG) ClaimCompleted(validatorIdx uint16) bool {
+	return dkg.Claims.Mask.Bit(int(validatorIdx)) > 0
 }
 
 // CommitmentRequest represents a request to send commitments

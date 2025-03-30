@@ -76,24 +76,24 @@ func DkgPart2(
 	pkgs, pin := makeCPackageSlice(round1Packages)
 	secret := unsafe.Pointer(nil)
 	r2Packages := unsafe.Pointer(nil)
-	r2MaliciousValidatorIdx := make([]byte, 32)
+	r2CulpritIdx := make([]byte, 32)
 	r2PackagesLen := C.dkg_part2(
 		unsafe.Pointer(r1Secret),
 		(*C.Pkg)(&pkgs[0]),
 		C.size_t(len(pkgs)),
 		(**C.Pkg)(unsafe.Pointer(&r2Packages)),
 		&secret,
-		(*[32]C.uint8_t)(unsafe.Pointer(&r2MaliciousValidatorIdx[0])),
+		(*[32]C.uint8_t)(unsafe.Pointer(&r2CulpritIdx[0])),
 	)
 	pin.Unpin()
 	round2Packages := make(map[Identifier]Package)
 
 	if r2PackagesLen <= 0 {
 		if r2PackagesLen != -3 {
-			r2MaliciousValidatorIdx = nil
+			r2CulpritIdx = nil
 		}
 
-		return round2Packages, 0, r2MaliciousValidatorIdx, fmt.Errorf("dkg_part2 error %d", r2PackagesLen)
+		return round2Packages, 0, r2CulpritIdx, fmt.Errorf("dkg_part2 error %d", r2PackagesLen)
 	}
 	pkgs = unsafe.Slice((*C.Pkg)(r2Packages), r2PackagesLen)
 	for _, v := range pkgs {
@@ -118,7 +118,7 @@ func DkgPart3(
 	secretPkgLen := C.size_t(0)
 	publicPkgPtr := unsafe.Pointer(nil)
 	publicPkgLen := C.size_t(0)
-	r3MaliciousValidatorIdx := make([]byte, 32)
+	r3CulpritIdx := make([]byte, 32)
 	ret := C.dkg_part3(
 		unsafe.Pointer(r2Secret),
 		(*C.Pkg)(&r1Pkgs[0]),
@@ -129,7 +129,7 @@ func DkgPart3(
 		&publicPkgLen,
 		(**C.uint8_t)(unsafe.Pointer(&secretPkgPtr)),
 		&secretPkgLen,
-		(*[32]C.uint8_t)(unsafe.Pointer(&r3MaliciousValidatorIdx[0])),
+		(*[32]C.uint8_t)(unsafe.Pointer(&r3CulpritIdx[0])),
 	)
 
 	pin1.Unpin()
@@ -137,10 +137,10 @@ func DkgPart3(
 
 	if ret < 0 {
 		if ret != -3 {
-			r3MaliciousValidatorIdx = nil
+			r3CulpritIdx = nil
 		}
 
-		return nil, nil, r3MaliciousValidatorIdx, fmt.Errorf("%d", ret)
+		return nil, nil, r3CulpritIdx, fmt.Errorf("%d", ret)
 	}
 
 	publicKeyPackage := make([]byte, publicPkgLen)

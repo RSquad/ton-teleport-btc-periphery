@@ -145,7 +145,7 @@ pub extern "C" fn dkg_part2(
     r1_pkgs_len: usize,
     r2_pkgs_ptr: *mut *const Pkg,
     r2_secret: *mut *const c_void,
-    r2_malicious_validator_idx_out: &mut [u8; 32],
+    r2_culprit_idx_out: &mut [u8; 32],
 ) -> i32 {
     if r1_secret.is_null() || r1_pkgs_ptr.is_null() || r2_pkgs_ptr.is_null() || r2_secret.is_null()
     {
@@ -164,7 +164,7 @@ pub extern "C" fn dkg_part2(
             }
 
             unsafe {
-                ptr::copy_nonoverlapping(culprit_data.as_ptr(), r2_malicious_validator_idx_out.as_mut_ptr(), 32);
+                ptr::copy_nonoverlapping(culprit_data.as_ptr(), r2_culprit_idx_out.as_mut_ptr(), 32);
             }
 
             return -3;
@@ -207,7 +207,7 @@ pub extern "C" fn dkg_part3(
     public_key_pkg_len: *mut usize,
     secret_key_pkg_ptr: *mut *const u8,
     secret_key_pkg_len: *mut usize,
-    r2_malicious_validator_idx_out: &mut [u8; 32],
+    r3_culprit_idx_out: &mut [u8; 32],
 ) -> i32 {
     if public_key_pkg_ptr.is_null()
         || secret_key_pkg_ptr.is_null()
@@ -235,7 +235,7 @@ pub extern "C" fn dkg_part3(
                     }
 
                     unsafe {
-                        ptr::copy_nonoverlapping(culprit_data.as_ptr(), r2_malicious_validator_idx_out.as_mut_ptr(), 32);
+                        ptr::copy_nonoverlapping(culprit_data.as_ptr(), r3_culprit_idx_out.as_mut_ptr(), 32);
                     }
 
                     return -3;

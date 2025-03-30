@@ -255,7 +255,7 @@ func (e *Executor) executeR2(dkg *coordinator.DKG, validatorIdx uint16) bool {
 
 func (e *Executor) executeClaimR2(dkg *coordinator.DKG, validatorIdx uint16) bool {
 	e.logExecuteR2Claim(dkg)
-	if dkg.Round2ClaimCompleted() {
+	if dkg.ClaimCompleted(validatorIdx) {
 		e.logDKGProcess(dkg, "R2 claim completed")
 		return true
 	}
@@ -355,7 +355,7 @@ func (e *Executor) executeR3(dkg *coordinator.DKG, validatorIdx uint16) bool {
 
 func (e *Executor) executeClaimR3(dkg *coordinator.DKG, validatorIdx uint16) bool {
 	e.logExecuteR3Claim(dkg)
-	if dkg.Round3ClaimCompleted() {
+	if dkg.ClaimCompleted(validatorIdx) {
 		e.logDKGProcess(dkg, "R3 claim completed")
 		return true
 	}

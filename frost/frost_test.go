@@ -100,10 +100,10 @@ func TestDKG(t *testing.T) {
 		sender, _ := DecodeIdentifier(identifiers[i])
 		secret := r1Secrets[*sender]
 		delete(r1Secrets, *sender)
-		r2Packages, r2s, maliciousValidatorIdx, err := DkgPart2(secret, receivedR1Packages[*sender])
+		r2Packages, r2s, culpritIdx, err := DkgPart2(secret, receivedR1Packages[*sender])
 		if err != nil {
-			if maliciousValidatorIdx != nil {
-				t.Error(fmt.Errorf("Malicious validator: %v", maliciousValidatorIdx))
+			if culpritIdx != nil {
+				t.Error(fmt.Errorf("culprit idx: %v", culpritIdx))
 			} else {
 				t.Error(err)
 			}
@@ -124,14 +124,14 @@ func TestDKG(t *testing.T) {
 	pubkeyPackages := make(map[Identifier]Package)
 	for i := uint16(0); i < maxSigners; i++ {
 		sender, _ := DecodeIdentifier(identifiers[i])
-		keyPackage, publicKeyPackage, maliciousValidatorIdx, err := DkgPart3(
+		keyPackage, publicKeyPackage, culpritIdx, err := DkgPart3(
 			r2Secrets[*sender],
 			receivedR1Packages[*sender],
 			receivedR2Packages[*sender],
 		)
 		if err != nil {
-			if maliciousValidatorIdx != nil {
-				t.Error(fmt.Errorf("Malicious validator: %v", maliciousValidatorIdx))
+			if culpritIdx != nil {
+				t.Error(fmt.Errorf("culprit idx: %v", culpritIdx))
 			} else {
 				t.Error(err)
 			}
