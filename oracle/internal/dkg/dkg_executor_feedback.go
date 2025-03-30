@@ -72,8 +72,16 @@ func (e *Executor) logExecuteR2(dkg *coordinator.DKG) {
 	e.logMessage(dkg, "execute R2")
 }
 
+func (e *Executor) logExecuteR2Claim(dkg *coordinator.DKG) {
+	e.logMessage(dkg, "execute R2 claim")
+}
+
 func (e *Executor) logExecuteR3(dkg *coordinator.DKG) {
 	e.logMessage(dkg, "execute R3")
+}
+
+func (e *Executor) logExecuteR3Claim(dkg *coordinator.DKG) {
+	e.logMessage(dkg, "execute R3 claim")
 }
 
 func (e *Executor) logSendRound1Package(dkg *coordinator.DKG, err error) {
@@ -86,6 +94,20 @@ func (e *Executor) logSendRound2Package(dkg *coordinator.DKG, identifierTo []byt
 	errorEventWithDkg(dkg).
 		Str("to", hex.EncodeToString(identifierTo)).
 		Msg("failed to send round2 package: " + msg)
+}
+
+func (e *Executor) logSendClaimPackage(dkg *coordinator.DKG, maliciousValidatorIdx []byte, err error) {
+	msg := helpers.HandleTvmError(err)
+
+	maliciousValidatorIdxStr := "NO"
+
+	if maliciousValidatorIdx != nil {
+		maliciousValidatorIdxStr = hex.EncodeToString(maliciousValidatorIdx)
+	}
+
+	errorEventWithDkg(dkg).
+		Str("malicious validator idx: ", maliciousValidatorIdxStr).
+		Msg("failed to send claim package: " + msg)
 }
 
 func (e *Executor) logSendPubkeyPackageFailed(dkg *coordinator.DKG, err error) {

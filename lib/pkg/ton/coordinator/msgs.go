@@ -1,6 +1,7 @@
 package coordinator
 
 import (
+	"encoding/binary"
 	"time"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
@@ -44,6 +45,15 @@ func BuildSendRound2Body(ttl int64, validatorIdx uint16, fromIdentifier []byte, 
 				).
 				EndCell(),
 		).
+		EndCell()
+}
+
+func BuildSendClaimBody(ttl int64, validatorIdx uint16, maliciousValidatorIdx []byte) *cell.Cell {
+	return cell.BeginCell().
+		MustStoreUInt(OpCodeCoordinatorDkgClaim, 32).
+		MustStoreUInt(uint64(time.Now().Unix()+ttl), 32).
+		MustStoreUInt(uint64(validatorIdx), 16).
+		MustStoreUInt(uint64(binary.BigEndian.Uint16(maliciousValidatorIdx[30:32])), 16).
 		EndCell()
 }
 

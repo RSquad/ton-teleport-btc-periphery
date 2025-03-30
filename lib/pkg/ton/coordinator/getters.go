@@ -19,6 +19,7 @@ const (
 	OpCodeCoordinatorRound1           = 0x0000eaea
 	OpCodeCoordinatorRound2           = 0x0000bb50
 	OpCodeCoordinatorRound3           = 0x00008bc6
+	OpCodeCoordinatorDkgClaim         = 0x0000f387
 	OpCodeCoordinatorSendCommitments  = 0x58e40000
 	OpCodeCoordinatorSendSigningShare = 0x706b0000
 	OpCodeCoordinatorSendSignature    = 0xd0720000

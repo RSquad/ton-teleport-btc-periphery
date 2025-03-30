@@ -28,10 +28,12 @@ type DKGRoundState struct {
 type DKGStatus uint64
 
 const (
-	DKGStatusFinished      DKGStatus = 0
-	DKGStatusInProgress    DKGStatus = 1
-	DKGStatusPart1Finished DKGStatus = 2
-	DKGStatusPart2Finished DKGStatus = 3
+	DKGStatusFinished           DKGStatus = 0
+	DKGStatusInProgress         DKGStatus = 1
+	DKGStatusPart1Finished      DKGStatus = 2
+	DKGStatusPart2Finished      DKGStatus = 3
+	DKGStatusPart2ClaimFinished DKGStatus = 4
+	DKGStatusPart3ClaimFinished DKGStatus = 5
 )
 
 func (s DKGStatus) String() string {
@@ -44,6 +46,10 @@ func (s DKGStatus) String() string {
 		return "PART1_FINISHED"
 	case DKGStatusPart2Finished:
 		return "PART2_FINISHED"
+	case DKGStatusPart2ClaimFinished:
+		return "PART2_CLAIM_FINISHED"
+	case DKGStatusPart3ClaimFinished:
+		return "PART3_CLAIM_FINISHED"
 	default:
 		return "UNKNOWN"
 	}
@@ -65,6 +71,16 @@ func (dkg *DKG) Round1Completed() bool {
 func (dkg *DKG) Round2Completed() bool {
 	return dkg.Status == DKGStatusFinished ||
 		dkg.Status >= DKGStatusPart2Finished
+}
+
+func (dkg *DKG) Round2ClaimCompleted() bool {
+	return dkg.Status == DKGStatusFinished ||
+		dkg.Status >= DKGStatusPart2ClaimFinished
+}
+
+func (dkg *DKG) Round3ClaimCompleted() bool {
+	return dkg.Status == DKGStatusFinished ||
+		dkg.Status >= DKGStatusPart3ClaimFinished
 }
 
 func (dkg *DKG) Round3Completed() bool {
