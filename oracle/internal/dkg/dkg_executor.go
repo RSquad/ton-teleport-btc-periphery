@@ -211,11 +211,11 @@ func (e *Executor) executeR2(dkg *coordinator.DKG, validatorIdx uint16) bool {
 			if maliciousValidatorIdx != nil {
 				e.logError(dkg, "Part2 failed. Malicious validator found.", err)
 
-				e.artifacts.r2 = &Round2Result{
-					pkgs:                  nil,
-					secret:                NewSecret(0),
-					maliciousValidatorIdx: maliciousValidatorIdx,
-				}
+				//e.artifacts.r2 = &Round2Result{
+				//	pkgs:                  nil,
+				//	secret:                NewSecret(0),
+				//	maliciousValidatorIdx: maliciousValidatorIdx,
+				//}
 			} else {
 				e.logError(dkg, "Part2 failed", err)
 			}
