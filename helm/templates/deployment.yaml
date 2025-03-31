@@ -1,3 +1,4 @@
+{{- if or (not .Values.deploymentType) (eq .Values.deploymentType "Deployment") }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -35,3 +36,4 @@ spec:
           {{- end }}
       imagePullSecrets:
         - name: docker-registry-creds
+{{- end }}

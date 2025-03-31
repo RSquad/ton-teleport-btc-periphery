@@ -152,15 +152,13 @@ jobs:
             if [ -f "$FILE" ]; then
               ADDITIONAL_VALUES="-f $FILE"
             fi
-            helm upgrade --install "${app}-${STAGE}" "./helm" \
+            helm template  "${app}" "./helm" \
               --namespace "${APP_NAMESPACE}" \
               --set image.repository="$DOCKER_REGISTRY_URL/${app}-${STAGE}" \
               --set image.tag="$SHORT_SHA" \
-              --set app.name="${app}-${STAGE}" \
+              --set app.name="${app}" \
               --set configMapName="envs-config" \
               $SECRET_PARAM \
-              --atomic --timeout 5m \
-              --history-max 2 \
               $ADDITIONAL_VALUES &
             pids[$app]=$!
           done
@@ -176,7 +174,7 @@ jobs:
             echo "One or more deployments failed. Rolling back entire stack..."
             for app in $(echo "$APPS" | jq -r '.[]'); do
               echo "Rolling back $app..."
-              if ! helm rollback "${app}-${STAGE}" 1; then
+              if ! helm rollback "${app}-${STAGE}" --namespace "${APP_NAMESPACE} 1; then
                 echo "Rollback not possible for $app"
               fi
             done

@@ -5,6 +5,7 @@ on:
     branches:
       - develop
       - sandbox
+      - oracle_automation
     paths-ignore:
       - '**/*.md'
 
@@ -14,6 +15,16 @@ jobs:
     uses: ./.github/workflows/build-and-deploy.yml
     with:
       APPS: '["indexer", "relayer"]'
+      STAGE: develop
+      APP_NAMESPACE: ton-teleport-dev
+    secrets:
+      KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
+
+  automation:
+    if: github.ref == 'refs/heads/oracle_automation'
+    uses: ./.github/workflows/build-and-deploy.yml
+    with:
+      APPS: '["indexer", "relayer", "oracle"]'
       STAGE: develop
       APP_NAMESPACE: ton-teleport-dev
     secrets:

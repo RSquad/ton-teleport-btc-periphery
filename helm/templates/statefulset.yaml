@@ -1,4 +1,4 @@
-{{- if eq .Values.deploymentType "StatefulSet" }}
+{{- if and .Values.deploymentType (eq .Values.deploymentType "StatefulSet") }}
 {{- range $i, $_ := until (.Values.replicaCount | int) }}
 ---
 apiVersion: apps/v1
@@ -23,23 +23,22 @@ spec:
       containers:
         - name: oracle
           image: {{ .Values.image.repository }}:{{ .Values.image.tag | default "latest" }}
-          imagePullPolicy: {{ $.Values.image.pullPolicy | default "IfNotPresent" }}
+          imagePullPolicy: {{ .Values.image.pullPolicy | default "IfNotPresent" }}
           {{- if or .Values.configMapName .Values.secretName }}
           env:
             {{- if .Values.configMapName }}
             - configMapRef:
                 name: {{ .Values.configMapName }}
             {{- end }}
-            - name: {{ .Values.envNames.pubkey }}
+            {{- if .Values.secretName }}
+            {{- range $key, $name := .Values.SecretNames }}
+            - name: {{ $name }}
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.secretName }}
-                  key: {{ .Values.envNames.pubkey }}-{{ $i }}
-            - name: {{ .Values.envNames.secret }}
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.secretName }}
-                  key: {{ .Values.envNames.secret }}-{{ $i }}
+                  name: {{ $secret }}
+                  key: {{ $name }}-{{ $i }}
+            {{- end }}
+            {{- end }}
           {{- end }}
           volumeMounts:
             - name: data
