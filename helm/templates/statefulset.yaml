@@ -1,0 +1,59 @@
+{{- if eq .Values.deploymentType "StatefulSet" }}
+{{- range $i, $_ := until (.Values.replicaCount | int) }}
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "app.name" . }}-{{ $i }}
+  labels:
+    app: {{ include "app.name" . }}
+    instance: "{{ $i }}"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ include "app.name" . }}
+      instance: "{{ $i }}"
+  template:
+    metadata:
+      labels:
+        app: {{ include "app.name" . }}
+        instance: "{{ $i }}"
+    spec:
+      containers:
+        - name: oracle
+          image: {{ .Values.image.repository }}:{{ .Values.image.tag | default "latest" }}
+          imagePullPolicy: {{ $.Values.image.pullPolicy | default "IfNotPresent" }}
+          {{- if or .Values.configMapName .Values.secretName }}
+          env:
+            {{- if .Values.configMapName }}
+            - configMapRef:
+                name: {{ .Values.configMapName }}
+            {{- end }}
+            - name: {{ .Values.envNames.pubkey }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secretName }}
+                  key: {{ .Values.envNames.pubkey }}-{{ $i }}
+            - name: {{ .Values.envNames.secret }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secretName }}
+                  key: {{ .Values.envNames.secret }}-{{ $i }}
+          {{- end }}
+          volumeMounts:
+            - name: data
+              mountPath: /home/apps/oracle/data
+      imagePullSecrets:
+        - name: docker-registry-creds
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        storageClassName: {{ $.Values.storage.class }}
+        resources:
+          requests:
+            storage: {{ $.Values.storage.size }}
+{{- end }}
+{{- end }}

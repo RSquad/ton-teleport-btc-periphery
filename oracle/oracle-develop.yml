@@ -1,0 +1,9 @@
+deploymentType: StatefulSet
+replicaCount: 3
+
+storage:
+  size: 100Mi
+
+SecretNames:
+  pubkey: ORACLE_PUBKEY
+  secret: ORACLE_SECRET
