@@ -152,13 +152,15 @@ jobs:
             if [ -f "$FILE" ]; then
               ADDITIONAL_VALUES="-f $FILE"
             fi
-            helm template  "${app}" "./helm" \
+            helm upgrade --install "${app}" "./helm" \
               --namespace "${APP_NAMESPACE}" \
               --set image.repository="$DOCKER_REGISTRY_URL/${app}-${STAGE}" \
               --set image.tag="$SHORT_SHA" \
               --set app.name="${app}" \
               --set configMapName="envs-config" \
               $SECRET_PARAM \
+              --atomic --timeout 5m \
+              --history-max 2 \
               $ADDITIONAL_VALUES &
             pids[$app]=$!
           done
