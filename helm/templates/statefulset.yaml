@@ -41,13 +41,13 @@ spec:
             {{- end }}
           {{- end }}
           volumeMounts:
-            - name: data
+            - name: {{ $name }}-{{ $i }}-data
               mountPath: /home/apps/oracle/data
       imagePullSecrets:
         - name: docker-registry-creds
   volumeClaimTemplates:
     - metadata:
-        name: data
+        name: {{ $name }}-{{ $i }}-data
       spec:
         accessModes: [ "ReadWriteOnce" ]
         storageClassName: {{ $.Values.storage.class }}
