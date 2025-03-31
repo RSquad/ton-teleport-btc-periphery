@@ -9,6 +9,7 @@ import (
 
 type Signer interface {
 	SignCell(cell *cell.Cell) []byte
+	PublicKey() []byte
 }
 
 type KeySigner struct {
@@ -25,4 +26,13 @@ func NewKeySigner(secretKey string) Signer {
 
 func (s *KeySigner) SignCell(cell *cell.Cell) []byte {
 	return cell.Sign(s.secret)
+}
+
+func (s *KeySigner) PublicKey() []byte {
+	data, ok := s.secret.Public().([]byte)
+	if !ok {
+		panic("Failed to get public key")
+	}
+
+	return data
 }

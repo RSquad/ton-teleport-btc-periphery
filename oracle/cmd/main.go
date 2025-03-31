@@ -41,7 +41,7 @@ func initialize() (*App, error) {
 		return nil, err
 	}
 
-	validator, err := validator.NewValidator(&cfg)
+	validator, err := validator.NewValidator(&cfg, keystore)
 	if err != nil {
 		return nil, err
 	}

@@ -11,13 +11,15 @@ import (
 type DKG struct {
 	Status     DKGStatus
 	VSet       VSet
+	VsetMask   []byte
 	MaxSigners uint16
 	R1         *DKGR1
 	R2         *DKGR2
 	R3         *DKGR3
-	Until      time.Time
+	Claims     *DKGClaims
 	CfgHash    []byte
 	Attempts   uint64
+	Until      time.Time
 }
 
 type DKGRoundState struct {
@@ -69,6 +71,10 @@ func (dkg *DKG) Round2Completed() bool {
 
 func (dkg *DKG) Round3Completed() bool {
 	return dkg.Status == DKGStatusFinished
+}
+
+func (dkg *DKG) ClaimCompleted(validatorIdx uint16) bool {
+	return dkg.Claims.Mask.Bit(int(validatorIdx)) > 0
 }
 
 // CommitmentRequest represents a request to send commitments

@@ -47,12 +47,18 @@ func (c *CoordinatorContract) SendRound2(
 	))
 }
 
-func (c *CoordinatorContract) SendPubkeyPackage(validatorIdx uint16, internalKeyX []byte, Identifier []byte, pubkeyPackage []byte) (*tlb.Transaction, error) {
-	if len(internalKeyX) != 32 {
-		return nil, fmt.Errorf("internalKeyX must be 32 bytes long, got %d", len(internalKeyX))
-	}
+func (c *CoordinatorContract) SendClaim(
+	validatorIdx uint16,
+	maliciousValidatorIdx []byte,
+) (*tlb.Transaction, error) {
+	return c.sendBodyCell(BuildSendClaimBody(
+		int64(c.ttl.Seconds()), validatorIdx, maliciousValidatorIdx,
+	))
+}
+
+func (c *CoordinatorContract) SendPubkeyPackage(validatorIdx uint16, Identifier []byte, pubkeyPackage []byte) (*tlb.Transaction, error) {
 	return c.sendBodyCell(BuildSendRound3Body(
-		int64(c.ttl.Seconds()), validatorIdx, internalKeyX, Identifier, pubkeyPackage,
+		int64(c.ttl.Seconds()), validatorIdx, Identifier, pubkeyPackage,
 	))
 }
 

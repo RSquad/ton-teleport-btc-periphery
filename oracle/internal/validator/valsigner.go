@@ -25,3 +25,12 @@ func (s *ValidatorSigner) SignCell(cell *cell.Cell) []byte {
 
 	return signature
 }
+
+func (s *ValidatorSigner) PublicKey() []byte {
+	data, err := hex.DecodeString(s.publicKeyID)
+	if err != nil {
+		panic(err)
+	}
+
+	return data
+}

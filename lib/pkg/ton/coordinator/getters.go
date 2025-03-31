@@ -19,6 +19,7 @@ const (
 	OpCodeCoordinatorRound1           = 0x0000eaea
 	OpCodeCoordinatorRound2           = 0x0000bb50
 	OpCodeCoordinatorRound3           = 0x00008bc6
+	OpCodeCoordinatorDkgClaim         = 0x0000f387
 	OpCodeCoordinatorSendCommitments  = 0x58e40000
 	OpCodeCoordinatorSendSigningShare = 0x706b0000
 	OpCodeCoordinatorSendSignature    = 0xd0720000
@@ -181,6 +182,7 @@ func parseDGKSlice(dkgSlice *cell.Slice) (*DKG, error) {
 	}
 
 	maxSigners := uint16(dkgSlice.MustLoadUInt(16))
+	vsetMask := dkgSlice.MustLoadSlice(256)
 
 	r1State, err := loadRoundMaskAndCount(dkgSlice)
 	if err != nil {
@@ -202,12 +204,19 @@ func parseDGKSlice(dkgSlice *cell.Slice) (*DKG, error) {
 		return nil, err
 	}
 
-	cfgHash := dkgSlice.MustLoadSlice(256)
 	attempts := dkgSlice.MustLoadUInt(8)
 	untilUnix := dkgSlice.MustLoadUInt(32)
 	until := time.Unix(int64(untilUnix), 0)
 
-	r3, err := LoadDKGR3(dkgSlice.MustLoadRef())
+	dkgSliceNext := dkgSlice.MustLoadRef()
+	cfgHash := dkgSliceNext.MustLoadSlice(256)
+
+	r3, err := LoadDKGR3(dkgSliceNext)
+	if err != nil {
+		return nil, err
+	}
+
+	claims, err := LoadDKGClaims(dkgSliceNext)
 	if err != nil {
 		return nil, err
 	}
@@ -215,13 +224,15 @@ func parseDGKSlice(dkgSlice *cell.Slice) (*DKG, error) {
 	return &DKG{
 		Status:     status,
 		VSet:       vSet,
+		VsetMask:   vsetMask,
 		MaxSigners: maxSigners,
 		R1:         r1,
 		R2:         r2,
 		R3:         r3,
-		Until:      until,
+		Claims:     claims,
 		CfgHash:    cfgHash,
 		Attempts:   attempts,
+		Until:      until,
 	}, nil
 }
 

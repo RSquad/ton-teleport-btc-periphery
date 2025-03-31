@@ -10,7 +10,7 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/pegoutcontract"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
-	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal"
+	helpers "github.com/rsquad/ton-teleport-btc-periphery/oracle/internal"
 	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/keystore"
 	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/validator"
 	"github.com/xssnick/tonutils-go/ton"
@@ -134,6 +134,7 @@ func (s *SignService) execute(ctx context.Context, dkg *coordinator.DKG) {
 		return
 	}
 
+	s.validator.GetSessionSigner().OnNewDKG(dkg.Until.Unix())
 	s.logSigningRequestsCount(len(pegoutRecords))
 
 	// Get oldest unsigned pegout record
@@ -161,7 +162,7 @@ func (s *SignService) execute(ctx context.Context, dkg *coordinator.DKG) {
 		return
 	}
 
-	s.coordinator.ConnectSigner(s.validator.GetSigner(validatorKeyInfo.KeyID))
+	s.coordinator.ConnectSigner(s.validator.GetSessionSigner())
 
 	minSigners, err := helpers.CalcMinSigners(dkg.MaxSigners)
 	if err != nil {
@@ -185,9 +186,10 @@ func (s *SignService) doCommit(
 	minSigners uint16,
 ) bool {
 	s.logCommitPegout(pegout.ID)
-	identifier := validatorKey.PublicKey
 
-	if pegout.artifacts.HasCommitment(identifier) {
+	localIdentifier := helpers.ValidatorIdxToFrost(validatorKey.VsetIdx)
+
+	if pegout.artifacts.HasCommitment(localIdentifier) {
 		s.logMessage("Commitment already exists")
 		if pegout.artifacts.CommitmentsCount() >= minSigners {
 			s.logMessage("Commitment round completed")
@@ -222,7 +224,7 @@ func (s *SignService) doCommit(
 	if _, err := s.coordinator.SendCommitments(
 		pegout.ID,
 		validatorKey.VsetIdx,
-		identifier,
+		localIdentifier,
 		commitments,
 	); err != nil {
 		s.logError("failed to send commitments", err)
@@ -240,9 +242,10 @@ func (s *SignService) doSign(
 	minSigners uint16,
 ) bool {
 	s.logSignPegout(pegout.ID)
-	identifier := validatorKey.PublicKey
 
-	if !pegout.artifacts.HasCommitment(identifier) {
+	localIdentifier := helpers.ValidatorIdxToFrost(validatorKey.VsetIdx)
+
+	if !pegout.artifacts.HasCommitment(localIdentifier) {
 		s.logErrNoOracleCommitments(pegout.ID)
 		return false
 	}
@@ -252,7 +255,7 @@ func (s *SignService) doSign(
 		return true
 	}
 
-	if pegout.artifacts.HasSigningShare(identifier) {
+	if pegout.artifacts.HasSigningShare(localIdentifier) {
 		s.logSigningShareAlreadyExists(pegout.ID)
 		return false
 	}
@@ -295,7 +298,7 @@ func (s *SignService) doSign(
 	if _, err := s.coordinator.SendSigningShare(
 		pegout.ID,
 		validatorKey.VsetIdx,
-		identifier,
+		localIdentifier,
 		signShares,
 	); err != nil {
 		s.logSendSigningShareError(pegout.ID, err)
