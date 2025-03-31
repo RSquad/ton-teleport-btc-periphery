@@ -176,7 +176,7 @@ jobs:
             echo "One or more deployments failed. Rolling back entire stack..."
             for app in $(echo "$APPS" | jq -r '.[]'); do
               echo "Rolling back $app..."
-              if ! helm rollback "${app}-${STAGE}" --namespace "${APP_NAMESPACE} 1; then
+              if ! helm rollback "${app}" 1 --namespace "${APP_NAMESPACE}"; then
                 echo "Rollback not possible for $app"
               fi
             done
