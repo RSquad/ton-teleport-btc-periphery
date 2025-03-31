@@ -57,7 +57,7 @@ func BuildSendClaimBody(ttl int64, validatorIdx uint16, maliciousValidatorIdx []
 		EndCell()
 }
 
-func BuildSendRound3Body(ttl int64, validatorIdx uint16, internalKeyX []byte, Identifier []byte, pubkeyPackage []byte) *cell.Cell {
+func BuildSendRound3Body(ttl int64, validatorIdx uint16, Identifier []byte, pubkeyPackage []byte) *cell.Cell {
 	return cell.BeginCell().
 		MustStoreUInt(OpCodeCoordinatorRound3, 32).
 		MustStoreUInt(uint64(time.Now().Unix()+ttl), 32).
@@ -65,7 +65,6 @@ func BuildSendRound3Body(ttl int64, validatorIdx uint16, internalKeyX []byte, Id
 		MustStoreRef(
 			cell.BeginCell().
 				MustStoreSlice(Identifier, 256).
-				MustStoreSlice(internalKeyX, 256).
 				MustStoreRef(
 					utils.SplitBytesToCells(pubkeyPackage),
 				).

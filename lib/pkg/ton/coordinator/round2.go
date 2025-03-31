@@ -1,7 +1,6 @@
 package coordinator
 
 import (
-	"fmt"
 	"math/big"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/parseddict"
@@ -17,10 +16,10 @@ type (
 	DKGR2Pkgs map[string]DKGPkgs
 )
 
-func parseR2PkgKey(keySlice *cell.Slice, keySize uint) string {
-	key := keySlice.MustLoadBigUInt(keySize)
-	return fmt.Sprintf("%x", key.Bytes())
-}
+//func parseR2PkgKey(keySlice *cell.Slice, keySize uint) string {
+//	key := keySlice.MustLoadBigUInt(keySize)
+//	return fmt.Sprintf("%x", key.Bytes())
+//}
 
 func parseR2PkgValue(valueSlice *cell.Slice) (DKGPkgs, error) {
 	valueSlice.MustLoadUInt(256)
@@ -34,7 +33,7 @@ func parseR2PkgValue(valueSlice *cell.Slice) (DKGPkgs, error) {
 }
 
 func NewR2Pkgs(dict *cell.Dictionary) (DKGR2Pkgs, error) {
-	result, err := parseddict.New(dict, parseR2PkgKey, parseR2PkgValue)
+	result, err := parseddict.New(dict /*parseR2PkgKey*/, parseddict.ParseKey, parseR2PkgValue)
 	if err != nil {
 		return nil, err
 	}

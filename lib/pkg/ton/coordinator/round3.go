@@ -27,7 +27,7 @@ func LoadDKGR3(slice *cell.Slice) (*DKGR3, error) {
 	if pkgSlice != nil {
 		Data = &PubkeyData{
 			PubkeyPackage: utils.WriteSlicesToBuffer(pkgSlice.MustLoadRef()),
-			InternalKey:   slice.MustLoadSlice(256),
+			InternalKey:   pkgSlice.MustLoadSlice(256),
 		}
 	}
 

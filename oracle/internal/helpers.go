@@ -15,6 +15,7 @@ import (
 func ConvertMapToFrostPackages(origMap map[string][]byte) (frostMap map[frost.Identifier]frost.Package) {
 	frostMap = make(map[frost.Identifier]frost.Package)
 	for k, v := range origMap {
+		fmt.Println("ConvertMapToFrostPackages: k = '", k, "'")
 		id, _ := frost.DecodeIdentifier(k)
 		frostMap[*id] = frost.NewPackage(v)
 	}
@@ -71,5 +72,9 @@ func HandleTvmError(tvmError error) string {
 }
 
 func ValidatorIdxToFrost(validatorIdx uint16) []byte {
-	return frost.GetIdentifier(validatorIdx | 0x80)
+	validatorIdx |= 0x80
+	data := frost.GetIdentifier(validatorIdx)
+	//data[0] |= 0x80
+
+	return data
 }

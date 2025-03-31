@@ -7,9 +7,19 @@ import (
 	"github.com/xssnick/tonutils-go/tvm/cell"
 )
 
+//func ParseKey(s *cell.Slice, keySize uint) string {
+//	str := fmt.Sprintf("%x", s.MustLoadBigUInt(keySize).Bytes())
+//	return fmt.Sprintf("%0*s", ((keySize+7)/8)*2, str)
+//}
+
 func ParseKey(s *cell.Slice, keySize uint) string {
-	return fmt.Sprintf("%x", s.MustLoadBigUInt(keySize).Bytes())
+	return fmt.Sprintf("%x", s.MustLoadBigUInt(keySize).FillBytes(make([]byte, (keySize+7)/8)))
 }
+
+//func ParseKey(s *cell.Slice, keySize uint) string {
+//	return fmt.Sprintf("%x", s.MustLoadBigUInt(keySize).FillBytes(make([]byte, (keySize+7)/8)))
+//}
+//000000000000000000000000000000fa
 
 func New[V any](
 	dict *cell.Dictionary,

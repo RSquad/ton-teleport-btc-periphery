@@ -14,8 +14,7 @@ use frost_secp256k1_tr::{
     Error, Identifier, Signature, SigningPackage,
 };
 use rand::thread_rng;
-use std::ptr;
-use std::{collections::BTreeMap, ffi::c_void};
+use std::{collections::BTreeMap, ffi::c_void, ptr};
 
 #[inline]
 fn to_void<T: Sized>(obj: T) -> *const c_void {
@@ -117,12 +116,10 @@ pub extern "C" fn dkg_part1(
     let ident = Identifier::deserialize(identifier).unwrap();
     match frost_dkg_part1(ident, max_signers, min_signers, &mut rng) {
         Err(err) => {
-            println!("[FROST] error: {}", err);
             return -1;
         }
         Ok((s, p)) => match p.serialize() {
             Err(err) => {
-                println!("[FROST] error: {}", err);
                 return -2;
             }
             Ok(pkg_vec) => {
@@ -151,9 +148,11 @@ pub extern "C" fn dkg_part2(
     {
         return -1;
     }
-    let r1_secret_box = from_void(r1_secret);
+
+    let r1_secret_box= from_void::<frost_core::keys::dkg::round1::SecretPackage<frost_secp256k1_tr::Secp256K1Sha256TR>>(r1_secret);
     let map = Round1Package::make_map(r1_pkgs_ptr, r1_pkgs_len);
     let result = frost_dkg_part2(*r1_secret_box, &map);
+
     match result {
         Err(Error::InvalidProofOfKnowledge { ref culprit }) => {
             let culprit_data = culprit.serialize();
@@ -263,7 +262,7 @@ pub extern "C" fn dkg_part3(
             }
             return 0;
         }
-    }
+    }    
 }
 
 #[no_mangle]

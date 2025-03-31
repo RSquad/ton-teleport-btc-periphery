@@ -125,12 +125,8 @@ func (e *Executor) Execute(dkg *coordinator.DKG) {
 
 	if e.executeR1(dkg, keyInfo.VsetIdx, sessionPublicKey) {
 		if e.executeR2(dkg, keyInfo.VsetIdx) {
-			if e.executeClaimR2(dkg, keyInfo.VsetIdx) {
-				if e.executeR3(dkg, keyInfo.VsetIdx) {
-					if e.executeClaimR3(dkg, keyInfo.VsetIdx) {
-						e.logDKGProcess(dkg, "Successfully completed all DKG rounds")
-					}
-				}
+			if e.executeR3(dkg, keyInfo.VsetIdx) {
+				e.logDKGProcess(dkg, "Successfully completed all DKG rounds")
 			}
 		}
 	}
@@ -204,18 +200,34 @@ func (e *Executor) executeR2(dkg *coordinator.DKG, validatorIdx uint16) bool {
 
 		e.logMessage(dkg, "generating round2 artifacts")
 		r1Packages := helpers.ConvertMapToFrostPackages(dkg.GetR1Packages())
+
+		lenBefore := len(r1Packages)
+		for key := range r1Packages {
+			fmt.Println("r1Packages[", hex.EncodeToString(key.ToBytes()), "]")
+		}
+
+		//var fi frost.Identifier
+		//copy(fi[:], localIdentifier)
+
+		fmt.Println("fi = '", hex.EncodeToString(frost.Identifier(localIdentifier).ToBytes()), "]")
 		delete(r1Packages, frost.Identifier(localIdentifier))
+		//delete(r1Packages, fi)
+		//0x8100000....
+		//0x00000....81
+		lenAfter := len(r1Packages)
+
+		e.logMessage(dkg, fmt.Sprintf("lenBefore: %d, lenAfter: %d", lenBefore, lenAfter))
 
 		r2Packages, r2SecretPtr, maliciousValidatorIdx, err := frost.DkgPart2(e.artifacts.r1.secret.ptr, r1Packages)
 		if err != nil {
 			if maliciousValidatorIdx != nil {
 				e.logError(dkg, "Part2 failed. Malicious validator found.", err)
 
-				//e.artifacts.r2 = &Round2Result{
-				//	pkgs:                  nil,
-				//	secret:                NewSecret(0),
-				//	maliciousValidatorIdx: maliciousValidatorIdx,
-				//}
+				e.artifacts.r2 = &Round2Result{
+					pkgs:                  nil,
+					secret:                NewSecret(0),
+					maliciousValidatorIdx: maliciousValidatorIdx,
+				}
 			} else {
 				e.logError(dkg, "Part2 failed", err)
 			}
@@ -261,14 +273,19 @@ func (e *Executor) executeR2(dkg *coordinator.DKG, validatorIdx uint16) bool {
 
 func (e *Executor) executeClaimR2(dkg *coordinator.DKG, validatorIdx uint16) bool {
 	e.logExecuteR2Claim(dkg)
-	if dkg.ClaimCompleted(validatorIdx) {
-		e.logDKGProcess(dkg, "R2 claim completed")
-		return true
-	}
 
 	if e.artifacts.r2 == nil {
 		e.logError(dkg, "Round2 artifacts not found", nil)
 		return false
+	}
+
+	if e.artifacts.r2.maliciousValidatorIdx == nil {
+		return true
+	}
+
+	if dkg.ClaimCompleted(validatorIdx) {
+		e.logDKGProcess(dkg, "R2 claim completed")
+		return true
 	}
 
 	maliciousValidatorIdxStr := "NO"
@@ -358,7 +375,6 @@ func (e *Executor) executeR3(dkg *coordinator.DKG, validatorIdx uint16) bool {
 	if _, err := e.coordinatorContract.SendPubkeyPackage(
 		validatorIdx,
 		e.artifacts.r3.publicKey[1:], // skip prefix byte
-		localIdentifier,
 		e.artifacts.r3.publicKeyPackage,
 	); err != nil {
 		e.logSendPubkeyPackageFailed(dkg, err)
@@ -368,14 +384,19 @@ func (e *Executor) executeR3(dkg *coordinator.DKG, validatorIdx uint16) bool {
 
 func (e *Executor) executeClaimR3(dkg *coordinator.DKG, validatorIdx uint16) bool {
 	e.logExecuteR3Claim(dkg)
-	if dkg.ClaimCompleted(validatorIdx) {
-		e.logDKGProcess(dkg, "R3 claim completed")
-		return true
-	}
 
 	if e.artifacts.r3 == nil {
 		e.logError(dkg, "Round3 artifacts not found", nil)
 		return false
+	}
+
+	if e.artifacts.r3.maliciousValidatorIdx == nil {
+		return true
+	}
+
+	if dkg.ClaimCompleted(validatorIdx) {
+		e.logDKGProcess(dkg, "R3 claim completed")
+		return true
 	}
 
 	maliciousValidatorIdxStr := "NO"
