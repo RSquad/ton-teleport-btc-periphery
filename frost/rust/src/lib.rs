@@ -4,7 +4,7 @@ use frost_secp256k1_tr::{
     keys::{
         dkg::{
             part1 as frost_dkg_part1, part2 as frost_dkg_part2, part3 as frost_dkg_part3,
-            round1::{Package as Round1Package, SecretPackage as Round1SecretPackage},
+            round1::Package as Round1Package,
             round2::{Package as Round2Package, SecretPackage as Round2SecretPackage},
         },
         KeyPackage, PublicKeyPackage, Tweak,
@@ -14,7 +14,7 @@ use frost_secp256k1_tr::{
     Error, Identifier, Signature, SigningPackage,
 };
 use rand::thread_rng;
-use std::{collections::BTreeMap, ffi::c_void};
+use std::{collections::BTreeMap, ffi::c_void, ptr};
 
 #[inline]
 fn to_void<T: Sized>(obj: T) -> *const c_void {
@@ -63,8 +63,10 @@ macro_rules! from_bytes_for {
                 unsafe {
                     let packages = slice::from_raw_parts(ptr, len);
                     for p in packages {
-                        let identifier = Identifier::deserialize(&p.identifier).expect("Cannot deserialize Identifier");
-                        let pkg = $T::from_raw_parts(p.buf, p.len).expect("Cannot deserialize Package");
+                        let identifier = Identifier::deserialize(&p.identifier)
+                            .expect("Cannot deserialize Identifier");
+                        let pkg =
+                            $T::from_raw_parts(p.buf, p.len).expect("Cannot deserialize Package");
                         map.insert(identifier, pkg);
                     }
                 }
@@ -142,14 +144,32 @@ pub extern "C" fn dkg_part2(
     r1_pkgs_len: usize,
     r2_pkgs_ptr: *mut *const Pkg,
     r2_secret: *mut *const c_void,
+    r2_culprit_idx_out: &mut [u8; 32],
 ) -> i32 {
     if r1_secret.is_null() || r1_pkgs_ptr.is_null() || r2_pkgs_ptr.is_null() || r2_secret.is_null()
     {
         return -1;
     }
-    let sp = from_void(r1_secret);
+
+    let r1_secret_box= from_void(r1_secret);
     let map = Round1Package::make_map(r1_pkgs_ptr, r1_pkgs_len);
-    match frost_dkg_part2(*sp, &map) {
+    let result = frost_dkg_part2(*r1_secret_box, &map);
+
+    match result {
+        Err(Error::InvalidProofOfKnowledge { ref culprit }) => {
+            let culprit_data = culprit.serialize();
+
+            if culprit_data.len() != 32 {
+                println!("culprit_data.len() != 32");
+                return -2;
+            }
+
+            unsafe {
+                ptr::copy_nonoverlapping(culprit_data.as_ptr(), r2_culprit_idx_out.as_mut_ptr(), 32);
+            }
+
+            return -3;
+        },
         Err(err) => {
             println!("[FROST] error: {}", err);
             return -2;
@@ -188,6 +208,7 @@ pub extern "C" fn dkg_part3(
     public_key_pkg_len: *mut usize,
     secret_key_pkg_ptr: *mut *const u8,
     secret_key_pkg_len: *mut usize,
+    r3_culprit_idx_out: &mut [u8; 32],
 ) -> i32 {
     if public_key_pkg_ptr.is_null()
         || secret_key_pkg_ptr.is_null()
@@ -197,11 +218,34 @@ pub extern "C" fn dkg_part3(
     {
         return -1;
     }
-    match frost_dkg_part3(
-        &from_void(r2_secret),
-        &Round1Package::make_map(r1_pkgs_ptr, r1_pkgs_len),
-        &Round2Package::make_map(r2_pkgs_ptr, r2_pkgs_len),
-    ) {
+    let r2_secret_box = from_void(r2_secret);
+    let r1_pkgs_map = Round1Package::make_map(r1_pkgs_ptr, r1_pkgs_len);
+    let r2_pkgs_map = Round2Package::make_map(r2_pkgs_ptr, r2_pkgs_len);
+    let result = frost_dkg_part3(&r2_secret_box, &r1_pkgs_map, &r2_pkgs_map);
+    // Prevent r2_secret_box from being freed. It must be freed manually.
+    Box::leak(r2_secret_box);
+    match result {
+        Err(Error::InvalidSecretShare { ref culprit }) => {
+            match culprit {
+                Some(culprit_val) => {
+                    let culprit_data = culprit_val.serialize();
+                    if culprit_data.len() != 32 {
+                        println!("culprit_data.len() != 32");
+                        return -2;
+                    }
+
+                    unsafe {
+                        ptr::copy_nonoverlapping(culprit_data.as_ptr(), r3_culprit_idx_out.as_mut_ptr(), 32);
+                    }
+
+                    return -3;
+                }
+                None => {
+                    println!("[FROST] error: culprit value empty");
+                    return -2;
+                }
+            }
+        },
         Err(err) => {
             println!("[FROST] error: {}", err);
             return -2;
@@ -223,13 +267,12 @@ pub extern "C" fn dkg_part3(
 }
 
 #[no_mangle]
-pub extern "C" fn free_r1_secret(r1_secret: *mut c_void) {
-    let _ = unsafe { Box::from_raw(r1_secret as *mut Round1SecretPackage) };
-}
-
-#[no_mangle]
 pub extern "C" fn free_r2_secret(r2_secret: *mut c_void) {
-    let _ = unsafe { Box::from_raw(r2_secret as *mut Round2SecretPackage) };
+    unsafe {
+        if !r2_secret.is_null() {
+            let _ = Box::from_raw(r2_secret as *mut Round2SecretPackage);
+        }
+    };
 }
 
 #[no_mangle]
@@ -339,8 +382,7 @@ pub extern "C" fn aggregate_with_tweak(
         message_buf.to_slice(),
     );
 
-    let signature_shares_map =
-        SignatureShare::make_map(signature_shares_ptr, signature_shares_len);
+    let signature_shares_map = SignatureShare::make_map(signature_shares_ptr, signature_shares_len);
 
     let result = frost_aggregate_with_tweak(
         &signing_package,
@@ -405,12 +447,12 @@ pub extern "C" fn extract_public_key_from_package(
         Ok(x) => x,
         Err(_) => return -1,
     };
-    
+
     let key_vec = match pubkey_package.verifying_key().serialize() {
         Ok(x) => x,
         Err(_) => return -2,
     };
-    
+
     unsafe {
         (*public_key).len = key_vec.len();
         (*public_key).data = key_vec.leak().as_ptr();

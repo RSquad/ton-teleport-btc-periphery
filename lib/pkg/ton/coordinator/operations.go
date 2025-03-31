@@ -25,24 +25,40 @@ func (c *CoordinatorContract) SendStartDKG() (*tlb.Transaction, error) {
 	return tx, err
 }
 
-func (c *CoordinatorContract) SendRound1(validatorIdx uint16, identifier []byte, round1Package []byte) (*tlb.Transaction, error) {
+func (c *CoordinatorContract) SendRound1(
+	validatorIdx uint16,
+	identifier []byte,
+	round1Package []byte,
+	sessionPublicKey []byte,
+) (*tlb.Transaction, error) {
 	return c.sendBodyCell(BuildSendRound1Body(
-		int64(c.ttl.Seconds()), validatorIdx, identifier, round1Package,
+		int64(c.ttl.Seconds()), validatorIdx, identifier, round1Package, sessionPublicKey,
 	))
 }
 
-func (c *CoordinatorContract) SendRound2(validatorIdx uint16, fromIdentifier []byte, toIdentifier []byte, round2Package []byte) (*tlb.Transaction, error) {
+func (c *CoordinatorContract) SendRound2(
+	validatorIdx uint16,
+	fromIdentifier []byte,
+	toIdentifier []byte,
+	round2Package []byte,
+) (*tlb.Transaction, error) {
 	return c.sendBodyCell(BuildSendRound2Body(
 		int64(c.ttl.Seconds()), validatorIdx, fromIdentifier, toIdentifier, round2Package,
 	))
 }
 
-func (c *CoordinatorContract) SendPubkeyPackage(validatorIdx uint16, internalKeyX []byte, Identifier []byte, pubkeyPackage []byte) (*tlb.Transaction, error) {
-	if len(internalKeyX) != 32 {
-		return nil, fmt.Errorf("internalKeyX must be 32 bytes long, got %d", len(internalKeyX))
-	}
+func (c *CoordinatorContract) SendClaim(
+	validatorIdx uint16,
+	maliciousValidatorIdx []byte,
+) (*tlb.Transaction, error) {
+	return c.sendBodyCell(BuildSendClaimBody(
+		int64(c.ttl.Seconds()), validatorIdx, maliciousValidatorIdx,
+	))
+}
+
+func (c *CoordinatorContract) SendPubkeyPackage(validatorIdx uint16, Identifier []byte, pubkeyPackage []byte) (*tlb.Transaction, error) {
 	return c.sendBodyCell(BuildSendRound3Body(
-		int64(c.ttl.Seconds()), validatorIdx, internalKeyX, Identifier, pubkeyPackage,
+		int64(c.ttl.Seconds()), validatorIdx, Identifier, pubkeyPackage,
 	))
 }
 

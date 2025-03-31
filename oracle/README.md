@@ -36,7 +36,7 @@ The Oracle is configured using environment variables. You can set these in a `.e
 
 #### Common Variables
 
-- `COMMON_TON_CONFIG_URL` - TON configuration URL
+- `COMMON_TON_CONFIG` - TON configuration URL or local path to TON config json
 - `COMMON_TON_CONTRACT_COORDINATOR` - Address of the Coordinator contract on TON
 
 #### Oracle-specific Variables
@@ -60,7 +60,7 @@ The Oracle is configured using environment variables. You can set these in a `.e
 
 Example for ORACLE_STANDALONE_MODE=false
 ```
-COMMON_TON_CONFIG_URL=https://ton-blockchain.github.io/testnet-global.config.json
+COMMON_TON_CONFIG=https://ton-blockchain.github.io/testnet-global.config.json
 COMMON_TON_CONTRACT_COORDINATOR=EQD5URgpjt00h5x4i9MFHWX1UjmuniYPMWnYVGwmZguJ0tMh
 ORACLE_STANDALONE_MODE=false
 ORACLE_PUBKEY=
@@ -70,6 +70,11 @@ ORACLE_VALIDATOR_ENGINE_CONSOLE_PATH=/path/to/validator-engine-console
 ORACLE_SERVER_PUBLIC_KEY_PATH=/path/to/certs/server.pub
 ORACLE_CLIENT_PRIVATE_KEY_PATH=/path/to/certs/client
 ORACLE_VALIDATOR_SERVER_ADDR=127.0.0.1:4441
+```
+
+Note: Either a relative or absolute path can be used for COMMON_TON_CONFIG instead of URL
+```
+COMMON_TON_CONFIG=/path/to/testnet-global.config.json
 ```
 
 ## Keystore

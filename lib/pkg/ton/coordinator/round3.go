@@ -19,16 +19,18 @@ type DKGR3 struct {
 }
 
 func LoadDKGR3(slice *cell.Slice) (*DKGR3, error) {
-	Count := uint16(slice.MustLoadUInt(16))
 	Mask := slice.MustLoadBigUInt(256)
-	var Data *PubkeyData = nil
+	Count := uint16(slice.MustLoadUInt(16))
+
 	pkgSlice := slice.MustLoadMaybeRef()
+	var Data *PubkeyData
 	if pkgSlice != nil {
 		Data = &PubkeyData{
-			PubkeyPackage: utils.WriteSlicesToBuffer(pkgSlice),
-			InternalKey:   slice.MustLoadSlice(32),
+			PubkeyPackage: utils.WriteSlicesToBuffer(pkgSlice.MustLoadRef()),
+			InternalKey:   pkgSlice.MustLoadSlice(256),
 		}
 	}
+
 	return &DKGR3{
 		Mask, Count, Data,
 	}, nil

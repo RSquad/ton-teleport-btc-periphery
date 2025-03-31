@@ -40,7 +40,8 @@ int32_t dkg_part2(const void *r1_secret,
                   const struct Pkg *r1_pkgs_ptr,
                   size_t r1_pkgs_len,
                   const struct Pkg **r2_pkgs_ptr,
-                  const void **r2_secret);
+                  const void **r2_secret,
+                  uint8_t (*r2_culprit_idx_out)[32]);
 
 int32_t dkg_part3(const void *r2_secret,
                   const struct Pkg *r1_pkgs_ptr,
@@ -50,7 +51,8 @@ int32_t dkg_part3(const void *r2_secret,
                   const uint8_t **public_key_pkg_ptr,
                   size_t *public_key_pkg_len,
                   const uint8_t **secret_key_pkg_ptr,
-                  size_t *secret_key_pkg_len);
+                  size_t *secret_key_pkg_len,
+                  uint8_t (*r3_culprit_idx_out)[32]);
 
 int32_t ext_get_identifier(uint16_t key, uint8_t (*identifier)[32]);
 
@@ -58,8 +60,6 @@ int32_t extract_public_key_from_package(struct Buffer pubkey_package_buf,
                                         struct Buffer *public_key);
 
 void free_package_ptr(const uint8_t *ptr, size_t len);
-
-void free_r1_secret(void *r1_secret);
 
 void free_r2_pkg_vec(const struct Pkg *ptr, size_t len);
 
