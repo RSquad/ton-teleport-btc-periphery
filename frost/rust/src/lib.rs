@@ -151,7 +151,7 @@ pub extern "C" fn dkg_part2(
         return -1;
     }
 
-    let r1_secret_box= from_void::<frost_core::keys::dkg::round1::SecretPackage<frost_secp256k1_tr::Secp256K1Sha256TR>>(r1_secret);
+    let r1_secret_box= from_void(r1_secret);
     let map = Round1Package::make_map(r1_pkgs_ptr, r1_pkgs_len);
     let result = frost_dkg_part2(*r1_secret_box, &map);
 
