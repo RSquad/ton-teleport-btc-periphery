@@ -72,16 +72,12 @@ func (e *Executor) logExecuteR2(dkg *coordinator.DKG) {
 	e.logMessage(dkg, "execute R2")
 }
 
-func (e *Executor) logExecuteR2Claim(dkg *coordinator.DKG) {
-	e.logMessage(dkg, "execute R2 claim")
+func (e *Executor) logExecuteClaim(dkg *coordinator.DKG) {
+	e.logMessage(dkg, "execute claim")
 }
 
 func (e *Executor) logExecuteR3(dkg *coordinator.DKG) {
 	e.logMessage(dkg, "execute R3")
-}
-
-func (e *Executor) logExecuteR3Claim(dkg *coordinator.DKG) {
-	e.logMessage(dkg, "execute R3 claim")
 }
 
 func (e *Executor) logSendRound1Package(dkg *coordinator.DKG, err error) {
@@ -100,7 +96,6 @@ func (e *Executor) logSendClaimPackage(dkg *coordinator.DKG, maliciousValidatorI
 	msg := helpers.HandleTvmError(err)
 
 	maliciousValidatorIdxStr := "NO"
-
 	if maliciousValidatorIdx != nil {
 		maliciousValidatorIdxStr = hex.EncodeToString(maliciousValidatorIdx)
 	}

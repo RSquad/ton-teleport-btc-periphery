@@ -73,8 +73,5 @@ func HandleTvmError(tvmError error) string {
 
 func ValidatorIdxToFrost(validatorIdx uint16) []byte {
 	validatorIdx |= 0x80
-	data := frost.GetIdentifier(validatorIdx)
-	//data[0] |= 0x80
-
-	return data
+	return frost.GetIdentifier(validatorIdx)
 }

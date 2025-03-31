@@ -116,10 +116,12 @@ pub extern "C" fn dkg_part1(
     let ident = Identifier::deserialize(identifier).unwrap();
     match frost_dkg_part1(ident, max_signers, min_signers, &mut rng) {
         Err(err) => {
+            println!("[FROST] error: {}", err);
             return -1;
         }
         Ok((s, p)) => match p.serialize() {
             Err(err) => {
+                println!("[FROST] error: {}", err);
                 return -2;
             }
             Ok(pkg_vec) => {
@@ -227,7 +229,6 @@ pub extern "C" fn dkg_part3(
             match culprit {
                 Some(culprit_val) => {
                     let culprit_data = culprit_val.serialize();
-                    
                     if culprit_data.len() != 32 {
                         println!("culprit_data.len() != 32");
                         return -2;
@@ -262,7 +263,7 @@ pub extern "C" fn dkg_part3(
             }
             return 0;
         }
-    }    
+    }
 }
 
 #[no_mangle]

@@ -27,16 +27,14 @@ type Round1Result struct {
 }
 
 type Round2Result struct {
-	pkgs                  map[frost.Identifier]frost.Package
-	secret                Secret
-	maliciousValidatorIdx []byte
+	pkgs   map[frost.Identifier]frost.Package
+	secret Secret
 }
 
 type Round3Result struct {
-	secretPackage         []byte
-	publicKeyPackage      []byte
-	publicKey             []byte // 33 bytes with prefix
-	maliciousValidatorIdx []byte
+	secretPackage    []byte
+	publicKeyPackage []byte
+	publicKey        []byte // 33 bytes with prefix
 }
 
 type ExecutionArtifacts struct {
@@ -200,43 +198,21 @@ func (e *Executor) executeR2(dkg *coordinator.DKG, validatorIdx uint16) bool {
 
 		e.logMessage(dkg, "generating round2 artifacts")
 		r1Packages := helpers.ConvertMapToFrostPackages(dkg.GetR1Packages())
-
-		lenBefore := len(r1Packages)
-		for key := range r1Packages {
-			fmt.Println("r1Packages[", hex.EncodeToString(key.ToBytes()), "]")
-		}
-
-		//var fi frost.Identifier
-		//copy(fi[:], localIdentifier)
-
-		fmt.Println("fi = '", hex.EncodeToString(frost.Identifier(localIdentifier).ToBytes()), "]")
 		delete(r1Packages, frost.Identifier(localIdentifier))
-		//delete(r1Packages, fi)
-		//0x8100000....
-		//0x00000....81
-		lenAfter := len(r1Packages)
-
-		e.logMessage(dkg, fmt.Sprintf("lenBefore: %d, lenAfter: %d", lenBefore, lenAfter))
 
 		r2Packages, r2SecretPtr, maliciousValidatorIdx, err := frost.DkgPart2(e.artifacts.r1.secret.ptr, r1Packages)
 		if err != nil {
 			if maliciousValidatorIdx != nil {
 				e.logError(dkg, "Part2 failed. Malicious validator found.", err)
-
-				e.artifacts.r2 = &Round2Result{
-					pkgs:                  nil,
-					secret:                NewSecret(0),
-					maliciousValidatorIdx: maliciousValidatorIdx,
-				}
+				e.executeClaim(dkg, validatorIdx, maliciousValidatorIdx)
 			} else {
 				e.logError(dkg, "Part2 failed", err)
 			}
 			return false
 		}
 		e.artifacts.r2 = &Round2Result{
-			pkgs:                  r2Packages,
-			secret:                NewSecret(r2SecretPtr),
-			maliciousValidatorIdx: nil,
+			pkgs:   r2Packages,
+			secret: NewSecret(r2SecretPtr),
 		}
 	}
 
@@ -271,48 +247,6 @@ func (e *Executor) executeR2(dkg *coordinator.DKG, validatorIdx uint16) bool {
 	return false
 }
 
-func (e *Executor) executeClaimR2(dkg *coordinator.DKG, validatorIdx uint16) bool {
-	e.logExecuteR2Claim(dkg)
-
-	if e.artifacts.r2 == nil {
-		e.logError(dkg, "Round2 artifacts not found", nil)
-		return false
-	}
-
-	if e.artifacts.r2.maliciousValidatorIdx == nil {
-		return true
-	}
-
-	if dkg.ClaimCompleted(validatorIdx) {
-		e.logDKGProcess(dkg, "R2 claim completed")
-		return true
-	}
-
-	maliciousValidatorIdxStr := "NO"
-	if e.artifacts.r2.maliciousValidatorIdx != nil {
-		maliciousValidatorIdxStr = hex.EncodeToString(e.artifacts.r2.maliciousValidatorIdx)
-	}
-	e.logMessage(dkg, "sending r2 claim packages. Malicious validator idx: "+maliciousValidatorIdxStr)
-	withErrors := false
-
-	// r2 claim package is not sent yet, send it to coordinator
-	_, err := e.coordinatorContract.SendClaim(
-		validatorIdx,
-		e.artifacts.r2.maliciousValidatorIdx,
-	)
-	if err != nil {
-		e.logSendClaimPackage(dkg, e.artifacts.r2.maliciousValidatorIdx, err)
-		withErrors = true
-	}
-
-	if withErrors {
-		e.logError(dkg, "R2 claim packages sent with errors", nil)
-	} else {
-		e.logDKGProcess(dkg, "R2 claim packages sent")
-	}
-	return false
-}
-
 func (e *Executor) executeR3(dkg *coordinator.DKG, validatorIdx uint16) bool {
 	e.logExecuteR3(dkg)
 	if dkg.Round3Completed() {
@@ -340,14 +274,8 @@ func (e *Executor) executeR3(dkg *coordinator.DKG, validatorIdx uint16) bool {
 		keyPackage, publicKeyPackage, maliciousValidatorIdx, err := frost.DkgPart3(e.artifacts.r2.secret.ptr, r1Packages, r2Packages)
 		if err != nil {
 			if maliciousValidatorIdx != nil {
-				e.logError(dkg, "Part2 failed. Malicious validator found.", err)
-
-				e.artifacts.r3 = &Round3Result{
-					secretPackage:         nil,
-					publicKeyPackage:      nil,
-					publicKey:             nil,
-					maliciousValidatorIdx: maliciousValidatorIdx,
-				}
+				e.logError(dkg, "Part3 failed. Malicious validator found.", err)
+				e.executeClaim(dkg, validatorIdx, maliciousValidatorIdx)
 			} else {
 				e.logDKGProcess(dkg, fmt.Sprintf("R3 failed: %v", err))
 			}
@@ -360,10 +288,9 @@ func (e *Executor) executeR3(dkg *coordinator.DKG, validatorIdx uint16) bool {
 			return false
 		}
 		e.artifacts.r3 = &Round3Result{
-			secretPackage:         keyPackage,
-			publicKeyPackage:      publicKeyPackage,
-			publicKey:             publicKey,
-			maliciousValidatorIdx: nil,
+			secretPackage:    keyPackage,
+			publicKeyPackage: publicKeyPackage,
+			publicKey:        publicKey,
 		}
 		err = e.keystore.StoreSecret(publicKey[1:], keyPackage)
 		if err != nil {
@@ -382,44 +309,34 @@ func (e *Executor) executeR3(dkg *coordinator.DKG, validatorIdx uint16) bool {
 	return false
 }
 
-func (e *Executor) executeClaimR3(dkg *coordinator.DKG, validatorIdx uint16) bool {
-	e.logExecuteR3Claim(dkg)
-
-	if e.artifacts.r3 == nil {
-		e.logError(dkg, "Round3 artifacts not found", nil)
-		return false
-	}
-
-	if e.artifacts.r3.maliciousValidatorIdx == nil {
-		return true
-	}
+func (e *Executor) executeClaim(dkg *coordinator.DKG, validatorIdx uint16, maliciousValidatorIdx []byte) {
+	e.logExecuteClaim(dkg)
 
 	if dkg.ClaimCompleted(validatorIdx) {
-		e.logDKGProcess(dkg, "R3 claim completed")
-		return true
+		e.logDKGProcess(dkg, "claim completed")
+		return
 	}
 
 	maliciousValidatorIdxStr := "NO"
-	if e.artifacts.r3.maliciousValidatorIdx != nil {
-		maliciousValidatorIdxStr = hex.EncodeToString(e.artifacts.r3.maliciousValidatorIdx)
+	if maliciousValidatorIdx != nil {
+		maliciousValidatorIdxStr = hex.EncodeToString(maliciousValidatorIdx)
 	}
-	e.logMessage(dkg, "sending r3 claim packages. Malicious validator idx: "+maliciousValidatorIdxStr)
+	e.logMessage(dkg, "sending claim packages. Malicious validator idx: "+maliciousValidatorIdxStr)
 	withErrors := false
 
-	// r3 claim package is not sent yet, send it to coordinator
+	// claim package is not sent yet, send it to coordinator
 	_, err := e.coordinatorContract.SendClaim(
 		validatorIdx,
-		e.artifacts.r3.maliciousValidatorIdx,
+		maliciousValidatorIdx,
 	)
 	if err != nil {
-		e.logSendClaimPackage(dkg, e.artifacts.r3.maliciousValidatorIdx, err)
+		e.logSendClaimPackage(dkg, maliciousValidatorIdx, err)
 		withErrors = true
 	}
 
 	if withErrors {
-		e.logError(dkg, "R3 claim packages sent with errors", nil)
+		e.logError(dkg, "claim packages sent with errors", nil)
 	} else {
-		e.logDKGProcess(dkg, "R3 claim packages sent")
+		e.logDKGProcess(dkg, "claim packages sent")
 	}
-	return false
 }
