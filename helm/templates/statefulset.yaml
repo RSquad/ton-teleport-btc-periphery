@@ -4,38 +4,38 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: {{ include "app.name" . }}-{{ $i }}
+  name: {{ include "app.name" $ }}-{{ $i }}
   labels:
-    app: {{ include "app.name" . }}
+    app: {{ include "app.name" $ }}
     instance: "{{ $i }}"
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: {{ include "app.name" . }}
+      app: {{ include "app.name" $ }}
       instance: "{{ $i }}"
   template:
     metadata:
       labels:
-        app: {{ include "app.name" . }}
+        app: {{ include "app.name" $ }}
         instance: "{{ $i }}"
     spec:
       containers:
         - name: oracle
-          image: {{ .Values.image.repository }}:{{ .Values.image.tag | default "latest" }}
-          imagePullPolicy: {{ .Values.image.pullPolicy | default "IfNotPresent" }}
-          {{- if or .Values.configMapName .Values.secretName }}
+          image: {{ $.Values.image.repository }}:{{ $.Values.image.tag | default "latest" }}
+          imagePullPolicy: {{ $.Values.image.pullPolicy | default "IfNotPresent" }}
+          {{- if or $.Values.configMapName $.Values.secretName }}
           env:
-            {{- if .Values.configMapName }}
+            {{- if $.Values.configMapName }}
             - configMapRef:
-                name: {{ .Values.configMapName }}
+                name: {{ $.Values.configMapName }}
             {{- end }}
-            {{- if .Values.secretName }}
-            {{- range $key, $name := .Values.SecretNames }}
+            {{- if $.Values.secretName }}
+            {{- range $key, $name := $.Values.SecretNames }}
             - name: {{ $name }}
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.secretName }}
+                  name: {{ $.Values.secretName }}
                   key: {{ $name }}-{{ $i }}
             {{- end }}
             {{- end }}
