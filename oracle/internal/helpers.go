@@ -15,7 +15,6 @@ import (
 func ConvertMapToFrostPackages(origMap map[string][]byte) (frostMap map[frost.Identifier]frost.Package) {
 	frostMap = make(map[frost.Identifier]frost.Package)
 	for k, v := range origMap {
-		fmt.Println("ConvertMapToFrostPackages: k = '", k, "'")
 		id, _ := frost.DecodeIdentifier(k)
 		frostMap[*id] = frost.NewPackage(v)
 	}
