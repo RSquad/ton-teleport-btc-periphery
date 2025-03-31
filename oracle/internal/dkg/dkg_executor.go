@@ -301,7 +301,7 @@ func (e *Executor) executeR3(dkg *coordinator.DKG, validatorIdx uint16) bool {
 
 	if _, err := e.coordinatorContract.SendPubkeyPackage(
 		validatorIdx,
-		e.artifacts.r3.publicKey[1:], // skip prefix byte
+		localIdentifier,
 		e.artifacts.r3.publicKeyPackage,
 	); err != nil {
 		e.logSendPubkeyPackageFailed(dkg, err)
