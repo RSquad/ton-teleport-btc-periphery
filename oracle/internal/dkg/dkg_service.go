@@ -26,49 +26,41 @@ func NewService(
 	}
 }
 
-func (s *Service) Work(ctx context.Context, keystore keystore.Keystore) {
-	var err error = nil
-	logger.DefaultLogStartWork("DKGService")
-	defer logger.DefaultLogFinishWork("DKGService", err)
+func (s *Service) Work(ctx context.Context, wg *sync.WaitGroup, keystore keystore.Keystore) {
+	defer wg.Done()
+	defer logger.DefaultLogFinishWork("DKGService: started")
+	logger.DefaultLogStartWork("DKGService: starting...")
 
 	outChan := make(chan *coordinator.DKG)
 	fetcher := NewFetcher(s.coordinatorContract, outChan)
 	executor := NewExecutor(outChan, s.coordinatorContract, keystore, s.validator)
 
-	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go fetcher.Work(ctx, wg)
 
+	wg.Add(1)
+	go executor.Work(ctx, wg)
+
+	// A periodic event that triggers every 10 seconds to call the SendStartDKG() function
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		logger.DefaultLogStartWork("DKGFetcher")
-		err = fetcher.Work(ctx)
-		logger.DefaultLogFinishWork("DKGFetcher", err)
-	}()
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		logger.DefaultLogStartWork("DKGExecutor")
-		err = executor.Work(ctx)
-		logger.DefaultLogFinishWork("DKGExecutor", err)
-	}()
+		ticker := time.NewTicker(10 * time.Second)
+		defer ticker.Stop()
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		tick := time.Tick(10 * time.Second)
 		for {
 			select {
-			case _, ok := <-tick:
+			case <-ctx.Done():
+				logger.Log.Info().Msg("DKG service received shutdown signal...")
+				return
+			case _, ok := <-ticker.C:
 				if !ok {
+					logger.Log.Warn().Msg("Start DKG ticker closed")
 					return
 				}
 				s.coordinatorContract.SendStartDKG()
-			case <-ctx.Done():
-				return
 			}
 		}
 	}()
-
-	wg.Wait()
 }

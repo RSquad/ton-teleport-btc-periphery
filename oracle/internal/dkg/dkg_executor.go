@@ -4,9 +4,11 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/frost"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
 	helpers "github.com/rsquad/ton-teleport-btc-periphery/oracle/internal"
 	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/keystore"
@@ -77,14 +79,20 @@ func NewExecutor(
 	}
 }
 
-func (e *Executor) Work(ctx context.Context) error {
+func (e *Executor) Work(ctx context.Context, wg *sync.WaitGroup) {
+	defer wg.Done()
+	defer logger.DefaultLogFinishWork("DKG Executor")
+	logger.DefaultLogStartWork("DKG Executor")
+
 	for {
 		select {
 		case <-ctx.Done():
-			return ctx.Err()
+			logger.Log.Info().Msg("DKG Executor received shutdown signal...")
+			return
 		case dkg, ok := <-e.inChan:
 			if !ok {
-				return fmt.Errorf("channel closed")
+				logger.Log.Warn().Msg("DKG Executor channel closed")
+				return
 			}
 			e.Execute(dkg)
 		}
