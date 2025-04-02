@@ -44,13 +44,15 @@ func NewSessionPubKeys(dict *cell.Dictionary) (SessionPubKeys, error) {
 }
 
 func LoadSessionKeys(slice *cell.Slice) (*SessionKeys, error) {
-	sessionPubKeysDict := slice.MustLoadDict(16)
+	cs := slice.MustLoadRef()
+
+	sessionPubKeysDict := cs.MustLoadDict(16)
 	sessionPubKeys, err := NewSessionPubKeys(sessionPubKeysDict)
 	if err != nil {
 		return nil, err
 	}
 
-	mask := slice.MustLoadSlice(256)
+	mask := cs.MustLoadSlice(256)
 
 	return &SessionKeys{
 		PubKeys: sessionPubKeys,
