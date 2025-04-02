@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"os/signal"
 	"sync"
@@ -29,7 +28,10 @@ func startAndWaitForStop() error {
 	}
 
 	// Setup logger
-	logger.Init(cfg.LogFile)
+	if err := logger.Init(cfg.LogFile); err != nil {
+		return err
+	}
+
 	logger.Log.Info().
 		Str("component", "main").
 		Msg("Initializing")
@@ -109,7 +111,7 @@ func waitForStop(sigChan <-chan os.Signal, cancelFn context.CancelFunc, wg *sync
 	// Wait for graceful shutdown with timeout (5 sec)
 	select {
 	case <-shutdownChan:
-		fmt.Println("All goroutines shut down successfully")
+		logger.Log.Info().Msg("All goroutines shut down successfully")
 	case <-time.After(5 * time.Second):
 		logger.Log.Error().Msg("Shutdown timed out, forcing exit")
 	}

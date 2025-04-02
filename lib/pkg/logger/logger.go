@@ -49,9 +49,6 @@ func checkIfPathWritable(pathWithFile string) error {
 
 	// Check if the path exists
 	if _, err := os.Stat(dirPath); os.IsNotExist(err) {
-		fmt.Printf("Directory `%s` does not exist\n", dirPath)
-
-		// Optionally create it
 		err := os.MkdirAll(dirPath, 0o700)
 		if err != nil {
 			return fmt.Errorf("failed to create directory `%s`: %w", dirPath, err)
