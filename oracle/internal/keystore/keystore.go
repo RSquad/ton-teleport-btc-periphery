@@ -59,7 +59,7 @@ func (ks *FileKeystore) load(parent string, filename string) []byte {
 	filePath := filepath.Join(ks.rootPath, parent, filename)
 	blob, err := os.ReadFile(filePath)
 	if err != nil {
-		logger.Log.Error().Msgf("Failed to load keystore file `%s`", filePath)
+		logger.Log.Warn().Msgf("Failed to load keystore file `%s`", filePath)
 		return nil
 	}
 	return blob

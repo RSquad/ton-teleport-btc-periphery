@@ -112,19 +112,25 @@ pub extern "C" fn dkg_part1(
     package_len: i32,
     secret_package: *mut *const c_void,
 ) -> i32 {
+    println!("=======================> R1: 1 ========================");
     let mut rng = thread_rng();
+    println!("=======================> R1: 2 ========================");
     let ident = Identifier::deserialize(identifier).unwrap();
-    match frost_dkg_part1(ident, max_signers, min_signers, &mut rng) {
+    println!("=======================> R1: 3 ========================");
+    match frost_dkg_part1(ident, max_signers, min_signers, &mut rng) {        
         Err(err) => {
+            println!("=======================> R1: 3.A ========================");
             println!("[FROST] error: {}", err);
             return -1;
         }
         Ok((s, p)) => match p.serialize() {
             Err(err) => {
+                println!("=======================> R1: 3.B ========================");
                 println!("[FROST] error: {}", err);
                 return -2;
             }
             Ok(pkg_vec) => {
+                println!("=======================> R1: 3.C ========================");
                 if !package.is_null() && (package_len >= pkg_vec.len() as i32) {
                     unsafe {
                         package.copy_from(pkg_vec.as_slice().as_ptr(), pkg_vec.len());
@@ -151,12 +157,17 @@ pub extern "C" fn dkg_part2(
         return -1;
     }
 
+    println!("=======================> R2: 1 ========================");
     let r1_secret_box= from_void(r1_secret);
+    println!("=======================> R2: 2 ========================");
     let map = Round1Package::make_map(r1_pkgs_ptr, r1_pkgs_len);
+    println!("=======================> R2: 3 ========================");
     let result = frost_dkg_part2(*r1_secret_box, &map);
+    println!("=======================> R2: 4 ========================");
 
     match result {
         Err(Error::InvalidProofOfKnowledge { ref culprit }) => {
+            println!("=======================> R2: 4.A ========================");
             let culprit_data = culprit.serialize();
 
             if culprit_data.len() != 32 {
@@ -171,10 +182,12 @@ pub extern "C" fn dkg_part2(
             return -3;
         },
         Err(err) => {
+            println!("=======================> R2: 4.B ========================");
             println!("[FROST] error: {}", err);
             return -2;
         }
         Ok((s, r2_map)) => {
+            println!("=======================> R2: 4.C ========================");
             let mut r2_vec = Vec::with_capacity(map.len());
             for (id, pkg) in r2_map {
                 let mut identifier = [0u8; 32];
@@ -210,6 +223,7 @@ pub extern "C" fn dkg_part3(
     secret_key_pkg_len: *mut usize,
     r3_culprit_idx_out: &mut [u8; 32],
 ) -> i32 {
+    println!("=======================> R3: 1 ========================");
     if public_key_pkg_ptr.is_null()
         || secret_key_pkg_ptr.is_null()
         || r2_secret.is_null()
@@ -218,14 +232,21 @@ pub extern "C" fn dkg_part3(
     {
         return -1;
     }
+    println!("=======================> R3: 2 ========================");
     let r2_secret_box = from_void(r2_secret);
+    println!("=======================> R3: 3 ========================");
     let r1_pkgs_map = Round1Package::make_map(r1_pkgs_ptr, r1_pkgs_len);
+    println!("=======================> R3: 4 ========================");
     let r2_pkgs_map = Round2Package::make_map(r2_pkgs_ptr, r2_pkgs_len);
+    println!("=======================> R3: 5 ========================");
     let result = frost_dkg_part3(&r2_secret_box, &r1_pkgs_map, &r2_pkgs_map);
+    println!("=======================> R3: 6 ========================");
     // Prevent r2_secret_box from being freed. It must be freed manually.
     Box::leak(r2_secret_box);
+    println!("=======================> R3: 7 ========================");
     match result {
         Err(Error::InvalidSecretShare { ref culprit }) => {
+            println!("=======================> R3: 7.A ========================");
             match culprit {
                 Some(culprit_val) => {
                     let culprit_data = culprit_val.serialize();
@@ -247,10 +268,12 @@ pub extern "C" fn dkg_part3(
             }
         },
         Err(err) => {
+            println!("=======================> R3: 7.B ========================");
             println!("[FROST] error: {}", err);
             return -2;
         }
         Ok((s, p)) => {
+            println!("=======================> R3: 7.C ========================");
             let mut public_vec = p.serialize().unwrap();
             public_vec.shrink_to(public_vec.len());
             let mut secret_vec = s.serialize().unwrap();

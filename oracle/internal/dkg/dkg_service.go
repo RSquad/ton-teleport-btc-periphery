@@ -39,15 +39,15 @@ func (s *Service) Work(ctx context.Context, wg *sync.WaitGroup, keystore keystor
 
 	outChan := make(chan *coordinator.DKG)
 	fetcher := NewFetcher(s.coordinatorContract, outChan, s.fetchPeriod)
-	//executor := NewExecutor(outChan, s.coordinatorContract, keystore, s.validator)
+	executor := NewExecutor(outChan, s.coordinatorContract, keystore, s.validator)
 
 	wg.Add(1)
 	go fetcher.Work(ctx, wg)
 
-	//wg.Add(1)
-	//go executor.Work(ctx, wg)
+	wg.Add(1)
+	go executor.Work(ctx, wg)
 
-	// A periodic event that triggers every 10 seconds to call the SendStartDKG() function
+	// A periodic event that triggers every sendStartDKGPeriod seconds to call the SendStartDKG() function
 	wg.Add(1)
 	go func() {
 		defer wg.Done()

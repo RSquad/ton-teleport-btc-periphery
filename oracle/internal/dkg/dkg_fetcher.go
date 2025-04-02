@@ -48,6 +48,7 @@ func (f *Fetcher) Work(ctx context.Context, wg *sync.WaitGroup) {
 					Msg("fetch failed")
 			} else {
 				if dkg != nil {
+					logger.Log.Debug().Msg("-----------------> Fetch DKG, send to the executor <-----------------")
 					f.outChan <- dkg
 				}
 			}
