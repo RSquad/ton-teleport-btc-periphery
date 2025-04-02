@@ -27,11 +27,12 @@ type CachedPegout struct {
 }
 
 type SignService struct {
-	keyStore     keystore.Keystore
-	coordinator  *coordinator.CoordinatorContract
-	validator    *validator.Validator
-	ton          *tonclient.TonClient
-	cachedPegout *CachedPegout
+	keyStore          keystore.Keystore
+	coordinator       *coordinator.CoordinatorContract
+	validator         *validator.Validator
+	ton               *tonclient.TonClient
+	cachedPegout      *CachedPegout
+	executeSignPeriod int64 // `period` in seconds to call the ExecuteSign() function
 }
 
 func NewService(
@@ -39,12 +40,14 @@ func NewService(
 	validator *validator.Validator,
 	coordinator *coordinator.CoordinatorContract,
 	tonclient *tonclient.TonClient,
+	executeSignPeriod int64,
 ) *SignService {
 	return &SignService{
-		keyStore:    keyStore,
-		validator:   validator,
-		coordinator: coordinator,
-		ton:         tonclient,
+		keyStore:          keyStore,
+		validator:         validator,
+		coordinator:       coordinator,
+		ton:               tonclient,
+		executeSignPeriod: executeSignPeriod,
 	}
 }
 
@@ -53,8 +56,8 @@ func (s *SignService) Work(ctx context.Context, wg *sync.WaitGroup) {
 	defer logger.DefaultLogFinishWork("SignService")
 	logger.DefaultLogStartWork("SignService")
 
-	// A periodic event that triggers every 6 seconds to call the ExecuteSign() function
-	ticker := time.NewTicker(6 * time.Second)
+	// A periodic event that triggers every `period` seconds to call the ExecuteSign() function
+	ticker := time.NewTicker(time.Duration(s.executeSignPeriod) * time.Second)
 	defer ticker.Stop()
 
 	for {
@@ -127,6 +130,7 @@ func (s *SignService) ExecuteSign(ctx context.Context) {
 		s.logMessage("previous DKG is not yet initialized")
 		return
 	}
+
 	s.execute(ctx, dkg)
 }
 

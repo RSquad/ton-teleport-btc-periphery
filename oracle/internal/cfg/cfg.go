@@ -11,5 +11,8 @@ type Cfg struct {
 	ClientPrivateKeyPath       string `env:"ORACLE_CLIENT_PRIVATE_KEY_PATH"`
 	ValidatorServerAddr        string `env:"ORACLE_VALIDATOR_SERVER_ADDR"`
 	KeystorePath               string `env:"ORACLE_KEYSTORE_PATH"`
+	FetchPeriod                string `env:"ORACLE_DKG_FETCH_PERIOD"`
+	SendStartDKGPeriod         string `env:"ORACLE_SEND_START_DKG_PERIOD"`
+	ExecuteSignPeriod          string `env:"ORACLE_EXECUTE_SIGN_PERIOD"`
 	LogFile                    string `env:"LOG_FILE"`
 }

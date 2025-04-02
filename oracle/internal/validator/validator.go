@@ -81,21 +81,7 @@ func (v *Validator) FindKeyInfo(vset coordinator.VSet) (*KeyInfo, error) {
 				}, nil
 			}
 		}
-	}
-
-	// Search in session
-	for idx, pubkey := range vset {
-		sessionPublicKey := v.sessionSigner.PublicKey()
-		if bytes.Equal(pubkey, sessionPublicKey) {
-			return &KeyInfo{
-				KeyID:     sessionPublicKey,
-				VsetIdx:   idx,
-				PublicKey: sessionPublicKey,
-			}, nil
-		}
-	}
-
-	if !v.standaloneMode {
+	} else {
 		// Try to get keys from validator console
 		validatorKeys, err := v.validatorConsole.GetValidatorKeys()
 		if err != nil {
@@ -110,18 +96,6 @@ func (v *Validator) FindKeyInfo(vset coordinator.VSet) (*KeyInfo, error) {
 					return &keyInfo, nil
 				}
 			}
-		}
-	}
-
-	// Try searching in the previous session keys
-	for idx, pubkey := range vset {
-		ok := v.sessionSigner.TryLoadFromFile(pubkey)
-		if ok {
-			return &KeyInfo{
-				KeyID:     pubkey,
-				VsetIdx:   idx,
-				PublicKey: pubkey,
-			}, nil
 		}
 	}
 

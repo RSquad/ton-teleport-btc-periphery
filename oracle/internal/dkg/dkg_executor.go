@@ -103,7 +103,7 @@ func (e *Executor) Execute(dkg *coordinator.DKG) {
 	e.logStartExecuting(dkg)
 	defer e.logFinishExecuting(dkg)
 
-	if dkg.Status == coordinator.DKGStatusFinished {
+	if dkg.State == coordinator.DKGStateFinished {
 		e.logDKGFinished(dkg)
 		return
 	}
@@ -111,7 +111,13 @@ func (e *Executor) Execute(dkg *coordinator.DKG) {
 	if dkg.Until.After(e.until) {
 		e.until = dkg.Until
 		e.artifacts.Cleanup()
-		e.validator.GetSessionSigner().OnNewDKG(dkg.Until.Unix())
+
+		err := e.validator.GetSessionSigner().OnNewDKG(dkg.Until.Unix())
+		if err != nil {
+			e.logDKGProcess(dkg, fmt.Sprintf("Failed to call OnNewDKG: %v", err))
+			return
+		}
+
 		e.logNewDKGStarted(dkg)
 	}
 
@@ -127,9 +133,8 @@ func (e *Executor) Execute(dkg *coordinator.DKG) {
 	}
 
 	e.coordinatorContract.ConnectSigner(e.validator.GetSigner(keyInfo.KeyID))
-	sessionPublicKey := e.validator.GetSessionSigner().PublicKey()
 
-	if e.executeR1(dkg, keyInfo.VsetIdx, sessionPublicKey) {
+	if e.executeR1(dkg, keyInfo.VsetIdx) {
 		if e.executeR2(dkg, keyInfo.VsetIdx) {
 			if e.executeR3(dkg, keyInfo.VsetIdx) {
 				e.logDKGProcess(dkg, "Successfully completed all DKG rounds")
@@ -138,7 +143,7 @@ func (e *Executor) Execute(dkg *coordinator.DKG) {
 	}
 }
 
-func (e *Executor) executeR1(dkg *coordinator.DKG, validatorIdx uint16, sessionPublicKey []byte) bool {
+func (e *Executor) executeR1(dkg *coordinator.DKG, validatorIdx uint16) bool {
 	e.logExecuteR1(dkg)
 	if dkg.Round1Completed() {
 		e.logDKGProcess(dkg, "R1 completed")
@@ -177,9 +182,8 @@ func (e *Executor) executeR1(dkg *coordinator.DKG, validatorIdx uint16, sessionP
 
 	_, err := e.coordinatorContract.SendRound1(
 		validatorIdx,
-		localIdentifier,
 		e.artifacts.r1.pkg,
-		sessionPublicKey,
+		localIdentifier,
 	)
 	if err != nil {
 		e.logSendRound1Package(dkg, err)
@@ -211,7 +215,7 @@ func (e *Executor) executeR2(dkg *coordinator.DKG, validatorIdx uint16) bool {
 		r2Packages, r2SecretPtr, maliciousValidatorIdx, err := frost.DkgPart2(e.artifacts.r1.secret.ptr, r1Packages)
 		if err != nil {
 			if maliciousValidatorIdx != nil {
-				e.logError(dkg, "Part2 failed. Malicious validator found.", err)
+				e.logError(dkg, fmt.Sprintf("Part2 failed. Malicious validator found: %x", maliciousValidatorIdx), err)
 				e.executeClaim(dkg, validatorIdx, maliciousValidatorIdx)
 			} else {
 				e.logError(dkg, "Part2 failed", err)
@@ -237,7 +241,7 @@ func (e *Executor) executeR2(dkg *coordinator.DKG, validatorIdx uint16) bool {
 			// local r2 package is not sent yet, send it to coordinator
 			_, err := e.coordinatorContract.SendRound2(
 				validatorIdx,
-				localIdentifier,
+				localIdentifier, // TODO: remove
 				identifierTo.ToBytes(),
 				r2pkg.ToBytes(),
 			)
@@ -309,8 +313,9 @@ func (e *Executor) executeR3(dkg *coordinator.DKG, validatorIdx uint16) bool {
 
 	if _, err := e.coordinatorContract.SendPubkeyPackage(
 		validatorIdx,
-		localIdentifier,
+		e.validator.GetSessionSigner().PublicKey(),
 		e.artifacts.r3.publicKeyPackage,
+		localIdentifier, // TODO: remove
 	); err != nil {
 		e.logSendPubkeyPackageFailed(dkg, err)
 	}

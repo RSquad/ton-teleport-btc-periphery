@@ -27,12 +27,11 @@ func (c *CoordinatorContract) SendStartDKG() (*tlb.Transaction, error) {
 
 func (c *CoordinatorContract) SendRound1(
 	validatorIdx uint16,
-	identifier []byte,
 	round1Package []byte,
-	sessionPublicKey []byte,
+	identifier []byte,
 ) (*tlb.Transaction, error) {
 	return c.sendBodyCell(BuildSendRound1Body(
-		int64(c.ttl.Seconds()), validatorIdx, identifier, round1Package, sessionPublicKey,
+		int64(c.ttl.Seconds()), validatorIdx, round1Package, identifier,
 	))
 }
 
@@ -56,9 +55,9 @@ func (c *CoordinatorContract) SendClaim(
 	))
 }
 
-func (c *CoordinatorContract) SendPubkeyPackage(validatorIdx uint16, Identifier []byte, pubkeyPackage []byte) (*tlb.Transaction, error) {
+func (c *CoordinatorContract) SendPubkeyPackage(validatorIdx uint16, sessionPublicKey []byte, pubkeyPackage []byte, identifier []byte) (*tlb.Transaction, error) {
 	return c.sendBodyCell(BuildSendRound3Body(
-		int64(c.ttl.Seconds()), validatorIdx, Identifier, pubkeyPackage,
+		int64(c.ttl.Seconds()), validatorIdx, sessionPublicKey, pubkeyPackage, identifier,
 	))
 }
 

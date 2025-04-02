@@ -11,18 +11,16 @@ import (
 func BuildSendRound1Body(
 	ttl int64,
 	validatorIdx uint16,
-	Identifier []byte,
 	round1Package []byte,
-	sessionPublicKey []byte,
+	identifier []byte,
 ) *cell.Cell {
 	return cell.BeginCell().
 		MustStoreUInt(OpCodeCoordinatorRound1, 32).
 		MustStoreUInt(uint64(time.Now().Unix()+ttl), 32).
 		MustStoreUInt(uint64(validatorIdx), 16).
-		MustStoreSlice(sessionPublicKey, 256).
 		MustStoreRef(
 			cell.BeginCell().
-				MustStoreSlice(Identifier, 256).
+				MustStoreSlice(identifier, 256). // TODO: remove
 				MustStoreRef(
 					utils.SplitBytesToCells(round1Package),
 				).
@@ -38,10 +36,27 @@ func BuildSendRound2Body(ttl int64, validatorIdx uint16, fromIdentifier []byte, 
 		MustStoreUInt(uint64(validatorIdx), 16).
 		MustStoreRef(
 			cell.BeginCell().
-				MustStoreSlice(fromIdentifier, 256).
+				MustStoreSlice(fromIdentifier, 256). // TODO: remove
 				MustStoreSlice(toIdentifier, 256).
 				MustStoreRef(
 					utils.SplitBytesToCells(round2Package),
+				).
+				EndCell(),
+		).
+		EndCell()
+}
+
+func BuildSendRound3Body(ttl int64, validatorIdx uint16, sessionPublicKey []byte, pubkeyPackage []byte, identifier []byte) *cell.Cell {
+	return cell.BeginCell().
+		MustStoreUInt(OpCodeCoordinatorRound3, 32).
+		MustStoreUInt(uint64(time.Now().Unix()+ttl), 32).
+		MustStoreUInt(uint64(validatorIdx), 16).
+		MustStoreSlice(sessionPublicKey, 256).
+		MustStoreRef(
+			cell.BeginCell().
+				MustStoreSlice(identifier, 256). // TODO: remove
+				MustStoreRef(
+					utils.SplitBytesToCells(pubkeyPackage),
 				).
 				EndCell(),
 		).
@@ -54,22 +69,6 @@ func BuildSendClaimBody(ttl int64, validatorIdx uint16, maliciousValidatorIdx []
 		MustStoreUInt(uint64(time.Now().Unix()+ttl), 32).
 		MustStoreUInt(uint64(validatorIdx), 16).
 		MustStoreUInt(uint64(binary.BigEndian.Uint16(maliciousValidatorIdx[30:32])), 16).
-		EndCell()
-}
-
-func BuildSendRound3Body(ttl int64, validatorIdx uint16, Identifier []byte, pubkeyPackage []byte) *cell.Cell {
-	return cell.BeginCell().
-		MustStoreUInt(OpCodeCoordinatorRound3, 32).
-		MustStoreUInt(uint64(time.Now().Unix()+ttl), 32).
-		MustStoreUInt(uint64(validatorIdx), 16).
-		MustStoreRef(
-			cell.BeginCell().
-				MustStoreSlice(Identifier, 256).
-				MustStoreRef(
-					utils.SplitBytesToCells(pubkeyPackage),
-				).
-				EndCell(),
-		).
 		EndCell()
 }
 

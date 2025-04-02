@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/frost"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 )
 
 // Helpers
@@ -75,4 +76,19 @@ func HandleTvmError(tvmError error) string {
 func ValidatorIdxToFrost(validatorIdx uint16) []byte {
 	validatorIdx |= 0x80
 	return frost.GetIdentifier(validatorIdx)
+}
+
+func ParseIntWithDefaultVal(str string, defaultValue int64, name string) int64 {
+	value := defaultValue
+
+	if len(str) > 0 {
+		val, err := strconv.ParseInt(str, 10, 64)
+		if err != nil {
+			logger.Log.Warn().Msgf("Failed to parse %s value `%s`. Default value of %ds will be used.", name, str, defaultValue)
+		} else {
+			value = val
+		}
+	}
+
+	return value
 }

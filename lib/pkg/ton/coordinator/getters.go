@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/parseddict"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/signer"
@@ -74,6 +75,12 @@ func (c *CoordinatorContract) GetDkg(block *tonutils.BlockIDExt) (*DKG, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	dkgAsStr, err := dkg2Str(dkg)
+	if err != nil {
+		return nil, err
+	}
+	logger.Log.Debug().Msgf("Received DKG: ", dkgAsStr)
 
 	return dkg, nil
 }
@@ -173,17 +180,23 @@ func (c *CoordinatorContract) GetUnsignedPegouts() ([]PegoutRecord, error) {
 }
 
 func parseDGKSlice(dkgSlice *cell.Slice) (*DKG, error) {
-	status := DKGStatus(dkgSlice.MustLoadUInt(2))
+	// State
+	state := DKGState(dkgSlice.MustLoadUInt(2))
 
+	// VSet
 	vSetDictCell := dkgSlice.MustLoadDict(16)
 	vSet, err := NewVSet(vSetDictCell)
 	if err != nil {
 		return nil, err
 	}
 
+	// Max signers
 	maxSigners := uint16(dkgSlice.MustLoadUInt(16))
-	vsetMask := dkgSlice.MustLoadSlice(256)
 
+	// VSet mask
+	vSetMask := dkgSlice.MustLoadSlice(256)
+
+	// R1
 	r1State, err := loadRoundMaskAndCount(dkgSlice)
 	if err != nil {
 		return nil, err
@@ -194,6 +207,7 @@ func parseDGKSlice(dkgSlice *cell.Slice) (*DKG, error) {
 		return nil, err
 	}
 
+	// R2
 	r2State, err := loadRoundMaskAndCount(dkgSlice)
 	if err != nil {
 		return nil, err
@@ -204,35 +218,49 @@ func parseDGKSlice(dkgSlice *cell.Slice) (*DKG, error) {
 		return nil, err
 	}
 
+	// Attempts
 	attempts := dkgSlice.MustLoadUInt(8)
+
+	// DKG lifetime (timestamp)
 	untilUnix := dkgSlice.MustLoadUInt(32)
 	until := time.Unix(int64(untilUnix), 0)
 
-	dkgSliceNext := dkgSlice.MustLoadRef()
-	cfgHash := dkgSliceNext.MustLoadSlice(256)
+	dkgNextRef := dkgSlice.MustLoadRef()
 
-	r3, err := LoadDKGR3(dkgSliceNext)
+	// VSet config hash
+	cfgHash := dkgNextRef.MustLoadSlice(256)
+
+	// R3
+	r3, err := LoadDKGR3(dkgNextRef)
 	if err != nil {
 		return nil, err
 	}
 
-	claims, err := LoadDKGClaims(dkgSliceNext)
+	// Claims
+	claims, err := LoadDKGClaims(dkgNextRef)
+	if err != nil {
+		return nil, err
+	}
+
+	// Session keys
+	sessionKeys, err := LoadSessionKeys(dkgNextRef)
 	if err != nil {
 		return nil, err
 	}
 
 	return &DKG{
-		Status:     status,
-		VSet:       vSet,
-		VsetMask:   vsetMask,
-		MaxSigners: maxSigners,
-		R1:         r1,
-		R2:         r2,
-		R3:         r3,
-		Claims:     claims,
-		CfgHash:    cfgHash,
-		Attempts:   attempts,
-		Until:      until,
+		State:       state,
+		VSet:        vSet,
+		MaxSigners:  maxSigners,
+		VSetMask:    vSetMask,
+		SessionKeys: sessionKeys,
+		R1:          r1,
+		R2:          r2,
+		R3:          r3,
+		Claims:      claims,
+		CfgHash:     cfgHash,
+		Attempts:    attempts,
+		Until:       until,
 	}, nil
 }
 
@@ -267,4 +295,9 @@ func loadSharesMap(value *cell.Slice) (map[int][]byte, error) {
 		},
 	)
 	return *sharesMap, err
+}
+
+func dkg2Str(dkg *DKG) (string, error) {
+	// TODO: implement
+	return "NOT IMPLEMENTED", nil
 }

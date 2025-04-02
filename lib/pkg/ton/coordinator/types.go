@@ -9,17 +9,18 @@ import (
 )
 
 type DKG struct {
-	Status     DKGStatus
-	VSet       VSet
-	VsetMask   []byte
-	MaxSigners uint16
-	R1         *DKGR1
-	R2         *DKGR2
-	R3         *DKGR3
-	Claims     *DKGClaims
-	CfgHash    []byte
-	Attempts   uint64
-	Until      time.Time
+	State       DKGState
+	VSet        VSet
+	MaxSigners  uint16
+	VSetMask    []byte
+	SessionKeys *SessionKeys
+	R1          *DKGR1
+	R2          *DKGR2
+	R3          *DKGR3
+	Claims      *DKGClaims
+	CfgHash     []byte
+	Attempts    uint64
+	Until       time.Time
 }
 
 type DKGRoundState struct {
@@ -27,24 +28,24 @@ type DKGRoundState struct {
 	count uint64
 }
 
-type DKGStatus uint64
+type DKGState uint64
 
 const (
-	DKGStatusFinished      DKGStatus = 0
-	DKGStatusInProgress    DKGStatus = 1
-	DKGStatusPart1Finished DKGStatus = 2
-	DKGStatusPart2Finished DKGStatus = 3
+	DKGStateFinished      DKGState = 0
+	DKGStateInProgress    DKGState = 1
+	DKGStatePart1Finished DKGState = 2
+	DKGStatePart2Finished DKGState = 3
 )
 
-func (s DKGStatus) String() string {
+func (s DKGState) String() string {
 	switch s {
-	case DKGStatusFinished:
+	case DKGStateFinished:
 		return "FINISHED"
-	case DKGStatusInProgress:
+	case DKGStateInProgress:
 		return "IN_PROGRESS"
-	case DKGStatusPart1Finished:
+	case DKGStatePart1Finished:
 		return "PART1_FINISHED"
-	case DKGStatusPart2Finished:
+	case DKGStatePart2Finished:
 		return "PART2_FINISHED"
 	default:
 		return "UNKNOWN"
@@ -60,17 +61,17 @@ func (dkg *DKG) GetR2Packages(fromIdentifier []byte) DKGPkgs {
 }
 
 func (dkg *DKG) Round1Completed() bool {
-	return dkg.Status == DKGStatusFinished ||
-		dkg.Status >= DKGStatusPart1Finished
+	return dkg.State == DKGStateFinished ||
+		dkg.State >= DKGStatePart1Finished
 }
 
 func (dkg *DKG) Round2Completed() bool {
-	return dkg.Status == DKGStatusFinished ||
-		dkg.Status >= DKGStatusPart2Finished
+	return dkg.State == DKGStateFinished ||
+		dkg.State >= DKGStatePart2Finished
 }
 
 func (dkg *DKG) Round3Completed() bool {
-	return dkg.Status == DKGStatusFinished
+	return dkg.State == DKGStateFinished
 }
 
 func (dkg *DKG) ClaimCompleted(validatorIdx uint16) bool {

@@ -22,13 +22,13 @@ func errorEvent() *zerolog.Event {
 
 func infoEventWithDkg(dkg *coordinator.DKG) *zerolog.Event {
 	return infoEvent().
-		Str("dkg_status", dkg.Status.String()).
+		Str("dkg_state", dkg.State.String()).
 		Str("dkg_until", dkg.Until.Format(time.RFC3339))
 }
 
 func errorEventWithDkg(dkg *coordinator.DKG) *zerolog.Event {
 	return errorEvent().
-		Str("status", dkg.Status.String()).
+		Str("state", dkg.State.String()).
 		Str("until", dkg.Until.Format(time.RFC3339))
 }
 
