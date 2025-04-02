@@ -110,53 +110,42 @@ func (ks *FileKeystore) LoadSigningShares(name string) [][]byte {
 	return packages
 }
 
-func (ks *FileKeystore) StoreSecret(pubkey []byte, secret []byte) error {
+func (ks *FileKeystore) write(filePath string, data []byte) error {
 	ks.mu.Lock()
 	defer ks.mu.Unlock()
 
+	return os.WriteFile(filePath, data, 0o600)
+}
+
+func (ks *FileKeystore) StoreSecret(pubkey []byte, secret []byte) error {
 	fileName := hex.EncodeToString(pubkey[:32])
 	filePath := filepath.Join(ks.rootPath, "secrets", fileName)
-	return os.WriteFile(filePath, secret, 0o600)
+	return ks.write(filePath, secret)
 }
 
 func (ks *FileKeystore) StoreSessionTS(dkgUntilTimestamp int64, secret []byte) error {
-	ks.mu.Lock()
-	defer ks.mu.Unlock()
-
 	fileName := fmt.Sprintf("%d", dkgUntilTimestamp)
 	filePath := filepath.Join(ks.rootPath, "sessions", fileName)
-	return os.WriteFile(filePath, secret, 0o600)
+	return ks.write(filePath, secret)
 }
 
 func (ks *FileKeystore) StoreSessionPubKey(publicKey []byte, secret []byte) error {
-	ks.mu.Lock()
-	defer ks.mu.Unlock()
-
 	fileName := fmt.Sprintf("%x", publicKey)
 	filePath := filepath.Join(ks.rootPath, "sessions", fileName)
-	return os.WriteFile(filePath, secret, 0o600)
+	return ks.write(filePath, secret)
 }
 
 func (ks *FileKeystore) StoreNonce(name string, nonce []byte) error {
-	ks.mu.Lock()
-	defer ks.mu.Unlock()
-
 	filePath := filepath.Join(ks.rootPath, "temp", "nonce_"+name)
-	return os.WriteFile(filePath, nonce, 0o600)
+	return ks.write(filePath, nonce)
 }
 
 func (ks *FileKeystore) StoreCommitments(name string, commitments []byte) error {
-	ks.mu.Lock()
-	defer ks.mu.Unlock()
-
 	filePath := filepath.Join(ks.rootPath, "temp", "commitments_"+name)
-	return os.WriteFile(filePath, commitments, 0o600)
+	return ks.write(filePath, commitments)
 }
 
 func (ks *FileKeystore) StoreSigningShares(name string, pkgs [][]byte) error {
-	ks.mu.Lock()
-	defer ks.mu.Unlock()
-
 	filePath := filepath.Join(ks.rootPath, "temp", "shares_"+name)
 	// Convert each package to hex string and join with newlines
 	var lines []string
@@ -164,7 +153,7 @@ func (ks *FileKeystore) StoreSigningShares(name string, pkgs [][]byte) error {
 		lines = append(lines, hex.EncodeToString(pkg))
 	}
 	data := []byte(strings.Join(lines, "\n"))
-	return os.WriteFile(filePath, data, 0o600)
+	return ks.write(filePath, data)
 }
 
 func (ks *FileKeystore) Cleanup() {
