@@ -3,6 +3,7 @@ package signing
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/frost"
@@ -47,17 +48,24 @@ func NewService(
 	}
 }
 
-func (s *SignService) Work(ctx context.Context) (err error) {
+func (s *SignService) Work(ctx context.Context, wg *sync.WaitGroup) {
+	defer wg.Done()
+	defer logger.DefaultLogFinishWork("SignService")
 	logger.DefaultLogStartWork("SignService")
-	defer logger.DefaultLogFinishWork("SignService", err)
-	tick := time.Tick(6 * time.Second)
+
+	// A periodic event that triggers every 6 seconds to call the ExecuteSign() function
+	ticker := time.NewTicker(6 * time.Second)
+	defer ticker.Stop()
+
 	for {
 		select {
 		case <-ctx.Done():
-			return ctx.Err()
-		case _, ok := <-tick:
+			logger.Log.Info().Msg("Sign service received shutdown signal...")
+			return
+		case _, ok := <-ticker.C:
 			if !ok {
-				return fmt.Errorf("ticker closed")
+				logger.Log.Warn().Msg("Sign service ticker closed")
+				return
 			}
 			s.ExecuteSign(ctx)
 		}
