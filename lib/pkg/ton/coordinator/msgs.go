@@ -63,7 +63,7 @@ func BuildSendRound3Body(ttl int64, validatorIdx uint16, sessionPublicKey []byte
 		EndCell()
 }
 
-func BuildSendClaimBody(ttl int64, validatorIdx uint16, maliciousValidatorIdx []byte) *cell.Cell {
+func BuildSendDKGClaimBody(ttl int64, validatorIdx uint16, maliciousValidatorIdx []byte) *cell.Cell {
 	return cell.BeginCell().
 		MustStoreUInt(OpCodeCoordinatorDkgClaim, 32).
 		MustStoreUInt(uint64(time.Now().Unix()+ttl), 32).
@@ -130,5 +130,15 @@ func BuildSendSignaturesBody(ttl int64, req *SignaturesRequest) *cell.Cell {
 				MustStoreDict(dict).
 				EndCell(),
 		).
+		EndCell()
+}
+
+func BuildSendSigningClaimBody(ttl int64, req *SigningClaimRequest) *cell.Cell {
+	return cell.BeginCell().
+		MustStoreUInt(OpCodeCoordinatorSigningClaim, 32).
+		MustStoreUInt(uint64(time.Now().Unix()+ttl), 32).
+		MustStoreUInt(uint64(req.ValidatorIdx), 16).
+		MustStoreUInt(req.PegoutID, 64).
+		MustStoreUInt(uint64(binary.BigEndian.Uint16(req.maliciousValidatorIdx[30:32])), 16).
 		EndCell()
 }

@@ -330,15 +330,11 @@ func (e *Executor) executeClaim(dkg *coordinator.DKG, validatorIdx uint16, malic
 		return
 	}
 
-	maliciousValidatorIdxStr := "NO"
-	if maliciousValidatorIdx != nil {
-		maliciousValidatorIdxStr = hex.EncodeToString(maliciousValidatorIdx)
-	}
-	e.logMessage(dkg, "sending claim packages. Malicious validator idx: "+maliciousValidatorIdxStr)
+	e.logMessage(dkg, "sending claim packages. Malicious validator idx: "+hex.EncodeToString(maliciousValidatorIdx))
 	withErrors := false
 
 	// claim package is not sent yet, send it to coordinator
-	_, err := e.coordinatorContract.SendClaim(
+	_, err := e.coordinatorContract.SendDKGClaim(
 		validatorIdx,
 		maliciousValidatorIdx,
 	)

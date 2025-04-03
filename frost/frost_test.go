@@ -164,31 +164,43 @@ func TestDKG(t *testing.T) {
 	for i := uint16(0); i < maxSigners; i++ {
 		sender, _ := DecodeIdentifier(identifiers[i])
 
-		signatureShare, err := SignWithTweak(
+		signatureShare, culpritIdx, err := SignWithTweak(
 			keyPackages[*sender],
 			message,
 			commitments,
 			nonces[*sender],
 			merkleRoot,
 		)
+
 		if err != nil {
-			t.Error(err)
+			if culpritIdx != nil {
+				t.Error(fmt.Errorf("culprit idx: %v", culpritIdx))
+			} else {
+				t.Error(err)
+			}
 		}
+
 		fmt.Printf("SignatureShares %x\n", signatureShare)
 		signatureShares[*sender] = Package{signatureShare}
 	}
 
 	sender, _ := DecodeIdentifier(identifiers[0])
-	groupSignature, err := AggregateWithTweak(
+	groupSignature, culpritIdx, err := AggregateWithTweak(
 		message,
 		commitments,
 		signatureShares,
 		pubkeyPackages[*sender],
 		merkleRoot,
 	)
+
 	if err != nil {
-		t.Error(err)
+		if culpritIdx != nil {
+			t.Error(fmt.Errorf("culprit idx: %v", culpritIdx))
+		} else {
+			t.Error(err)
+		}
 	}
+
 	fmt.Printf("groupSignature %x\n", groupSignature)
 
 	res, err := Verify(

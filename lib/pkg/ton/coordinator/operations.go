@@ -48,11 +48,11 @@ func (c *CoordinatorContract) SendRound2(
 	))
 }
 
-func (c *CoordinatorContract) SendClaim(
+func (c *CoordinatorContract) SendDKGClaim(
 	validatorIdx uint16,
 	maliciousValidatorIdx []byte,
 ) (*tlb.Transaction, error) {
-	return c.sendBodyCell(BuildSendClaimBody(
+	return c.sendBodyCell(BuildSendDKGClaimBody(
 		int64(c.ttl.Seconds()), validatorIdx, maliciousValidatorIdx,
 	))
 }
@@ -100,6 +100,17 @@ func (c *CoordinatorContract) SendSignatures(
 	return c.sendBodyCell(BuildSendSignaturesBody(
 		int64(c.ttl.Seconds()),
 		&SignaturesRequest{PegoutID, ValidatorIdx, Signatures},
+	))
+}
+
+func (c *CoordinatorContract) SendSigningClaim(
+	PegoutID uint64,
+	ValidatorIdx uint16,
+	maliciousValidatorIdx []byte,
+) (*tlb.Transaction, error) {
+	return c.sendBodyCell(BuildSendSigningClaimBody(
+		int64(c.ttl.Seconds()),
+		&SigningClaimRequest{PegoutID, ValidatorIdx, maliciousValidatorIdx},
 	))
 }
 

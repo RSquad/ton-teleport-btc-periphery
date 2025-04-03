@@ -1,6 +1,7 @@
 package signing
 
 import (
+	"encoding/hex"
 	"fmt"
 
 	"github.com/rs/zerolog"
@@ -136,4 +137,20 @@ func (s *SignService) logSendSigningShare(pegoutID uint64, signShares [][]byte) 
 func (s *SignService) logSendSigningShareError(pegoutID uint64, err error) {
 	msg := helpers.HandleTvmError(err)
 	errorEventWithPegoutID(pegoutID).Err(err).Msg("failed to send signing share: " + msg)
+}
+
+func (s *SignService) logExecuteClaim(pegoutID uint64) {
+	infoEventWithPegoutID(pegoutID).Msg("execute claim")
+}
+
+func (s *SignService) logSendClaim(pegoutID uint64, maliciousValidatorIdx []byte) {
+	infoEventWithPegoutID(pegoutID).Msg("Malicious validator idx: " + hex.EncodeToString(maliciousValidatorIdx))
+}
+
+func (s *SignService) logSigningClaimSent(pegoutID uint64) {
+	infoEventWithPegoutID(pegoutID).Msg("Sign claim sent")
+}
+
+func (s *SignService) logSigningClaimSentError(pegoutID uint64, err error) {
+	errorEventWithPegoutID(pegoutID).Err(err).Msg("failed to send sign claim")
 }

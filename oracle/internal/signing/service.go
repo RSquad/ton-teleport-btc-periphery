@@ -2,6 +2,7 @@ package signing
 
 import (
 	"context"
+	"encoding/hex"
 	"fmt"
 	"sync"
 	"time"
@@ -290,7 +291,7 @@ func (s *SignService) doSign(
 		signShares = make([][]byte, 0, len(pegout.signingHashes))
 		// generate signing share for each input
 		for i, input := range pegout.inputs {
-			signShare, err := s.Sign(
+			signShare, maliciousValidatorIdx, err := s.Sign(
 				publicKey,                    // public key
 				input.BitcoinMerkleRoot,      // tap merkle root used as tweak for tweaking signing share
 				pegout.signingHashes[i],      // signing hash for current input
@@ -298,9 +299,20 @@ func (s *SignService) doSign(
 				pegout.addrStr,               // pegout address used as key to load nonce from keystore
 			)
 			if err != nil {
-				s.logError(fmt.Sprintf("failed to sign hash %d", i), err)
+
 				return false
 			}
+
+			if err != nil {
+				if maliciousValidatorIdx != nil {
+					s.logError(fmt.Sprintf("Sign failed. Malicious validator found: %x", maliciousValidatorIdx), err)
+					s.executeClaim(pegout.ID, validatorKey, maliciousValidatorIdx)
+				} else {
+					s.logError(fmt.Sprintf("failed to sign hash %d", i), err)
+				}
+				return false
+			}
+
 			signShares = append(signShares, signShare)
 		}
 		s.keyStore.StoreSigningShares(pegout.addrStr, signShares)
@@ -346,9 +358,7 @@ func (s *SignService) doAggregate(
 		if err != nil {
 			if maliciousValidatorIdx != nil {
 				s.logError(fmt.Sprintf("AggregateWithTweak failed. Malicious validator found: %x", maliciousValidatorIdx), err)
-
-				// TODO: implement
-				//s.executeClaim(dkg, validatorIdx, maliciousValidatorIdx)
+				s.executeClaim(pegout, validatorKey, maliciousValidatorIdx)
 			} else {
 				s.logAggregateSignSharesError(err)
 			}
@@ -377,14 +387,14 @@ func (s *SignService) Sign(
 	signingHash []byte,
 	commitments map[string][]byte,
 	nonceName string,
-) ([]byte, error) {
+) ([]byte, []byte, error) {
 	secretPackage := s.keyStore.LoadSecret(publicKey)
 	if secretPackage == nil {
-		return nil, fmt.Errorf("failed to load secret package by key %x", publicKey)
+		return nil, nil, fmt.Errorf("failed to load secret package by key %x", publicKey)
 	}
 	nonces := s.keyStore.LoadNonce(nonceName)
 	if nonces == nil {
-		return nil, fmt.Errorf("failed to load nonce by name %s", nonceName)
+		return nil, nil, fmt.Errorf("failed to load nonce by name %s", nonceName)
 	}
 	return frost.SignWithTweak(
 		frost.NewPackage(secretPackage),
@@ -427,4 +437,33 @@ func filterSharesByHashIndex(
 func (s *SignService) getLatestBlock(ctx context.Context) *ton.BlockIDExt {
 	block, _ := s.ton.API.CurrentMasterchainInfo(ctx)
 	return block
+}
+
+func (s *SignService) executeClaim(pegout *CachedPegout, validatorKey *validator.KeyInfo, maliciousValidatorIdx []byte) {
+	s.logExecuteClaim(pegout.ID)
+
+	if s.ClaimCompleted(pegout) {
+		s.logMessage("claim completed")
+		return
+	}
+
+	s.logMessage("sending claim packages. Malicious validator idx: " + hex.EncodeToString(maliciousValidatorIdx))
+
+	// claim package is not sent yet, send it to coordinator
+	s.logSendClaim(pegout.ID, maliciousValidatorIdx)
+
+	if _, err := s.coordinator.SendSigningClaim(
+		pegout.ID,
+		validatorKey.VsetIdx,
+		maliciousValidatorIdx,
+	); err != nil {
+		s.logSigningClaimSentError(pegout.ID, err)
+	} else {
+		s.logSigningClaimSent(pegout.ID)
+	}
+}
+
+func (s *SignService) ClaimCompleted(pegout *CachedPegout) bool {
+	pegout.
+	return dkg.Claims.Mask.Bit(int(validatorIdx)) > 0
 }

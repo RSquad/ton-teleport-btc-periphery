@@ -175,9 +175,11 @@ func SignWithTweak(
 	commitments map[Identifier]Package,
 	nonces Package,
 	merkleRoot []byte,
-) ([]byte, error) {
+) ([]byte, []byte, error) {
 	commitmentsPkgs, commitmentsPin := makeCPackageSlice(commitments)
 	signingShares := newEmptyBuffer()
+	culpritIdx := make([]byte, 32)
+
 	ret := C.sign_with_tweak(
 		newBufferFromPackage(keyPackage),
 		newBufferFromSlice(message),
@@ -186,14 +188,19 @@ func SignWithTweak(
 		newBufferFromPackage(nonces),
 		newBufferFromSlice(merkleRoot),
 		&signingShares,
+		(*[32]C.uint8_t)(unsafe.Pointer(&culpritIdx[0])),
 	)
 	commitmentsPin.Unpin()
 
 	if ret < 0 {
-		return nil, fmt.Errorf("%d", ret)
+		if ret != -3 {
+			culpritIdx = nil
+		}
+
+		return nil, culpritIdx, fmt.Errorf("%d", ret)
 	}
 
-	return extractSlice(signingShares), nil
+	return extractSlice(signingShares), nil, nil
 }
 
 func AggregateWithTweak(

@@ -24,6 +24,7 @@ const (
 	OpCodeCoordinatorSendCommitments  = 0x58e40000
 	OpCodeCoordinatorSendSigningShare = 0x706b0000
 	OpCodeCoordinatorSendSignature    = 0xd0720000
+	OpCodeCoordinatorSigningClaim     = 0x5fcb0000
 )
 
 const DefaultDGKTTL = time.Minute
@@ -145,6 +146,11 @@ func (c *CoordinatorContract) GetUnsignedPegouts() ([]PegoutRecord, error) {
 	for _, kv := range entries {
 		ID := kv.Key.MustLoadUInt(64)
 		value := kv.Value.MustLoadRef()
+
+		MaxSigners := uint16(value.MustLoadUInt(16))
+		ExpiredAt := time.Unix(int64(value.MustLoadUInt(32)), 0)
+		SigningMask := value.MustLoadSlice(256)
+
 		CommitmentsMask := value.MustLoadSlice(256)
 		value.MustLoadUInt(16)
 		commitmentsDict := value.MustLoadDict(256)
@@ -163,8 +169,23 @@ func (c *CoordinatorContract) GetUnsignedPegouts() ([]PegoutRecord, error) {
 			loadSharesMap,
 		)
 		SigningShares := *signingSharesPtr
-		PegoutAddress := value.MustLoadAddr()
-		InternalKey := value.MustLoadRef().MustLoadSlice(256)
+
+		claimsSlice := value.MustLoadRef()
+		ClaimsMask := claimsSlice.MustLoadSlice(256)
+		ClaimsCount := uint16(claimsSlice.MustLoadUInt(16))
+		claimsCountersDict := claimsSlice.MustLoadDict(16)
+		claimsCountersPtr, _ := parseddict.New(
+			claimsCountersDict,
+			parseddict.ParseKey,
+			func(s *cell.Slice) (uint16, error) {
+				return uint16(s.MustLoadUInt(16)), nil
+			},
+		)
+		ClaimsCounters := *claimsCountersPtr
+
+		refSlice := value.MustLoadRef()
+		InternalKey := refSlice.MustLoadSlice(256)
+		PegoutAddress := refSlice.MustLoadAddr()
 
 		pegouts = append(pegouts, PegoutRecord{
 			ID,
@@ -174,6 +195,12 @@ func (c *CoordinatorContract) GetUnsignedPegouts() ([]PegoutRecord, error) {
 			CommitmentsMask,
 			SigningShares, // map[string]*Cell
 			SigningSharesMask,
+			ClaimsMask,
+			ClaimsCount,
+			ClaimsCounters,
+			MaxSigners,
+			ExpiredAt,
+			SigningMask,
 		})
 	}
 	return pegouts, nil

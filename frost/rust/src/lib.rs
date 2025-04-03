@@ -388,6 +388,7 @@ pub extern "C" fn sign_with_tweak(
     nonces_buf: Buffer,
     merkle_root_buf: Buffer,
     signature_share_buf: *mut Buffer,
+    culprit_idx_out: &mut [u8; 32],
 ) -> i32 {
     let result = (|| -> Result<(), Error> {
         let key_package = KeyPackage::from_buf(key_package_buf)?;
@@ -414,6 +415,41 @@ pub extern "C" fn sign_with_tweak(
     })();
 
     match result {
+        Err(Error::InvalidSignatureShare { ref culprit }) => {
+            let culprit_data = culprit.serialize();
+    
+            if culprit_data.len() != 32 {
+                logout_info!("culprit_data.len() != 32");
+                return -1;
+            }
+    
+            unsafe {
+                ptr::copy_nonoverlapping(culprit_data.as_ptr(), culprit_idx_out.as_mut_ptr(), 32);
+            }
+    
+            return -3;
+        },
+        Err(Error::InvalidSecretShare { ref culprit }) => {
+            match culprit {
+                Some(culprit_val) => {
+                    let culprit_data = culprit_val.serialize();
+                    if culprit_data.len() != 32 {
+                        logout_info!("culprit_data.len() != 32");
+                        return -1;
+                    }
+    
+                    unsafe {
+                        ptr::copy_nonoverlapping(culprit_data.as_ptr(), culprit_idx_out.as_mut_ptr(), 32);
+                    }
+    
+                    return -3;
+                }
+                None => {
+                    logout_info!("FROST error: culprit value empty");
+                    return -1;
+                }
+            }
+        }
         Err(err) => {
             logout_info!("FROST error: {}", err);
             return -1;
@@ -461,6 +497,20 @@ pub extern "C" fn aggregate_with_tweak(
     })();
 
     match result {
+        Err(Error::InvalidSignatureShare { ref culprit }) => {
+            let culprit_data = culprit.serialize();
+    
+            if culprit_data.len() != 32 {
+                logout_info!("culprit_data.len() != 32");
+                return -1;
+            }
+    
+            unsafe {
+                ptr::copy_nonoverlapping(culprit_data.as_ptr(), culprit_idx_out.as_mut_ptr(), 32);
+            }
+    
+            return -3;
+        }
         Err(Error::InvalidSecretShare { ref culprit }) => {
             match culprit {
                 Some(culprit_val) => {

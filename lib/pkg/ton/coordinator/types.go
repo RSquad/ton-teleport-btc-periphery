@@ -99,6 +99,12 @@ type SignaturesRequest struct {
 	Signatures   [][]byte
 }
 
+type SigningClaimRequest struct {
+	PegoutID              uint64
+	ValidatorIdx          uint16
+	maliciousValidatorIdx []byte
+}
+
 type PegoutRecord struct {
 	ID                uint64
 	PegoutAddress     *address.Address
@@ -107,6 +113,12 @@ type PegoutRecord struct {
 	CommitmentsMask   []byte
 	SigningShares     map[string]map[int][]byte
 	SigningSharesMask []byte
+	ClaimsMask        []byte
+	ClaimsCount       uint16
+	ClaimsCounters    map[string]uint16
+	MaxSigners        uint16
+	ExpiredAt         time.Time
+	SigningMask       []byte
 }
 
 func (p *PegoutRecord) HasCommitment(identifier []byte) bool {

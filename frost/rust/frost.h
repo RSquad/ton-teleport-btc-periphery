@@ -72,7 +72,8 @@ int32_t sign_with_tweak(struct Buffer key_package_buf,
                         size_t commitments_len,
                         struct Buffer nonces_buf,
                         struct Buffer merkle_root_buf,
-                        struct Buffer *signature_share_buf);
+                        struct Buffer *signature_share_buf,
+                        uint8_t (*culprit_idx_out)[32]);
 
 int32_t verify(struct Buffer message_buf,
                struct Buffer pubkey_package_buf,
