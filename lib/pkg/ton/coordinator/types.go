@@ -113,7 +113,7 @@ type PegoutRecord struct {
 	CommitmentsMask   []byte
 	SigningShares     map[string]map[int][]byte
 	SigningSharesMask []byte
-	ClaimsMask        []byte
+	ClaimsMask        *big.Int
 	ClaimsCount       uint16
 	ClaimsCounters    map[string]uint16
 	MaxSigners        uint16

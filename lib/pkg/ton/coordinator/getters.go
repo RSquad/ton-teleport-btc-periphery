@@ -171,15 +171,13 @@ func (c *CoordinatorContract) GetUnsignedPegouts() ([]PegoutRecord, error) {
 		SigningShares := *signingSharesPtr
 
 		claimsSlice := value.MustLoadRef()
-		ClaimsMask := claimsSlice.MustLoadSlice(256)
+		ClaimsMask := claimsSlice.MustLoadBigUInt(256)
 		ClaimsCount := uint16(claimsSlice.MustLoadUInt(16))
 		claimsCountersDict := claimsSlice.MustLoadDict(16)
 		claimsCountersPtr, _ := parseddict.New(
 			claimsCountersDict,
 			parseddict.ParseKey,
-			func(s *cell.Slice) (uint16, error) {
-				return uint16(s.MustLoadUInt(16)), nil
-			},
+			loadUI16Map,
 		)
 		ClaimsCounters := *claimsCountersPtr
 
@@ -322,6 +320,10 @@ func loadSharesMap(value *cell.Slice) (map[int][]byte, error) {
 		},
 	)
 	return *sharesMap, err
+}
+
+func loadUI16Map(s *cell.Slice) (uint16, error) {
+	return uint16(s.MustLoadUInt(16)), nil
 }
 
 func dkg2Str(dkg *DKG) (string, error) {

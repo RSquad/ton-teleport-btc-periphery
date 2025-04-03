@@ -306,7 +306,7 @@ func (s *SignService) doSign(
 			if err != nil {
 				if maliciousValidatorIdx != nil {
 					s.logError(fmt.Sprintf("Sign failed. Malicious validator found: %x", maliciousValidatorIdx), err)
-					s.executeClaim(pegout.ID, validatorKey, maliciousValidatorIdx)
+					s.executeClaim(pegout, validatorKey, maliciousValidatorIdx)
 				} else {
 					s.logError(fmt.Sprintf("failed to sign hash %d", i), err)
 				}
@@ -442,7 +442,7 @@ func (s *SignService) getLatestBlock(ctx context.Context) *ton.BlockIDExt {
 func (s *SignService) executeClaim(pegout *CachedPegout, validatorKey *validator.KeyInfo, maliciousValidatorIdx []byte) {
 	s.logExecuteClaim(pegout.ID)
 
-	if s.ClaimCompleted(pegout) {
+	if s.ClaimCompleted(pegout, validatorKey.VsetIdx) {
 		s.logMessage("claim completed")
 		return
 	}
@@ -463,7 +463,6 @@ func (s *SignService) executeClaim(pegout *CachedPegout, validatorKey *validator
 	}
 }
 
-func (s *SignService) ClaimCompleted(pegout *CachedPegout) bool {
-	pegout.
-	return dkg.Claims.Mask.Bit(int(validatorIdx)) > 0
+func (s *SignService) ClaimCompleted(pegout *CachedPegout, validatorIdx uint16) bool {
+	return pegout.artifacts.ClaimsMask.Bit(int(validatorIdx)) > 0
 }
