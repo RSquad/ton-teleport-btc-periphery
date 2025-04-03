@@ -23,7 +23,8 @@ int32_t aggregate_with_tweak(struct Buffer message_buf,
                              size_t signature_shares_len,
                              struct Buffer pubkey_package_buf,
                              struct Buffer merkle_root_buf,
-                             struct Buffer *signature_buf);
+                             struct Buffer *signature_buf,
+                             uint8_t (*culprit_idx_out)[32]);
 
 int32_t commit(struct Buffer key_package_buf,
                struct Buffer *nonces_buf,

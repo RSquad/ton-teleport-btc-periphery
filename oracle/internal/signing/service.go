@@ -335,17 +335,26 @@ func (s *SignService) doAggregate(
 	for i, input := range pegout.inputs {
 		hashOnlyShares := filterSharesByHashIndex(pegout.artifacts.SigningShares, i)
 		tapTweak := input.BitcoinMerkleRoot
-		signature, err := frost.AggregateWithTweak(
+		signature, maliciousValidatorIdx, err := frost.AggregateWithTweak(
 			pegout.signingHashes[i],
 			commitmentsPackages,
 			hashOnlyShares,
 			frost.NewPackage(pubkeyPackage),
 			tapTweak,
 		)
+
 		if err != nil {
-			s.logAggregateSignSharesError(err)
+			if maliciousValidatorIdx != nil {
+				s.logError(fmt.Sprintf("AggregateWithTweak failed. Malicious validator found: %x", maliciousValidatorIdx), err)
+
+				// TODO: implement
+				//s.executeClaim(dkg, validatorIdx, maliciousValidatorIdx)
+			} else {
+				s.logAggregateSignSharesError(err)
+			}
 			return false
 		}
+
 		signatures = append(signatures, signature)
 	}
 

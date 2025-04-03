@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/signer"
 	"github.com/xssnick/tonutils-go/tlb"
@@ -20,6 +21,7 @@ func (c *CoordinatorContract) SendStartDKG() (*tlb.Transaction, error) {
 		return nil, err
 	}
 
+	logger.Log.Debug().Msg("--------------------> SendStartDKG <--------------------")
 	tx, _, _, err := c.tonClient.API.SendExternalMessageWaitTransaction(c.ctx, msg)
 
 	return tx, err

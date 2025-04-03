@@ -202,10 +202,11 @@ func AggregateWithTweak(
 	signatureShares map[Identifier]Package,
 	pubkeyPackage Package,
 	merkleRoot []byte,
-) ([]byte, error) {
+) ([]byte, []byte, error) {
 	commitmentsPkgs, commitmentsPin := makeCPackageSlice(commitments)
 	signatureSharesPkgs, signatureSharesPin := makeCPackageSlice(signatureShares)
 	signature := newEmptyBuffer()
+	culpritIdx := make([]byte, 32)
 
 	ret := C.aggregate_with_tweak(
 		newBufferFromSlice(message),
@@ -216,16 +217,21 @@ func AggregateWithTweak(
 		newBufferFromPackage(pubkeyPackage),
 		newBufferFromSlice(merkleRoot),
 		&signature,
+		(*[32]C.uint8_t)(unsafe.Pointer(&culpritIdx[0])),
 	)
 
 	commitmentsPin.Unpin()
 	signatureSharesPin.Unpin()
 
 	if ret < 0 {
-		return nil, fmt.Errorf("%d", ret)
+		if ret != -3 {
+			culpritIdx = nil
+		}
+
+		return nil, culpritIdx, fmt.Errorf("%d", ret)
 	}
 
-	return extractSlice(signature), nil
+	return extractSlice(signature), nil, nil
 }
 
 func Verify(

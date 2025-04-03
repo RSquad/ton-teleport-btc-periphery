@@ -80,7 +80,7 @@ func (c *CoordinatorContract) GetDkg(block *tonutils.BlockIDExt) (*DKG, error) {
 	if err != nil {
 		return nil, err
 	}
-	logger.Log.Debug().Msgf("Received DKG: ", dkgAsStr)
+	logger.Log.Debug().Msgf("Received DKG: %s", dkgAsStr)
 
 	return dkg, nil
 }
