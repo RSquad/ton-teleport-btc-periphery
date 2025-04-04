@@ -4,7 +4,7 @@ use frost_secp256k1_tr::{
     keys::{
         dkg::{
             part1 as frost_dkg_part1, part2 as frost_dkg_part2, part3 as frost_dkg_part3,
-            round1::Package as Round1Package,
+            round1::{Package as Round1Package, SecretPackage as Round1SecretPackage},
             round2::{Package as Round2Package, SecretPackage as Round2SecretPackage},
         },
         KeyPackage, PublicKeyPackage, Tweak,
@@ -202,7 +202,8 @@ pub extern "C" fn dkg_part2(
             "===========> FROST:dkg_part2: 5 <===========, map = {:?}",
             map
         );
-        let (s, r2_map) = frost_dkg_part2(*r1_secret_box, &map)?;
+        
+        let (s, r2_map) = frost_dkg_part2(*Box::clone(&r1_secret_box), &map)?;
         logout_info!("===========> FROST:dkg_part2: 6 <===========");
         let mut r2_vec = Vec::with_capacity(map.len());
         logout_info!("===========> FROST:dkg_part2: 7 <===========");
@@ -384,6 +385,17 @@ pub extern "C" fn dkg_part3(
             return 0;
         }
     }
+}
+
+#[no_mangle]
+pub extern "C" fn free_r1_secret(r1_secret: *mut c_void) {
+    logout_info!("===========> FROST:free_r1_secret: 1 <===========");
+    unsafe {
+        if !r1_secret.is_null() {
+            let _ = Box::from_raw(r1_secret as *mut Round1SecretPackage);
+        }
+    };
+    logout_info!("===========> FROST:free_r1_secret: 2 <===========");
 }
 
 #[no_mangle]

@@ -309,6 +309,10 @@ func makeCPackageSlice(packages map[Identifier]Package) ([]C.Pkg, runtime.Pinner
 	return pkgs, pinner
 }
 
+func FreeR1Secret(secret uintptr) {
+	C.free_r1_secret(unsafe.Pointer(secret))
+}
+
 func FreeR2Secret(secret uintptr) {
 	C.free_r2_secret(unsafe.Pointer(secret))
 }
