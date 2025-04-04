@@ -11,7 +11,7 @@ type DKG struct {
 	State       DKGState
 	VSet        VSet
 	MaxSigners  uint16
-	VSetMask    []byte
+	VSetMask    *big.Int
 	SessionKeys *SessionKeys
 	R1          *DKGR1
 	R2          *DKGR2
@@ -67,6 +67,10 @@ func (dkg *DKG) Round1Completed() bool {
 func (dkg *DKG) Round2Completed() bool {
 	return dkg.State == DKGStateFinished ||
 		dkg.State >= DKGStatePart2Finished
+}
+
+func (dkg *DKG) CheckMask(validatorIdx uint16) bool {
+	return dkg.VSetMask.Bit(int(validatorIdx)) > 0
 }
 
 func (dkg *DKG) Round3Completed() bool {

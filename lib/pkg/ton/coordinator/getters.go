@@ -257,7 +257,7 @@ func parseDGKSlice(dkgSlice *cell.Slice) (*DKG, error) {
 	maxSigners := uint16(dkgSlice.MustLoadUInt(16))
 
 	// VSet mask
-	vSetMask := dkgSlice.MustLoadSlice(256)
+	vSetMask := dkgSlice.MustLoadBigUInt(256)
 
 	// R1
 	r1State, err := loadRoundMaskAndCount(dkgSlice)

@@ -151,6 +151,11 @@ func (e *Executor) executeR1(dkg *coordinator.DKG, validatorIdx uint16) bool {
 		return true
 	}
 
+	if !dkg.CheckMask(validatorIdx) {
+		e.logDKGProcess(dkg, "The Oracle has been evicted from DKG")
+		return false
+	}
+
 	packages := dkg.GetR1Packages()
 	if packages[validatorIdx] != nil {
 		e.logDKGProcess(dkg, "R1 package already stored in DKG")
@@ -197,6 +202,11 @@ func (e *Executor) executeR2(dkg *coordinator.DKG, validatorIdx uint16) bool {
 	if dkg.Round2Completed() {
 		e.logDKGProcess(dkg, "R2 completed")
 		return true
+	}
+
+	if !dkg.CheckMask(validatorIdx) {
+		e.logDKGProcess(dkg, "The Oracle has been evicted from DKG")
+		return false
 	}
 
 	localIdentifier := helpers.ValidatorIdxToFrost(validatorIdx)
@@ -261,12 +271,19 @@ func (e *Executor) executeR2(dkg *coordinator.DKG, validatorIdx uint16) bool {
 
 func (e *Executor) executeR3(dkg *coordinator.DKG, validatorIdx uint16) bool {
 	e.logExecuteR3(dkg)
+
 	if dkg.Round3Completed() {
 		e.logDKGProcess(dkg, "R3 completed")
 		return true
 	}
+
 	if !dkg.Round2Completed() {
 		e.logDKGProcess(dkg, "R2 not yet completed, waiting for more packages.")
+		return false
+	}
+
+	if !dkg.CheckMask(validatorIdx) {
+		e.logDKGProcess(dkg, "The Oracle has been evicted from DKG")
 		return false
 	}
 
