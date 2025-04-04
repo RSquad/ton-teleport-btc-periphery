@@ -46,6 +46,9 @@ type ExecutionArtifacts struct {
 }
 
 func (a *ExecutionArtifacts) Cleanup() {
+	if a.r1 != nil && a.r1.secret.ptr != 0 {
+		frost.FreeR1Secret(a.r1.secret.ptr)
+	}
 	if a.r2 != nil && a.r2.secret.ptr != 0 {
 		frost.FreeR2Secret(a.r2.secret.ptr)
 	}
@@ -217,7 +220,6 @@ func (e *Executor) executeR2(dkg *coordinator.DKG, validatorIdx uint16) bool {
 		delete(r1Packages, localIdentifier)
 
 		r2Packages, r2SecretPtr, maliciousValidatorIdx, err := frost.DkgPart2(e.artifacts.r1.secret.ptr, r1Packages)
-
 		if err != nil {
 			if maliciousValidatorIdx != nil {
 				e.logError(dkg, fmt.Sprintf("Part2 failed. Malicious validator found: %x", maliciousValidatorIdx), err)
@@ -305,7 +307,6 @@ func (e *Executor) executeR3(dkg *coordinator.DKG, validatorIdx uint16) bool {
 		r2Packages := helpers.ConvertMapToFrostPackages(sentPackages)
 
 		keyPackage, publicKeyPackage, maliciousValidatorIdx, err := frost.DkgPart3(e.artifacts.r2.secret.ptr, r1Packages, r2Packages)
-
 		if err != nil {
 			if maliciousValidatorIdx != nil {
 				e.logError(dkg, "Part3 failed. Malicious validator found.", err)
