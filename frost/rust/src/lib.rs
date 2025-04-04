@@ -78,20 +78,16 @@ macro_rules! from_bytes_for {
                             Err(err) => {
                                 return Err(err);
                             }
-                            Ok(identifier) => {
-                                match $T::from_raw_parts(p.buf, p.len) {
-                                    Err(err) => {
-                                        return Err(err)
-                                    }
-                                    Ok(pkg) => {
-                                        map.insert(identifier, pkg);
-                                    }
-                                }                                
-                            }
+                            Ok(identifier) => match $T::from_raw_parts(p.buf, p.len) {
+                                Err(err) => return Err(err),
+                                Ok(pkg) => {
+                                    map.insert(identifier, pkg);
+                                }
+                            },
                         }
                     }
                 }
-                return Ok(map)
+                return Ok(map);
             }
         }
     };
@@ -121,7 +117,7 @@ pub extern "C" fn ext_get_identifier(key: u16, identifier: *mut [u8; 32]) -> i32
     let arr = unsafe { identifier.as_mut().unwrap() };
     arr.copy_from_slice(vector.as_slice());
 
-    return 0
+    return 0;
 }
 
 #[no_mangle]
@@ -158,7 +154,7 @@ pub extern "C" fn dkg_part1(
 
         logout_info!("===========> FROST:dkg_part1: 10 <===========");
 
-        return Ok(pkg_vec.len() as i32)
+        return Ok(pkg_vec.len() as i32);
     })();
 
     match result {
@@ -190,39 +186,52 @@ pub extern "C" fn dkg_part2(
     logout_info!("===========> FROST:dkg_part2: 2 <===========");
 
     let result = (|| -> Result<i32, Error> {
-        logout_info!("===========> FROST:dkg_part2: 3 <===========: r1_secret = {:p}", r1_secret);
-        let r1_secret_box: Box<frost_core::keys::dkg::round1::SecretPackage<frost_secp256k1_tr::Secp256K1Sha256TR>> = from_void(r1_secret);
-        logout_info!("===========> FROST:dkg_part2: 4 <===========, r1_secret_box = {:?}", r1_secret_box);
-        let map =Round1Package::make_map(r1_pkgs_ptr, r1_pkgs_len)?;
-        logout_info!("===========> FROST:dkg_part2: 5 <===========, map = {:?}", map);
+        logout_info!(
+            "===========> FROST:dkg_part2: 3 <===========: r1_secret = {:p}",
+            r1_secret
+        );
+        let r1_secret_box: Box<
+            frost_core::keys::dkg::round1::SecretPackage<frost_secp256k1_tr::Secp256K1Sha256TR>,
+        > = from_void(r1_secret);
+        logout_info!(
+            "===========> FROST:dkg_part2: 4 <===========, r1_secret_box = {:?}",
+            r1_secret_box
+        );
+        let map = Round1Package::make_map(r1_pkgs_ptr, r1_pkgs_len)?;
+        logout_info!(
+            "===========> FROST:dkg_part2: 5 <===========, map = {:?}",
+            map
+        );
         let (s, r2_map) = frost_dkg_part2(*r1_secret_box, &map)?;
         logout_info!("===========> FROST:dkg_part2: 6 <===========");
         let mut r2_vec = Vec::with_capacity(map.len());
         logout_info!("===========> FROST:dkg_part2: 7 <===========");
-        
+
         for (id, pkg) in r2_map {
             logout_info!("===========> FROST:dkg_part2: 8 <===========");
             let mut identifier = [0u8; 32];
             logout_info!("===========> FROST:dkg_part2: 9 <===========");
             identifier.copy_from_slice(&id.serialize());
             logout_info!("===========> FROST:dkg_part2: 10 <===========");
-            match pkg.serialize()
-            {                
-                Err(err)=> {
+            match pkg.serialize() {
+                Err(err) => {
                     logout_info!("===========> FROST:dkg_part2: 11 <===========");
                     logout_info!("FROST error: {}", err);
 
                     unsafe {
                         logout_info!("===========> FROST:dkg_part2: 12 <===========");
-                        ptr::copy_nonoverlapping(identifier.as_ptr(), r2_culprit_idx_out.as_mut_ptr(), 32);
+                        ptr::copy_nonoverlapping(
+                            identifier.as_ptr(),
+                            r2_culprit_idx_out.as_mut_ptr(),
+                            32,
+                        );
                     }
 
                     logout_info!("===========> FROST:dkg_part2: 13 <===========");
-        
+
                     return Ok(-3);
                 }
-                Ok(mut p) =>
-                {
+                Ok(mut p) => {
                     logout_info!("===========> FROST:dkg_part2: 14 <===========");
                     p.shrink_to(p.len());
                     logout_info!("===========> FROST:dkg_part2: 15 <===========");
@@ -247,24 +256,28 @@ pub extern "C" fn dkg_part2(
 
         logout_info!("===========> FROST:dkg_part2: 21 <===========");
 
-        return Ok(count)
+        return Ok(count);
     })();
 
     match result {
         Err(Error::InvalidProofOfKnowledge { ref culprit }) => {
             let culprit_data = culprit.serialize();
-    
+
             if culprit_data.len() != 32 {
                 logout_info!("culprit_data.len() != 32");
                 return -1;
             }
-    
+
             unsafe {
-                ptr::copy_nonoverlapping(culprit_data.as_ptr(), r2_culprit_idx_out.as_mut_ptr(), 32);
+                ptr::copy_nonoverlapping(
+                    culprit_data.as_ptr(),
+                    r2_culprit_idx_out.as_mut_ptr(),
+                    32,
+                );
             }
-    
+
             return -3;
-        },
+        }
         Err(err) => {
             logout_info!("FROST error: {}", err);
             return -1;
@@ -340,27 +353,29 @@ pub extern "C" fn dkg_part3(
     })();
 
     match result {
-        Err(Error::InvalidSecretShare { ref culprit }) => {
-            match culprit {
-                Some(culprit_val) => {
-                    let culprit_data = culprit_val.serialize();
-                    if culprit_data.len() != 32 {
-                        logout_info!("culprit_data.len() != 32");
-                        return -1;
-                    }
-    
-                    unsafe {
-                        ptr::copy_nonoverlapping(culprit_data.as_ptr(), r3_culprit_idx_out.as_mut_ptr(), 32);
-                    }
-    
-                    return -3;
-                }
-                None => {
-                    logout_info!("FROST error: culprit value empty");
+        Err(Error::InvalidSecretShare { ref culprit }) => match culprit {
+            Some(culprit_val) => {
+                let culprit_data = culprit_val.serialize();
+                if culprit_data.len() != 32 {
+                    logout_info!("culprit_data.len() != 32");
                     return -1;
                 }
+
+                unsafe {
+                    ptr::copy_nonoverlapping(
+                        culprit_data.as_ptr(),
+                        r3_culprit_idx_out.as_mut_ptr(),
+                        32,
+                    );
+                }
+
+                return -3;
             }
-        }
+            None => {
+                logout_info!("FROST error: culprit value empty");
+                return -1;
+            }
+        },
         Err(err) => {
             logout_info!("FROST error: {}", err);
             return -1;
@@ -473,16 +488,13 @@ pub extern "C" fn sign_with_tweak(
         let signing_commitments = SigningCommitments::make_map(commitments_ptr, commitments_len)?;
         logout_info!("===========> FROST:sign_with_tweak: 5 <===========");
         let signature_share = frost_round2_sign_with_tweak(
-            &SigningPackage::new(
-                signing_commitments,
-                message_buf.to_slice(),
-            ),
+            &SigningPackage::new(signing_commitments, message_buf.to_slice()),
             &signing_nonces,
             &key_package,
             Some(merkle_root_buf.to_slice()),
         )?;
 
-        logout_info!("===========> FROST:sign_with_tweak: 6 <===========");                
+        logout_info!("===========> FROST:sign_with_tweak: 6 <===========");
         let mut signature_share_vec = signature_share.serialize();
         logout_info!("===========> FROST:sign_with_tweak: 7 <===========");
         signature_share_vec.shrink_to(signature_share_vec.len());
@@ -502,39 +514,41 @@ pub extern "C" fn sign_with_tweak(
     match result {
         Err(Error::InvalidSignatureShare { ref culprit }) => {
             let culprit_data = culprit.serialize();
-    
+
             if culprit_data.len() != 32 {
                 logout_info!("culprit_data.len() != 32");
                 return -1;
             }
-    
+
             unsafe {
                 ptr::copy_nonoverlapping(culprit_data.as_ptr(), culprit_idx_out.as_mut_ptr(), 32);
             }
-    
+
             return -3;
-        },
-        Err(Error::InvalidSecretShare { ref culprit }) => {
-            match culprit {
-                Some(culprit_val) => {
-                    let culprit_data = culprit_val.serialize();
-                    if culprit_data.len() != 32 {
-                        logout_info!("culprit_data.len() != 32");
-                        return -1;
-                    }
-    
-                    unsafe {
-                        ptr::copy_nonoverlapping(culprit_data.as_ptr(), culprit_idx_out.as_mut_ptr(), 32);
-                    }
-    
-                    return -3;
-                }
-                None => {
-                    logout_info!("FROST error: culprit value empty");
+        }
+        Err(Error::InvalidSecretShare { ref culprit }) => match culprit {
+            Some(culprit_val) => {
+                let culprit_data = culprit_val.serialize();
+                if culprit_data.len() != 32 {
+                    logout_info!("culprit_data.len() != 32");
                     return -1;
                 }
+
+                unsafe {
+                    ptr::copy_nonoverlapping(
+                        culprit_data.as_ptr(),
+                        culprit_idx_out.as_mut_ptr(),
+                        32,
+                    );
+                }
+
+                return -3;
             }
-        }
+            None => {
+                logout_info!("FROST error: culprit value empty");
+                return -1;
+            }
+        },
         Err(err) => {
             logout_info!("FROST error: {}", err);
             return -1;
@@ -562,12 +576,10 @@ pub extern "C" fn aggregate_with_tweak(
         logout_info!("===========> FROST:aggregate_with_tweak: 2 <===========");
         let signing_commitments = SigningCommitments::make_map(commitments_ptr, commitments_len)?;
         logout_info!("===========> FROST:aggregate_with_tweak: 3 <===========");
-        let signing_package = SigningPackage::new(
-            signing_commitments,
-            message_buf.to_slice(),
-        );
+        let signing_package = SigningPackage::new(signing_commitments, message_buf.to_slice());
         logout_info!("===========> FROST:aggregate_with_tweak: 4 <===========");
-        let signature_shares_map = SignatureShare::make_map(signature_shares_ptr, signature_shares_len)?;
+        let signature_shares_map =
+            SignatureShare::make_map(signature_shares_ptr, signature_shares_len)?;
         logout_info!("===========> FROST:aggregate_with_tweak: 5 <===========");
         let public_key_package = PublicKeyPackage::from_buf(pubkey_package_buf)?;
         logout_info!("===========> FROST:aggregate_with_tweak: 6 <===========");
@@ -595,39 +607,41 @@ pub extern "C" fn aggregate_with_tweak(
     match result {
         Err(Error::InvalidSignatureShare { ref culprit }) => {
             let culprit_data = culprit.serialize();
-    
+
             if culprit_data.len() != 32 {
                 logout_info!("culprit_data.len() != 32");
                 return -1;
             }
-    
+
             unsafe {
                 ptr::copy_nonoverlapping(culprit_data.as_ptr(), culprit_idx_out.as_mut_ptr(), 32);
             }
-    
+
             return -3;
         }
-        Err(Error::InvalidSecretShare { ref culprit }) => {
-            match culprit {
-                Some(culprit_val) => {
-                    let culprit_data = culprit_val.serialize();
-                    if culprit_data.len() != 32 {
-                        logout_info!("culprit_data.len() != 32");
-                        return -1;
-                    }
-    
-                    unsafe {
-                        ptr::copy_nonoverlapping(culprit_data.as_ptr(), culprit_idx_out.as_mut_ptr(), 32);
-                    }
-    
-                    return -3;
-                }
-                None => {
-                    logout_info!("FROST error: culprit value empty");
+        Err(Error::InvalidSecretShare { ref culprit }) => match culprit {
+            Some(culprit_val) => {
+                let culprit_data = culprit_val.serialize();
+                if culprit_data.len() != 32 {
+                    logout_info!("culprit_data.len() != 32");
                     return -1;
                 }
+
+                unsafe {
+                    ptr::copy_nonoverlapping(
+                        culprit_data.as_ptr(),
+                        culprit_idx_out.as_mut_ptr(),
+                        32,
+                    );
+                }
+
+                return -3;
             }
-        }
+            None => {
+                logout_info!("FROST error: culprit value empty");
+                return -1;
+            }
+        },
         Err(err) => {
             logout_info!("FROST error: {}", err);
             return -1;
@@ -653,7 +667,8 @@ pub extern "C" fn verify(
         logout_info!("===========> FROST:verify: 3 <===========");
         let pubkey = PublicKeyPackage::from_buf(pubkey_package_buf)?;
         logout_info!("===========> FROST:verify: 4 <===========");
-        pubkey.tweak(Some(merkle_root_buf.to_slice()))
+        pubkey
+            .tweak(Some(merkle_root_buf.to_slice()))
             .verifying_key()
             .verify(message_buf.to_slice(), &signature)?;
 
@@ -679,9 +694,7 @@ pub extern "C" fn extract_public_key_from_package(
     public_key: *mut Buffer,
 ) -> i32 {
     let pubkey_package = match PublicKeyPackage::from_buf(pubkey_package_buf) {
-        Ok(x) => {
-            x
-        }
+        Ok(x) => x,
         Err(err) => {
             logout_info!("FROST error: {}", err);
             return -1;
@@ -689,13 +702,11 @@ pub extern "C" fn extract_public_key_from_package(
     };
 
     let key_vec = match pubkey_package.verifying_key().serialize() {
-        Ok(x) => {
-            x
-        }
+        Ok(x) => x,
         Err(err) => {
             logout_info!("FROST error: {}", err);
             return -1;
-        } 
+        }
     };
 
     unsafe {
@@ -703,5 +714,5 @@ pub extern "C" fn extract_public_key_from_package(
         (*public_key).data = key_vec.leak().as_ptr();
     }
 
-    return 0
+    return 0;
 }
