@@ -204,6 +204,7 @@ pub extern "C" fn dkg_part2(
         );
         
         let (s, r2_map) = frost_dkg_part2(*Box::clone(&r1_secret_box), &map)?;
+        Box::leak(r1_secret_box);
         logout_info!("===========> FROST:dkg_part2: 6 <===========");
         let mut r2_vec = Vec::with_capacity(map.len());
         logout_info!("===========> FROST:dkg_part2: 7 <===========");
