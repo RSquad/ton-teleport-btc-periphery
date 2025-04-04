@@ -7,13 +7,13 @@ import (
 )
 
 type (
-	DKGPkgs map[string][]byte
+	DKGPkgs map[uint16][]byte
 )
 
 func NewDKGPkgs(dict *cell.Dictionary) (DKGPkgs, error) {
-	pkgs, err := parseddict.New(
+	pkgs, err := parseddict.ParseDict(
 		dict,
-		parseddict.ParseKey,
+		parseddict.ParseKeyUI16,
 		func(s *cell.Slice) ([]byte, error) {
 			return utils.WriteSlicesToBuffer(s.MustLoadRef()), nil
 		},

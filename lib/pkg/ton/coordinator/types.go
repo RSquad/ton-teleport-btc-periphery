@@ -1,7 +1,6 @@
 package coordinator
 
 import (
-	"encoding/hex"
 	"math/big"
 	"time"
 
@@ -56,8 +55,8 @@ func (dkg *DKG) GetR1Packages() DKGPkgs {
 	return dkg.R1.Packages
 }
 
-func (dkg *DKG) GetR2Packages(fromIdentifier []byte) DKGPkgs {
-	return dkg.R2.Packages[hex.EncodeToString(fromIdentifier)]
+func (dkg *DKG) GetR2Packages(fromIdentifier uint16) DKGPkgs {
+	return dkg.R2.Packages[fromIdentifier]
 }
 
 func (dkg *DKG) Round1Completed() bool {
@@ -112,20 +111,20 @@ type PegoutRecord struct {
 	ID                uint64
 	PegoutAddress     *address.Address
 	InternalKey       []byte
-	Commitments       map[string][]byte
+	Commitments       map[uint16][]byte
 	CommitmentsMask   []byte
-	SigningShares     map[string]map[int][]byte
+	SigningShares     map[uint16]map[uint16][]byte
 	SigningSharesMask []byte
 	ClaimsMask        *big.Int
 	ClaimsCount       uint16
-	ClaimsCounters    map[string]uint16
+	ClaimsCounters    map[uint16]uint16
 	MaxSigners        uint16
 	ExpiredAt         time.Time
 	SigningMask       []byte
 }
 
-func (p *PegoutRecord) HasCommitment(identifier []byte) bool {
-	_, exists := p.Commitments[hex.EncodeToString(identifier)]
+func (p *PegoutRecord) HasCommitment(idx uint16) bool {
+	_, exists := p.Commitments[idx]
 	return exists
 }
 
@@ -133,8 +132,8 @@ func (p *PegoutRecord) CommitmentsCount() uint16 {
 	return uint16(len(p.Commitments))
 }
 
-func (p *PegoutRecord) HasSigningShare(identifier []byte) bool {
-	_, exists := p.SigningShares[hex.EncodeToString(identifier)]
+func (p *PegoutRecord) HasSigningShare(idx uint16) bool {
+	_, exists := p.SigningShares[idx]
 	return exists
 }
 

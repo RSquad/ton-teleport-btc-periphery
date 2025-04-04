@@ -191,19 +191,19 @@ func (c *CoordinatorContract) GetUnsignedPegouts() ([]PegoutRecord, error) {
 
 		CommitmentsMask := value.MustLoadSlice(256)
 		value.MustLoadUInt(16)
-		commitmentsDict := value.MustLoadDict(256)
-		commitmentsPtr, _ := parseddict.New(
+		commitmentsDict := value.MustLoadDict(16)
+		commitmentsPtr, _ := parseddict.ParseDict(
 			commitmentsDict,
-			parseddict.ParseKey,
+			parseddict.ParseKeyUI16,
 			readBuffer,
 		)
 		Commitments := *commitmentsPtr
 		SigningSharesMask := value.MustLoadSlice(256)
 		value.MustLoadUInt(16)
-		signingSharesDict := value.MustLoadDict(256)
-		signingSharesPtr, _ := parseddict.New(
+		signingSharesDict := value.MustLoadDict(16)
+		signingSharesPtr, _ := parseddict.ParseDict(
 			signingSharesDict,
-			parseddict.ParseKey,
+			parseddict.ParseKeyUI16,
 			loadSharesMap,
 		)
 		SigningShares := *signingSharesPtr
@@ -212,9 +212,9 @@ func (c *CoordinatorContract) GetUnsignedPegouts() ([]PegoutRecord, error) {
 		ClaimsMask := claimsSlice.MustLoadBigUInt(256)
 		ClaimsCount := uint16(claimsSlice.MustLoadUInt(16))
 		claimsCountersDict := claimsSlice.MustLoadDict(16)
-		claimsCountersPtr, _ := parseddict.New(
+		claimsCountersPtr, _ := parseddict.ParseDict(
 			claimsCountersDict,
-			parseddict.ParseKey,
+			parseddict.ParseKeyUI16,
 			loadUI16Map,
 		)
 		ClaimsCounters := *claimsCountersPtr
@@ -229,7 +229,7 @@ func (c *CoordinatorContract) GetUnsignedPegouts() ([]PegoutRecord, error) {
 			InternalKey,
 			Commitments,
 			CommitmentsMask,
-			SigningShares, // map[string]*Cell
+			SigningShares,
 			SigningSharesMask,
 			ClaimsMask,
 			ClaimsCount,
@@ -264,7 +264,7 @@ func parseDGKSlice(dkgSlice *cell.Slice) (*DKG, error) {
 	if err != nil {
 		return nil, err
 	}
-	r1PkgDictCell := dkgSlice.MustLoadDict(256)
+	r1PkgDictCell := dkgSlice.MustLoadDict(16)
 	r1, err := NewDKGR1(r1PkgDictCell, r1State)
 	if err != nil {
 		return nil, err
@@ -275,7 +275,7 @@ func parseDGKSlice(dkgSlice *cell.Slice) (*DKG, error) {
 	if err != nil {
 		return nil, err
 	}
-	r2PkgDictCell := dkgSlice.MustLoadDict(256)
+	r2PkgDictCell := dkgSlice.MustLoadDict(16)
 	r2, err := NewDKGR2(r2PkgDictCell, r2State)
 	if err != nil {
 		return nil, err
@@ -346,13 +346,11 @@ func readBuffer(value *cell.Slice) ([]byte, error) {
 	return utils.WriteSlicesToBuffer(value.MustLoadRef()), nil
 }
 
-func loadSharesMap(value *cell.Slice) (map[int][]byte, error) {
+func loadSharesMap(value *cell.Slice) (map[uint16][]byte, error) {
 	dict, _ := value.MustLoadRef().ToDict(64)
 	sharesMap, err := parseddict.ParseDict(
 		dict,
-		func(s *cell.Slice, keyLenBits uint) int {
-			return int(s.MustLoadUInt(keyLenBits))
-		},
+		parseddict.ParseKeyUI16,
 		func(s *cell.Slice) ([]byte, error) {
 			return utils.WriteSlicesToBuffer(s), nil
 		},

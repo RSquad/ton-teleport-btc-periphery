@@ -13,11 +13,11 @@ import (
 
 // Helpers
 
-func ConvertMapToFrostPackages(origMap map[string][]byte) (frostMap map[frost.Identifier]frost.Package) {
+func ConvertMapToFrostPackages(origMap map[uint16][]byte) (frostMap map[frost.Identifier]frost.Package) {
 	frostMap = make(map[frost.Identifier]frost.Package)
 	for k, v := range origMap {
-		id, _ := frost.DecodeIdentifier(k)
-		frostMap[*id] = frost.NewPackage(v)
+		id := ValidatorIdxToFrost(k)
+		frostMap[id] = frost.NewPackage(v)
 	}
 	return
 }
@@ -73,7 +73,7 @@ func HandleTvmError(tvmError error) string {
 	}
 }
 
-func ValidatorIdxToFrost(validatorIdx uint16) []byte {
+func ValidatorIdxToFrost(validatorIdx uint16) frost.Identifier {
 	validatorIdx |= 0x80
 	return frost.GetIdentifier(validatorIdx)
 }

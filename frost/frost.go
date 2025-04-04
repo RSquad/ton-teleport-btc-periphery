@@ -9,6 +9,7 @@ package frost
 import "C"
 
 import (
+	"errors"
 	"fmt"
 	"runtime"
 	"unsafe"
@@ -32,16 +33,16 @@ func (p Package) ToBytes() []byte {
 	return p.buf
 }
 
-func GetIdentifier(key uint16) []byte {
+func GetIdentifier(key uint16) Identifier {
 	buf := make([]byte, 32)
 	_ = C.ext_get_identifier(
 		C.uint16_t(key),
 		(*[32]C.uint8_t)(unsafe.Pointer(&buf[0])),
 	)
-	return buf
+	return Identifier(buf)
 }
 
-func DkgPart1(identifier []byte, min_signers uint16, max_signers uint16) ([]byte, uintptr, error) {
+func DkgPart1(identifier Identifier, min_signers uint16, max_signers uint16) ([]byte, uintptr, error) {
 	var secret unsafe.Pointer
 	pkgLen := C.int(0)
 	pkgLen = C.dkg_part1(
@@ -74,6 +75,11 @@ func DkgPart2(
 	round1Packages map[Identifier]Package,
 ) (map[Identifier]Package, uintptr, []byte, error) {
 	pkgs, pin := makeCPackageSlice(round1Packages)
+
+	if len(pkgs) == 0 {
+		return nil, 0, nil, errors.New("pkgs is empty")
+	}
+
 	secret := unsafe.Pointer(nil)
 	r2Packages := unsafe.Pointer(nil)
 	r2CulpritIdx := make([]byte, 32)
@@ -114,6 +120,15 @@ func DkgPart3(
 ) ([]byte, []byte, []byte, error) {
 	r1Pkgs, pin1 := makeCPackageSlice(round1Packages)
 	r2Pkgs, pin2 := makeCPackageSlice(round2Packages)
+
+	if len(r1Pkgs) == 0 {
+		return nil, nil, nil, errors.New("PKGs1 is empty")
+	}
+
+	if len(r2Pkgs) == 0 {
+		return nil, nil, nil, errors.New("r2Pkgs is empty")
+	}
+
 	secretPkgPtr := unsafe.Pointer(nil)
 	secretPkgLen := C.size_t(0)
 	publicPkgPtr := unsafe.Pointer(nil)

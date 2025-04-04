@@ -198,8 +198,8 @@ func (s *SignService) execute(ctx context.Context, dkg *coordinator.DKG) {
 
 	// Execute signing steps
 	if s.doCommit(validatorKeyInfo, cachedPegout, minSigners) {
-		if s.doSign(ctx, validatorKeyInfo, cachedPegout, minSigners) {
-			if s.doAggregate(ctx, validatorKeyInfo, cachedPegout, pubkeyPackage) {
+		if s.doSign(validatorKeyInfo, cachedPegout, minSigners) {
+			if s.doAggregate(validatorKeyInfo, cachedPegout, pubkeyPackage) {
 				s.logPegoutSigned(cachedPegout.ID)
 			}
 		}
@@ -213,9 +213,7 @@ func (s *SignService) doCommit(
 ) bool {
 	s.logCommitPegout(pegout.ID)
 
-	localIdentifier := helpers.ValidatorIdxToFrost(validatorKey.VsetIdx)
-
-	if pegout.artifacts.HasCommitment(localIdentifier) {
+	if pegout.artifacts.HasCommitment(validatorKey.VsetIdx) {
 		s.logMessage("Commitment already exists")
 		if pegout.artifacts.CommitmentsCount() >= minSigners {
 			s.logMessage("Commitment round completed")
@@ -261,16 +259,13 @@ func (s *SignService) doCommit(
 }
 
 func (s *SignService) doSign(
-	ctx context.Context,
 	validatorKey *validator.KeyInfo,
 	pegout *CachedPegout,
 	minSigners uint16,
 ) bool {
 	s.logSignPegout(pegout.ID)
 
-	localIdentifier := helpers.ValidatorIdxToFrost(validatorKey.VsetIdx)
-
-	if !pegout.artifacts.HasCommitment(localIdentifier) {
+	if !pegout.artifacts.HasCommitment(validatorKey.VsetIdx) {
 		s.logErrNoOracleCommitments(pegout.ID)
 		return false
 	}
@@ -280,7 +275,7 @@ func (s *SignService) doSign(
 		return true
 	}
 
-	if pegout.artifacts.HasSigningShare(localIdentifier) {
+	if pegout.artifacts.HasSigningShare(validatorKey.VsetIdx) {
 		s.logSigningShareAlreadyExists(pegout.ID)
 		return false
 	}
@@ -341,7 +336,6 @@ func (s *SignService) doSign(
 }
 
 func (s *SignService) doAggregate(
-	ctx context.Context,
 	validatorKey *validator.KeyInfo,
 	pegout *CachedPegout,
 	pubkeyPackage []byte,
@@ -352,7 +346,7 @@ func (s *SignService) doAggregate(
 	signatures := make([][]byte, 0, len(pegout.signingHashes))
 
 	for i, input := range pegout.inputs {
-		hashOnlyShares := filterSharesByHashIndex(pegout.artifacts.SigningShares, i)
+		hashOnlyShares := filterSharesByHashIndex(pegout.artifacts.SigningShares, uint16(i))
 		tapTweak := input.BitcoinMerkleRoot
 		signature, maliciousValidatorIdx, err := frost.AggregateWithTweak(
 			pegout.signingHashes[i],
@@ -392,7 +386,7 @@ func (s *SignService) Sign(
 	publicKey []byte,
 	tapTweak []byte,
 	signingHash []byte,
-	commitments map[string][]byte,
+	commitments map[uint16][]byte,
 	nonceName string,
 ) ([]byte, []byte, error) {
 	secretPackage := s.keyStore.LoadSecret(publicKey)
@@ -429,13 +423,12 @@ func (s *SignService) Commit(publicKey []byte) ([]byte, []byte, error) {
 func filterSharesByHashIndex(
 	// first key is the oracle identifier,
 	// second key is the signing hash index
-	shares map[string]map[int][]byte,
-	index int,
+	shares map[uint16]map[uint16][]byte,
+	index uint16,
 ) map[frost.Identifier]frost.Package {
 	sharesMap := make(map[frost.Identifier]frost.Package)
 	for identifier, participantShares := range shares {
-		frostIdentifier, _ := frost.DecodeIdentifier(identifier)
-		sharesMap[*frostIdentifier] = frost.NewPackage(participantShares[index])
+		sharesMap[helpers.ValidatorIdxToFrost(identifier)] = frost.NewPackage(participantShares[index])
 	}
 	return sharesMap
 }

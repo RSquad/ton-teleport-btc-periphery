@@ -7,8 +7,12 @@ import (
 	"github.com/xssnick/tonutils-go/tvm/cell"
 )
 
-func ParseKey(s *cell.Slice, keySize uint) string {
+func ParseKeyStr(s *cell.Slice, keySize uint) string {
 	return fmt.Sprintf("%x", s.MustLoadBigUInt(keySize).FillBytes(make([]byte, (keySize+7)/8)))
+}
+
+func ParseKeyUI16(s *cell.Slice, keySize uint) uint16 {
+	return uint16(s.MustLoadBigUInt(keySize).Int64())
 }
 
 func New[V any](

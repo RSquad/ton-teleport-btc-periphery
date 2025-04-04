@@ -11,7 +11,6 @@ type SessionPubKeys map[uint16][]byte
 
 type SessionKeys struct {
 	PubKeys SessionPubKeys
-	Mask    []byte
 }
 
 func NewSessionPubKeys(dict *cell.Dictionary) (SessionPubKeys, error) {
@@ -52,10 +51,7 @@ func LoadSessionKeys(slice *cell.Slice) (*SessionKeys, error) {
 		return nil, err
 	}
 
-	mask := cs.MustLoadSlice(256)
-
 	return &SessionKeys{
 		PubKeys: sessionPubKeys,
-		Mask:    mask,
 	}, nil
 }

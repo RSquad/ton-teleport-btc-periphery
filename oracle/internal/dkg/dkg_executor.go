@@ -152,8 +152,7 @@ func (e *Executor) executeR1(dkg *coordinator.DKG, validatorIdx uint16) bool {
 	}
 
 	packages := dkg.GetR1Packages()
-	localIdentifier := helpers.ValidatorIdxToFrost(validatorIdx)
-	if packages[hex.EncodeToString(localIdentifier)] != nil {
+	if packages[validatorIdx] != nil {
 		e.logDKGProcess(dkg, "R1 package already stored in DKG")
 		return false
 	}
@@ -167,7 +166,7 @@ func (e *Executor) executeR1(dkg *coordinator.DKG, validatorIdx uint16) bool {
 		}
 
 		r1Package, r1SecretPtr, err := frost.DkgPart1(
-			localIdentifier,
+			helpers.ValidatorIdxToFrost(validatorIdx),
 			minSigners,
 			dkg.MaxSigners,
 		)
@@ -210,7 +209,7 @@ func (e *Executor) executeR2(dkg *coordinator.DKG, validatorIdx uint16) bool {
 
 		e.logMessage(dkg, "generating round2 artifacts")
 		r1Packages := helpers.ConvertMapToFrostPackages(dkg.GetR1Packages())
-		delete(r1Packages, frost.Identifier(localIdentifier))
+		delete(r1Packages, localIdentifier)
 
 		r2Packages, r2SecretPtr, maliciousValidatorIdx, err := frost.DkgPart2(e.artifacts.r1.secret.ptr, r1Packages)
 
@@ -234,11 +233,11 @@ func (e *Executor) executeR2(dkg *coordinator.DKG, validatorIdx uint16) bool {
 	withErrors := false
 	// Get r2 packages that are already sent to coordinator.
 	// But only from this oracle to others
-	alreadySentPackages := dkg.GetR2Packages(localIdentifier)
+	alreadySentPackages := dkg.GetR2Packages(validatorIdx)
 	// Go through all r2 packages generated locally
 	for identifierTo, r2pkg := range e.artifacts.r2.pkgs {
 		// Check if oracle has already sent this package to coordinator
-		_, exists := alreadySentPackages[hex.EncodeToString(identifierTo.ToBytes())]
+		_, exists := alreadySentPackages[validatorIdx]
 		if !exists {
 			// local r2 package is not sent yet, send it to coordinator
 			_, err := e.coordinatorContract.SendRound2(
@@ -280,9 +279,9 @@ func (e *Executor) executeR3(dkg *coordinator.DKG, validatorIdx uint16) bool {
 		}
 
 		r1Packages := helpers.ConvertMapToFrostPackages(dkg.GetR1Packages())
-		delete(r1Packages, frost.Identifier(localIdentifier))
+		delete(r1Packages, localIdentifier)
 
-		r2Packages := helpers.ConvertMapToFrostPackages(dkg.GetR2Packages(localIdentifier))
+		r2Packages := helpers.ConvertMapToFrostPackages(dkg.GetR2Packages(validatorIdx))
 
 		keyPackage, publicKeyPackage, maliciousValidatorIdx, err := frost.DkgPart3(e.artifacts.r2.secret.ptr, r1Packages, r2Packages)
 
