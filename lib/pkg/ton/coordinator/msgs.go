@@ -17,12 +17,12 @@ func BuildSendRound1Body(ttl int64, validatorIdx uint16, round1Package []byte) *
 		EndCell()
 }
 
-func BuildSendRound2Body(ttl int64, validatorIdx uint16, toIdentifier []byte, round2Package []byte) *cell.Cell {
+func BuildSendRound2Body(ttl int64, validatorIdx uint16, toIdx uint16, round2Package []byte) *cell.Cell {
 	return cell.BeginCell().
 		MustStoreUInt(OpCodeCoordinatorRound2, 32).
 		MustStoreUInt(uint64(time.Now().Unix()+ttl), 32).
 		MustStoreUInt(uint64(validatorIdx), 16).
-		MustStoreUInt(uint64(binary.BigEndian.Uint16(toIdentifier[30:32])), 16).
+		MustStoreUInt(uint64(toIdx), 16).
 		MustStoreRef(utils.SplitBytesToCells(round2Package)).
 		EndCell()
 }

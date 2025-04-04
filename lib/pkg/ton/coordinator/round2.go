@@ -9,9 +9,9 @@ import (
 
 type (
 	DKGR2 struct {
-		mask     *big.Int
-		count    uint64
-		Packages DKGR2Pkgs
+		mask       *big.Int
+		count      uint64
+		PackagesTo DKGR2Pkgs
 	}
 	DKGR2Pkgs map[uint16]DKGPkgs
 )
@@ -41,5 +41,5 @@ func NewDKGR2(dict *cell.Dictionary, params *DKGRoundState) (*DKGR2, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &DKGR2{mask: params.mask, count: params.count, Packages: pkgs}, nil
+	return &DKGR2{mask: params.mask, count: params.count, PackagesTo: pkgs}, nil
 }

@@ -1,6 +1,7 @@
 package coordinator
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -25,7 +26,9 @@ func (c *CoordinatorContract) SendStartDKG() (*tlb.Transaction, error) {
 
 	logger.Log.Debug().Msg(">>>>>>> SEND MESSAGE TO THE TON NETWORK: SendStartDKG (BEGIN)...")
 	startTs := time.Now()
-	tx, _, _, err := c.tonClient.API.SendExternalMessageWaitTransaction(c.ctx, msg)
+	apiCtx, cancelFn := context.WithTimeout(c.ctx, 10*time.Second)
+	defer cancelFn()
+	tx, _, _, err := c.tonClient.API.SendExternalMessageWaitTransaction(apiCtx, msg)
 	endTs := time.Now()
 	duration := endTs.Unix() - startTs.Unix()
 	logger.Log.Debug().Msgf(">>>>>>> SEND MESSAGE TO THE TON NETWORK: SendStartDKG (END). Total time {%d}s", duration)
@@ -44,11 +47,11 @@ func (c *CoordinatorContract) SendRound1(
 
 func (c *CoordinatorContract) SendRound2(
 	validatorIdx uint16,
-	toIdentifier []byte,
+	toIdx uint16,
 	round2Package []byte,
 ) (*tlb.Transaction, error) {
 	return c.sendBodyCell(BuildSendRound2Body(
-		int64(c.ttl.Seconds()), validatorIdx, toIdentifier, round2Package,
+		int64(c.ttl.Seconds()), validatorIdx, toIdx, round2Package,
 	))
 }
 
@@ -136,7 +139,9 @@ func (c *CoordinatorContract) sendBodyCell(bodyCell *cell.Cell) (*tlb.Transactio
 
 	logger.Log.Debug().Msg(">>>>>>> SEND MESSAGE TO THE TON NETWORK (BEGIN)...")
 	startTs := time.Now()
-	tx, _, _, err := c.tonClient.API.SendExternalMessageWaitTransaction(c.ctx, msg)
+	apiCtx, cancelFn := context.WithTimeout(c.ctx, 10*time.Second)
+	defer cancelFn()
+	tx, _, _, err := c.tonClient.API.SendExternalMessageWaitTransaction(apiCtx, msg)
 	endTs := time.Now()
 	duration := endTs.Unix() - startTs.Unix()
 	logger.Log.Debug().Msgf(">>>>>>> SEND MESSAGE TO THE TON NETWORK (END). Total time {%d}s", duration)

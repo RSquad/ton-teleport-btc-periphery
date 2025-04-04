@@ -133,6 +133,11 @@ func (e *Executor) Execute(dkg *coordinator.DKG) {
 		return
 	}
 
+	if !dkg.CheckMask(keyInfo.VsetIdx) {
+		e.logDKGProcess(dkg, "The Oracle has been evicted from DKG or DKG is not started yet")
+		return
+	}
+
 	e.coordinatorContract.ConnectSigner(e.validator.GetSigner(keyInfo.KeyID))
 
 	if e.executeR1(dkg, keyInfo.VsetIdx) {
@@ -149,11 +154,6 @@ func (e *Executor) executeR1(dkg *coordinator.DKG, validatorIdx uint16) bool {
 	if dkg.Round1Completed() {
 		e.logDKGProcess(dkg, "R1 completed")
 		return true
-	}
-
-	if !dkg.CheckMask(validatorIdx) {
-		e.logDKGProcess(dkg, "The Oracle has been evicted from DKG")
-		return false
 	}
 
 	packages := dkg.GetR1Packages()
@@ -204,11 +204,6 @@ func (e *Executor) executeR2(dkg *coordinator.DKG, validatorIdx uint16) bool {
 		return true
 	}
 
-	if !dkg.CheckMask(validatorIdx) {
-		e.logDKGProcess(dkg, "The Oracle has been evicted from DKG")
-		return false
-	}
-
 	localIdentifier := helpers.ValidatorIdxToFrost(validatorIdx)
 
 	if e.artifacts.r2 == nil {
@@ -243,24 +238,32 @@ func (e *Executor) executeR2(dkg *coordinator.DKG, validatorIdx uint16) bool {
 	withErrors := false
 	// Get r2 packages that are already sent to coordinator.
 	// But only from this oracle to others
-	alreadySentPackages := dkg.GetR2Packages(validatorIdx)
 	// Go through all r2 packages generated locally
-	for identifierTo, r2pkg := range e.artifacts.r2.pkgs {
+	for toIdentificator, r2pkg := range e.artifacts.r2.pkgs {
 		// Check if oracle has already sent this package to coordinator
-		_, exists := alreadySentPackages[validatorIdx]
-		if !exists {
-			// local r2 package is not sent yet, send it to coordinator
-			_, err := e.coordinatorContract.SendRound2(
-				validatorIdx,
-				identifierTo.ToBytes(),
-				r2pkg.ToBytes(),
-			)
-			if err != nil {
-				e.logSendRound2Package(dkg, identifierTo.ToBytes(), err)
-				withErrors = true
+
+		toIdx := helpers.FrostToValidatorIdx(toIdentificator)
+		sentPackages, foundToPackages := dkg.GetR2PackagesTo(toIdx)
+
+		if foundToPackages {
+			_, foundFromMePackage := sentPackages[validatorIdx]
+			if foundFromMePackage {
+				continue
 			}
 		}
+
+		// local r2 package is not sent yet, send it to coordinator
+		_, err := e.coordinatorContract.SendRound2(
+			validatorIdx,
+			toIdx,
+			r2pkg.ToBytes(),
+		)
+		if err != nil {
+			e.logSendRound2Package(dkg, toIdx, err)
+			withErrors = true
+		}
 	}
+
 	if withErrors {
 		e.logError(dkg, "R2 packages sent with errors", nil)
 	} else {
@@ -282,11 +285,6 @@ func (e *Executor) executeR3(dkg *coordinator.DKG, validatorIdx uint16) bool {
 		return false
 	}
 
-	if !dkg.CheckMask(validatorIdx) {
-		e.logDKGProcess(dkg, "The Oracle has been evicted from DKG")
-		return false
-	}
-
 	localIdentifier := helpers.ValidatorIdxToFrost(validatorIdx)
 
 	if e.artifacts.r3 == nil {
@@ -298,7 +296,13 @@ func (e *Executor) executeR3(dkg *coordinator.DKG, validatorIdx uint16) bool {
 		r1Packages := helpers.ConvertMapToFrostPackages(dkg.GetR1Packages())
 		delete(r1Packages, localIdentifier)
 
-		r2Packages := helpers.ConvertMapToFrostPackages(dkg.GetR2Packages(validatorIdx))
+		sentPackages, foundToPackages := dkg.GetR2PackagesTo(validatorIdx)
+		if !foundToPackages {
+			e.logError(dkg, "Part3 failed. R2 packages were not found", nil)
+			return false
+		}
+
+		r2Packages := helpers.ConvertMapToFrostPackages(sentPackages)
 
 		keyPackage, publicKeyPackage, maliciousValidatorIdx, err := frost.DkgPart3(e.artifacts.r2.secret.ptr, r1Packages, r2Packages)
 

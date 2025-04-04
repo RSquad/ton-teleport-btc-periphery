@@ -1,6 +1,7 @@
 package helpers
 
 import (
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"math"
@@ -76,6 +77,10 @@ func HandleTvmError(tvmError error) string {
 func ValidatorIdxToFrost(validatorIdx uint16) frost.Identifier {
 	validatorIdx |= 0x80
 	return frost.GetIdentifier(validatorIdx)
+}
+
+func FrostToValidatorIdx(frostIdentificator frost.Identifier) uint16 {
+	return binary.BigEndian.Uint16(frostIdentificator[30:32]) & (^uint16(0x80))
 }
 
 func ParseIntWithDefaultVal(str string, defaultValue int64, name string) int64 {

@@ -75,6 +75,7 @@ func DkgPart2(
 	round1Packages map[Identifier]Package,
 ) (map[Identifier]Package, uintptr, []byte, error) {
 	pkgs, pin := makeCPackageSlice(round1Packages)
+	defer pin.Unpin()
 
 	if len(pkgs) == 0 {
 		return nil, 0, nil, errors.New("pkgs is empty")
@@ -91,7 +92,7 @@ func DkgPart2(
 		&secret,
 		(*[32]C.uint8_t)(unsafe.Pointer(&r2CulpritIdx[0])),
 	)
-	pin.Unpin()
+
 	round2Packages := make(map[Identifier]Package)
 
 	if r2PackagesLen <= 0 {
@@ -120,6 +121,8 @@ func DkgPart3(
 ) ([]byte, []byte, []byte, error) {
 	r1Pkgs, pin1 := makeCPackageSlice(round1Packages)
 	r2Pkgs, pin2 := makeCPackageSlice(round2Packages)
+	defer pin1.Unpin()
+	defer pin2.Unpin()
 
 	if len(r1Pkgs) == 0 {
 		return nil, nil, nil, errors.New("PKGs1 is empty")
@@ -146,9 +149,6 @@ func DkgPart3(
 		&secretPkgLen,
 		(*[32]C.uint8_t)(unsafe.Pointer(&r3CulpritIdx[0])),
 	)
-
-	pin1.Unpin()
-	pin2.Unpin()
 
 	if ret < 0 {
 		if ret != -3 {
@@ -192,6 +192,8 @@ func SignWithTweak(
 	merkleRoot []byte,
 ) ([]byte, []byte, error) {
 	commitmentsPkgs, commitmentsPin := makeCPackageSlice(commitments)
+	defer commitmentsPin.Unpin()
+
 	signingShares := newEmptyBuffer()
 	culpritIdx := make([]byte, 32)
 
@@ -205,7 +207,6 @@ func SignWithTweak(
 		&signingShares,
 		(*[32]C.uint8_t)(unsafe.Pointer(&culpritIdx[0])),
 	)
-	commitmentsPin.Unpin()
 
 	if ret < 0 {
 		if ret != -3 {
@@ -227,6 +228,10 @@ func AggregateWithTweak(
 ) ([]byte, []byte, error) {
 	commitmentsPkgs, commitmentsPin := makeCPackageSlice(commitments)
 	signatureSharesPkgs, signatureSharesPin := makeCPackageSlice(signatureShares)
+
+	defer commitmentsPin.Unpin()
+	defer signatureSharesPin.Unpin()
+
 	signature := newEmptyBuffer()
 	culpritIdx := make([]byte, 32)
 
@@ -241,9 +246,6 @@ func AggregateWithTweak(
 		&signature,
 		(*[32]C.uint8_t)(unsafe.Pointer(&culpritIdx[0])),
 	)
-
-	commitmentsPin.Unpin()
-	signatureSharesPin.Unpin()
 
 	if ret < 0 {
 		if ret != -3 {

@@ -55,8 +55,9 @@ func (dkg *DKG) GetR1Packages() DKGPkgs {
 	return dkg.R1.Packages
 }
 
-func (dkg *DKG) GetR2Packages(fromIdentifier uint16) DKGPkgs {
-	return dkg.R2.Packages[fromIdentifier]
+func (dkg *DKG) GetR2PackagesTo(toIdx uint16) (DKGPkgs, bool) {
+	v, ok := dkg.R2.PackagesTo[toIdx]
+	return v, ok
 }
 
 func (dkg *DKG) Round1Completed() bool {
