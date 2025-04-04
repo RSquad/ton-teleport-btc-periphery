@@ -202,7 +202,7 @@ pub extern "C" fn dkg_part2(
             "===========> FROST:dkg_part2: 5 <===========, map = {:?}",
             map
         );
-        
+
         let (s, r2_map) = frost_dkg_part2(*Box::clone(&r1_secret_box), &map)?;
         Box::leak(r1_secret_box);
         logout_info!("===========> FROST:dkg_part2: 6 <===========");
@@ -278,6 +278,7 @@ pub extern "C" fn dkg_part2(
                 );
             }
 
+            logout_info!("FROST error: culprit A");
             return -3;
         }
         Err(err) => {
@@ -324,6 +325,9 @@ pub extern "C" fn dkg_part3(
         logout_info!("===========> FROST:dkg_part3: 6 <===========");
         let r2_pkgs_map = Round2Package::make_map(r2_pkgs_ptr, r2_pkgs_len)?;
         logout_info!("===========> FROST:dkg_part3: 7 <===========");
+        logout_info!("r2_secret_box {:?}", r2_secret_box);
+        logout_info!("r1_pkgs_map {:?}", r1_pkgs_map);
+        logout_info!("r2_pkgs_map {:?}", r2_pkgs_map);
         let (s, p) = frost_dkg_part3(&r2_secret_box, &r1_pkgs_map, &r2_pkgs_map)?;
         // Prevent r2_secret_box from being freed. It must be freed manually.
         logout_info!("===========> FROST:dkg_part3: 8 <===========");
@@ -371,6 +375,7 @@ pub extern "C" fn dkg_part3(
                     );
                 }
 
+                logout_info!("FROST error: culprit B");
                 return -3;
             }
             None => {
@@ -537,6 +542,7 @@ pub extern "C" fn sign_with_tweak(
                 ptr::copy_nonoverlapping(culprit_data.as_ptr(), culprit_idx_out.as_mut_ptr(), 32);
             }
 
+            logout_info!("FROST error: culprit C");
             return -3;
         }
         Err(Error::InvalidSecretShare { ref culprit }) => match culprit {
@@ -555,6 +561,7 @@ pub extern "C" fn sign_with_tweak(
                     );
                 }
 
+                logout_info!("FROST error: culprit D");
                 return -3;
             }
             None => {
@@ -630,6 +637,7 @@ pub extern "C" fn aggregate_with_tweak(
                 ptr::copy_nonoverlapping(culprit_data.as_ptr(), culprit_idx_out.as_mut_ptr(), 32);
             }
 
+            logout_info!("FROST error: culprit E");
             return -3;
         }
         Err(Error::InvalidSecretShare { ref culprit }) => match culprit {
@@ -648,6 +656,7 @@ pub extern "C" fn aggregate_with_tweak(
                     );
                 }
 
+                logout_info!("FROST error: culprit F");
                 return -3;
             }
             None => {

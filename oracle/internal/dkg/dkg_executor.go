@@ -55,6 +55,8 @@ func (a *ExecutionArtifacts) Cleanup() {
 	a.r1 = nil
 	a.r2 = nil
 	a.r3 = nil
+
+	logger.Log.Debug().Msg("---------------------------->>>>>>>>>>>>>>>>>>> A R T I F A C T S   C L E A N U P <<<<<<<<<<<<<<<--------------------------")
 }
 
 type Executor struct {
@@ -137,7 +139,7 @@ func (e *Executor) Execute(dkg *coordinator.DKG) {
 	}
 
 	if !dkg.CheckMask(keyInfo.VsetIdx) {
-		e.logDKGProcess(dkg, "The Oracle has been evicted from DKG or DKG is not started yet")
+		e.logDKGProcess(dkg, "The Oracle has been evicted from DKG")
 		return
 	}
 
