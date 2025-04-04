@@ -150,6 +150,12 @@ func (s *SignService) execute(ctx context.Context, dkg *coordinator.DKG) {
 	s.validator.GetSessionSigner().OnNewDKG(dkg.Until.Unix())
 	s.logSigningRequestsCount(len(pegoutRecords))
 
+	// TODO: implement
+	//{
+	//	cache
+	//  0 case
+	//}
+
 	// Get oldest unsigned pegout record
 	unsignedPegout := pegoutRecords[0]
 	s.logProcessingPegout(&unsignedPegout)

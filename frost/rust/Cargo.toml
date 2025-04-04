@@ -10,7 +10,5 @@ name = "frost"
 [dependencies]
 libc = "0.2.2"
 rand = "0.8.5"
-frost-core = { git = "https://github.com/conduition/frost", branch = "add-secp256k1-tr" }
-frost-secp256k1-tr = { git = "https://github.com/conduition/frost", branch = "add-secp256k1-tr", features = [
-    "serde",
-] }
+frost-core = { git = "https://github.com/ZcashFoundation/frost",tag = "frost-secp256k1-tr/v2.1.0" }
+frost-secp256k1-tr = { git = "https://github.com/ZcashFoundation/frost",tag = "frost-secp256k1-tr/v2.1.0", features = ["serde"] }

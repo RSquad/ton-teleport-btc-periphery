@@ -109,6 +109,7 @@ func (e *Executor) Execute(dkg *coordinator.DKG) {
 	}
 
 	if dkg.Until.After(e.until) {
+		logger.Log.Debug().Msg("--------------------> NEW DKG STARTED <--------------------")
 		e.until = dkg.Until
 		e.artifacts.Cleanup()
 
@@ -213,6 +214,7 @@ func (e *Executor) executeR2(dkg *coordinator.DKG, validatorIdx uint16) bool {
 		delete(r1Packages, frost.Identifier(localIdentifier))
 
 		r2Packages, r2SecretPtr, maliciousValidatorIdx, err := frost.DkgPart2(e.artifacts.r1.secret.ptr, r1Packages)
+
 		if err != nil {
 			if maliciousValidatorIdx != nil {
 				e.logError(dkg, fmt.Sprintf("Part2 failed. Malicious validator found: %x", maliciousValidatorIdx), err)
@@ -222,6 +224,7 @@ func (e *Executor) executeR2(dkg *coordinator.DKG, validatorIdx uint16) bool {
 			}
 			return false
 		}
+
 		e.artifacts.r2 = &Round2Result{
 			pkgs:   r2Packages,
 			secret: NewSecret(r2SecretPtr),
@@ -284,6 +287,7 @@ func (e *Executor) executeR3(dkg *coordinator.DKG, validatorIdx uint16) bool {
 		r2Packages := helpers.ConvertMapToFrostPackages(dkg.GetR2Packages(localIdentifier))
 
 		keyPackage, publicKeyPackage, maliciousValidatorIdx, err := frost.DkgPart3(e.artifacts.r2.secret.ptr, r1Packages, r2Packages)
+
 		if err != nil {
 			if maliciousValidatorIdx != nil {
 				e.logError(dkg, "Part3 failed. Malicious validator found.", err)

@@ -53,13 +53,26 @@ func New(
 func (c *CoordinatorContract) GetDkg(block *tonutils.BlockIDExt) (*DKG, error) {
 	if block == nil {
 		var err error
+
+		logger.Log.Debug().Msg(">>>>>>> SEND MESSAGE TO THE TON NETWORK: CurrentMasterchainInfo(BEGIN)...")
+		startTs := time.Now()
 		block, err = c.tonClient.API.CurrentMasterchainInfo(c.ctx)
+		endTs := time.Now()
+		duration := endTs.Unix() - startTs.Unix()
+		logger.Log.Debug().Msgf(">>>>>>> SEND MESSAGE TO THE TON NETWORK: CurrentMasterchainInfo (END). Total time {%d}s", duration)
+
 		if err != nil {
 			return nil, err
 		}
 	}
 
+	logger.Log.Debug().Msg(">>>>>>> SEND MESSAGE TO THE TON NETWORK: RunGetMethod(get_dkg) (BEGIN)...")
+	startTs := time.Now()
 	result, err := c.tonClient.API.RunGetMethod(c.ctx, block, c.Addr, "get_dkg")
+	endTs := time.Now()
+	duration := endTs.Sub(startTs)
+	logger.Log.Debug().Msgf(">>>>>>> SEND MESSAGE TO THE TON NETWORK: RunGetMethod(get_dkg) (END). Total time {%d}s", duration)
+
 	if err != nil {
 		return nil, err
 	}
@@ -88,12 +101,24 @@ func (c *CoordinatorContract) GetDkg(block *tonutils.BlockIDExt) (*DKG, error) {
 }
 
 func (c *CoordinatorContract) GetPrevDKG() (*DKG, error) {
+	logger.Log.Debug().Msg(">>>>>>> SEND MESSAGE TO THE TON NETWORK: CurrentMasterchainInfo (BEGIN)...")
+	startTs := time.Now()
 	block, err := c.tonClient.API.CurrentMasterchainInfo(c.ctx)
+	endTs := time.Now()
+	duration := endTs.Sub(startTs)
+	logger.Log.Debug().Msgf(">>>>>>> SEND MESSAGE TO THE TON NETWORK: CurrentMasterchainInfo (END). Total time {%d}s", duration)
+
 	if err != nil {
 		return nil, err
 	}
 
+	logger.Log.Debug().Msg(">>>>>>> SEND MESSAGE TO THE TON NETWORK: RunGetMethod(get_prev_dkg) (BEGIN)...")
+	startTs = time.Now()
 	result, err := c.tonClient.API.RunGetMethod(c.ctx, block, c.Addr, "get_prev_dkg")
+	endTs = time.Now()
+	duration = endTs.Sub(startTs)
+	logger.Log.Debug().Msgf(">>>>>>> SEND MESSAGE TO THE TON NETWORK: RunGetMethod(get_prev_dkg) (END). Total time {%d}s", duration)
+
 	if err != nil {
 		return nil, err
 	}
@@ -111,12 +136,24 @@ func (c *CoordinatorContract) GetPrevDKG() (*DKG, error) {
 }
 
 func (c *CoordinatorContract) GetUnsignedPegouts() ([]PegoutRecord, error) {
+	logger.Log.Debug().Msg(">>>>>>> SEND MESSAGE TO THE TON NETWORK: CurrentMasterchainInfo (BEGIN)...")
+	startTs := time.Now()
 	block, err := c.tonClient.API.CurrentMasterchainInfo(c.ctx)
+	endTs := time.Now()
+	duration := endTs.Sub(startTs)
+	logger.Log.Debug().Msgf(">>>>>>> SEND MESSAGE TO THE TON NETWORK: CurrentMasterchainInfo (END). Total time {%d}s", duration)
+
 	if err != nil {
 		return nil, err
 	}
 
+	logger.Log.Debug().Msg(">>>>>>> SEND MESSAGE TO THE TON NETWORK: RunGetMethod(get_pegout_records) (BEGIN)...")
+	startTs = time.Now()
 	result, err := c.tonClient.API.RunGetMethod(c.ctx, block, c.Addr, "get_pegout_records")
+	endTs = time.Now()
+	duration = endTs.Sub(startTs)
+	logger.Log.Debug().Msgf(">>>>>>> SEND MESSAGE TO THE TON NETWORK: RunGetMethod(get_pegout_records) (END). Total time {%d}s", duration)
+
 	if err != nil {
 		return nil, err
 	}
