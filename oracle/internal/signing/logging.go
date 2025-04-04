@@ -144,13 +144,25 @@ func (s *SignService) logExecuteClaim(pegoutID uint64) {
 }
 
 func (s *SignService) logSendClaim(pegoutID uint64, maliciousValidatorIdx []byte) {
-	infoEventWithPegoutID(pegoutID).Msg("Malicious validator idx: " + hex.EncodeToString(maliciousValidatorIdx))
+	infoEventWithPegoutID(pegoutID).Msg("Send calim, malicious validator idx: " + hex.EncodeToString(maliciousValidatorIdx))
 }
 
 func (s *SignService) logSigningClaimSent(pegoutID uint64) {
-	infoEventWithPegoutID(pegoutID).Msg("Sign claim sent")
+	infoEventWithPegoutID(pegoutID).Msg("Signing claim sent")
 }
 
 func (s *SignService) logSigningClaimSentError(pegoutID uint64, err error) {
-	errorEventWithPegoutID(pegoutID).Err(err).Msg("failed to send sign claim")
+	errorEventWithPegoutID(pegoutID).Err(err).Msg("failed to send signing claim")
+}
+
+func (s *SignService) logSendResetPegoutSigning(pegoutID uint64) {
+	infoEventWithPegoutID(pegoutID).Msg("Send reset pegout signing")
+}
+
+func (s *SignService) logResetPegoutSigningSent(pegoutID uint64) {
+	infoEventWithPegoutID(pegoutID).Msg("Reset pegout signing sent")
+}
+
+func (s *SignService) logResetPegoutSigningSentError(pegoutID uint64, err error) {
+	errorEventWithPegoutID(pegoutID).Err(err).Msg("failed to send reset pegout signing")
 }

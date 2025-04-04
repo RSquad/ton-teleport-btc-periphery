@@ -114,6 +114,16 @@ func (c *CoordinatorContract) SendSigningClaim(
 	))
 }
 
+func (c *CoordinatorContract) SendResetPegoutSigning(
+	PegoutID uint64,
+	ValidatorIdx uint16,
+) (*tlb.Transaction, error) {
+	return c.sendBodyCell(BuildSendResetPegoutSigningBody(
+		int64(c.ttl.Seconds()),
+		&ResetPegoutSigningRequest{PegoutID, ValidatorIdx},
+	))
+}
+
 func (c *CoordinatorContract) ConnectSigner(signer signer.Signer) {
 	c.signer = signer
 }

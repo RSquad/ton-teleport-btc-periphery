@@ -105,6 +105,11 @@ type SigningClaimRequest struct {
 	maliciousValidatorIdx []byte
 }
 
+type ResetPegoutSigningRequest struct {
+	PegoutID     uint64
+	ValidatorIdx uint16
+}
+
 type PegoutRecord struct {
 	ID                uint64
 	PegoutAddress     *address.Address

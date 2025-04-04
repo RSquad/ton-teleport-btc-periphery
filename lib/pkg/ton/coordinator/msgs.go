@@ -142,3 +142,12 @@ func BuildSendSigningClaimBody(ttl int64, req *SigningClaimRequest) *cell.Cell {
 		MustStoreUInt(uint64(binary.BigEndian.Uint16(req.maliciousValidatorIdx[30:32])), 16).
 		EndCell()
 }
+
+func BuildSendResetPegoutSigningBody(ttl int64, req *ResetPegoutSigningRequest) *cell.Cell {
+	return cell.BeginCell().
+		MustStoreUInt(OpCodeCoordinatorSigningClaim, 32).
+		MustStoreUInt(uint64(time.Now().Unix()+ttl), 32).
+		MustStoreUInt(uint64(req.ValidatorIdx), 16).
+		MustStoreUInt(req.PegoutID, 64).
+		EndCell()
+}

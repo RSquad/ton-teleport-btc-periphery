@@ -463,6 +463,19 @@ func (s *SignService) executeClaim(pegout *CachedPegout, validatorKey *validator
 	}
 }
 
+func (s *SignService) executeResetPegoutSigning(pegout *CachedPegout, validatorKey *validator.KeyInfo) {
+	s.logSendResetPegoutSigning(pegout.ID)
+
+	if _, err := s.coordinator.SendResetPegoutSigning(
+		pegout.ID,
+		validatorKey.VsetIdx,
+	); err != nil {
+		s.logResetPegoutSigningSentError(pegout.ID, err)
+	} else {
+		s.logResetPegoutSigningSent(pegout.ID)
+	}
+}
+
 func (s *SignService) ClaimCompleted(pegout *CachedPegout, validatorIdx uint16) bool {
 	return pegout.artifacts.ClaimsMask.Bit(int(validatorIdx)) > 0
 }
