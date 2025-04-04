@@ -76,6 +76,10 @@ func (s *SignService) Work(ctx context.Context, wg *sync.WaitGroup) {
 	}
 }
 
+func (s *SignService) cachePegoutClear() {
+	s.cachedPegout = nil
+}
+
 func (s *SignService) cachePegout(
 	ctx context.Context,
 	unsignedPegout *coordinator.PegoutRecord,
@@ -150,26 +154,12 @@ func (s *SignService) execute(ctx context.Context, dkg *coordinator.DKG) {
 	s.validator.GetSessionSigner().OnNewDKG(dkg.Until.Unix())
 	s.logSigningRequestsCount(len(pegoutRecords))
 
-	// TODO: implement
-	//{
-	//	cache
-	//  0 case
-	//}
-
 	// Get oldest unsigned pegout record
 	unsignedPegout := pegoutRecords[0]
 	s.logProcessingPegout(&unsignedPegout)
-	cachedPegout, err := s.cachePegout(ctx, &unsignedPegout)
-	if err != nil {
-		s.logError("failed to cache pegout", err)
-		return
-	}
-	if cachedPegout == nil {
-		panic("cached pegout is nil")
-	}
 
+	// Get validatorKeyInfo
 	pubkeyPackage := dkg.R3.Data.PubkeyPackage
-
 	validatorKeyInfo, err := s.validator.FindKeyInfo(dkg.VSet)
 	if err != nil {
 		s.logError("failed to get validator key", err)
@@ -177,8 +167,25 @@ func (s *SignService) execute(ctx context.Context, dkg *coordinator.DKG) {
 	}
 
 	if validatorKeyInfo == nil {
-		s.logOracleNotValidator(cachedPegout.ID)
+		s.logOracleNotValidator(unsignedPegout.ID)
 		return
+	}
+
+	// Check for signing restart
+	if (unsignedPegout.ExpiredAt != time.Unix(0, 0)) && (unsignedPegout.ExpiredAt.Before(time.Now())) {
+		logger.Log.Debug().Msg("--------------------> NEW SIGNING STARTED (OLD TIMED OUT) <--------------------")
+		s.executeResetPegoutSigning(unsignedPegout.ID, validatorKeyInfo)
+		s.cachePegoutClear()
+	}
+
+	// Try caching the pegout
+	cachedPegout, err := s.cachePegout(ctx, &unsignedPegout)
+	if err != nil {
+		s.logError("failed to cache pegout", err)
+		return
+	}
+	if cachedPegout == nil {
+		panic("cached pegout is nil")
 	}
 
 	s.coordinator.ConnectSigner(s.validator.GetSessionSigner())
@@ -243,7 +250,6 @@ func (s *SignService) doCommit(
 	if _, err := s.coordinator.SendCommitments(
 		pegout.ID,
 		validatorKey.VsetIdx,
-		localIdentifier,
 		commitments,
 	); err != nil {
 		s.logError("failed to send commitments", err)
@@ -304,10 +310,6 @@ func (s *SignService) doSign(
 				pegout.artifacts.Commitments, // oracle's commitments to sign pegout hashes
 				pegout.addrStr,               // pegout address used as key to load nonce from keystore
 			)
-			if err != nil {
-
-				return false
-			}
 
 			if err != nil {
 				if maliciousValidatorIdx != nil {
@@ -328,7 +330,6 @@ func (s *SignService) doSign(
 	if _, err := s.coordinator.SendSigningShare(
 		pegout.ID,
 		validatorKey.VsetIdx,
-		localIdentifier,
 		signShares,
 	); err != nil {
 		s.logSendSigningShareError(pegout.ID, err)
@@ -469,16 +470,16 @@ func (s *SignService) executeClaim(pegout *CachedPegout, validatorKey *validator
 	}
 }
 
-func (s *SignService) executeResetPegoutSigning(pegout *CachedPegout, validatorKey *validator.KeyInfo) {
-	s.logSendResetPegoutSigning(pegout.ID)
+func (s *SignService) executeResetPegoutSigning(pegoutID uint64, validatorKey *validator.KeyInfo) {
+	s.logSendResetPegoutSigning(pegoutID)
 
 	if _, err := s.coordinator.SendResetPegoutSigning(
-		pegout.ID,
+		pegoutID,
 		validatorKey.VsetIdx,
 	); err != nil {
-		s.logResetPegoutSigningSentError(pegout.ID, err)
+		s.logResetPegoutSigningSentError(pegoutID, err)
 	} else {
-		s.logResetPegoutSigningSent(pegout.ID)
+		s.logResetPegoutSigningSent(pegoutID)
 	}
 }
 

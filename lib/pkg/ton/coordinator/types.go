@@ -82,14 +82,12 @@ func (dkg *DKG) ClaimCompleted(validatorIdx uint16) bool {
 type CommitmentRequest struct {
 	PegoutID     uint64
 	ValidatorIdx uint16
-	Identifier   []byte
 	Commitments  []byte
 }
 
 type SigningShareRequest struct {
 	PegoutID      uint64
 	ValidatorIdx  uint16
-	Identifier    []byte
 	SigningShares [][]byte
 }
 

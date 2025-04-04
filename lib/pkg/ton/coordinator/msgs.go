@@ -8,58 +8,32 @@ import (
 	"github.com/xssnick/tonutils-go/tvm/cell"
 )
 
-func BuildSendRound1Body(
-	ttl int64,
-	validatorIdx uint16,
-	round1Package []byte,
-	identifier []byte,
-) *cell.Cell {
+func BuildSendRound1Body(ttl int64, validatorIdx uint16, round1Package []byte) *cell.Cell {
 	return cell.BeginCell().
 		MustStoreUInt(OpCodeCoordinatorRound1, 32).
 		MustStoreUInt(uint64(time.Now().Unix()+ttl), 32).
 		MustStoreUInt(uint64(validatorIdx), 16).
-		MustStoreRef(
-			cell.BeginCell().
-				MustStoreSlice(identifier, 256). // TODO: remove
-				MustStoreRef(
-					utils.SplitBytesToCells(round1Package),
-				).
-				EndCell(),
-		).
+		MustStoreRef(utils.SplitBytesToCells(round1Package)).
 		EndCell()
 }
 
-func BuildSendRound2Body(ttl int64, validatorIdx uint16, fromIdentifier []byte, toIdentifier []byte, round2Package []byte) *cell.Cell {
+func BuildSendRound2Body(ttl int64, validatorIdx uint16, toIdentifier []byte, round2Package []byte) *cell.Cell {
 	return cell.BeginCell().
 		MustStoreUInt(OpCodeCoordinatorRound2, 32).
 		MustStoreUInt(uint64(time.Now().Unix()+ttl), 32).
 		MustStoreUInt(uint64(validatorIdx), 16).
-		MustStoreRef(
-			cell.BeginCell().
-				MustStoreSlice(fromIdentifier, 256). // TODO: remove
-				MustStoreSlice(toIdentifier, 256).
-				MustStoreRef(
-					utils.SplitBytesToCells(round2Package),
-				).
-				EndCell(),
-		).
+		MustStoreUInt(uint64(binary.BigEndian.Uint16(toIdentifier[30:32])), 16).
+		MustStoreRef(utils.SplitBytesToCells(round2Package)).
 		EndCell()
 }
 
-func BuildSendRound3Body(ttl int64, validatorIdx uint16, sessionPublicKey []byte, pubkeyPackage []byte, identifier []byte) *cell.Cell {
+func BuildSendRound3Body(ttl int64, validatorIdx uint16, sessionPublicKey []byte, pubkeyPackage []byte) *cell.Cell {
 	return cell.BeginCell().
 		MustStoreUInt(OpCodeCoordinatorRound3, 32).
 		MustStoreUInt(uint64(time.Now().Unix()+ttl), 32).
 		MustStoreUInt(uint64(validatorIdx), 16).
 		MustStoreSlice(sessionPublicKey, 256).
-		MustStoreRef(
-			cell.BeginCell().
-				MustStoreSlice(identifier, 256). // TODO: remove
-				MustStoreRef(
-					utils.SplitBytesToCells(pubkeyPackage),
-				).
-				EndCell(),
-		).
+		MustStoreRef(utils.SplitBytesToCells(pubkeyPackage)).
 		EndCell()
 }
 
@@ -77,15 +51,8 @@ func BuildSendCommitmentsBody(ttl int64, req *CommitmentRequest) *cell.Cell {
 		MustStoreUInt(OpCodeCoordinatorSendCommitments, 32).
 		MustStoreUInt(uint64(time.Now().Unix()+ttl), 32).
 		MustStoreUInt(uint64(req.ValidatorIdx), 16).
-		MustStoreRef(
-			cell.BeginCell().
-				MustStoreSlice(req.Identifier, 256).
-				MustStoreUInt(req.PegoutID, 64).
-				MustStoreRef(
-					utils.SplitBytesToCells(req.Commitments),
-				).
-				EndCell(),
-		).
+		MustStoreUInt(req.PegoutID, 64).
+		MustStoreRef(utils.SplitBytesToCells(req.Commitments)).
 		EndCell()
 }
 
@@ -101,10 +68,9 @@ func BuildSendSigningShareBody(ttl int64, req *SigningShareRequest) *cell.Cell {
 		MustStoreUInt(OpCodeCoordinatorSendSigningShare, 32).
 		MustStoreUInt(uint64(time.Now().Unix()+ttl), 32).
 		MustStoreUInt(uint64(req.ValidatorIdx), 16).
+		MustStoreUInt(req.PegoutID, 64).
 		MustStoreRef(
 			cell.BeginCell().
-				MustStoreSlice(req.Identifier, 256).
-				MustStoreUInt(req.PegoutID, 64).
 				MustStoreDict(dict).
 				EndCell(),
 		).
@@ -124,9 +90,9 @@ func BuildSendSignaturesBody(ttl int64, req *SignaturesRequest) *cell.Cell {
 		MustStoreUInt(OpCodeCoordinatorSendSignature, 32).
 		MustStoreUInt(uint64(time.Now().Unix()+ttl), 32).
 		MustStoreUInt(uint64(req.ValidatorIdx), 16).
+		MustStoreUInt(req.PegoutID, 64).
 		MustStoreRef(
 			cell.BeginCell().
-				MustStoreUInt(req.PegoutID, 64).
 				MustStoreDict(dict).
 				EndCell(),
 		).
@@ -145,7 +111,7 @@ func BuildSendSigningClaimBody(ttl int64, req *SigningClaimRequest) *cell.Cell {
 
 func BuildSendResetPegoutSigningBody(ttl int64, req *ResetPegoutSigningRequest) *cell.Cell {
 	return cell.BeginCell().
-		MustStoreUInt(OpCodeCoordinatorSigningClaim, 32).
+		MustStoreUInt(OpCodeCoordinatorResetPegoutSigning, 32).
 		MustStoreUInt(uint64(time.Now().Unix()+ttl), 32).
 		MustStoreUInt(uint64(req.ValidatorIdx), 16).
 		MustStoreUInt(req.PegoutID, 64).

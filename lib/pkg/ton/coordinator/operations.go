@@ -36,21 +36,19 @@ func (c *CoordinatorContract) SendStartDKG() (*tlb.Transaction, error) {
 func (c *CoordinatorContract) SendRound1(
 	validatorIdx uint16,
 	round1Package []byte,
-	identifier []byte,
 ) (*tlb.Transaction, error) {
 	return c.sendBodyCell(BuildSendRound1Body(
-		int64(c.ttl.Seconds()), validatorIdx, round1Package, identifier,
+		int64(c.ttl.Seconds()), validatorIdx, round1Package,
 	))
 }
 
 func (c *CoordinatorContract) SendRound2(
 	validatorIdx uint16,
-	fromIdentifier []byte,
 	toIdentifier []byte,
 	round2Package []byte,
 ) (*tlb.Transaction, error) {
 	return c.sendBodyCell(BuildSendRound2Body(
-		int64(c.ttl.Seconds()), validatorIdx, fromIdentifier, toIdentifier, round2Package,
+		int64(c.ttl.Seconds()), validatorIdx, toIdentifier, round2Package,
 	))
 }
 
@@ -63,38 +61,34 @@ func (c *CoordinatorContract) SendDKGClaim(
 	))
 }
 
-func (c *CoordinatorContract) SendPubkeyPackage(validatorIdx uint16, sessionPublicKey []byte, pubkeyPackage []byte, identifier []byte) (*tlb.Transaction, error) {
+func (c *CoordinatorContract) SendPubkeyPackage(validatorIdx uint16, sessionPublicKey []byte, pubkeyPackage []byte) (*tlb.Transaction, error) {
 	return c.sendBodyCell(BuildSendRound3Body(
-		int64(c.ttl.Seconds()), validatorIdx, sessionPublicKey, pubkeyPackage, identifier,
+		int64(c.ttl.Seconds()), validatorIdx, sessionPublicKey, pubkeyPackage,
 	))
 }
 
 func (c *CoordinatorContract) SendCommitments(
 	PegoutID uint64,
 	ValidatorIdx uint16,
-	Identifier, Commitments []byte,
+	Commitments []byte,
 ) (*tlb.Transaction, error) {
 	if len(Commitments) == 0 {
 		return nil, fmt.Errorf("commitments are empty")
 	}
-	if len(Identifier) == 0 {
-		return nil, fmt.Errorf("identifier is empty")
-	}
 	return c.sendBodyCell(BuildSendCommitmentsBody(
 		int64(c.ttl.Seconds()),
-		&CommitmentRequest{PegoutID, ValidatorIdx, Identifier, Commitments},
+		&CommitmentRequest{PegoutID, ValidatorIdx, Commitments},
 	))
 }
 
 func (c *CoordinatorContract) SendSigningShare(
 	PegoutID uint64,
 	ValidatorIdx uint16,
-	Identifier []byte,
 	SigningShares [][]byte,
 ) (*tlb.Transaction, error) {
 	return c.sendBodyCell(BuildSendSigningShareBody(
 		int64(c.ttl.Seconds()),
-		&SigningShareRequest{PegoutID, ValidatorIdx, Identifier, SigningShares},
+		&SigningShareRequest{PegoutID, ValidatorIdx, SigningShares},
 	))
 }
 

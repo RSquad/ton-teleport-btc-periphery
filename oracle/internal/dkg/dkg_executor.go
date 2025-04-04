@@ -184,7 +184,6 @@ func (e *Executor) executeR1(dkg *coordinator.DKG, validatorIdx uint16) bool {
 	_, err := e.coordinatorContract.SendRound1(
 		validatorIdx,
 		e.artifacts.r1.pkg,
-		localIdentifier,
 	)
 	if err != nil {
 		e.logSendRound1Package(dkg, err)
@@ -244,7 +243,6 @@ func (e *Executor) executeR2(dkg *coordinator.DKG, validatorIdx uint16) bool {
 			// local r2 package is not sent yet, send it to coordinator
 			_, err := e.coordinatorContract.SendRound2(
 				validatorIdx,
-				localIdentifier, // TODO: remove
 				identifierTo.ToBytes(),
 				r2pkg.ToBytes(),
 			)
@@ -319,7 +317,6 @@ func (e *Executor) executeR3(dkg *coordinator.DKG, validatorIdx uint16) bool {
 		validatorIdx,
 		e.validator.GetSessionSigner().PublicKey(),
 		e.artifacts.r3.publicKeyPackage,
-		localIdentifier, // TODO: remove
 	); err != nil {
 		e.logSendPubkeyPackageFailed(dkg, err)
 	}
