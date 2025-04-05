@@ -14,6 +14,7 @@ use frost_secp256k1_tr::{
     Error, Identifier, Signature, SigningPackage,
 };
 use rand::thread_rng;
+use std::io::{self, Write};
 use std::{collections::BTreeMap, ffi::c_void, ptr};
 
 #[inline]
@@ -35,9 +36,11 @@ pub struct Buffer {
 macro_rules! logout_info {
     ($msg:expr) => {
         println!("[{}:{}] {}", file!(), line!(), $msg);
+        io::stdout().flush().unwrap();
     };
     ($fmt:expr, $($arg:tt)*) => {
         println!(concat!("[{}:{}] ", $fmt), file!(), line!(), $($arg)*);
+        io::stdout().flush().unwrap();
     };
 }
 
@@ -194,13 +197,13 @@ pub extern "C" fn dkg_part2(
             frost_core::keys::dkg::round1::SecretPackage<frost_secp256k1_tr::Secp256K1Sha256TR>,
         > = from_void(r1_secret);
         logout_info!(
-            "===========> FROST:dkg_part2: 4 <===========, r1_secret_box = {:?}",
-            r1_secret_box
+            "===========> FROST:dkg_part2: 4 <===========, r1_secret_box.min_signers = {}, r1_secret_box.max_signers = {}",
+             r1_secret_box.min_signers(), r1_secret_box.max_signers()
         );
         let map = Round1Package::make_map(r1_pkgs_ptr, r1_pkgs_len)?;
         logout_info!(
-            "===========> FROST:dkg_part2: 5 <===========, map = {:?}",
-            map
+            "===========> FROST:dkg_part2: 5 <===========, map.len = {}",
+            map.len()
         );
 
         let (s, r2_map) = frost_dkg_part2(*Box::clone(&r1_secret_box), &map)?;
@@ -317,7 +320,9 @@ pub extern "C" fn dkg_part3(
     }
 
     logout_info!("===========> FROST:dkg_part3: 3 <===========");
-    let r2_secret_box = from_void(r2_secret);
+    let r2_secret_box: Box<
+        frost_core::keys::dkg::round2::SecretPackage<frost_secp256k1_tr::Secp256K1Sha256TR>,
+    > = from_void(r2_secret);
     logout_info!("===========> FROST:dkg_part3: 4 <===========");
     let result = (|| -> Result<(), Error> {
         logout_info!("===========> FROST:dkg_part3: 5 <===========");
@@ -325,9 +330,13 @@ pub extern "C" fn dkg_part3(
         logout_info!("===========> FROST:dkg_part3: 6 <===========");
         let r2_pkgs_map = Round2Package::make_map(r2_pkgs_ptr, r2_pkgs_len)?;
         logout_info!("===========> FROST:dkg_part3: 7 <===========");
-        logout_info!("r2_secret_box {:?}", r2_secret_box);
-        logout_info!("r1_pkgs_map {:?}", r1_pkgs_map);
-        logout_info!("r2_pkgs_map {:?}", r2_pkgs_map);
+        logout_info!(
+            "r2_secret_box.min_signers()={}, r2_secret_box.max_signers()={}",
+            r2_secret_box.min_signers(),
+            r2_secret_box.max_signers()
+        );
+        logout_info!("r1_pkgs_map.len()={}", r1_pkgs_map.len());
+        logout_info!("r2_pkgs_map.len()={}", r2_pkgs_map.len());
         let (s, p) = frost_dkg_part3(&r2_secret_box, &r1_pkgs_map, &r2_pkgs_map)?;
         // Prevent r2_secret_box from being freed. It must be freed manually.
         logout_info!("===========> FROST:dkg_part3: 8 <===========");

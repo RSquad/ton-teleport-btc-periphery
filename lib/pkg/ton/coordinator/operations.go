@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/signer"
 	"github.com/xssnick/tonutils-go/tlb"
@@ -22,16 +21,15 @@ func (c *CoordinatorContract) SendStartDKG() (*tlb.Transaction, error) {
 		return nil, err
 	}
 
-	logger.Log.Debug().Msg("--------------------> SendStartDKG <--------------------")
-
-	logger.Log.Debug().Msg(">>>>>>> SEND MESSAGE TO THE TON NETWORK: SendStartDKG (BEGIN)...")
-	startTs := time.Now()
-	apiCtx, cancelFn := context.WithTimeout(c.ctx, 10*time.Second)
-	defer cancelFn()
-	tx, _, _, err := c.tonClient.API.SendExternalMessageWaitTransaction(apiCtx, msg)
-	endTs := time.Now()
-	duration := endTs.Unix() - startTs.Unix()
-	logger.Log.Debug().Msgf(">>>>>>> SEND MESSAGE TO THE TON NETWORK: SendStartDKG (END). Total time {%d}s", duration)
+	tx, err := CallApiWithTimeout(
+		func(apiCallCtx context.Context) (*tlb.Transaction, error) {
+			tx, _, _, err := c.tonClient.API.SendExternalMessageWaitTransaction(apiCallCtx, msg)
+			return tx, err
+		},
+		c.ctx,
+		c.tonApiCallTimeout,
+		"SendExternalMessageWaitTransaction: SendStartDKG",
+	)
 
 	return tx, err
 }
@@ -42,7 +40,7 @@ func (c *CoordinatorContract) SendRound1(
 ) (*tlb.Transaction, error) {
 	return c.sendBodyCell(BuildSendRound1Body(
 		int64(c.ttl.Seconds()), validatorIdx, round1Package,
-	))
+	), "SendRound1")
 }
 
 func (c *CoordinatorContract) SendRound2(
@@ -52,7 +50,7 @@ func (c *CoordinatorContract) SendRound2(
 ) (*tlb.Transaction, error) {
 	return c.sendBodyCell(BuildSendRound2Body(
 		int64(c.ttl.Seconds()), validatorIdx, toIdx, round2Package,
-	))
+	), "SendRound2")
 }
 
 func (c *CoordinatorContract) SendDKGClaim(
@@ -61,13 +59,13 @@ func (c *CoordinatorContract) SendDKGClaim(
 ) (*tlb.Transaction, error) {
 	return c.sendBodyCell(BuildSendDKGClaimBody(
 		int64(c.ttl.Seconds()), validatorIdx, maliciousValidatorIdx,
-	))
+	), "SendDKGClaim")
 }
 
 func (c *CoordinatorContract) SendPubkeyPackage(validatorIdx uint16, sessionPublicKey []byte, pubkeyPackage []byte) (*tlb.Transaction, error) {
 	return c.sendBodyCell(BuildSendRound3Body(
 		int64(c.ttl.Seconds()), validatorIdx, sessionPublicKey, pubkeyPackage,
-	))
+	), "SendPubkeyPackage")
 }
 
 func (c *CoordinatorContract) SendCommitments(
@@ -81,7 +79,7 @@ func (c *CoordinatorContract) SendCommitments(
 	return c.sendBodyCell(BuildSendCommitmentsBody(
 		int64(c.ttl.Seconds()),
 		&CommitmentRequest{PegoutID, ValidatorIdx, Commitments},
-	))
+	), "SendCommitments")
 }
 
 func (c *CoordinatorContract) SendSigningShare(
@@ -92,7 +90,7 @@ func (c *CoordinatorContract) SendSigningShare(
 	return c.sendBodyCell(BuildSendSigningShareBody(
 		int64(c.ttl.Seconds()),
 		&SigningShareRequest{PegoutID, ValidatorIdx, SigningShares},
-	))
+	), "SendSigningShare")
 }
 
 func (c *CoordinatorContract) SendSignatures(
@@ -103,7 +101,7 @@ func (c *CoordinatorContract) SendSignatures(
 	return c.sendBodyCell(BuildSendSignaturesBody(
 		int64(c.ttl.Seconds()),
 		&SignaturesRequest{PegoutID, ValidatorIdx, Signatures},
-	))
+	), "SendSignatures")
 }
 
 func (c *CoordinatorContract) SendSigningClaim(
@@ -114,7 +112,7 @@ func (c *CoordinatorContract) SendSigningClaim(
 	return c.sendBodyCell(BuildSendSigningClaimBody(
 		int64(c.ttl.Seconds()),
 		&SigningClaimRequest{PegoutID, ValidatorIdx, maliciousValidatorIdx},
-	))
+	), "SendSigningClaim")
 }
 
 func (c *CoordinatorContract) SendResetPegoutSigning(
@@ -124,27 +122,28 @@ func (c *CoordinatorContract) SendResetPegoutSigning(
 	return c.sendBodyCell(BuildSendResetPegoutSigningBody(
 		int64(c.ttl.Seconds()),
 		&ResetPegoutSigningRequest{PegoutID, ValidatorIdx},
-	))
+	), "SendResetPegoutSigning")
 }
 
 func (c *CoordinatorContract) ConnectSigner(signer signer.Signer) {
 	c.signer = signer
 }
 
-func (c *CoordinatorContract) sendBodyCell(bodyCell *cell.Cell) (*tlb.Transaction, error) {
+func (c *CoordinatorContract) sendBodyCell(bodyCell *cell.Cell, name string) (*tlb.Transaction, error) {
 	msg, err := ton.BuildExtMsg(bodyCell, c.Addr, c.signer)
 	if err != nil {
 		return nil, err
 	}
 
-	logger.Log.Debug().Msg(">>>>>>> SEND MESSAGE TO THE TON NETWORK (BEGIN)...")
-	startTs := time.Now()
-	apiCtx, cancelFn := context.WithTimeout(c.ctx, 10*time.Second)
-	defer cancelFn()
-	tx, _, _, err := c.tonClient.API.SendExternalMessageWaitTransaction(apiCtx, msg)
-	endTs := time.Now()
-	duration := endTs.Unix() - startTs.Unix()
-	logger.Log.Debug().Msgf(">>>>>>> SEND MESSAGE TO THE TON NETWORK (END). Total time {%d}s", duration)
+	tx, err := CallApiWithTimeout(
+		func(apiCallCtx context.Context) (*tlb.Transaction, error) {
+			tx, _, _, err := c.tonClient.API.SendExternalMessageWaitTransaction(apiCallCtx, msg)
+			return tx, err
+		},
+		c.ctx,
+		c.tonApiCallTimeout,
+		name,
+	)
 
 	return tx, err
 }

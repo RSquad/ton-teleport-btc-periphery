@@ -34,6 +34,8 @@ type SignService struct {
 	ton               *tonclient.TonClient
 	cachedPegout      *CachedPegout
 	executeSignPeriod int64 // `period` in seconds to call the ExecuteSign() function
+	dkgUntil          time.Time
+	sessionSigner     *validator.SessionSigner
 }
 
 func NewService(
@@ -49,6 +51,8 @@ func NewService(
 		coordinator:       coordinator,
 		ton:               tonclient,
 		executeSignPeriod: executeSignPeriod,
+		dkgUntil:          time.Unix(0, 0),
+		sessionSigner:     nil,
 	}
 }
 
@@ -151,7 +155,17 @@ func (s *SignService) execute(ctx context.Context, dkg *coordinator.DKG) {
 		return
 	}
 
-	s.validator.GetSessionSigner().OnNewDKG(dkg.Until.Unix())
+	if (s.dkgUntil != dkg.Until) || (s.sessionSigner == nil) {
+		sessionSigner, err := validator.NewSessionSigner(s.keyStore, dkg.Until.Unix(), validator.LoadFromFileOnly)
+		if err != nil {
+			s.logError("Failed to create SessionSigner", err)
+			return
+		}
+
+		s.sessionSigner = sessionSigner
+		s.dkgUntil = dkg.Until
+	}
+
 	s.logSigningRequestsCount(len(pegoutRecords))
 
 	// Get oldest unsigned pegout record
@@ -188,7 +202,7 @@ func (s *SignService) execute(ctx context.Context, dkg *coordinator.DKG) {
 		panic("cached pegout is nil")
 	}
 
-	s.coordinator.ConnectSigner(s.validator.GetSessionSigner())
+	s.coordinator.ConnectSigner(s.sessionSigner)
 
 	minSigners, err := helpers.CalcMinSigners(dkg.MaxSigners)
 	if err != nil {

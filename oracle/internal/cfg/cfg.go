@@ -15,4 +15,5 @@ type Cfg struct {
 	SendStartDKGPeriod         string `env:"ORACLE_SEND_START_DKG_PERIOD"`
 	ExecuteSignPeriod          string `env:"ORACLE_EXECUTE_SIGN_PERIOD"`
 	LogFile                    string `env:"LOG_FILE"`
+	ApiCallTimeout             string `env:"API_CALL_TIMEOUT"`
 }

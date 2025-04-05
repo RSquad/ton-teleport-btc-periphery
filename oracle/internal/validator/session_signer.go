@@ -12,52 +12,48 @@ import (
 )
 
 type SessionSigner struct {
-	keystore          keystore.Keystore
-	secret            ed25519.PrivateKey
-	dkgUntilTimestamp int64
+	secret ed25519.PrivateKey
 }
 
-func NewSessionSigner(keystore keystore.Keystore) *SessionSigner {
-	return &SessionSigner{keystore: keystore, secret: nil, dkgUntilTimestamp: 0}
-}
+type SessionSignerCreateMode int
 
-func (s *SessionSigner) OnNewDKG(dkgUntilTimestamp int64) error {
+const (
+	GenerateNewIfNeeded SessionSignerCreateMode = iota
+	LoadFromFileOnly
+)
+
+func NewSessionSigner(keystore keystore.Keystore, dkgUntilTimestamp int64, mode SessionSignerCreateMode) (*SessionSigner, error) {
 	// Verify
 	if dkgUntilTimestamp == 0 {
-		return errors.New("failed to generate secret, `dkgUntilTimestamp` == 0")
-	}
-
-	if s.dkgUntilTimestamp == dkgUntilTimestamp {
-		return nil
+		return nil, errors.New("failed to generate secret, `dkgUntilTimestamp` == 0")
 	}
 
 	// Try to load from key storage file
 	logger.Log.Info().Msgf("Try to find session keypair for DKG (until %d)", dkgUntilTimestamp)
-	secret := s.keystore.LoadSessionTS(dkgUntilTimestamp)
+	secret := keystore.LoadSessionTS(dkgUntilTimestamp)
 	if secret != nil {
-		s.secret = secret
-		s.dkgUntilTimestamp = dkgUntilTimestamp
 		logger.Log.Info().Msgf("Session keypair for DKG (until %d) was loaded from file", dkgUntilTimestamp)
-		return nil
+		return &SessionSigner{secret}, nil
+	}
+
+	if mode == LoadFromFileOnly {
+		return nil, fmt.Errorf("failed to load session keypair for DKG (until %d)", dkgUntilTimestamp)
 	}
 
 	// Generate new key pair
 	logger.Log.Info().Msgf("Generating new keypair for DKG (until %d)", dkgUntilTimestamp)
 	_, secret, err := ed25519.GenerateKey(rand.Reader)
 	if err != nil {
-		return fmt.Errorf("failed to generate new keypair for DKG (until %d). %v", dkgUntilTimestamp, err)
+		return nil, fmt.Errorf("failed to generate new keypair for DKG (until %d). %v", dkgUntilTimestamp, err)
 	}
-
-	s.secret = secret
-	s.dkgUntilTimestamp = dkgUntilTimestamp
 
 	// Save to file (with dkgUntilTimestamp name)
-	err = s.keystore.StoreSessionTS(dkgUntilTimestamp, s.secret)
+	err = keystore.StoreSessionTS(dkgUntilTimestamp, secret)
 	if err != nil {
-		return fmt.Errorf("failed to save keypair. %v", err)
+		return nil, fmt.Errorf("failed to save keypair. %v", err)
 	}
 
-	return nil
+	return &SessionSigner{secret}, nil
 }
 
 func (s *SessionSigner) SignCell(cell *cell.Cell) []byte {
@@ -72,29 +68,3 @@ func (s *SessionSigner) PublicKey() []byte {
 
 	return data
 }
-
-/*
-		// Search in session
-		for idx, pubkey := range vset {
-			sessionPublicKey := v.sessionSigner.PublicKey()
-			if bytes.Equal(pubkey, sessionPublicKey) {
-				return &KeyInfo{
-					KeyID:     sessionPublicKey,
-					VsetIdx:   idx,
-					PublicKey: sessionPublicKey,
-				}, nil
-			}
-		}
-
-	// Try searching in the previous session keys
-	for idx, pubkey := range vset {
-		ok := v.sessionSigner.TryLoadFromFile(pubkey)
-		if ok {
-			return &KeyInfo{
-				KeyID:     pubkey,
-				VsetIdx:   idx,
-				PublicKey: pubkey,
-			}, nil
-		}
-	}
-*/

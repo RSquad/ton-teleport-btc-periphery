@@ -53,7 +53,7 @@ func startAndWaitForStop() error {
 
 	// Validator
 	logger.Log.Info().Msg("Create a new Validator")
-	validator, err := validator.NewValidator(&cfg, keystore)
+	validator, err := validator.NewValidator(&cfg)
 	if err != nil {
 		return err
 	}
@@ -74,7 +74,8 @@ func startAndWaitForStop() error {
 
 	// Coordinator contract
 	logger.Log.Info().Msgf("Create a new Coordinator contract wrapper with address `%s`", cfg.CoordinatorContractAddr)
-	coordinatorContract := coordinator.New(coordinatorContractAddr, tonClient, nil, ctx)
+	apiCallTimeout := helpers.ParseIntWithDefaultVal(cfg.ApiCallTimeout, 30, "API call timeout")
+	coordinatorContract := coordinator.New(coordinatorContractAddr, tonClient, nil, ctx, apiCallTimeout)
 
 	// DKG service
 	fetchPeriod := helpers.ParseIntWithDefaultVal(cfg.FetchPeriod, 6, "DKG fetcher period")

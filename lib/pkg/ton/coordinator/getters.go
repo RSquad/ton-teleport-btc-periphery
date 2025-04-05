@@ -32,10 +32,11 @@ const DefaultDGKTTL = time.Minute
 
 type CoordinatorContract struct {
 	ton.Contract
-	signer    signer.Signer
-	tonClient *tonclient.TonClient
-	ctx       context.Context
-	ttl       time.Duration
+	signer            signer.Signer
+	tonClient         *tonclient.TonClient
+	ctx               context.Context
+	ttl               time.Duration
+	tonApiCallTimeout int64
 }
 
 func New(
@@ -43,39 +44,56 @@ func New(
 	tonClient *tonclient.TonClient,
 	signer signer.Signer,
 	ctx context.Context,
+	tonApiCallTimeout int64,
 ) *CoordinatorContract {
 	ttl := DefaultDGKTTL
 	return &CoordinatorContract{
-		ton.Contract{Addr: addr}, signer, tonClient, ctx, ttl,
+		ton.Contract{Addr: addr}, signer, tonClient, ctx, ttl, tonApiCallTimeout,
 	}
+}
+
+func CallApiWithTimeout[T any](fn func(ctx context.Context) (T, error), parentCtx context.Context, timeout int64, name string) (T, error) {
+	startTs := time.Now()
+
+	logger.Log.Debug().Msgf(">>>>>>> SEND MESSAGE TO THE TON NETWORK: '%s'...", name)
+
+	apiCtx, cancelFn := context.WithTimeout(parentCtx, time.Duration(timeout)*time.Second)
+	defer cancelFn()
+	res, err := fn(apiCtx)
+	endTs := time.Now()
+	duration := endTs.Unix() - startTs.Unix()
+
+	logger.Log.Debug().Msgf(">>>>>>> SEND MESSAGE TO THE TON NETWORK: '%s', total time {%d}s", name, duration)
+
+	return res, err
 }
 
 func (c *CoordinatorContract) GetDkg(block *tonutils.BlockIDExt) (*DKG, error) {
 	if block == nil {
 		var err error
 
-		logger.Log.Debug().Msg(">>>>>>> SEND MESSAGE TO THE TON NETWORK: CurrentMasterchainInfo(BEGIN)...")
-		startTs := time.Now()
-		apiCtx, cancelFn := context.WithTimeout(c.ctx, 10*time.Second)
-		defer cancelFn()
-		block, err = c.tonClient.API.CurrentMasterchainInfo(apiCtx)
-		endTs := time.Now()
-		duration := endTs.Unix() - startTs.Unix()
-		logger.Log.Debug().Msgf(">>>>>>> SEND MESSAGE TO THE TON NETWORK: CurrentMasterchainInfo (END). Total time {%d}s", duration)
+		block, err = CallApiWithTimeout(
+			func(apiCallCtx context.Context) (*tonutils.BlockIDExt, error) {
+				return c.tonClient.API.CurrentMasterchainInfo(apiCallCtx)
+			},
+			c.ctx,
+			c.tonApiCallTimeout,
+			"CurrentMasterchainInfo",
+		)
 
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	logger.Log.Debug().Msg(">>>>>>> SEND MESSAGE TO THE TON NETWORK: RunGetMethod(get_dkg) (BEGIN)...")
-	startTs := time.Now()
-	apiCtx, cancelFn := context.WithTimeout(c.ctx, 10*time.Second)
-	defer cancelFn()
-	result, err := c.tonClient.API.RunGetMethod(apiCtx, block, c.Addr, "get_dkg")
-	endTs := time.Now()
-	duration := endTs.Unix() - startTs.Unix()
-	logger.Log.Debug().Msgf(">>>>>>> SEND MESSAGE TO THE TON NETWORK: RunGetMethod(get_dkg) (END). Total time {%d}s", duration)
+	result, err := CallApiWithTimeout(
+		func(apiCallCtx context.Context) (*tonutils.ExecutionResult, error) {
+			return c.tonClient.API.RunGetMethod(apiCallCtx, block, c.Addr, "get_dkg")
+		},
+		c.ctx,
+		c.tonApiCallTimeout,
+		"get_dkg",
+	)
 
 	if err != nil {
 		return nil, err
@@ -95,37 +113,31 @@ func (c *CoordinatorContract) GetDkg(block *tonutils.BlockIDExt) (*DKG, error) {
 		return nil, err
 	}
 
-	dkgAsStr, err := dkg2Str(dkg)
-	if err != nil {
-		return nil, err
-	}
-	logger.Log.Debug().Msgf("Received DKG: %s", dkgAsStr)
-
 	return dkg, nil
 }
 
 func (c *CoordinatorContract) GetPrevDKG() (*DKG, error) {
-	logger.Log.Debug().Msg(">>>>>>> SEND MESSAGE TO THE TON NETWORK: CurrentMasterchainInfo (BEGIN)...")
-	startTs := time.Now()
-	apiCtx1, cancelFn1 := context.WithTimeout(c.ctx, 10*time.Second)
-	defer cancelFn1()
-	block, err := c.tonClient.API.CurrentMasterchainInfo(apiCtx1)
-	endTs := time.Now()
-	duration := endTs.Unix() - startTs.Unix()
-	logger.Log.Debug().Msgf(">>>>>>> SEND MESSAGE TO THE TON NETWORK: CurrentMasterchainInfo (END). Total time {%d}s", duration)
+	block, err := CallApiWithTimeout(
+		func(apiCallCtx context.Context) (*tonutils.BlockIDExt, error) {
+			return c.tonClient.API.CurrentMasterchainInfo(apiCallCtx)
+		},
+		c.ctx,
+		c.tonApiCallTimeout,
+		"CurrentMasterchainInfo",
+	)
 
 	if err != nil {
 		return nil, err
 	}
 
-	logger.Log.Debug().Msg(">>>>>>> SEND MESSAGE TO THE TON NETWORK: RunGetMethod(get_prev_dkg) (BEGIN)...")
-	startTs = time.Now()
-	apiCtx, cancelFn := context.WithTimeout(c.ctx, 10*time.Second)
-	defer cancelFn()
-	result, err := c.tonClient.API.RunGetMethod(apiCtx, block, c.Addr, "get_prev_dkg")
-	endTs = time.Now()
-	duration = endTs.Unix() - startTs.Unix()
-	logger.Log.Debug().Msgf(">>>>>>> SEND MESSAGE TO THE TON NETWORK: RunGetMethod(get_prev_dkg) (END). Total time {%d}s", duration)
+	result, err := CallApiWithTimeout(
+		func(apiCallCtx context.Context) (*tonutils.ExecutionResult, error) {
+			return c.tonClient.API.RunGetMethod(apiCallCtx, block, c.Addr, "get_prev_dkg")
+		},
+		c.ctx,
+		c.tonApiCallTimeout,
+		"get_prev_dkg",
+	)
 
 	if err != nil {
 		return nil, err
@@ -144,27 +156,27 @@ func (c *CoordinatorContract) GetPrevDKG() (*DKG, error) {
 }
 
 func (c *CoordinatorContract) GetUnsignedPegouts() ([]PegoutRecord, error) {
-	logger.Log.Debug().Msg(">>>>>>> SEND MESSAGE TO THE TON NETWORK: CurrentMasterchainInfo (BEGIN)...")
-	startTs := time.Now()
-	apiCtx1, cancelFn1 := context.WithTimeout(c.ctx, 10*time.Second)
-	defer cancelFn1()
-	block, err := c.tonClient.API.CurrentMasterchainInfo(apiCtx1)
-	endTs := time.Now()
-	duration := endTs.Unix() - startTs.Unix()
-	logger.Log.Debug().Msgf(">>>>>>> SEND MESSAGE TO THE TON NETWORK: CurrentMasterchainInfo (END). Total time {%d}s", duration)
+	block, err := CallApiWithTimeout(
+		func(apiCallCtx context.Context) (*tonutils.BlockIDExt, error) {
+			return c.tonClient.API.CurrentMasterchainInfo(apiCallCtx)
+		},
+		c.ctx,
+		c.tonApiCallTimeout,
+		"CurrentMasterchainInfo",
+	)
 
 	if err != nil {
 		return nil, err
 	}
 
-	logger.Log.Debug().Msg(">>>>>>> SEND MESSAGE TO THE TON NETWORK: RunGetMethod(get_pegout_records) (BEGIN)...")
-	startTs = time.Now()
-	apiCtx, cancelFn := context.WithTimeout(c.ctx, 10*time.Second)
-	defer cancelFn()
-	result, err := c.tonClient.API.RunGetMethod(apiCtx, block, c.Addr, "get_pegout_records")
-	endTs = time.Now()
-	duration = endTs.Unix() - startTs.Unix()
-	logger.Log.Debug().Msgf(">>>>>>> SEND MESSAGE TO THE TON NETWORK: RunGetMethod(get_pegout_records) (END). Total time {%d}s", duration)
+	result, err := CallApiWithTimeout(
+		func(apiCallCtx context.Context) (*tonutils.ExecutionResult, error) {
+			return c.tonClient.API.RunGetMethod(apiCallCtx, block, c.Addr, "get_pegout_records")
+		},
+		c.ctx,
+		c.tonApiCallTimeout,
+		"get_pegout_records",
+	)
 
 	if err != nil {
 		return nil, err
@@ -372,9 +384,4 @@ func loadSharesMap(value *cell.Slice) (map[uint16][]byte, error) {
 
 func loadUI16Map(s *cell.Slice) (uint16, error) {
 	return uint16(s.MustLoadUInt(16)), nil
-}
-
-func dkg2Str(dkg *DKG) (string, error) {
-	// TODO: implement
-	return "NOT IMPLEMENTED", nil
 }

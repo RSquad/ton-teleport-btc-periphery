@@ -59,6 +59,10 @@ func (a *ExecutionArtifacts) Cleanup() {
 	logger.Log.Debug().Msg("---------------------------->>>>>>>>>>>>>>>>>>> A R T I F A C T S   C L E A N U P <<<<<<<<<<<<<<<--------------------------")
 }
 
+func (a *ExecutionArtifacts) IsEmpty() bool {
+	return a.r1 == nil && a.r2 == nil && a.r3 == nil
+}
+
 type Executor struct {
 	inChan              chan *coordinator.DKG
 	until               time.Time
@@ -66,6 +70,7 @@ type Executor struct {
 	artifacts           ExecutionArtifacts
 	keystore            keystore.Keystore
 	validator           *validator.Validator
+	sessionPublicKey    []byte
 }
 
 func NewExecutor(
@@ -109,6 +114,12 @@ func (e *Executor) Execute(dkg *coordinator.DKG) {
 	defer e.logFinishExecuting(dkg)
 
 	if dkg.State == coordinator.DKGStateFinished {
+		// NOTE: discuss
+		if dkg.Until.After(e.until) {
+			logger.Log.Debug().Msg("--------------------> DKG FINISHED WITHOUT THIS ORACLE <--------------------")
+			e.artifacts.Cleanup()
+		}
+
 		e.logDKGFinished(dkg)
 		return
 	}
@@ -118,10 +129,14 @@ func (e *Executor) Execute(dkg *coordinator.DKG) {
 		e.until = dkg.Until
 		e.artifacts.Cleanup()
 
-		err := e.validator.GetSessionSigner().OnNewDKG(dkg.Until.Unix())
-		if err != nil {
-			e.logDKGProcess(dkg, fmt.Sprintf("Failed to call OnNewDKG: %v", err))
-			return
+		// Get session public key
+		{
+			sessionSigner, err := validator.NewSessionSigner(e.keystore, dkg.Until.Unix(), validator.GenerateNewIfNeeded)
+			if err != nil {
+				e.logDKGProcess(dkg, fmt.Sprintf("Failed to create SessionSigner: %v", err))
+				return
+			}
+			e.sessionPublicKey = sessionSigner.PublicKey()
 		}
 
 		e.logNewDKGStarted(dkg)
@@ -338,7 +353,7 @@ func (e *Executor) executeR3(dkg *coordinator.DKG, validatorIdx uint16) bool {
 
 	if _, err := e.coordinatorContract.SendPubkeyPackage(
 		validatorIdx,
-		e.validator.GetSessionSigner().PublicKey(),
+		e.sessionPublicKey,
 		e.artifacts.r3.publicKeyPackage,
 	); err != nil {
 		e.logSendPubkeyPackageFailed(dkg, err)
