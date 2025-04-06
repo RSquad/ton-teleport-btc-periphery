@@ -4,11 +4,13 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/frost"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
-	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal"
+	helpers "github.com/rsquad/ton-teleport-btc-periphery/oracle/internal"
 	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/keystore"
 	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/validator"
 )
@@ -77,14 +79,20 @@ func NewExecutor(
 	}
 }
 
-func (e *Executor) Work(ctx context.Context) error {
+func (e *Executor) Work(ctx context.Context, wg *sync.WaitGroup) {
+	defer wg.Done()
+	defer logger.DefaultLogFinishWork("DKG Executor")
+	logger.DefaultLogStartWork("DKG Executor")
+
 	for {
 		select {
 		case <-ctx.Done():
-			return ctx.Err()
+			logger.Log.Info().Msg("DKG Executor received shutdown signal...")
+			return
 		case dkg, ok := <-e.inChan:
 			if !ok {
-				return fmt.Errorf("channel closed")
+				logger.Log.Warn().Msg("DKG Executor channel closed")
+				return
 			}
 			e.Execute(dkg)
 		}
@@ -103,6 +111,7 @@ func (e *Executor) Execute(dkg *coordinator.DKG) {
 	if dkg.Until.After(e.until) {
 		e.until = dkg.Until
 		e.artifacts.Cleanup()
+		e.validator.GetSessionSigner().OnNewDKG(dkg.Until.Unix())
 		e.logNewDKGStarted(dkg)
 	}
 
@@ -111,22 +120,25 @@ func (e *Executor) Execute(dkg *coordinator.DKG) {
 		e.logDKGProcess(dkg, fmt.Sprintf("Error finding key info: %v", err))
 		return
 	}
+
 	if keyInfo == nil {
 		e.logDKGProcess(dkg, "Oracle is not a future validator. Cannot participate in DKG.")
 		return
 	}
-	e.coordinatorContract.ConnectSigner(e.validator.GetSigner(keyInfo.KeyID))
 
-	if e.executeR1(dkg, keyInfo.VsetIdx, keyInfo.PublicKey) {
-		if e.executeR2(dkg, keyInfo.VsetIdx, keyInfo.PublicKey) {
-			if e.executeR3(dkg, keyInfo.VsetIdx, keyInfo.PublicKey) {
+	e.coordinatorContract.ConnectSigner(e.validator.GetSigner(keyInfo.KeyID))
+	sessionPublicKey := e.validator.GetSessionSigner().PublicKey()
+
+	if e.executeR1(dkg, keyInfo.VsetIdx, sessionPublicKey) {
+		if e.executeR2(dkg, keyInfo.VsetIdx) {
+			if e.executeR3(dkg, keyInfo.VsetIdx) {
 				e.logDKGProcess(dkg, "Successfully completed all DKG rounds")
 			}
 		}
 	}
 }
 
-func (e *Executor) executeR1(dkg *coordinator.DKG, validatorIdx uint16, localIdentifier []byte) bool {
+func (e *Executor) executeR1(dkg *coordinator.DKG, validatorIdx uint16, sessionPublicKey []byte) bool {
 	e.logExecuteR1(dkg)
 	if dkg.Round1Completed() {
 		e.logDKGProcess(dkg, "R1 completed")
@@ -134,6 +146,7 @@ func (e *Executor) executeR1(dkg *coordinator.DKG, validatorIdx uint16, localIde
 	}
 
 	packages := dkg.GetR1Packages()
+	localIdentifier := helpers.ValidatorIdxToFrost(validatorIdx)
 	if packages[hex.EncodeToString(localIdentifier)] != nil {
 		e.logDKGProcess(dkg, "R1 package already stored in DKG")
 		return false
@@ -166,7 +179,7 @@ func (e *Executor) executeR1(dkg *coordinator.DKG, validatorIdx uint16, localIde
 		validatorIdx,
 		localIdentifier,
 		e.artifacts.r1.pkg,
-		localIdentifier, // sessionPublicKey
+		sessionPublicKey,
 	)
 	if err != nil {
 		e.logSendRound1Package(dkg, err)
@@ -176,12 +189,14 @@ func (e *Executor) executeR1(dkg *coordinator.DKG, validatorIdx uint16, localIde
 	return false
 }
 
-func (e *Executor) executeR2(dkg *coordinator.DKG, validatorIdx uint16, localIdentifier []byte) bool {
+func (e *Executor) executeR2(dkg *coordinator.DKG, validatorIdx uint16) bool {
 	e.logExecuteR2(dkg)
 	if dkg.Round2Completed() {
 		e.logDKGProcess(dkg, "R2 completed")
 		return true
 	}
+
+	localIdentifier := helpers.ValidatorIdxToFrost(validatorIdx)
 
 	if e.artifacts.r2 == nil {
 		if e.artifacts.r1 == nil {
@@ -193,9 +208,14 @@ func (e *Executor) executeR2(dkg *coordinator.DKG, validatorIdx uint16, localIde
 		r1Packages := helpers.ConvertMapToFrostPackages(dkg.GetR1Packages())
 		delete(r1Packages, frost.Identifier(localIdentifier))
 
-		r2Packages, r2SecretPtr, err := frost.DkgPart2(e.artifacts.r1.secret.ptr, r1Packages)
+		r2Packages, r2SecretPtr, maliciousValidatorIdx, err := frost.DkgPart2(e.artifacts.r1.secret.ptr, r1Packages)
 		if err != nil {
-			e.logError(dkg, "Part2 failed", err)
+			if maliciousValidatorIdx != nil {
+				e.logError(dkg, "Part2 failed. Malicious validator found.", err)
+				e.executeClaim(dkg, validatorIdx, maliciousValidatorIdx)
+			} else {
+				e.logError(dkg, "Part2 failed", err)
+			}
 			return false
 		}
 		e.artifacts.r2 = &Round2Result{
@@ -235,7 +255,7 @@ func (e *Executor) executeR2(dkg *coordinator.DKG, validatorIdx uint16, localIde
 	return false
 }
 
-func (e *Executor) executeR3(dkg *coordinator.DKG, validatorIdx uint16, localIdentifier []byte) bool {
+func (e *Executor) executeR3(dkg *coordinator.DKG, validatorIdx uint16) bool {
 	e.logExecuteR3(dkg)
 	if dkg.Round3Completed() {
 		e.logDKGProcess(dkg, "R3 completed")
@@ -245,6 +265,8 @@ func (e *Executor) executeR3(dkg *coordinator.DKG, validatorIdx uint16, localIde
 		e.logDKGProcess(dkg, "R2 not yet completed, waiting for more packages.")
 		return false
 	}
+
+	localIdentifier := helpers.ValidatorIdxToFrost(validatorIdx)
 
 	if e.artifacts.r3 == nil {
 		if e.artifacts.r2 == nil {
@@ -257,9 +279,14 @@ func (e *Executor) executeR3(dkg *coordinator.DKG, validatorIdx uint16, localIde
 
 		r2Packages := helpers.ConvertMapToFrostPackages(dkg.GetR2Packages(localIdentifier))
 
-		keyPackage, publicKeyPackage, err := frost.DkgPart3(e.artifacts.r2.secret.ptr, r1Packages, r2Packages)
+		keyPackage, publicKeyPackage, maliciousValidatorIdx, err := frost.DkgPart3(e.artifacts.r2.secret.ptr, r1Packages, r2Packages)
 		if err != nil {
-			e.logDKGProcess(dkg, fmt.Sprintf("R3 failed: %v", err))
+			if maliciousValidatorIdx != nil {
+				e.logError(dkg, "Part3 failed. Malicious validator found.", err)
+				e.executeClaim(dkg, validatorIdx, maliciousValidatorIdx)
+			} else {
+				e.logDKGProcess(dkg, fmt.Sprintf("R3 failed: %v", err))
+			}
 			return false
 		}
 
@@ -282,11 +309,42 @@ func (e *Executor) executeR3(dkg *coordinator.DKG, validatorIdx uint16, localIde
 
 	if _, err := e.coordinatorContract.SendPubkeyPackage(
 		validatorIdx,
-		e.artifacts.r3.publicKey[1:], // skip prefix byte
 		localIdentifier,
 		e.artifacts.r3.publicKeyPackage,
 	); err != nil {
 		e.logSendPubkeyPackageFailed(dkg, err)
 	}
 	return false
+}
+
+func (e *Executor) executeClaim(dkg *coordinator.DKG, validatorIdx uint16, maliciousValidatorIdx []byte) {
+	e.logExecuteClaim(dkg)
+
+	if dkg.ClaimCompleted(validatorIdx) {
+		e.logDKGProcess(dkg, "claim completed")
+		return
+	}
+
+	maliciousValidatorIdxStr := "NO"
+	if maliciousValidatorIdx != nil {
+		maliciousValidatorIdxStr = hex.EncodeToString(maliciousValidatorIdx)
+	}
+	e.logMessage(dkg, "sending claim packages. Malicious validator idx: "+maliciousValidatorIdxStr)
+	withErrors := false
+
+	// claim package is not sent yet, send it to coordinator
+	_, err := e.coordinatorContract.SendClaim(
+		validatorIdx,
+		maliciousValidatorIdx,
+	)
+	if err != nil {
+		e.logSendClaimPackage(dkg, maliciousValidatorIdx, err)
+		withErrors = true
+	}
+
+	if withErrors {
+		e.logError(dkg, "claim packages sent with errors", nil)
+	} else {
+		e.logDKGProcess(dkg, "claim packages sent")
+	}
 }

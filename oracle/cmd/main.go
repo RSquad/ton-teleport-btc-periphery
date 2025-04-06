@@ -2,7 +2,11 @@ package main
 
 import (
 	"context"
+	"os"
+	"os/signal"
 	"sync"
+	"syscall"
+	"time"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
@@ -16,74 +20,112 @@ import (
 	"github.com/xssnick/tonutils-go/address"
 )
 
-type App struct {
-	TonClient *tonclient.TonClient
-}
+func startAndWaitForStop() error {
+	// Load config
+	cfg, err := utils.LoadCfg[cfg.Cfg]()
+	if err != nil {
+		return err
+	}
 
-func initialize() (*App, error) {
-	logger.Init()
+	// Setup logger
+	if err := logger.Init(cfg.LogFile); err != nil {
+		return err
+	}
 
 	logger.Log.Info().
 		Str("component", "main").
 		Msg("Initializing")
 
-	cfg, err := utils.LoadCfg[cfg.Cfg]()
-	if err != nil {
-		return nil, err
-	}
+	// Keystore
+	logger.Log.Info().Msgf("Create a new Keystore at path `%s`", cfg.KeystorePath)
 	keystore, err := keystore.New(cfg.KeystorePath)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
+	// Ton client
+	logger.Log.Info().Msgf("Create a new TON client with config `%s`", cfg.TonConfigPathOrURL)
 	tonClient, err := tonclient.New(cfg.TonConfigPathOrURL)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	validator, err := validator.NewValidator(&cfg)
+	// Validator
+	logger.Log.Info().Msg("Create a new Validator")
+	validator, err := validator.NewValidator(&cfg, keystore)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
+	// Coordinator address
+	logger.Log.Info().Msgf("Parse the Coordinator address `%s`", cfg.CoordinatorContractAddr)
 	coordinatorContractAddr, err := address.ParseAddr(cfg.CoordinatorContractAddr)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	coordinatorContract := coordinator.New(coordinatorContractAddr, tonClient, nil, ctx)
-	dkgService := dkg.NewService(coordinatorContract, validator)
-	signService := signing.NewService(keystore, validator, coordinatorContract, tonClient)
 
+	// Setup OS signal handlers (SIGINT, SIGTERM)
+	logger.Log.Info().Msg("Setup OS signal handler")
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+	ctx, cancelFn := context.WithCancel(context.Background())
 	wg := sync.WaitGroup{}
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		dkgService.Work(ctx, keystore)
-	}()
+	// Coordinator contract
+	logger.Log.Info().Msgf("Create a new Coordinator contract wrapper with address `%s`", cfg.CoordinatorContractAddr)
+	coordinatorContract := coordinator.New(coordinatorContractAddr, tonClient, nil, ctx)
+
+	// DKG service
+	dkgService := dkg.NewService(coordinatorContract, validator)
+
+	// FROST sign service
+	signService := signing.NewService(keystore, validator, coordinatorContract, tonClient)
 
 	wg.Add(1)
+	go dkgService.Work(ctx, &wg, keystore)
+
+	wg.Add(1)
+	go signService.Work(ctx, &wg)
+
+	waitForStop(sigChan, cancelFn, &wg)
+
+	return nil
+}
+
+func waitForStop(sigChan <-chan os.Signal, cancelFn context.CancelFunc, wg *sync.WaitGroup) {
+	// Wait for OS signal
+	sig := <-sigChan
+	logger.Log.Info().Str("signal", sig.String()).Msg("Received signal")
+	logger.Log.Info().Msg("Initiating graceful shutdown...")
+
+	// Cancel the context to notify all goroutines to terminate
+	cancelFn()
+
+	// Set a timeout for graceful shutdown
+	shutdownChan := make(chan struct{})
 	go func() {
-		defer wg.Done()
-		signService.Work(ctx)
+		wg.Wait()
+		close(shutdownChan)
 	}()
 
-	wg.Wait()
+	// Wait for graceful shutdown with timeout (5 sec)
+	select {
+	case <-shutdownChan:
+		logger.Log.Info().Msg("All goroutines shut down successfully")
+	case <-time.After(5 * time.Second):
+		logger.Log.Error().Msg("Shutdown timed out, forcing exit")
+	}
 
-	return &App{
-		TonClient: tonClient,
-	}, nil
+	logger.Log.Info().Msg("Application stopped")
 }
 
 func main() {
-	_, err := initialize()
+	err := startAndWaitForStop()
 	if err != nil {
 		logger.Log.Error().
 			Err(err).
 			Str("component", "main").
-			Msg("Failed to initialize")
+			Msg("Failed to start")
 		return
 	}
 }

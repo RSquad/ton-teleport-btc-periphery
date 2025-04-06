@@ -8,7 +8,7 @@ import (
 )
 
 func ParseKey(s *cell.Slice, keySize uint) string {
-	return fmt.Sprintf("%x", s.MustLoadBigUInt(keySize).Bytes())
+	return fmt.Sprintf("%x", s.MustLoadBigUInt(keySize).FillBytes(make([]byte, (keySize+7)/8)))
 }
 
 func New[V any](
