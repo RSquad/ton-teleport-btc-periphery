@@ -109,32 +109,55 @@ func (e *Executor) Work(ctx context.Context, wg *sync.WaitGroup) {
 	}
 }
 
+func (e *Executor) Cleanup() {
+	e.artifacts.Cleanup()
+	e.sessionPublicKey = nil
+}
+
+func (e *Executor) OnStartNewDKG(dkg *coordinator.DKG) bool {
+	e.Cleanup()
+
+	var successfully = false
+	defer func() {
+		if !successfully {
+			e.Cleanup()
+		}
+	}()
+
+	logger.Log.Debug().Msg("--------------------> NEW DKG STARTED <--------------------")
+	e.until = dkg.Until
+
+	// Get session public key
+	{
+		sessionSigner, err := validator.NewSessionSigner(e.keystore, dkg.Until.Unix(), validator.GenerateNewIfNeeded)
+		if err != nil {
+			e.logDKGProcess(dkg, fmt.Sprintf("Failed to create SessionSigner: %v", err))
+			return false
+		}
+		e.sessionPublicKey = sessionSigner.PublicKey()
+	}
+
+	e.logNewDKGStarted(dkg)
+	successfully = true
+	return true
+}
+
 func (e *Executor) Execute(dkg *coordinator.DKG) {
 	e.logStartExecuting(dkg)
 	defer e.logFinishExecuting(dkg)
 
+	// Verify if DKG is finished
 	if dkg.State == coordinator.DKGStateFinished {
-		e.artifacts.Cleanup()
+		e.Cleanup()
 		e.logDKGFinished(dkg)
 		return
 	}
 
+	// Verify if it needs to start a new DKG
 	if dkg.Until.After(e.until) {
-		logger.Log.Debug().Msg("--------------------> NEW DKG STARTED <--------------------")
-		e.until = dkg.Until
-		e.artifacts.Cleanup()
-
-		// Get session public key
-		{
-			sessionSigner, err := validator.NewSessionSigner(e.keystore, dkg.Until.Unix(), validator.GenerateNewIfNeeded)
-			if err != nil {
-				e.logDKGProcess(dkg, fmt.Sprintf("Failed to create SessionSigner: %v", err))
-				return
-			}
-			e.sessionPublicKey = sessionSigner.PublicKey()
+		if !e.OnStartNewDKG(dkg) {
+			return
 		}
-
-		e.logNewDKGStarted(dkg)
 	}
 
 	keyInfo, err := e.validator.FindKeyInfo(dkg.VSet)

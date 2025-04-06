@@ -193,21 +193,25 @@ pub extern "C" fn dkg_part2(
             "===========> FROST:dkg_part2: 3 <===========: r1_secret = {:p}",
             r1_secret
         );
-        let r1_secret_box: Box<
+        let r1_secret_box_tmp: Box<
             frost_core::keys::dkg::round1::SecretPackage<frost_secp256k1_tr::Secp256K1Sha256TR>,
         > = from_void(r1_secret);
+        let r1_secret_box = Box::clone(&r1_secret_box_tmp);
+        // Prevent r2_secret_box from being freed. It must be freed manually.
+        Box::leak(r1_secret_box_tmp);
+
         logout_info!(
             "===========> FROST:dkg_part2: 4 <===========, r1_secret_box.min_signers = {}, r1_secret_box.max_signers = {}",
-             r1_secret_box.min_signers(), r1_secret_box.max_signers()
+            r1_secret_box.min_signers(), r1_secret_box.max_signers()
         );
+
         let map = Round1Package::make_map(r1_pkgs_ptr, r1_pkgs_len)?;
         logout_info!(
             "===========> FROST:dkg_part2: 5 <===========, map.len = {}",
             map.len()
         );
 
-        let (s, r2_map) = frost_dkg_part2(*Box::clone(&r1_secret_box), &map)?;
-        Box::leak(r1_secret_box);
+        let (s, r2_map) = frost_dkg_part2(*r1_secret_box, &map)?;
         logout_info!("===========> FROST:dkg_part2: 6 <===========");
         let mut r2_vec = Vec::with_capacity(map.len());
         logout_info!("===========> FROST:dkg_part2: 7 <===========");
@@ -320,9 +324,13 @@ pub extern "C" fn dkg_part3(
     }
 
     logout_info!("===========> FROST:dkg_part3: 3 <===========");
-    let r2_secret_box: Box<
+    let r2_secret_box_tmp: Box<
         frost_core::keys::dkg::round2::SecretPackage<frost_secp256k1_tr::Secp256K1Sha256TR>,
     > = from_void(r2_secret);
+    // Prevent r2_secret_box from being freed. It must be freed manually.
+    let r2_secret_box = Box::clone(&r2_secret_box_tmp);
+    Box::leak(r2_secret_box_tmp);
+
     logout_info!("===========> FROST:dkg_part3: 4 <===========");
     let result = (|| -> Result<(), Error> {
         logout_info!("===========> FROST:dkg_part3: 5 <===========");
@@ -344,9 +352,6 @@ pub extern "C" fn dkg_part3(
             r2_pkgs_map.len()
         );
         let (s, p) = frost_dkg_part3(&r2_secret_box, &r1_pkgs_map, &r2_pkgs_map)?;
-        // Prevent r2_secret_box from being freed. It must be freed manually.
-        logout_info!("===========> FROST:dkg_part3: 8 <===========");
-        Box::leak(r2_secret_box);
         logout_info!("===========> FROST:dkg_part3: 9 <===========");
         let mut public_vec = p.serialize()?;
         logout_info!("===========> FROST:dkg_part3: 10 <===========");
