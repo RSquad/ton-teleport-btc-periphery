@@ -115,22 +115,20 @@ func (e *Executor) Cleanup() {
 }
 
 func (e *Executor) OnStartNewDKG(dkg *coordinator.DKG) bool {
-	e.Cleanup()
-
 	logger.Log.Debug().Msg("--------------------> NEW DKG STARTED <--------------------")
-	e.until = dkg.Until
+	e.Cleanup()
 
 	// Get session public key
 	{
 		sessionSigner, err := validator.NewSessionSigner(e.keystore, dkg.Until.Unix(), validator.GenerateNewIfNeeded)
 		if err != nil {
 			e.logDKGProcess(dkg, fmt.Sprintf("Failed to create SessionSigner: %v", err))
-			e.Cleanup()
 			return false
 		}
 		e.sessionPublicKey = sessionSigner.PublicKey()
 	}
 
+	e.until = dkg.Until
 	e.logNewDKGStarted(dkg)
 	return true
 }
