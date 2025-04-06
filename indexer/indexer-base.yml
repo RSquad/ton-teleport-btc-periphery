@@ -1,0 +1,9 @@
+ingress:
+  enabled: true
+  letsencrypt-issuer: "letsencrypt-prod"
+
+service:
+  enabled: true
+
+container:
+  port: 3000

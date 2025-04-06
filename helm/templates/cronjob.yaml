@@ -1,0 +1,30 @@
+{{- if and .Values.deploymentType (eq .Values.deploymentType "CronJob") }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "db-backup.fullname" . }}-cronjob
+spec:
+  schedule: {{ .Values.cron.schedule | default "0 2 * * *" }}
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+            - name: {{ .Chart.Name }}
+              image: {{ .Values.image.repository }}:{{ .Values.image.tag | default "latest" }}
+              imagePullPolicy: {{ .Values.image.pullPolicy | default "IfNotPresent" }}
+              {{- if or .Values.configMapName .Values.secretName }}
+              envFrom:
+                {{- if .Values.configMapName }}
+                - configMapRef:
+                    name: {{ .Values.configMapName }}
+                {{- end }}
+                {{- if .Values.secretName }}
+                - secretRef:
+                    name: {{ .Values.secretName }}
+                {{- end }}
+              {{- end }}
+          restartPolicy: OnFailure
+          imagePullSecrets:
+            - name: docker-registry-creds
+{{- end }}

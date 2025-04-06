@@ -1,13 +1,5 @@
 ingress:
-  enabled: true
-  letsencrypt-issuer: "letsencrypt-prod"
   hosts:
     - host: ton-teleport.dev.rsquad.solutions
       paths:
         - /indexer
-
-service:
-  enabled: true
-
-container:
-  port: 3000

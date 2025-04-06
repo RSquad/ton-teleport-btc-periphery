@@ -147,6 +147,11 @@ jobs:
             if kubectl get secret "$SECRET_NAME" -n "${APP_NAMESPACE}" &>/dev/null; then
               SECRET_PARAM="--set secretName=${SECRET_NAME}"
             fi
+            BASE_VALUES=""
+            FILE="${app}/${app}-base.yml"
+            if [ -f "$FILE" ]; then
+              BASE_VALUES="-f $FILE"
+            fi
             ADDITIONAL_VALUES=""
             FILE="${app}/${app}-${STAGE}.yml"
             if [ -f "$FILE" ]; then
@@ -161,6 +166,7 @@ jobs:
               $SECRET_PARAM \
               --atomic --timeout 5m \
               --history-max 2 \
+              $BASE_VALUES \
               $ADDITIONAL_VALUES &
             pids[$app]=$!
           done
