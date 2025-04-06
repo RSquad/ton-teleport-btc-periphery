@@ -331,12 +331,18 @@ pub extern "C" fn dkg_part3(
         let r2_pkgs_map = Round2Package::make_map(r2_pkgs_ptr, r2_pkgs_len)?;
         logout_info!("===========> FROST:dkg_part3: 7 <===========");
         logout_info!(
-            "r2_secret_box.min_signers()={}, r2_secret_box.max_signers()={}",
+            "===========> FROST: r2_secret_box.min_signers()={}, r2_secret_box.max_signers()={}",
             r2_secret_box.min_signers(),
             r2_secret_box.max_signers()
         );
-        logout_info!("r1_pkgs_map.len()={}", r1_pkgs_map.len());
-        logout_info!("r2_pkgs_map.len()={}", r2_pkgs_map.len());
+        logout_info!(
+            "===========> FROST: r1_pkgs_map.len()={}",
+            r1_pkgs_map.len()
+        );
+        logout_info!(
+            "===========> FROST: r2_pkgs_map.len()={}",
+            r2_pkgs_map.len()
+        );
         let (s, p) = frost_dkg_part3(&r2_secret_box, &r1_pkgs_map, &r2_pkgs_map)?;
         // Prevent r2_secret_box from being freed. It must be freed manually.
         logout_info!("===========> FROST:dkg_part3: 8 <===========");

@@ -155,6 +155,12 @@ func (c *CoordinatorContract) GetPrevDKG() (*DKG, error) {
 	return parseDGKSlice(result.MustCell(0).BeginParse())
 }
 
+// TODO: implement
+//type T1 struct {
+//	pegoutId uint64
+//	err      error
+//}
+
 func (c *CoordinatorContract) GetUnsignedPegouts() ([]PegoutRecord, error) {
 	block, err := CallApiWithTimeout(
 		func(apiCallCtx context.Context) (*tonutils.BlockIDExt, error) {
@@ -204,9 +210,13 @@ func (c *CoordinatorContract) GetUnsignedPegouts() ([]PegoutRecord, error) {
 		return nil, err
 	}
 
+	// TODO: implement
+	//peggoutIdsToReset := make([]uint64, 0)
+
 	pegouts := make([]PegoutRecord, 0, len(entries))
 	for _, kv := range entries {
-		ID := kv.Key.MustLoadUInt(64)
+
+		ID := kv.Key.MustLoadUInt(64) // TODO:
 		value := kv.Value.MustLoadRef()
 
 		MaxSigners := uint16(value.MustLoadUInt(16))
@@ -216,34 +226,69 @@ func (c *CoordinatorContract) GetUnsignedPegouts() ([]PegoutRecord, error) {
 		CommitmentsMask := value.MustLoadSlice(256)
 		value.MustLoadUInt(16)
 		commitmentsDict := value.MustLoadDict(16)
-		commitmentsPtr, _ := parseddict.ParseDict(
+		commitmentsPtr, err := parseddict.ParseDict(
 			commitmentsDict,
 			parseddict.ParseKeyUI16,
 			readBuffer,
 		)
+
+		if err != nil {
+			return nil, err // TODO: Call restart for ID
+		}
+
 		Commitments := *commitmentsPtr
 		SigningSharesMask := value.MustLoadSlice(256)
 		value.MustLoadUInt(16)
 		signingSharesDict := value.MustLoadDict(16)
-		signingSharesPtr, _ := parseddict.ParseDict(
+		signingSharesPtr, err := parseddict.ParseDict(
 			signingSharesDict,
 			parseddict.ParseKeyUI16,
 			loadSharesMap,
 		)
+
+		if err != nil {
+			return nil, err // TODO: Call restart for ID
+		}
+
 		SigningShares := *signingSharesPtr
 
-		claimsSlice := value.MustLoadRef()
+		sigSlice := value.MustLoadRef()
+		Signatures := PegoutSignatures{
+			mask:  sigSlice.MustLoadBigUInt(256),
+			count: uint16(sigSlice.MustLoadUInt(16)),
+			hash:  sigSlice.MustLoadSlice(256),
+		}
+
+		refSlice := value.MustLoadRef()
+		claimsSlice := refSlice.MustLoadRef()
 		ClaimsMask := claimsSlice.MustLoadBigUInt(256)
 		ClaimsCount := uint16(claimsSlice.MustLoadUInt(16))
 		claimsCountersDict := claimsSlice.MustLoadDict(16)
-		claimsCountersPtr, _ := parseddict.ParseDict(
+		claimsCountersPtr, err := parseddict.ParseDict(
 			claimsCountersDict,
 			parseddict.ParseKeyUI16,
 			loadUI16Map,
 		)
+
+		/*
+			const refSlice = slice.loadRef().beginParse();
+			const claimsSlice = refSlice.loadRef().beginParse();
+			const claims: TClaims = {
+				mask: claimsSlice.loadUintBig(256),
+				count: claimsSlice.loadUint(16),
+				counters: claimsSlice.loadDict(
+					Dictionary.Keys.Uint(16),
+					Dictionary.Values.Uint(16),
+				),
+			};
+		*/
+
+		if err != nil {
+			return nil, err
+		}
+
 		ClaimsCounters := *claimsCountersPtr
 
-		refSlice := value.MustLoadRef()
 		InternalKey := refSlice.MustLoadSlice(256)
 		PegoutAddress := refSlice.MustLoadAddr()
 
@@ -255,6 +300,7 @@ func (c *CoordinatorContract) GetUnsignedPegouts() ([]PegoutRecord, error) {
 			CommitmentsMask,
 			SigningShares,
 			SigningSharesMask,
+			Signatures,
 			ClaimsMask,
 			ClaimsCount,
 			ClaimsCounters,
@@ -379,6 +425,11 @@ func loadSharesMap(value *cell.Slice) (map[uint16][]byte, error) {
 			return utils.WriteSlicesToBuffer(s), nil
 		},
 	)
+
+	if err != nil {
+		return nil, err
+	}
+
 	return *sharesMap, err
 }
 

@@ -55,6 +55,8 @@ func HandleTvmError(tvmError error) string {
 	}
 
 	switch exitCode {
+	case 113:
+		return "invalid signature"
 	case 114:
 		return "package already sent"
 	case 127:
@@ -67,6 +69,8 @@ func HandleTvmError(tvmError error) string {
 		return "R1 is already completed"
 	case 150:
 		return "Coordinator balance is not enough to continue"
+	case 151:
+		return "Culprit not found"
 	case 161:
 		return "Unauthorized validator"
 	default:

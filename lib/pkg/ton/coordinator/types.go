@@ -112,6 +112,12 @@ type ResetPegoutSigningRequest struct {
 	ValidatorIdx uint16
 }
 
+type PegoutSignatures struct {
+	mask  *big.Int
+	count uint16
+	hash  []byte
+}
+
 type PegoutRecord struct {
 	ID                uint64
 	PegoutAddress     *address.Address
@@ -120,6 +126,7 @@ type PegoutRecord struct {
 	CommitmentsMask   []byte
 	SigningShares     map[uint16]map[uint16][]byte
 	SigningSharesMask []byte
+	Signatures        PegoutSignatures
 	ClaimsMask        *big.Int
 	ClaimsCount       uint16
 	ClaimsCounters    map[uint16]uint16

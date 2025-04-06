@@ -64,16 +64,13 @@ func BuildSendSigningShareBody(ttl int64, req *SigningShareRequest) *cell.Cell {
 			cell.BeginCell().MustStoreRef(utils.SplitBytesToCells(share)).EndCell(),
 		)
 	}
+
 	return cell.BeginCell().
 		MustStoreUInt(OpCodeCoordinatorSendSigningShare, 32).
 		MustStoreUInt(uint64(time.Now().Unix()+ttl), 32).
 		MustStoreUInt(uint64(req.ValidatorIdx), 16).
 		MustStoreUInt(req.PegoutID, 64).
-		MustStoreRef(
-			cell.BeginCell().
-				MustStoreDict(dict).
-				EndCell(),
-		).
+		MustStoreRef(dict.AsCell()).
 		EndCell()
 }
 
@@ -91,11 +88,7 @@ func BuildSendSignaturesBody(ttl int64, req *SignaturesRequest) *cell.Cell {
 		MustStoreUInt(uint64(time.Now().Unix()+ttl), 32).
 		MustStoreUInt(uint64(req.ValidatorIdx), 16).
 		MustStoreUInt(req.PegoutID, 64).
-		MustStoreRef(
-			cell.BeginCell().
-				MustStoreDict(dict).
-				EndCell(),
-		).
+		MustStoreRef(dict.AsCell()).
 		EndCell()
 }
 

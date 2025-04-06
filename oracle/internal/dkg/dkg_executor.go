@@ -114,12 +114,7 @@ func (e *Executor) Execute(dkg *coordinator.DKG) {
 	defer e.logFinishExecuting(dkg)
 
 	if dkg.State == coordinator.DKGStateFinished {
-		// NOTE: discuss
-		if dkg.Until.After(e.until) {
-			logger.Log.Debug().Msg("--------------------> DKG FINISHED WITHOUT THIS ORACLE <--------------------")
-			e.artifacts.Cleanup()
-		}
-
+		e.artifacts.Cleanup()
 		e.logDKGFinished(dkg)
 		return
 	}
