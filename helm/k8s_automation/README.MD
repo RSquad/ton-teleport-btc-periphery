@@ -146,6 +146,7 @@ This command installs (or upgrades) a Grafana instance in the **ton-teleport-dev
 ```bash
 helm upgrade --install grafana grafana/grafana \
   --namespace ton-teleport-dev \
+  --values ./helm_values/grafana-base.yml \
   --values ./helm_values/grafana-dev.yml
 ```
 ## Final Checks
