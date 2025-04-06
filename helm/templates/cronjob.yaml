@@ -4,7 +4,7 @@ kind: CronJob
 metadata:
   name: {{ include "app.name" . }}-cronjob
 spec:
-  schedule: {{ .Values.cron.schedule | default "0 2 * * *" }}
+  schedule: {{ .Values.schedule | default "0 2 * * *" }}
   jobTemplate:
     spec:
       template:
