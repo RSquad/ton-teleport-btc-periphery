@@ -2,7 +2,7 @@
 apiVersion: batch/v1
 kind: CronJob
 metadata:
-  name: {{ include "db-backup.fullname" . }}-cronjob
+  name: {{ include "app.name" . }}-cronjob
 spec:
   schedule: {{ .Values.cron.schedule | default "0 2 * * *" }}
   jobTemplate:

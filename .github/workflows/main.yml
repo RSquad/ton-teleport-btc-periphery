@@ -24,7 +24,7 @@ jobs:
     if: github.ref == 'refs/heads/oracle_automation'
     uses: ./.github/workflows/build-and-deploy.yml
     with:
-      APPS: '["indexer", "relayer", "oracle", "db-backup"]'
+      APPS: '["db-backup"]'
       STAGE: develop
       APP_NAMESPACE: ton-teleport-dev
     secrets:
