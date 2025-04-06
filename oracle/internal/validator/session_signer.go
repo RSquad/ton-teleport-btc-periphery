@@ -3,7 +3,6 @@ package validator
 import (
 	"crypto/ed25519"
 	"crypto/rand"
-	"errors"
 	"fmt"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
@@ -23,11 +22,6 @@ const (
 )
 
 func NewSessionSigner(keystore keystore.Keystore, dkgUntilTimestamp int64, mode SessionSignerCreateMode) (*SessionSigner, error) {
-	// Verify
-	if dkgUntilTimestamp == 0 {
-		return nil, errors.New("failed to generate secret, `dkgUntilTimestamp` == 0")
-	}
-
 	// Try to load from key storage file
 	logger.Log.Info().Msgf("Try to find session keypair for DKG (until %d)", dkgUntilTimestamp)
 	secret := keystore.LoadSessionTS(dkgUntilTimestamp)
