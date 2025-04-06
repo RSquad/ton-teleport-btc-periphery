@@ -187,7 +187,6 @@ func (s *SignService) execute(ctx context.Context, dkg *coordinator.DKG) {
 
 	// Check for signing restart
 	if (unsignedPegout.ExpiredAt != time.Unix(0, 0)) && (unsignedPegout.ExpiredAt.Before(time.Now())) {
-		logger.Log.Debug().Msg("--------------------> NEW SIGNING STARTED (OLD TIMED OUT) <--------------------")
 		s.executeResetPegoutSigning(unsignedPegout.ID, validatorKeyInfo)
 		s.cachePegoutClear()
 	}

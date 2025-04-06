@@ -55,8 +55,6 @@ func (a *ExecutionArtifacts) Cleanup() {
 	a.r1 = nil
 	a.r2 = nil
 	a.r3 = nil
-
-	logger.Log.Debug().Msg("---------------------------->>>>>>>>>>>>>>>>>>> A R T I F A C T S   C L E A N U P <<<<<<<<<<<<<<<--------------------------")
 }
 
 func (a *ExecutionArtifacts) IsEmpty() bool {
@@ -115,7 +113,6 @@ func (e *Executor) Cleanup() {
 }
 
 func (e *Executor) OnStartNewDKG(dkg *coordinator.DKG) bool {
-	logger.Log.Debug().Msg("--------------------> NEW DKG STARTED <--------------------")
 	e.Cleanup()
 
 	// Get session public key
