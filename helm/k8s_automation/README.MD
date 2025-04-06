@@ -139,6 +139,23 @@ helm repo add grafana https://grafana.github.io/helm-charts
 helm repo update
 ```
 
+Create new configmap which should contain all the dashboards from the **dashboards** directory:
+
+```bash
+kubectl create configmap grafana-dashboards --from-file=grafana/dashboards/ -n "ton-teleport-dev" --dry-run=client -o yaml | kubectl apply -f -
+kubectl label configmap grafana-dashboards -n "ton-teleport-dev" grafana_dashboard=1 --overwrite
+```
+
+Create Grafana Google OAuth secret:
+
+```bash
+apiVersion: v1
+data:
+  GF_AUTH_GOOGLE_CLIENT_ID: ID
+  GF_AUTH_GOOGLE_CLIENT_SECRET: SECRET
+kind: Secret
+```
+
 Deploy Grafana (ton-teleport-dev) using Helm:
 This command installs (or upgrades) a Grafana instance in the **ton-teleport-dev** namespace.
 (the file **grafana-dev.yml** in special for **-dev**)

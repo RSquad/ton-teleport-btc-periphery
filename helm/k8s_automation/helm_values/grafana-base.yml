@@ -27,3 +27,21 @@ datasources:
         url: http://loki:3100
         access: proxy
         isDefault: false
+sidecar:
+  dashboards:
+    enabled: true
+    label: grafana_dashboard
+    searchNamespace: ton-teleport-dev
+    provider:
+      allowUiUpdates: true
+envFromSecrets:
+  - name: grafana-google-oauth-creds
+grafana.ini:
+  auth:
+    oauth_auto_login: false
+    disable_login_form: false
+    disable_signout_menu: false
+  auth.google:
+    enabled: true
+    client_id: ${GF_AUTH_GOOGLE_CLIENT_ID}
+    client_secret: ${GF_AUTH_GOOGLE_CLIENT_SECRET}
