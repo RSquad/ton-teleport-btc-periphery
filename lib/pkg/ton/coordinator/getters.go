@@ -54,16 +54,13 @@ func New(
 
 func CallApiWithTimeout[T any](fn func(ctx context.Context) (T, error), parentCtx context.Context, timeout int64, name string) (T, error) {
 	startTs := time.Now()
-
-	logger.Log.Debug().Msgf(">>>>>>> SEND MESSAGE TO THE TON NETWORK: '%s'...", name)
-
 	apiCtx, cancelFn := context.WithTimeout(parentCtx, time.Duration(timeout)*time.Second)
 	defer cancelFn()
 	res, err := fn(apiCtx)
 	endTs := time.Now()
 	duration := endTs.Unix() - startTs.Unix()
 
-	logger.Log.Debug().Msgf(">>>>>>> SEND MESSAGE TO THE TON NETWORK: '%s', total time {%d}s", name, duration)
+	logger.Log.Debug().Msgf("Ton API call: '%s', total time {%d}s", name, duration)
 
 	return res, err
 }

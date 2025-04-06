@@ -59,10 +59,14 @@ func HandleTvmError(tvmError error) string {
 		return "invalid signature"
 	case 114:
 		return "package already sent"
+	case 117:
+		return "signature exists"
 	case 127:
 		return "R1 is not completed yet"
 	case 128:
 		return "R2 is not completed yet"
+	case 135:
+		return "pegout not found"
 	case 145:
 		return "Commitments threshold is reached"
 	case 147:
@@ -73,6 +77,8 @@ func HandleTvmError(tvmError error) string {
 		return "Culprit not found"
 	case 161:
 		return "Unauthorized validator"
+	case 166:
+		return "Pegout is not expired"
 	default:
 		return fmt.Sprintf("Unknown error: %d", exitCode)
 	}
