@@ -156,7 +156,7 @@ func (s *SignService) execute(ctx context.Context, dkg *coordinator.DKG) {
 	}
 
 	if (s.dkgUntil != dkg.Until) || (s.sessionSigner == nil) {
-		sessionSigner, err := validator.NewSessionSigner(s.keyStore, dkg.Until.Unix(), validator.LoadFromFileOnly)
+		sessionSigner, err := validator.LoadSessionSigner(s.keyStore, dkg.Until.Unix())
 		if err != nil {
 			s.logError("Failed to create SessionSigner", err)
 			return

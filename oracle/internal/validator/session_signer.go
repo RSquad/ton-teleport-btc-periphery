@@ -14,24 +14,11 @@ type SessionSigner struct {
 	secret ed25519.PrivateKey
 }
 
-type SessionSignerCreateMode int
-
-const (
-	GenerateNewIfNeeded SessionSignerCreateMode = iota
-	LoadFromFileOnly
-)
-
-func NewSessionSigner(keystore keystore.Keystore, dkgUntilTimestamp int64, mode SessionSignerCreateMode) (*SessionSigner, error) {
-	// Try to load from key storage file
-	logger.Log.Info().Msgf("Try to find session keypair for DKG (until %d)", dkgUntilTimestamp)
-	secret := keystore.LoadSessionTS(dkgUntilTimestamp)
-	if secret != nil {
-		logger.Log.Info().Msgf("Session keypair for DKG (until %d) was loaded from file", dkgUntilTimestamp)
-		return &SessionSigner{secret}, nil
-	}
-
-	if mode == LoadFromFileOnly {
-		return nil, fmt.Errorf("failed to load session keypair for DKG (until %d)", dkgUntilTimestamp)
+func NewSessionSigner(keystore keystore.Keystore, dkgUntilTimestamp int64) (*SessionSigner, error) {
+	// Just in case, we have already created a session `dkgUntilTimestamp`
+	sessionSigner, err := LoadSessionSigner(keystore, dkgUntilTimestamp)
+	if err == nil {
+		return sessionSigner, nil
 	}
 
 	// Generate new key pair
@@ -42,11 +29,23 @@ func NewSessionSigner(keystore keystore.Keystore, dkgUntilTimestamp int64, mode 
 	}
 
 	// Save to file (with dkgUntilTimestamp name)
-	err = keystore.StoreSessionTS(dkgUntilTimestamp, secret)
+	err = keystore.StoreSession(dkgUntilTimestamp, secret)
 	if err != nil {
 		return nil, fmt.Errorf("failed to save keypair. %v", err)
 	}
 
+	return &SessionSigner{secret}, nil
+}
+
+func LoadSessionSigner(keystore keystore.Keystore, dkgUntilTimestamp int64) (*SessionSigner, error) {
+	// Try to load from key storage file
+	logger.Log.Info().Msgf("Try to load session keypair for DKG (until %d)", dkgUntilTimestamp)
+	secret := keystore.LoadSession(dkgUntilTimestamp)
+	if secret == nil {
+		return nil, fmt.Errorf("failed to load session keypair for DKG (until %d)", dkgUntilTimestamp)
+	}
+
+	logger.Log.Info().Msgf("Session keypair for DKG (until %d) was loaded from file", dkgUntilTimestamp)
 	return &SessionSigner{secret}, nil
 }
 

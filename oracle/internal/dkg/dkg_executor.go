@@ -120,7 +120,7 @@ func (e *Executor) OnStartNewDKG(dkg *coordinator.DKG) bool {
 
 	// Get session public key
 	{
-		sessionSigner, err := validator.NewSessionSigner(e.keystore, dkg.Until.Unix(), validator.GenerateNewIfNeeded)
+		sessionSigner, err := validator.NewSessionSigner(e.keystore, dkg.Until.Unix())
 		if err != nil {
 			e.logDKGProcess(dkg, fmt.Sprintf("Failed to create SessionSigner: %v", err))
 			return false
