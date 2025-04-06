@@ -216,6 +216,7 @@ func (e *Executor) executeR1(dkg *coordinator.DKG, validatorIdx uint16) bool {
 
 	_, err := e.coordinatorContract.SendRound1(
 		validatorIdx,
+		dkg.Until.Unix(),
 		e.artifacts.r1.pkg,
 	)
 	if err != nil {
@@ -283,6 +284,7 @@ func (e *Executor) executeR2(dkg *coordinator.DKG, validatorIdx uint16) bool {
 		// local r2 package is not sent yet, send it to coordinator
 		_, err := e.coordinatorContract.SendRound2(
 			validatorIdx,
+			dkg.Until.Unix(),
 			toIdx,
 			r2pkg.ToBytes(),
 		)
@@ -362,6 +364,7 @@ func (e *Executor) executeR3(dkg *coordinator.DKG, validatorIdx uint16) bool {
 
 	if _, err := e.coordinatorContract.SendPubkeyPackage(
 		validatorIdx,
+		dkg.Until.Unix(),
 		e.sessionPublicKey,
 		e.artifacts.r3.publicKeyPackage,
 	); err != nil {
@@ -384,6 +387,7 @@ func (e *Executor) executeClaim(dkg *coordinator.DKG, validatorIdx uint16, malic
 	// claim package is not sent yet, send it to coordinator
 	_, err := e.coordinatorContract.SendDKGClaim(
 		validatorIdx,
+		dkg.Until.Unix(),
 		maliciousValidatorIdx,
 	)
 	if err != nil {

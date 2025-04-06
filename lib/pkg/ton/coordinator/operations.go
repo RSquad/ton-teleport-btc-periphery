@@ -36,35 +36,43 @@ func (c *CoordinatorContract) SendStartDKG() (*tlb.Transaction, error) {
 
 func (c *CoordinatorContract) SendRound1(
 	validatorIdx uint16,
+	dkgUntil int64,
 	round1Package []byte,
 ) (*tlb.Transaction, error) {
 	return c.sendBodyCell(BuildSendRound1Body(
-		int64(c.ttl.Seconds()), validatorIdx, round1Package,
+		int64(c.ttl.Seconds()), validatorIdx, dkgUntil, round1Package,
 	), "SendRound1")
 }
 
 func (c *CoordinatorContract) SendRound2(
 	validatorIdx uint16,
+	dkgUntil int64,
 	toIdx uint16,
 	round2Package []byte,
 ) (*tlb.Transaction, error) {
 	return c.sendBodyCell(BuildSendRound2Body(
-		int64(c.ttl.Seconds()), validatorIdx, toIdx, round2Package,
+		int64(c.ttl.Seconds()), validatorIdx, dkgUntil, toIdx, round2Package,
 	), "SendRound2")
 }
 
 func (c *CoordinatorContract) SendDKGClaim(
 	validatorIdx uint16,
+	dkgUntil int64,
 	maliciousValidatorIdx []byte,
 ) (*tlb.Transaction, error) {
 	return c.sendBodyCell(BuildSendDKGClaimBody(
-		int64(c.ttl.Seconds()), validatorIdx, maliciousValidatorIdx,
+		int64(c.ttl.Seconds()), validatorIdx, dkgUntil, maliciousValidatorIdx,
 	), "SendDKGClaim")
 }
 
-func (c *CoordinatorContract) SendPubkeyPackage(validatorIdx uint16, sessionPublicKey []byte, pubkeyPackage []byte) (*tlb.Transaction, error) {
+func (c *CoordinatorContract) SendPubkeyPackage(
+	validatorIdx uint16,
+	dkgUntil int64,
+	sessionPublicKey []byte,
+	pubkeyPackage []byte,
+) (*tlb.Transaction, error) {
 	return c.sendBodyCell(BuildSendRound3Body(
-		int64(c.ttl.Seconds()), validatorIdx, sessionPublicKey, pubkeyPackage,
+		int64(c.ttl.Seconds()), validatorIdx, dkgUntil, sessionPublicKey, pubkeyPackage,
 	), "SendPubkeyPackage")
 }
 

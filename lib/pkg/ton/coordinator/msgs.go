@@ -8,40 +8,44 @@ import (
 	"github.com/xssnick/tonutils-go/tvm/cell"
 )
 
-func BuildSendRound1Body(ttl int64, validatorIdx uint16, round1Package []byte) *cell.Cell {
+func BuildSendRound1Body(ttl int64, validatorIdx uint16, dkgUntil int64, round1Package []byte) *cell.Cell {
 	return cell.BeginCell().
 		MustStoreUInt(OpCodeCoordinatorRound1, 32).
 		MustStoreUInt(uint64(time.Now().Unix()+ttl), 32).
 		MustStoreUInt(uint64(validatorIdx), 16).
+		MustStoreUInt(uint64(dkgUntil), 32).
 		MustStoreRef(utils.SplitBytesToCells(round1Package)).
 		EndCell()
 }
 
-func BuildSendRound2Body(ttl int64, validatorIdx uint16, toIdx uint16, round2Package []byte) *cell.Cell {
+func BuildSendRound2Body(ttl int64, validatorIdx uint16, dkgUntil int64, toIdx uint16, round2Package []byte) *cell.Cell {
 	return cell.BeginCell().
 		MustStoreUInt(OpCodeCoordinatorRound2, 32).
 		MustStoreUInt(uint64(time.Now().Unix()+ttl), 32).
 		MustStoreUInt(uint64(validatorIdx), 16).
+		MustStoreUInt(uint64(dkgUntil), 32).
 		MustStoreUInt(uint64(toIdx), 16).
 		MustStoreRef(utils.SplitBytesToCells(round2Package)).
 		EndCell()
 }
 
-func BuildSendRound3Body(ttl int64, validatorIdx uint16, sessionPublicKey []byte, pubkeyPackage []byte) *cell.Cell {
+func BuildSendRound3Body(ttl int64, validatorIdx uint16, dkgUntil int64, sessionPublicKey []byte, pubkeyPackage []byte) *cell.Cell {
 	return cell.BeginCell().
 		MustStoreUInt(OpCodeCoordinatorRound3, 32).
 		MustStoreUInt(uint64(time.Now().Unix()+ttl), 32).
 		MustStoreUInt(uint64(validatorIdx), 16).
+		MustStoreUInt(uint64(dkgUntil), 32).
 		MustStoreSlice(sessionPublicKey, 256).
 		MustStoreRef(utils.SplitBytesToCells(pubkeyPackage)).
 		EndCell()
 }
 
-func BuildSendDKGClaimBody(ttl int64, validatorIdx uint16, maliciousValidatorIdx []byte) *cell.Cell {
+func BuildSendDKGClaimBody(ttl int64, validatorIdx uint16, dkgUntil int64, maliciousValidatorIdx []byte) *cell.Cell {
 	return cell.BeginCell().
 		MustStoreUInt(OpCodeCoordinatorDkgClaim, 32).
 		MustStoreUInt(uint64(time.Now().Unix()+ttl), 32).
 		MustStoreUInt(uint64(validatorIdx), 16).
+		MustStoreUInt(uint64(dkgUntil), 32).
 		MustStoreUInt(uint64(binary.BigEndian.Uint16(maliciousValidatorIdx[30:32])), 16).
 		EndCell()
 }
