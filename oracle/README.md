@@ -56,20 +56,53 @@ The Oracle is configured using environment variables. You can set these in a `.e
 - `ORACLE_CLIENT_PRIVATE_KEY_PATH` - Path to the client private key
 - `ORACLE_VALIDATOR_SERVER_ADDR` - Address of the validator server
 
+#### Periodic Events and API Timeouts
+
+- `ORACLE_DKG_FETCH_PERIOD` - Specifies the interval, in seconds, at which the periodic event `DKG_FETCH` is triggered. If not set, the default value is 6 seconds.
+- `ORACLE_SEND_START_DKG_PERIOD` - Specifies the interval, in seconds, at which the periodic event `SEND_START_DKG` is triggered. If not set, the default value is 10 seconds.
+- `ORACLE_EXECUTE_SIGN_PERIOD` - Specifies the interval, in seconds, at which the periodic event `EXECUTE_SIGN` is triggered. If not set, the default value is 10 seconds.
+- `API_CALL_TIMEOUT` - Defines the maximum time (in seconds) to wait for an API call to complete. If the API does not respond within this period, the request will be terminated.
+If not set, the default value is 10 seconds.
+- `LOG_FILE` - Path to the log file. A full path including the file name must be specified. If not set, logs will be written only to standard output (stdout).
+
 ### Example .env File
 
-Example for ORACLE_STANDALONE_MODE=false
+Example of standalone mode (ORACLE_STANDALONE_MODE=true)
+```
+COMMON_TON_CONFIG=https://ton-blockchain.github.io/testnet-global.config.json
+COMMON_TON_CONTRACT_COORDINATOR=EQD5URgpjt00h5x4i9MFHWX1UjmuniYPMWnYVGwmZguJ0tMh
+ORACLE_STANDALONE_MODE=true
+ORACLE_PUBKEY=bf6837291f771de3e60ca0b007d9346f3b0369ff059de324aea50e4054d9cb43
+ORACLE_SECRET=70dc95e268e8ded2f81048a1a3dc9b500955f2234ba76f82f723a60bce270bb5bf6837291f771de3e60ca0b007d9346f3b0369ff059de324aea50e4054d9cb43
+ORACLE_VALIDATOR_ENGINE_CONSOLE_PATH=
+ORACLE_SERVER_PUBLIC_KEY_PATH=
+ORACLE_CLIENT_PRIVATE_KEY_PATH=
+ORACLE_VALIDATOR_SERVER_ADDR=
+ORACLE_KEYSTORE_PATH=/path/to/keystore
+ORACLE_DKG_FETCH_PERIOD=6
+ORACLE_SEND_START_DKG_PERIOD=10
+ORACLE_EXECUTE_SIGN_PERIOD=10
+API_CALL_TIMEOUT=30
+LOG_FILE=/var/logs/oracle.txt
+```
+
+Example of using a validator (ORACLE_STANDALONE_MODE=false)
 ```
 COMMON_TON_CONFIG=https://ton-blockchain.github.io/testnet-global.config.json
 COMMON_TON_CONTRACT_COORDINATOR=EQD5URgpjt00h5x4i9MFHWX1UjmuniYPMWnYVGwmZguJ0tMh
 ORACLE_STANDALONE_MODE=false
 ORACLE_PUBKEY=
 ORACLE_SECRET=
-ORACLE_KEYSTORE_PATH=/path/to/keystore
 ORACLE_VALIDATOR_ENGINE_CONSOLE_PATH=/path/to/validator-engine-console
 ORACLE_SERVER_PUBLIC_KEY_PATH=/path/to/certs/server.pub
 ORACLE_CLIENT_PRIVATE_KEY_PATH=/path/to/certs/client
 ORACLE_VALIDATOR_SERVER_ADDR=127.0.0.1:4441
+ORACLE_KEYSTORE_PATH=/path/to/keystore
+ORACLE_DKG_FETCH_PERIOD=6
+ORACLE_SEND_START_DKG_PERIOD=10
+ORACLE_EXECUTE_SIGN_PERIOD=10
+API_CALL_TIMEOUT=30
+LOG_FILE=/var/logs/oracle.txt
 ```
 
 Note: Either a relative or absolute path can be used for COMMON_TON_CONFIG instead of URL
@@ -86,6 +119,7 @@ The Oracle uses a file-based keystore to securely store cryptographic materials.
 ```
 keystore/
 ├── secrets/     # Contains secret packages indexed by public key
+├── sessions/    # Contains session keypairs packages indexed by the DKG `Until` value.
 └── temp/        # Contains temporary data like nonces, commitments, and signing shares
 ```
 

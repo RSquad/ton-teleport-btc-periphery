@@ -101,6 +101,21 @@ pub struct Pkg {
     len: usize,
 }
 
+fn culprit_to_bytes(ref culprit: Identifier, identifier_out: &mut [u8; 32]) -> i32 {
+    let culprit_data = culprit.serialize();
+
+    if culprit_data.len() != 32 {
+        print_msg!("culprit_data.len() != 32");
+        return -1;
+    }
+
+    unsafe {
+        ptr::copy_nonoverlapping(culprit_data.as_ptr(), identifier_out.as_mut_ptr(), 32);
+    }
+
+    -3
+}
+
 #[no_mangle]
 pub extern "C" fn ext_get_identifier(key: u16, identifier: *mut [u8; 32]) -> i32 {
     let participant_identifier: Identifier = key.try_into().expect("should be nonzero");
@@ -109,7 +124,7 @@ pub extern "C" fn ext_get_identifier(key: u16, identifier: *mut [u8; 32]) -> i32
     let arr = unsafe { identifier.as_mut().unwrap() };
     arr.copy_from_slice(vector.as_slice());
 
-    return 0;
+    0
 }
 
 #[no_mangle]
@@ -135,7 +150,7 @@ pub extern "C" fn dkg_part1(
             }
         }
 
-        return Ok(pkg_vec.len() as i32);
+        Ok(pkg_vec.len() as i32)
     })();
 
     match result {
@@ -164,7 +179,12 @@ pub extern "C" fn dkg_part2(
         return -1;
     }
 
-    let result = (|| -> Result<i32, Error> {
+    enum ResVariant {
+        Count(i32),
+        CulpritId(Identifier),
+    }
+
+    let result = (|| -> Result<ResVariant, Error> {
         let r1_secret_box_tmp: Box<
             frost_core::keys::dkg::round1::SecretPackage<frost_secp256k1_tr::Secp256K1Sha256TR>,
         > = from_void(r1_secret);
@@ -177,23 +197,15 @@ pub extern "C" fn dkg_part2(
         let mut r2_vec = Vec::with_capacity(map.len());
 
         for (id, pkg) in r2_map {
-            let mut identifier = [0u8; 32];
-            identifier.copy_from_slice(&id.serialize());
             match pkg.serialize() {
                 Err(err) => {
                     print_msg!("FROST error: {}", err);
-
-                    unsafe {
-                        ptr::copy_nonoverlapping(
-                            identifier.as_ptr(),
-                            r2_culprit_idx_out.as_mut_ptr(),
-                            32,
-                        );
-                    }
-
-                    return Ok(-3);
+                    return Ok(ResVariant::CulpritId(id));
                 }
                 Ok(mut p) => {
+                    let mut identifier = [0u8; 32];
+                    identifier.copy_from_slice(&id.serialize());
+
                     p.shrink_to(p.len());
                     r2_vec.push(Pkg {
                         identifier,
@@ -209,36 +221,21 @@ pub extern "C" fn dkg_part2(
             *r2_pkgs_ptr = r2_vec.leak().as_ptr();
         }
 
-        return Ok(count);
+        Ok(ResVariant::Count(count))
     })();
 
     match result {
         Err(Error::InvalidProofOfKnowledge { ref culprit }) => {
-            let culprit_data = culprit.serialize();
-
-            if culprit_data.len() != 32 {
-                print_msg!("culprit_data.len() != 32");
-                return -1;
-            }
-
-            unsafe {
-                ptr::copy_nonoverlapping(
-                    culprit_data.as_ptr(),
-                    r2_culprit_idx_out.as_mut_ptr(),
-                    32,
-                );
-            }
-
-            print_msg!("FROST error: culprit A");
-            return -3;
+            culprit_to_bytes(*culprit, r2_culprit_idx_out)
         }
         Err(err) => {
             print_msg!("FROST error: {}", err);
-            return -1;
+            -1
         }
-        Ok(count) => {
-            return count;
-        }
+        Ok(variant) => match variant {
+            ResVariant::Count(count) => count,
+            ResVariant::CulpritId(ref culprit) => culprit_to_bytes(*culprit, r2_culprit_idx_out),
+        },
     }
 }
 
@@ -292,36 +289,17 @@ pub extern "C" fn dkg_part3(
 
     match result {
         Err(Error::InvalidSecretShare { ref culprit }) => match culprit {
-            Some(culprit_val) => {
-                let culprit_data = culprit_val.serialize();
-                if culprit_data.len() != 32 {
-                    print_msg!("culprit_data.len() != 32");
-                    return -1;
-                }
-
-                unsafe {
-                    ptr::copy_nonoverlapping(
-                        culprit_data.as_ptr(),
-                        r3_culprit_idx_out.as_mut_ptr(),
-                        32,
-                    );
-                }
-
-                print_msg!("FROST error: culprit B");
-                return -3;
-            }
+            Some(culprit_val) => culprit_to_bytes(*culprit_val, r3_culprit_idx_out),
             None => {
                 print_msg!("FROST error: culprit value empty");
-                return -1;
+                -1
             }
         },
         Err(err) => {
             print_msg!("FROST error: {}", err);
-            return -1;
+            -1
         }
-        Ok(()) => {
-            return 0;
-        }
+        Ok(()) => 0,
     }
 }
 
@@ -387,11 +365,9 @@ pub extern "C" fn commit(
     match result {
         Err(err) => {
             print_msg!("FROST error: {}", err);
-            return -1;
+            -1
         }
-        Ok(()) => {
-            return 0;
-        }
+        Ok(()) => 0,
     }
 }
 
@@ -429,51 +405,20 @@ pub extern "C" fn sign_with_tweak(
 
     match result {
         Err(Error::InvalidSignatureShare { ref culprit }) => {
-            let culprit_data = culprit.serialize();
-
-            if culprit_data.len() != 32 {
-                print_msg!("culprit_data.len() != 32");
-                return -1;
-            }
-
-            unsafe {
-                ptr::copy_nonoverlapping(culprit_data.as_ptr(), culprit_idx_out.as_mut_ptr(), 32);
-            }
-
-            print_msg!("FROST error: culprit C");
-            return -3;
+            culprit_to_bytes(*culprit, culprit_idx_out)
         }
         Err(Error::InvalidSecretShare { ref culprit }) => match culprit {
-            Some(culprit_val) => {
-                let culprit_data = culprit_val.serialize();
-                if culprit_data.len() != 32 {
-                    print_msg!("culprit_data.len() != 32");
-                    return -1;
-                }
-
-                unsafe {
-                    ptr::copy_nonoverlapping(
-                        culprit_data.as_ptr(),
-                        culprit_idx_out.as_mut_ptr(),
-                        32,
-                    );
-                }
-
-                print_msg!("FROST error: culprit D");
-                return -3;
-            }
+            Some(culprit_val) => culprit_to_bytes(*culprit_val, culprit_idx_out),
             None => {
                 print_msg!("FROST error: culprit value empty");
-                return -1;
+                -1
             }
         },
         Err(err) => {
             print_msg!("FROST error: {}", err);
-            return -1;
+            -1
         }
-        Ok(()) => {
-            return 0;
-        }
+        Ok(()) => 0,
     }
 }
 
@@ -513,51 +458,20 @@ pub extern "C" fn aggregate_with_tweak(
 
     match result {
         Err(Error::InvalidSignatureShare { ref culprit }) => {
-            let culprit_data = culprit.serialize();
-
-            if culprit_data.len() != 32 {
-                print_msg!("culprit_data.len() != 32");
-                return -1;
-            }
-
-            unsafe {
-                ptr::copy_nonoverlapping(culprit_data.as_ptr(), culprit_idx_out.as_mut_ptr(), 32);
-            }
-
-            print_msg!("FROST error: culprit E");
-            return -3;
+            culprit_to_bytes(*culprit, culprit_idx_out)
         }
         Err(Error::InvalidSecretShare { ref culprit }) => match culprit {
-            Some(culprit_val) => {
-                let culprit_data = culprit_val.serialize();
-                if culprit_data.len() != 32 {
-                    print_msg!("culprit_data.len() != 32");
-                    return -1;
-                }
-
-                unsafe {
-                    ptr::copy_nonoverlapping(
-                        culprit_data.as_ptr(),
-                        culprit_idx_out.as_mut_ptr(),
-                        32,
-                    );
-                }
-
-                print_msg!("FROST error: culprit F");
-                return -3;
-            }
+            Some(culprit_val) => culprit_to_bytes(*culprit_val, culprit_idx_out),
             None => {
                 print_msg!("FROST error: culprit value empty");
-                return -1;
+                -1
             }
         },
         Err(err) => {
             print_msg!("FROST error: {}", err);
-            return -1;
+            -1
         }
-        Ok(()) => {
-            return 0;
-        }
+        Ok(()) => 0,
     }
 }
 
@@ -582,11 +496,9 @@ pub extern "C" fn verify(
     match result {
         Err(err) => {
             print_msg!("FROST error: {}", err);
-            return -1;
+            -1
         }
-        Ok(()) => {
-            return 0;
-        }
+        Ok(()) => 0,
     }
 }
 
@@ -616,5 +528,5 @@ pub extern "C" fn extract_public_key_from_package(
         (*public_key).data = key_vec.leak().as_ptr();
     }
 
-    return 0;
+    0
 }
