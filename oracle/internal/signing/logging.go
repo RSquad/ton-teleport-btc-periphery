@@ -143,7 +143,7 @@ func (s *SignService) logExecuteClaim(pegoutID uint64) {
 }
 
 func (s *SignService) logSendClaim(pegoutID uint64, culpritIdx uint16) {
-	infoEventWithPegoutID(pegoutID).Msg(fmt.Sprintf("Send calim, culprit validator idx: %d", culpritIdx))
+	infoEventWithPegoutID(pegoutID).Msg(fmt.Sprintf("Send claim, culprit validator idx: %d", culpritIdx))
 }
 
 func (s *SignService) logSigningClaimSent(pegoutID uint64) {
