@@ -6,18 +6,19 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
+
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 )
 
 type Keystore interface {
 	LoadSecret(pubkey []byte) []byte
-	LoadSessionTS(dkgUntilTimestamp int64) []byte
-	LoadSessionPubKey(publicKey []byte) []byte
+	LoadSession(dkgUntilTimestamp int64) []byte
 	LoadNonce(name string) []byte
 	LoadCommitments(name string) []byte
 	LoadSigningShares(name string) [][]byte
 	StoreSecret(pubkey []byte, secret []byte) error
-	StoreSessionTS(dkgUntilTimestamp int64, secret []byte) error
-	StoreSessionPubKey(publicKey []byte, secret []byte) error
+	StoreSession(dkgUntilTimestamp int64, secret []byte) error
 	StoreNonce(name string, nonce []byte) error
 	StoreCommitments(name string, commitments []byte) error
 	StoreSigningShares(name string, pkgs [][]byte) error
@@ -25,6 +26,7 @@ type Keystore interface {
 }
 
 type FileKeystore struct {
+	mu       sync.Mutex
 	rootPath string
 }
 
@@ -49,10 +51,13 @@ func New(rootPath string) (Keystore, error) {
 }
 
 func (ks *FileKeystore) load(parent string, filename string) []byte {
+	ks.mu.Lock()
+	defer ks.mu.Unlock()
+
 	filePath := filepath.Join(ks.rootPath, parent, filename)
 	blob, err := os.ReadFile(filePath)
 	if err != nil {
-		// TODO add error log
+		logger.Log.Warn().Msgf("Failed to load keystore file `%s`", filePath)
 		return nil
 	}
 	return blob
@@ -63,13 +68,8 @@ func (ks *FileKeystore) LoadSecret(pubkey []byte) []byte {
 	return ks.load("secrets", fileName)
 }
 
-func (ks *FileKeystore) LoadSessionTS(dkgUntilTimestamp int64) []byte {
+func (ks *FileKeystore) LoadSession(dkgUntilTimestamp int64) []byte {
 	fileName := fmt.Sprintf("%d", dkgUntilTimestamp)
-	return ks.load("sessions", fileName)
-}
-
-func (ks *FileKeystore) LoadSessionPubKey(publicKey []byte) []byte {
-	fileName := fmt.Sprintf("%x", publicKey)
 	return ks.load("sessions", fileName)
 }
 
@@ -94,7 +94,7 @@ func (ks *FileKeystore) LoadSigningShares(name string) [][]byte {
 		if line = strings.TrimSpace(line); line != "" {
 			pkg, err := hex.DecodeString(line)
 			if err != nil {
-				// TODO log error
+				logger.Log.Error().Msgf("Failed to decode hex string `%s`", line)
 				return nil
 			}
 			packages = append(packages, pkg)
@@ -103,32 +103,33 @@ func (ks *FileKeystore) LoadSigningShares(name string) [][]byte {
 	return packages
 }
 
+func (ks *FileKeystore) write(filePath string, data []byte) error {
+	ks.mu.Lock()
+	defer ks.mu.Unlock()
+
+	return os.WriteFile(filePath, data, 0o600)
+}
+
 func (ks *FileKeystore) StoreSecret(pubkey []byte, secret []byte) error {
 	fileName := hex.EncodeToString(pubkey[:32])
 	filePath := filepath.Join(ks.rootPath, "secrets", fileName)
-	return os.WriteFile(filePath, secret, 0o600)
+	return ks.write(filePath, secret)
 }
 
-func (ks *FileKeystore) StoreSessionTS(dkgUntilTimestamp int64, secret []byte) error {
+func (ks *FileKeystore) StoreSession(dkgUntilTimestamp int64, secret []byte) error {
 	fileName := fmt.Sprintf("%d", dkgUntilTimestamp)
 	filePath := filepath.Join(ks.rootPath, "sessions", fileName)
-	return os.WriteFile(filePath, secret, 0o600)
-}
-
-func (ks *FileKeystore) StoreSessionPubKey(publicKey []byte, secret []byte) error {
-	fileName := fmt.Sprintf("%x", publicKey)
-	filePath := filepath.Join(ks.rootPath, "sessions", fileName)
-	return os.WriteFile(filePath, secret, 0o600)
+	return ks.write(filePath, secret)
 }
 
 func (ks *FileKeystore) StoreNonce(name string, nonce []byte) error {
 	filePath := filepath.Join(ks.rootPath, "temp", "nonce_"+name)
-	return os.WriteFile(filePath, nonce, 0o600)
+	return ks.write(filePath, nonce)
 }
 
 func (ks *FileKeystore) StoreCommitments(name string, commitments []byte) error {
 	filePath := filepath.Join(ks.rootPath, "temp", "commitments_"+name)
-	return os.WriteFile(filePath, commitments, 0o600)
+	return ks.write(filePath, commitments)
 }
 
 func (ks *FileKeystore) StoreSigningShares(name string, pkgs [][]byte) error {
@@ -139,10 +140,13 @@ func (ks *FileKeystore) StoreSigningShares(name string, pkgs [][]byte) error {
 		lines = append(lines, hex.EncodeToString(pkg))
 	}
 	data := []byte(strings.Join(lines, "\n"))
-	return os.WriteFile(filePath, data, 0o600)
+	return ks.write(filePath, data)
 }
 
 func (ks *FileKeystore) Cleanup() {
+	ks.mu.Lock()
+	defer ks.mu.Unlock()
+
 	os.RemoveAll(filepath.Join(ks.rootPath, "temp"))
 	os.MkdirAll(filepath.Join(ks.rootPath, "temp"), 0o700)
 }

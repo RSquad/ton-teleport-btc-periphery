@@ -1,6 +1,7 @@
 package signing
 
 import (
+	"encoding/hex"
 	"fmt"
 
 	"github.com/rs/zerolog"
@@ -136,4 +137,32 @@ func (s *SignService) logSendSigningShare(pegoutID uint64, signShares [][]byte) 
 func (s *SignService) logSendSigningShareError(pegoutID uint64, err error) {
 	msg := helpers.HandleTvmError(err)
 	errorEventWithPegoutID(pegoutID).Err(err).Msg("failed to send signing share: " + msg)
+}
+
+func (s *SignService) logExecuteClaim(pegoutID uint64) {
+	infoEventWithPegoutID(pegoutID).Msg("execute claim")
+}
+
+func (s *SignService) logSendClaim(pegoutID uint64, culpritIdx []byte) {
+	infoEventWithPegoutID(pegoutID).Msg("Send calim, culprit validator idx: " + hex.EncodeToString(culpritIdx))
+}
+
+func (s *SignService) logSigningClaimSent(pegoutID uint64) {
+	infoEventWithPegoutID(pegoutID).Msg("Signing claim sent")
+}
+
+func (s *SignService) logSigningClaimSentError(pegoutID uint64, err error) {
+	errorEventWithPegoutID(pegoutID).Err(err).Msg("failed to send signing claim")
+}
+
+func (s *SignService) logSendResetPegoutSigning(pegoutID uint64) {
+	infoEventWithPegoutID(pegoutID).Msg("Send reset pegout signing")
+}
+
+func (s *SignService) logResetPegoutSigningSent(pegoutID uint64) {
+	infoEventWithPegoutID(pegoutID).Msg("Reset pegout signing sent")
+}
+
+func (s *SignService) logResetPegoutSigningSentError(pegoutID uint64, err error) {
+	errorEventWithPegoutID(pegoutID).Err(err).Msg("failed to send reset pegout signing")
 }

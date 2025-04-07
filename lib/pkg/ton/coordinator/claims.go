@@ -4,21 +4,18 @@ import (
 	"math/big"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/parseddict"
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
 	"github.com/xssnick/tonutils-go/tvm/cell"
 )
 
 type (
-	DKGClaimcounters map[string][]byte
+	DKGClaimcounters map[uint16]uint16
 )
 
 func NewDKGClaimcounters(dict *cell.Dictionary) (DKGClaimcounters, error) {
-	claims, err := parseddict.New(
+	claims, err := parseddict.ParseDict(
 		dict,
-		parseddict.ParseKey,
-		func(s *cell.Slice) ([]byte, error) {
-			return utils.WriteSlicesToBuffer(s.MustLoadRef()), nil
-		},
+		parseddict.ParseKeyUI16,
+		loadUI16Map,
 	)
 
 	return *claims, err

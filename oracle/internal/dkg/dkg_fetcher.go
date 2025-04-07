@@ -2,6 +2,7 @@ package dkg
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
@@ -11,25 +12,35 @@ import (
 type Fetcher struct {
 	coordinatorContract *coordinator.CoordinatorContract
 	outChan             chan *coordinator.DKG
+	period              int64 // Fetch period (in seconds)
 }
 
 func NewFetcher(
 	coordinatorContract *coordinator.CoordinatorContract,
 	outChan chan *coordinator.DKG,
+	period int64,
 ) *Fetcher {
 	return &Fetcher{
 		coordinatorContract: coordinatorContract,
 		outChan:             outChan,
+		period:              period,
 	}
 }
 
-func (f *Fetcher) Work(ctx context.Context) error {
-	tick := time.Tick(10 * time.Second)
+func (f *Fetcher) Work(ctx context.Context, wg *sync.WaitGroup) {
+	defer wg.Done()
+	defer logger.DefaultLogFinishWork("DKG Fetcher")
+	logger.DefaultLogStartWork("DKG Fetcher")
+
+	ticker := time.NewTicker(time.Duration(f.period) * time.Second)
+	defer ticker.Stop()
+
 	for {
 		select {
 		case <-ctx.Done():
-			return ctx.Err()
-		case <-tick:
+			logger.Log.Info().Msg("DKG Fetcher received shutdown signal...")
+			return
+		case <-ticker.C:
 			dkg, err := f.Fetch()
 			if err != nil {
 				logger.Log.Error().Err(err).

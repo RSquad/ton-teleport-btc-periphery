@@ -23,7 +23,8 @@ int32_t aggregate_with_tweak(struct Buffer message_buf,
                              size_t signature_shares_len,
                              struct Buffer pubkey_package_buf,
                              struct Buffer merkle_root_buf,
-                             struct Buffer *signature_buf);
+                             struct Buffer *signature_buf,
+                             uint8_t (*culprit_idx_out)[32]);
 
 int32_t commit(struct Buffer key_package_buf,
                struct Buffer *nonces_buf,
@@ -61,6 +62,8 @@ int32_t extract_public_key_from_package(struct Buffer pubkey_package_buf,
 
 void free_package_ptr(const uint8_t *ptr, size_t len);
 
+void free_r1_secret(void *r1_secret);
+
 void free_r2_pkg_vec(const struct Pkg *ptr, size_t len);
 
 void free_r2_secret(void *r2_secret);
@@ -71,7 +74,8 @@ int32_t sign_with_tweak(struct Buffer key_package_buf,
                         size_t commitments_len,
                         struct Buffer nonces_buf,
                         struct Buffer merkle_root_buf,
-                        struct Buffer *signature_share_buf);
+                        struct Buffer *signature_share_buf,
+                        uint8_t (*culprit_idx_out)[32]);
 
 int32_t verify(struct Buffer message_buf,
                struct Buffer pubkey_package_buf,

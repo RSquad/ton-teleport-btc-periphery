@@ -2,6 +2,7 @@ package dkg
 
 import (
 	"encoding/hex"
+	"fmt"
 	"time"
 
 	"github.com/rs/zerolog"
@@ -22,13 +23,13 @@ func errorEvent() *zerolog.Event {
 
 func infoEventWithDkg(dkg *coordinator.DKG) *zerolog.Event {
 	return infoEvent().
-		Str("dkg_status", dkg.Status.String()).
+		Str("dkg_state", dkg.State.String()).
 		Str("dkg_until", dkg.Until.Format(time.RFC3339))
 }
 
 func errorEventWithDkg(dkg *coordinator.DKG) *zerolog.Event {
 	return errorEvent().
-		Str("status", dkg.Status.String()).
+		Str("state", dkg.State.String()).
 		Str("until", dkg.Until.Format(time.RFC3339))
 }
 
@@ -85,23 +86,23 @@ func (e *Executor) logSendRound1Package(dkg *coordinator.DKG, err error) {
 	errorEventWithDkg(dkg).Err(err).Msg("failed to send round1 package: " + msg)
 }
 
-func (e *Executor) logSendRound2Package(dkg *coordinator.DKG, identifierTo []byte, err error) {
+func (e *Executor) logSendRound2Package(dkg *coordinator.DKG, toIdx uint16, err error) {
 	msg := helpers.HandleTvmError(err)
 	errorEventWithDkg(dkg).
-		Str("to", hex.EncodeToString(identifierTo)).
+		Str("to", fmt.Sprintf("%d", toIdx)).
 		Msg("failed to send round2 package: " + msg)
 }
 
-func (e *Executor) logSendClaimPackage(dkg *coordinator.DKG, maliciousValidatorIdx []byte, err error) {
+func (e *Executor) logSendClaimPackage(dkg *coordinator.DKG, culpritIdx []byte, err error) {
 	msg := helpers.HandleTvmError(err)
 
-	maliciousValidatorIdxStr := "NO"
-	if maliciousValidatorIdx != nil {
-		maliciousValidatorIdxStr = hex.EncodeToString(maliciousValidatorIdx)
+	culpritIdxStr := "NO"
+	if culpritIdx != nil {
+		culpritIdxStr = hex.EncodeToString(culpritIdx)
 	}
 
 	errorEventWithDkg(dkg).
-		Str("malicious validator idx: ", maliciousValidatorIdxStr).
+		Str("culprit validator idx: ", culpritIdxStr).
 		Msg("failed to send claim package: " + msg)
 }
 
