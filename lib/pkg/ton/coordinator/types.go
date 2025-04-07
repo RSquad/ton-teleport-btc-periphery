@@ -1,7 +1,6 @@
 package coordinator
 
 import (
-	"encoding/hex"
 	"math/big"
 	"time"
 
@@ -9,17 +8,18 @@ import (
 )
 
 type DKG struct {
-	Status     DKGStatus
-	VSet       VSet
-	VsetMask   []byte
-	MaxSigners uint16
-	R1         *DKGR1
-	R2         *DKGR2
-	R3         *DKGR3
-	Claims     *DKGClaims
-	CfgHash    []byte
-	Attempts   uint64
-	Until      time.Time
+	State       DKGState
+	VSet        VSet
+	MaxSigners  uint16
+	VSetMask    *big.Int
+	SessionKeys *SessionKeys
+	R1          *DKGR1
+	R2          *DKGR2
+	R3          *DKGR3
+	Claims      *DKGClaims
+	CfgHash     []byte
+	Attempts    uint64
+	Until       time.Time
 }
 
 type DKGRoundState struct {
@@ -27,24 +27,24 @@ type DKGRoundState struct {
 	count uint64
 }
 
-type DKGStatus uint64
+type DKGState uint64
 
 const (
-	DKGStatusFinished      DKGStatus = 0
-	DKGStatusInProgress    DKGStatus = 1
-	DKGStatusPart1Finished DKGStatus = 2
-	DKGStatusPart2Finished DKGStatus = 3
+	DKGStateFinished      DKGState = 0
+	DKGStateInProgress    DKGState = 1
+	DKGStatePart1Finished DKGState = 2
+	DKGStatePart2Finished DKGState = 3
 )
 
-func (s DKGStatus) String() string {
+func (s DKGState) String() string {
 	switch s {
-	case DKGStatusFinished:
+	case DKGStateFinished:
 		return "FINISHED"
-	case DKGStatusInProgress:
+	case DKGStateInProgress:
 		return "IN_PROGRESS"
-	case DKGStatusPart1Finished:
+	case DKGStatePart1Finished:
 		return "PART1_FINISHED"
-	case DKGStatusPart2Finished:
+	case DKGStatePart2Finished:
 		return "PART2_FINISHED"
 	default:
 		return "UNKNOWN"
@@ -55,22 +55,27 @@ func (dkg *DKG) GetR1Packages() DKGPkgs {
 	return dkg.R1.Packages
 }
 
-func (dkg *DKG) GetR2Packages(fromIdentifier []byte) DKGPkgs {
-	return dkg.R2.Packages[hex.EncodeToString(fromIdentifier)]
+func (dkg *DKG) GetR2PackagesTo(toIdx uint16) (DKGPkgs, bool) {
+	v, ok := dkg.R2.PackagesTo[toIdx]
+	return v, ok
 }
 
 func (dkg *DKG) Round1Completed() bool {
-	return dkg.Status == DKGStatusFinished ||
-		dkg.Status >= DKGStatusPart1Finished
+	return dkg.State == DKGStateFinished ||
+		dkg.State >= DKGStatePart1Finished
 }
 
 func (dkg *DKG) Round2Completed() bool {
-	return dkg.Status == DKGStatusFinished ||
-		dkg.Status >= DKGStatusPart2Finished
+	return dkg.State == DKGStateFinished ||
+		dkg.State >= DKGStatePart2Finished
+}
+
+func (dkg *DKG) CheckMask(validatorIdx uint16) bool {
+	return dkg.VSetMask.Bit(int(validatorIdx)) > 0
 }
 
 func (dkg *DKG) Round3Completed() bool {
-	return dkg.Status == DKGStatusFinished
+	return dkg.State == DKGStateFinished
 }
 
 func (dkg *DKG) ClaimCompleted(validatorIdx uint16) bool {
@@ -81,14 +86,12 @@ func (dkg *DKG) ClaimCompleted(validatorIdx uint16) bool {
 type CommitmentRequest struct {
 	PegoutID     uint64
 	ValidatorIdx uint16
-	Identifier   []byte
 	Commitments  []byte
 }
 
 type SigningShareRequest struct {
 	PegoutID      uint64
 	ValidatorIdx  uint16
-	Identifier    []byte
 	SigningShares [][]byte
 }
 
@@ -98,18 +101,42 @@ type SignaturesRequest struct {
 	Signatures   [][]byte
 }
 
+type SigningClaimRequest struct {
+	PegoutID     uint64
+	ValidatorIdx uint16
+	culpritIdx   []byte
+}
+
+type ResetPegoutSigningRequest struct {
+	PegoutID     uint64
+	ValidatorIdx uint16
+}
+
+type PegoutSignatures struct {
+	mask  *big.Int
+	count uint16
+	hash  []byte
+}
+
 type PegoutRecord struct {
 	ID                uint64
 	PegoutAddress     *address.Address
 	InternalKey       []byte
-	Commitments       map[string][]byte
+	Commitments       map[uint16][]byte
 	CommitmentsMask   []byte
-	SigningShares     map[string]map[int][]byte
+	SigningShares     map[uint16]map[uint16][]byte
 	SigningSharesMask []byte
+	Signatures        PegoutSignatures
+	ClaimsMask        *big.Int
+	ClaimsCount       uint16
+	ClaimsCounters    map[uint16]uint16
+	MaxSigners        uint16
+	ExpiredAt         time.Time
+	SigningMask       []byte
 }
 
-func (p *PegoutRecord) HasCommitment(identifier []byte) bool {
-	_, exists := p.Commitments[hex.EncodeToString(identifier)]
+func (p *PegoutRecord) HasCommitment(idx uint16) bool {
+	_, exists := p.Commitments[idx]
 	return exists
 }
 
@@ -117,8 +144,8 @@ func (p *PegoutRecord) CommitmentsCount() uint16 {
 	return uint16(len(p.Commitments))
 }
 
-func (p *PegoutRecord) HasSigningShare(identifier []byte) bool {
-	_, exists := p.SigningShares[hex.EncodeToString(identifier)]
+func (p *PegoutRecord) HasSigningShare(idx uint16) bool {
+	_, exists := p.SigningShares[idx]
 	return exists
 }
 

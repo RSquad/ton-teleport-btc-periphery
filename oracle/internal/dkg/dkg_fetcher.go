@@ -12,15 +12,18 @@ import (
 type Fetcher struct {
 	coordinatorContract *coordinator.CoordinatorContract
 	outChan             chan *coordinator.DKG
+	period              int64 // Fetch period (in seconds)
 }
 
 func NewFetcher(
 	coordinatorContract *coordinator.CoordinatorContract,
 	outChan chan *coordinator.DKG,
+	period int64,
 ) *Fetcher {
 	return &Fetcher{
 		coordinatorContract: coordinatorContract,
 		outChan:             outChan,
+		period:              period,
 	}
 }
 
@@ -29,7 +32,7 @@ func (f *Fetcher) Work(ctx context.Context, wg *sync.WaitGroup) {
 	defer logger.DefaultLogFinishWork("DKG Fetcher")
 	logger.DefaultLogStartWork("DKG Fetcher")
 
-	ticker := time.NewTicker(10 * time.Second)
+	ticker := time.NewTicker(time.Duration(f.period) * time.Second)
 	defer ticker.Stop()
 
 	for {

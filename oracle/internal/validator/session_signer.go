@@ -3,61 +3,50 @@ package validator
 import (
 	"crypto/ed25519"
 	"crypto/rand"
-	"errors"
 	"fmt"
 
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/keystore"
 	"github.com/xssnick/tonutils-go/tvm/cell"
 )
 
 type SessionSigner struct {
-	keystore          keystore.Keystore
-	secret            ed25519.PrivateKey
-	dkgUntilTimestamp int64
+	secret ed25519.PrivateKey
 }
 
-func NewSessionSigner(keystore keystore.Keystore) *SessionSigner {
-	return &SessionSigner{keystore: keystore, secret: nil, dkgUntilTimestamp: 0}
-}
-
-func (s *SessionSigner) OnNewDKG(dkgUntilTimestamp int64) {
-	// Verify
-	if dkgUntilTimestamp == 0 {
-		panic(errors.New("failed to generate secret, `dkgUntilTimestamp` == 0"))
-	}
-
-	if s.dkgUntilTimestamp == dkgUntilTimestamp {
-		return
-	}
-
-	// Try to load from key storage file
-	secret := s.keystore.LoadSessionTS(dkgUntilTimestamp)
-	if secret != nil {
-		s.secret = secret
-		s.dkgUntilTimestamp = dkgUntilTimestamp
-		return
+func NewSessionSigner(keystore keystore.Keystore, dkgUntilTimestamp int64) (*SessionSigner, error) {
+	// Just in case, we have already created a session `dkgUntilTimestamp`
+	sessionSigner, err := LoadSessionSigner(keystore, dkgUntilTimestamp)
+	if err == nil {
+		return sessionSigner, nil
 	}
 
 	// Generate new key pair
+	logger.Log.Info().Msgf("Generating new keypair for DKG (until %d)", dkgUntilTimestamp)
 	_, secret, err := ed25519.GenerateKey(rand.Reader)
 	if err != nil {
-		panic(fmt.Errorf("failed to generate secret. %v", err))
+		return nil, fmt.Errorf("failed to generate new keypair for DKG (until %d). %v", dkgUntilTimestamp, err)
 	}
-
-	s.secret = secret
-	s.dkgUntilTimestamp = dkgUntilTimestamp
 
 	// Save to file (with dkgUntilTimestamp name)
-	err = s.keystore.StoreSessionTS(dkgUntilTimestamp, s.secret)
+	err = keystore.StoreSession(dkgUntilTimestamp, secret)
 	if err != nil {
-		panic(fmt.Errorf("failed to save secret. %v", err))
+		return nil, fmt.Errorf("failed to save keypair. %v", err)
 	}
 
-	// Save to file (with PublicKey name)
-	err = s.keystore.StoreSessionPubKey(s.PublicKey(), s.secret)
-	if err != nil {
-		panic(fmt.Errorf("failed to save secret. %v", err))
+	return &SessionSigner{secret}, nil
+}
+
+func LoadSessionSigner(keystore keystore.Keystore, dkgUntilTimestamp int64) (*SessionSigner, error) {
+	// Try to load from key storage file
+	logger.Log.Info().Msgf("Try to load session keypair for DKG (until %d)", dkgUntilTimestamp)
+	secret := keystore.LoadSession(dkgUntilTimestamp)
+	if secret == nil {
+		return nil, fmt.Errorf("failed to load session keypair for DKG (until %d)", dkgUntilTimestamp)
 	}
+
+	logger.Log.Info().Msgf("Session keypair for DKG (until %d) was loaded from file", dkgUntilTimestamp)
+	return &SessionSigner{secret}, nil
 }
 
 func (s *SessionSigner) SignCell(cell *cell.Cell) []byte {
@@ -71,14 +60,4 @@ func (s *SessionSigner) PublicKey() []byte {
 	}
 
 	return data
-}
-
-func (s *SessionSigner) TryLoadFromFile(publicKey []byte) bool {
-	secret := s.keystore.LoadSessionPubKey(publicKey)
-	if secret != nil {
-		s.secret = secret
-		return true
-	}
-
-	return false
 }

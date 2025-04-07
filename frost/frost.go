@@ -9,6 +9,7 @@ package frost
 import "C"
 
 import (
+	"errors"
 	"fmt"
 	"runtime"
 	"unsafe"
@@ -32,16 +33,16 @@ func (p Package) ToBytes() []byte {
 	return p.buf
 }
 
-func GetIdentifier(key uint16) []byte {
+func GetIdentifier(key uint16) Identifier {
 	buf := make([]byte, 32)
 	_ = C.ext_get_identifier(
 		C.uint16_t(key),
 		(*[32]C.uint8_t)(unsafe.Pointer(&buf[0])),
 	)
-	return buf
+	return Identifier(buf)
 }
 
-func DkgPart1(identifier []byte, min_signers uint16, max_signers uint16) ([]byte, uintptr, error) {
+func DkgPart1(identifier Identifier, min_signers uint16, max_signers uint16) ([]byte, uintptr, error) {
 	var secret unsafe.Pointer
 	pkgLen := C.int(0)
 	pkgLen = C.dkg_part1(
@@ -53,7 +54,7 @@ func DkgPart1(identifier []byte, min_signers uint16, max_signers uint16) ([]byte
 		&secret,
 	)
 	if pkgLen < 0 {
-		return nil, 0, fmt.Errorf("dkg_part1 error %d", pkgLen)
+		return nil, 0, Error(int32(pkgLen))
 	}
 	pkg := make([]byte, pkgLen)
 
@@ -74,6 +75,12 @@ func DkgPart2(
 	round1Packages map[Identifier]Package,
 ) (map[Identifier]Package, uintptr, []byte, error) {
 	pkgs, pin := makeCPackageSlice(round1Packages)
+	defer pin.Unpin()
+
+	if len(pkgs) == 0 {
+		return nil, 0, nil, errors.New("pkgs is empty")
+	}
+
 	secret := unsafe.Pointer(nil)
 	r2Packages := unsafe.Pointer(nil)
 	r2CulpritIdx := make([]byte, 32)
@@ -85,16 +92,13 @@ func DkgPart2(
 		&secret,
 		(*[32]C.uint8_t)(unsafe.Pointer(&r2CulpritIdx[0])),
 	)
-	pin.Unpin()
+
 	round2Packages := make(map[Identifier]Package)
 
-	if r2PackagesLen <= 0 {
-		if r2PackagesLen != -3 {
-			r2CulpritIdx = nil
-		}
-
-		return round2Packages, 0, r2CulpritIdx, fmt.Errorf("dkg_part2 error %d", r2PackagesLen)
+	if r2PackagesLen < 0 {
+		return round2Packages, 0, CulpritData(r2CulpritIdx, int32(r2PackagesLen)), Error(int32(r2PackagesLen))
 	}
+
 	pkgs = unsafe.Slice((*C.Pkg)(r2Packages), r2PackagesLen)
 	for _, v := range pkgs {
 		id := Identifier{}
@@ -114,6 +118,17 @@ func DkgPart3(
 ) ([]byte, []byte, []byte, error) {
 	r1Pkgs, pin1 := makeCPackageSlice(round1Packages)
 	r2Pkgs, pin2 := makeCPackageSlice(round2Packages)
+	defer pin1.Unpin()
+	defer pin2.Unpin()
+
+	if len(r1Pkgs) == 0 {
+		return nil, nil, nil, errors.New("r1Pkgs is empty")
+	}
+
+	if len(r2Pkgs) == 0 {
+		return nil, nil, nil, errors.New("r2Pkgs is empty")
+	}
+
 	secretPkgPtr := unsafe.Pointer(nil)
 	secretPkgLen := C.size_t(0)
 	publicPkgPtr := unsafe.Pointer(nil)
@@ -132,15 +147,8 @@ func DkgPart3(
 		(*[32]C.uint8_t)(unsafe.Pointer(&r3CulpritIdx[0])),
 	)
 
-	pin1.Unpin()
-	pin2.Unpin()
-
 	if ret < 0 {
-		if ret != -3 {
-			r3CulpritIdx = nil
-		}
-
-		return nil, nil, r3CulpritIdx, fmt.Errorf("%d", ret)
+		return nil, nil, CulpritData(r3CulpritIdx, int32(ret)), Error(int32(ret))
 	}
 
 	publicKeyPackage := make([]byte, publicPkgLen)
@@ -175,9 +183,13 @@ func SignWithTweak(
 	commitments map[Identifier]Package,
 	nonces Package,
 	merkleRoot []byte,
-) ([]byte, error) {
+) ([]byte, []byte, error) {
 	commitmentsPkgs, commitmentsPin := makeCPackageSlice(commitments)
+	defer commitmentsPin.Unpin()
+
 	signingShares := newEmptyBuffer()
+	culpritIdx := make([]byte, 32)
+
 	ret := C.sign_with_tweak(
 		newBufferFromPackage(keyPackage),
 		newBufferFromSlice(message),
@@ -186,14 +198,14 @@ func SignWithTweak(
 		newBufferFromPackage(nonces),
 		newBufferFromSlice(merkleRoot),
 		&signingShares,
+		(*[32]C.uint8_t)(unsafe.Pointer(&culpritIdx[0])),
 	)
-	commitmentsPin.Unpin()
 
 	if ret < 0 {
-		return nil, fmt.Errorf("%d", ret)
+		return nil, CulpritData(culpritIdx, int32(ret)), Error(int32(ret))
 	}
 
-	return extractSlice(signingShares), nil
+	return extractSlice(signingShares), nil, nil
 }
 
 func AggregateWithTweak(
@@ -202,10 +214,15 @@ func AggregateWithTweak(
 	signatureShares map[Identifier]Package,
 	pubkeyPackage Package,
 	merkleRoot []byte,
-) ([]byte, error) {
+) ([]byte, []byte, error) {
 	commitmentsPkgs, commitmentsPin := makeCPackageSlice(commitments)
 	signatureSharesPkgs, signatureSharesPin := makeCPackageSlice(signatureShares)
+
+	defer commitmentsPin.Unpin()
+	defer signatureSharesPin.Unpin()
+
 	signature := newEmptyBuffer()
+	culpritIdx := make([]byte, 32)
 
 	ret := C.aggregate_with_tweak(
 		newBufferFromSlice(message),
@@ -216,16 +233,14 @@ func AggregateWithTweak(
 		newBufferFromPackage(pubkeyPackage),
 		newBufferFromSlice(merkleRoot),
 		&signature,
+		(*[32]C.uint8_t)(unsafe.Pointer(&culpritIdx[0])),
 	)
 
-	commitmentsPin.Unpin()
-	signatureSharesPin.Unpin()
-
 	if ret < 0 {
-		return nil, fmt.Errorf("%d", ret)
+		return nil, CulpritData(culpritIdx, int32(ret)), Error(int32(ret))
 	}
 
-	return extractSlice(signature), nil
+	return extractSlice(signature), nil, nil
 }
 
 func Verify(
@@ -242,7 +257,7 @@ func Verify(
 	)
 
 	if ret < 0 {
-		return false, fmt.Errorf("%d", ret)
+		return false, Error(int32(ret))
 	}
 
 	return true, nil
@@ -255,7 +270,7 @@ func ExtractPublicKeyFromPackage(pkg []byte) ([]byte, error) {
 		&publicKey,
 	)
 	if ret < 0 {
-		return nil, fmt.Errorf("%d", ret)
+		return nil, Error(int32(ret))
 	}
 	return extractSlice(publicKey), nil
 }
@@ -279,6 +294,10 @@ func makeCPackageSlice(packages map[Identifier]Package) ([]C.Pkg, runtime.Pinner
 		i += 1
 	}
 	return pkgs, pinner
+}
+
+func FreeR1Secret(secret uintptr) {
+	C.free_r1_secret(unsafe.Pointer(secret))
 }
 
 func FreeR2Secret(secret uintptr) {

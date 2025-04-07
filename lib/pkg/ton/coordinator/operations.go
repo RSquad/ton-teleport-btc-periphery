@@ -1,6 +1,7 @@
 package coordinator
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -20,75 +21,84 @@ func (c *CoordinatorContract) SendStartDKG() (*tlb.Transaction, error) {
 		return nil, err
 	}
 
-	tx, _, _, err := c.tonClient.API.SendExternalMessageWaitTransaction(c.ctx, msg)
+	tx, err := CallApiWithTimeout(
+		func(apiCallCtx context.Context) (*tlb.Transaction, error) {
+			tx, _, _, err := c.tonClient.API.SendExternalMessageWaitTransaction(apiCallCtx, msg)
+			return tx, err
+		},
+		c.ctx,
+		c.tonApiCallTimeout,
+		"SendExternalMessageWaitTransaction: SendStartDKG",
+	)
 
 	return tx, err
 }
 
 func (c *CoordinatorContract) SendRound1(
 	validatorIdx uint16,
-	identifier []byte,
+	dkgUntil int64,
 	round1Package []byte,
-	sessionPublicKey []byte,
 ) (*tlb.Transaction, error) {
 	return c.sendBodyCell(BuildSendRound1Body(
-		int64(c.ttl.Seconds()), validatorIdx, identifier, round1Package, sessionPublicKey,
-	))
+		int64(c.ttl.Seconds()), validatorIdx, dkgUntil, round1Package,
+	), "SendRound1")
 }
 
 func (c *CoordinatorContract) SendRound2(
 	validatorIdx uint16,
-	fromIdentifier []byte,
-	toIdentifier []byte,
+	dkgUntil int64,
+	toIdx uint16,
 	round2Package []byte,
 ) (*tlb.Transaction, error) {
 	return c.sendBodyCell(BuildSendRound2Body(
-		int64(c.ttl.Seconds()), validatorIdx, fromIdentifier, toIdentifier, round2Package,
-	))
+		int64(c.ttl.Seconds()), validatorIdx, dkgUntil, toIdx, round2Package,
+	), "SendRound2")
 }
 
-func (c *CoordinatorContract) SendClaim(
+func (c *CoordinatorContract) SendDKGClaim(
 	validatorIdx uint16,
-	maliciousValidatorIdx []byte,
+	dkgUntil int64,
+	culpritIdx []byte,
 ) (*tlb.Transaction, error) {
-	return c.sendBodyCell(BuildSendClaimBody(
-		int64(c.ttl.Seconds()), validatorIdx, maliciousValidatorIdx,
-	))
+	return c.sendBodyCell(BuildSendDKGClaimBody(
+		int64(c.ttl.Seconds()), validatorIdx, dkgUntil, culpritIdx,
+	), "SendDKGClaim")
 }
 
-func (c *CoordinatorContract) SendPubkeyPackage(validatorIdx uint16, Identifier []byte, pubkeyPackage []byte) (*tlb.Transaction, error) {
+func (c *CoordinatorContract) SendPubkeyPackage(
+	validatorIdx uint16,
+	dkgUntil int64,
+	sessionPublicKey []byte,
+	pubkeyPackage []byte,
+) (*tlb.Transaction, error) {
 	return c.sendBodyCell(BuildSendRound3Body(
-		int64(c.ttl.Seconds()), validatorIdx, Identifier, pubkeyPackage,
-	))
+		int64(c.ttl.Seconds()), validatorIdx, dkgUntil, sessionPublicKey, pubkeyPackage,
+	), "SendPubkeyPackage")
 }
 
 func (c *CoordinatorContract) SendCommitments(
 	PegoutID uint64,
 	ValidatorIdx uint16,
-	Identifier, Commitments []byte,
+	Commitments []byte,
 ) (*tlb.Transaction, error) {
 	if len(Commitments) == 0 {
 		return nil, fmt.Errorf("commitments are empty")
 	}
-	if len(Identifier) == 0 {
-		return nil, fmt.Errorf("identifier is empty")
-	}
 	return c.sendBodyCell(BuildSendCommitmentsBody(
 		int64(c.ttl.Seconds()),
-		&CommitmentRequest{PegoutID, ValidatorIdx, Identifier, Commitments},
-	))
+		&CommitmentRequest{PegoutID, ValidatorIdx, Commitments},
+	), "SendCommitments")
 }
 
 func (c *CoordinatorContract) SendSigningShare(
 	PegoutID uint64,
 	ValidatorIdx uint16,
-	Identifier []byte,
 	SigningShares [][]byte,
 ) (*tlb.Transaction, error) {
 	return c.sendBodyCell(BuildSendSigningShareBody(
 		int64(c.ttl.Seconds()),
-		&SigningShareRequest{PegoutID, ValidatorIdx, Identifier, SigningShares},
-	))
+		&SigningShareRequest{PegoutID, ValidatorIdx, SigningShares},
+	), "SendSigningShare")
 }
 
 func (c *CoordinatorContract) SendSignatures(
@@ -99,18 +109,49 @@ func (c *CoordinatorContract) SendSignatures(
 	return c.sendBodyCell(BuildSendSignaturesBody(
 		int64(c.ttl.Seconds()),
 		&SignaturesRequest{PegoutID, ValidatorIdx, Signatures},
-	))
+	), "SendSignatures")
+}
+
+func (c *CoordinatorContract) SendSigningClaim(
+	PegoutID uint64,
+	ValidatorIdx uint16,
+	culpritIdx []byte,
+) (*tlb.Transaction, error) {
+	return c.sendBodyCell(BuildSendSigningClaimBody(
+		int64(c.ttl.Seconds()),
+		&SigningClaimRequest{PegoutID, ValidatorIdx, culpritIdx},
+	), "SendSigningClaim")
+}
+
+func (c *CoordinatorContract) SendResetPegoutSigning(
+	PegoutID uint64,
+	ValidatorIdx uint16,
+) (*tlb.Transaction, error) {
+	return c.sendBodyCell(BuildSendResetPegoutSigningBody(
+		int64(c.ttl.Seconds()),
+		&ResetPegoutSigningRequest{PegoutID, ValidatorIdx},
+	), "SendResetPegoutSigning")
 }
 
 func (c *CoordinatorContract) ConnectSigner(signer signer.Signer) {
 	c.signer = signer
 }
 
-func (c *CoordinatorContract) sendBodyCell(bodyCell *cell.Cell) (*tlb.Transaction, error) {
+func (c *CoordinatorContract) sendBodyCell(bodyCell *cell.Cell, name string) (*tlb.Transaction, error) {
 	msg, err := ton.BuildExtMsg(bodyCell, c.Addr, c.signer)
 	if err != nil {
 		return nil, err
 	}
-	tx, _, _, err := c.tonClient.API.SendExternalMessageWaitTransaction(c.ctx, msg)
+
+	tx, err := CallApiWithTimeout(
+		func(apiCallCtx context.Context) (*tlb.Transaction, error) {
+			tx, _, _, err := c.tonClient.API.SendExternalMessageWaitTransaction(apiCallCtx, msg)
+			return tx, err
+		},
+		c.ctx,
+		c.tonApiCallTimeout,
+		name,
+	)
+
 	return tx, err
 }
