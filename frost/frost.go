@@ -73,7 +73,7 @@ func DkgPart1(identifier Identifier, min_signers uint16, max_signers uint16) ([]
 func DkgPart2(
 	r1Secret uintptr,
 	round1Packages map[Identifier]Package,
-) (map[Identifier]Package, uintptr, []byte, error) {
+) (map[Identifier]Package, uintptr, *Identifier, error) {
 	pkgs, pin := makeCPackageSlice(round1Packages)
 	defer pin.Unpin()
 
@@ -115,7 +115,7 @@ func DkgPart3(
 	r2Secret uintptr,
 	round1Packages map[Identifier]Package,
 	round2Packages map[Identifier]Package,
-) ([]byte, []byte, []byte, error) {
+) ([]byte, []byte, *Identifier, error) {
 	r1Pkgs, pin1 := makeCPackageSlice(round1Packages)
 	r2Pkgs, pin2 := makeCPackageSlice(round2Packages)
 	defer pin1.Unpin()
@@ -183,7 +183,7 @@ func SignWithTweak(
 	commitments map[Identifier]Package,
 	nonces Package,
 	merkleRoot []byte,
-) ([]byte, []byte, error) {
+) ([]byte, *Identifier, error) {
 	commitmentsPkgs, commitmentsPin := makeCPackageSlice(commitments)
 	defer commitmentsPin.Unpin()
 
@@ -214,7 +214,7 @@ func AggregateWithTweak(
 	signatureShares map[Identifier]Package,
 	pubkeyPackage Package,
 	merkleRoot []byte,
-) ([]byte, []byte, error) {
+) ([]byte, *Identifier, error) {
 	commitmentsPkgs, commitmentsPin := makeCPackageSlice(commitments)
 	signatureSharesPkgs, signatureSharesPin := makeCPackageSlice(signatureShares)
 

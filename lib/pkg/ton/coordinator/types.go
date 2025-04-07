@@ -104,7 +104,7 @@ type SignaturesRequest struct {
 type SigningClaimRequest struct {
 	PegoutID     uint64
 	ValidatorIdx uint16
-	culpritIdx   []byte
+	culpritIdx   uint16
 }
 
 type ResetPegoutSigningRequest struct {

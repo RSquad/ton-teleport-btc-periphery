@@ -1,7 +1,6 @@
 package dkg
 
 import (
-	"encoding/hex"
 	"fmt"
 	"time"
 
@@ -93,16 +92,11 @@ func (e *Executor) logSendRound2Package(dkg *coordinator.DKG, toIdx uint16, err 
 		Msg("failed to send round2 package: " + msg)
 }
 
-func (e *Executor) logSendClaimPackage(dkg *coordinator.DKG, culpritIdx []byte, err error) {
+func (e *Executor) logSendClaimPackage(dkg *coordinator.DKG, culpritIdx uint16, err error) {
 	msg := helpers.HandleTvmError(err)
 
-	culpritIdxStr := "NO"
-	if culpritIdx != nil {
-		culpritIdxStr = hex.EncodeToString(culpritIdx)
-	}
-
 	errorEventWithDkg(dkg).
-		Str("culprit validator idx: ", culpritIdxStr).
+		Str("culprit validator idx: ", fmt.Sprintf("%d", culpritIdx)).
 		Msg("failed to send claim package: " + msg)
 }
 
