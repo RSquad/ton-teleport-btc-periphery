@@ -92,7 +92,7 @@ func (e *Executor) logSendRound2Package(dkg *coordinator.DKG, toIdx uint16, err 
 		Msg("failed to send round2 package: " + msg)
 }
 
-func (e *Executor) logSendClaimPackage(dkg *coordinator.DKG, culpritIdx uint16, err error) {
+func (e *Executor) logSendClaimFailed(dkg *coordinator.DKG, culpritIdx uint16, err error) {
 	msg := helpers.HandleTvmError(err)
 
 	errorEventWithDkg(dkg).
