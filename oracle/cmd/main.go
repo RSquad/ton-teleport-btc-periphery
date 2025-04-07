@@ -84,7 +84,7 @@ func startAndWaitForStop() error {
 
 	// FROST sign service
 	executeSignPeriod := helpers.ParseIntWithDefaultVal(cfg.ExecuteSignPeriod, 10, "ExecuteSign period")
-	signService := signing.NewService(keystore, validator, coordinatorContract, tonClient, executeSignPeriod)
+	signService := signing.NewService(keystore, coordinatorContract, tonClient, executeSignPeriod)
 
 	wg.Add(1)
 	go dkgService.Work(ctx, &wg, keystore)
