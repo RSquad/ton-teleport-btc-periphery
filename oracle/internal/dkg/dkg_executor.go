@@ -2,7 +2,6 @@ package dkg
 
 import (
 	"context"
-	"encoding/hex"
 	"fmt"
 	"sync"
 	"time"
@@ -243,10 +242,11 @@ func (e *Executor) executeR2(dkg *coordinator.DKG, validatorIdx uint16) bool {
 		r1Packages := helpers.ConvertMapToFrostPackages(dkg.GetR1Packages())
 		delete(r1Packages, localIdentifier)
 
-		r2Packages, r2SecretPtr, culpritIdx, err := frost.DkgPart2(e.artifacts.r1.secret.ptr, r1Packages)
+		r2Packages, r2SecretPtr, culpritFrostIdx, err := frost.DkgPart2(e.artifacts.r1.secret.ptr, r1Packages)
 		if err != nil {
-			if culpritIdx != nil {
-				e.logError(dkg, fmt.Sprintf("Part2 failed. Culprit validator found: %x", culpritIdx), err)
+			if culpritFrostIdx != nil {
+				culpritIdx := helpers.FrostToValidatorIdx(*culpritFrostIdx)
+				e.logError(dkg, fmt.Sprintf("Part2 failed. Culprit validator found: %d", culpritIdx), err)
 				e.executeClaim(dkg, validatorIdx, culpritIdx)
 			} else {
 				e.logError(dkg, "Part2 failed", err)
@@ -331,10 +331,11 @@ func (e *Executor) executeR3(dkg *coordinator.DKG, validatorIdx uint16) bool {
 
 		r2Packages := helpers.ConvertMapToFrostPackages(sentPackages)
 
-		keyPackage, publicKeyPackage, culpritIdx, err := frost.DkgPart3(e.artifacts.r2.secret.ptr, r1Packages, r2Packages)
+		keyPackage, publicKeyPackage, culpritFrostIdx, err := frost.DkgPart3(e.artifacts.r2.secret.ptr, r1Packages, r2Packages)
 		if err != nil {
-			if culpritIdx != nil {
+			if culpritFrostIdx != nil {
 				e.logError(dkg, "Part3 failed. Culprit validator found.", err)
+				culpritIdx := helpers.FrostToValidatorIdx(*culpritFrostIdx)
 				e.executeClaim(dkg, validatorIdx, culpritIdx)
 			} else {
 				e.logDKGProcess(dkg, fmt.Sprintf("R3 failed: %v", err))
@@ -370,7 +371,7 @@ func (e *Executor) executeR3(dkg *coordinator.DKG, validatorIdx uint16) bool {
 	return false
 }
 
-func (e *Executor) executeClaim(dkg *coordinator.DKG, validatorIdx uint16, culpritIdx []byte) {
+func (e *Executor) executeClaim(dkg *coordinator.DKG, validatorIdx uint16, culpritIdx uint16) {
 	e.logExecuteClaim(dkg)
 
 	if dkg.ClaimCompleted(validatorIdx) {
@@ -378,7 +379,7 @@ func (e *Executor) executeClaim(dkg *coordinator.DKG, validatorIdx uint16, culpr
 		return
 	}
 
-	e.logMessage(dkg, "sending claim packages. Culprit validator idx: "+hex.EncodeToString(culpritIdx))
+	e.logMessage(dkg, fmt.Sprintf("sending claim packages. Culprit validator idx: %d", culpritIdx))
 	withErrors := false
 
 	// claim package is not sent yet, send it to coordinator

@@ -1,7 +1,6 @@
 package signing
 
 import (
-	"encoding/hex"
 	"fmt"
 
 	"github.com/rs/zerolog"
@@ -143,8 +142,8 @@ func (s *SignService) logExecuteClaim(pegoutID uint64) {
 	infoEventWithPegoutID(pegoutID).Msg("execute claim")
 }
 
-func (s *SignService) logSendClaim(pegoutID uint64, culpritIdx []byte) {
-	infoEventWithPegoutID(pegoutID).Msg("Send calim, culprit validator idx: " + hex.EncodeToString(culpritIdx))
+func (s *SignService) logSendClaim(pegoutID uint64, culpritIdx uint16) {
+	infoEventWithPegoutID(pegoutID).Msg(fmt.Sprintf("Send claim, culprit validator idx: %d", culpritIdx))
 }
 
 func (s *SignService) logSigningClaimSent(pegoutID uint64) {

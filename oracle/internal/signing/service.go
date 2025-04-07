@@ -310,7 +310,7 @@ func (s *SignService) doSign(
 		signShares = make([][]byte, 0, len(pegout.signingHashes))
 		// generate signing share for each input
 		for i, input := range pegout.inputs {
-			signShare, culpritIdx, err := s.Sign(
+			signShare, culpritFrostIdx, err := s.Sign(
 				publicKey,                    // public key
 				input.BitcoinMerkleRoot,      // tap merkle root used as tweak for tweaking signing share
 				pegout.signingHashes[i],      // signing hash for current input
@@ -319,8 +319,9 @@ func (s *SignService) doSign(
 			)
 
 			if err != nil {
-				if culpritIdx != nil {
-					s.logError(fmt.Sprintf("Sign failed. Culprit validator found: %x", culpritIdx), err)
+				if culpritFrostIdx != nil {
+					culpritIdx := helpers.FrostToValidatorIdx(*culpritFrostIdx)
+					s.logError(fmt.Sprintf("Sign failed. Culprit validator found: %d", culpritIdx), err)
 					s.executeClaim(pegout, validatorKey, culpritIdx)
 				} else {
 					s.logError(fmt.Sprintf("failed to sign hash %d", i), err)
@@ -360,7 +361,7 @@ func (s *SignService) doAggregate(
 	for i, input := range pegout.inputs {
 		hashOnlyShares := filterSharesByHashIndex(pegout.artifacts.SigningShares, uint16(i))
 		tapTweak := input.BitcoinMerkleRoot
-		signature, culpritIdx, err := frost.AggregateWithTweak(
+		signature, culpritFrostIdx, err := frost.AggregateWithTweak(
 			pegout.signingHashes[i],
 			commitmentsPackages,
 			hashOnlyShares,
@@ -369,8 +370,9 @@ func (s *SignService) doAggregate(
 		)
 
 		if err != nil {
-			if culpritIdx != nil {
-				s.logError(fmt.Sprintf("AggregateWithTweak failed. Culprit validator found: %x", culpritIdx), err)
+			if culpritFrostIdx != nil {
+				culpritIdx := helpers.FrostToValidatorIdx(*culpritFrostIdx)
+				s.logError(fmt.Sprintf("AggregateWithTweak failed. Culprit validator found: %d", culpritIdx), err)
 				s.executeClaim(pegout, validatorKey, culpritIdx)
 			} else {
 				s.logAggregateSignSharesError(err)
@@ -400,7 +402,7 @@ func (s *SignService) Sign(
 	signingHash []byte,
 	commitments map[uint16][]byte,
 	nonceName string,
-) ([]byte, []byte, error) {
+) ([]byte, *frost.Identifier, error) {
 	secretPackage := s.keyStore.LoadSecret(publicKey)
 	if secretPackage == nil {
 		return nil, nil, fmt.Errorf("failed to load secret package by key %x", publicKey)
@@ -451,7 +453,7 @@ func (s *SignService) getLatestBlock(ctx context.Context) *ton.BlockIDExt {
 	return block
 }
 
-func (s *SignService) executeClaim(pegout *CachedPegout, validatorKey *validator.KeyInfo, culpritIdx []byte) {
+func (s *SignService) executeClaim(pegout *CachedPegout, validatorKey *validator.KeyInfo, culpritIdx uint16) {
 	s.logExecuteClaim(pegout.ID)
 
 	if s.ClaimCompleted(pegout, validatorKey.VsetIdx) {
