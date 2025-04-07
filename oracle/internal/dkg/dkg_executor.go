@@ -158,7 +158,7 @@ func (e *Executor) Execute(dkg *coordinator.DKG) {
 		return
 	}
 
-	if !dkg.CheckMask(keyInfo.VsetIdx) {
+	if !dkg.CheckVSetMask(keyInfo.VsetIdx) {
 		e.logDKGProcess(dkg, "The Oracle has been evicted from DKG")
 		return
 	}

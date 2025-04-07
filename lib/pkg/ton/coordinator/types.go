@@ -70,7 +70,7 @@ func (dkg *DKG) Round2Completed() bool {
 		dkg.State >= DKGStatePart2Finished
 }
 
-func (dkg *DKG) CheckMask(validatorIdx uint16) bool {
+func (dkg *DKG) CheckVSetMask(validatorIdx uint16) bool {
 	return dkg.VSetMask.Bit(int(validatorIdx)) > 0
 }
 
@@ -132,7 +132,7 @@ type PegoutRecord struct {
 	ClaimsCounters    map[uint16]uint16
 	MaxSigners        uint16
 	ExpiredAt         time.Time
-	SigningMask       []byte
+	SigningMask       *big.Int
 }
 
 func (p *PegoutRecord) HasCommitment(idx uint16) bool {
@@ -151,4 +151,8 @@ func (p *PegoutRecord) HasSigningShare(idx uint16) bool {
 
 func (p *PegoutRecord) SigningSharesCount() int {
 	return len(p.SigningShares)
+}
+
+func (p *PegoutRecord) CheckSigningMask(validatorIdx uint16) bool {
+	return p.SigningMask.Bit(int(validatorIdx)) > 0
 }

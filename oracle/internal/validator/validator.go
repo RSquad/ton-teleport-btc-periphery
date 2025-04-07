@@ -65,8 +65,8 @@ func NewValidator(cfg *cfg.Cfg) (*Validator, error) {
 
 func (v *Validator) FindKeyInfo(vset coordinator.VSet) (*KeyInfo, error) {
 	if v.standaloneMode {
+		// Standalone
 		for idx, pubkey := range vset {
-			// Standalone
 			if bytes.Equal(pubkey, v.standalonePublicKey) {
 				return &KeyInfo{
 					KeyID:     v.standalonePublicKey,

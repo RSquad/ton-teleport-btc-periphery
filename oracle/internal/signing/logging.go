@@ -53,8 +53,8 @@ func (s *SignService) logProcessingPegout(pegout *coordinator.PegoutRecord) {
 	infoEventWithPegoutID(pegout.ID).Msgf("address %s", pegout.PegoutAddress)
 }
 
-func (s *SignService) logOracleNotValidator(pegoutID uint64) {
-	err := fmt.Errorf("oracle is not a validator. Cannot participate in signing pegout: %x", pegoutID)
+func (s *SignService) logOracleEvictedFromSigning(pegoutID uint64) {
+	err := fmt.Errorf("the Oracle has been evicted from pegout signing: %x", pegoutID)
 	errorEvent().Err(err)
 }
 
