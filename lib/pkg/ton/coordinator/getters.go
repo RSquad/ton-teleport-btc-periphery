@@ -152,12 +152,6 @@ func (c *CoordinatorContract) GetPrevDKG() (*DKG, error) {
 	return parseDGKSlice(result.MustCell(0).BeginParse())
 }
 
-// TODO: implement
-//type T1 struct {
-//	pegoutId uint64
-//	err      error
-//}
-
 func (c *CoordinatorContract) GetUnsignedPegouts() ([]PegoutRecord, error) {
 	block, err := CallApiWithTimeout(
 		func(apiCallCtx context.Context) (*tonutils.BlockIDExt, error) {
@@ -207,9 +201,6 @@ func (c *CoordinatorContract) GetUnsignedPegouts() ([]PegoutRecord, error) {
 		return nil, err
 	}
 
-	// TODO: implement
-	//peggoutIdsToReset := make([]uint64, 0)
-
 	pegouts := make([]PegoutRecord, 0, len(entries))
 	for _, kv := range entries {
 
@@ -230,7 +221,7 @@ func (c *CoordinatorContract) GetUnsignedPegouts() ([]PegoutRecord, error) {
 		)
 
 		if err != nil {
-			return nil, err // TODO: Call restart for ID
+			return nil, err
 		}
 
 		Commitments := *commitmentsPtr
@@ -244,7 +235,7 @@ func (c *CoordinatorContract) GetUnsignedPegouts() ([]PegoutRecord, error) {
 		)
 
 		if err != nil {
-			return nil, err // TODO: Call restart for ID
+			return nil, err
 		}
 
 		SigningShares := *signingSharesPtr
@@ -266,19 +257,6 @@ func (c *CoordinatorContract) GetUnsignedPegouts() ([]PegoutRecord, error) {
 			parseddict.ParseKeyUI16,
 			loadUI16Map,
 		)
-
-		/*
-			const refSlice = slice.loadRef().beginParse();
-			const claimsSlice = refSlice.loadRef().beginParse();
-			const claims: TClaims = {
-				mask: claimsSlice.loadUintBig(256),
-				count: claimsSlice.loadUint(16),
-				counters: claimsSlice.loadDict(
-					Dictionary.Keys.Uint(16),
-					Dictionary.Values.Uint(16),
-				),
-			};
-		*/
 
 		if err != nil {
 			return nil, err

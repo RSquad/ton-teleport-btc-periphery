@@ -95,7 +95,7 @@ func DkgPart2(
 
 	round2Packages := make(map[Identifier]Package)
 
-	if r2PackagesLen <= 0 {
+	if r2PackagesLen < 0 {
 		return round2Packages, 0, CulpritData(r2CulpritIdx, int32(r2PackagesLen)), Error(int32(r2PackagesLen))
 	}
 
@@ -122,7 +122,7 @@ func DkgPart3(
 	defer pin2.Unpin()
 
 	if len(r1Pkgs) == 0 {
-		return nil, nil, nil, errors.New("PKGs1 is empty")
+		return nil, nil, nil, errors.New("r1Pkgs is empty")
 	}
 
 	if len(r2Pkgs) == 0 {

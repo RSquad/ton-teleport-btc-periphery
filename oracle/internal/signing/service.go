@@ -2,7 +2,6 @@ package signing
 
 import (
 	"context"
-	"encoding/hex"
 	"fmt"
 	"sync"
 	"time"
@@ -459,8 +458,6 @@ func (s *SignService) executeClaim(pegout *CachedPegout, validatorKey *validator
 		s.logMessage("claim completed")
 		return
 	}
-
-	s.logMessage("sending claim packages. Culprit validator idx: " + hex.EncodeToString(culpritIdx))
 
 	// claim package is not sent yet, send it to coordinator
 	s.logSendClaim(pegout.ID, culpritIdx)

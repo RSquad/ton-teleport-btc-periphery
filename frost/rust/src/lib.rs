@@ -131,19 +131,12 @@ macro_rules! from_bytes_for {
                     let packages = slice::from_raw_parts(ptr, len);
 
                     for p in packages {
-                        let identifier = match Identifier::deserialize(&p.identifier) {
-                            Ok(id) => id,
-                            Err(err) => return Err(err),
-                        };
-
-                        let pkg = match $T::from_raw_parts(p.buf, p.len) {
-                            Ok(pkg) => pkg,
-                            Err(_) => {
-                                return Err(Error::InvalidSignatureShare {
-                                    culprit: identifier,
-                                })
+                        let identifier = Identifier::deserialize(&p.identifier)?;
+                        let pkg = $T::from_raw_parts(p.buf, p.len).map_err(|_| {
+                            Error::InvalidSignatureShare {
+                                culprit: identifier,
                             }
-                        };
+                        })?;
 
                         map.insert(identifier, pkg);
                     }
@@ -224,38 +217,35 @@ pub extern "C" fn dkg_part2(
 ) -> i32 {
     if r1_secret.is_null() || r1_pkgs_ptr.is_null() || r2_pkgs_ptr.is_null() || r2_secret.is_null()
     {
-        ReturnCode::NullArgument as i32;
+        return ReturnCode::NullArgument as i32;
     }
 
     let result = (|| -> Result<i32, Error> {
-        let r1_secret_box_tmp: Box<
-            frost_core::keys::dkg::round1::SecretPackage<frost_secp256k1_tr::Secp256K1Sha256TR>,
-        > = from_void(r1_secret);
+        let r1_secret_box_tmp = from_void(r1_secret);
         let r1_secret_box = Box::clone(&r1_secret_box_tmp);
         // Prevent r2_secret_box from being freed. It must be freed manually.
         Box::leak(r1_secret_box_tmp);
 
         let map = Round1Package::make_map(r1_pkgs_ptr, r1_pkgs_len)?;
         let (s, r2_map) = frost_dkg_part2(*r1_secret_box, &map)?;
-        let mut r2_vec = Vec::with_capacity(map.len());
+        let mut r2_vec = Vec::with_capacity(r2_map.len());
 
         for (id, pkg) in r2_map {
-            match pkg.serialize() {
-                Err(_) => return Err(Error::InvalidProofOfKnowledge { culprit: id }),
-                Ok(mut p) => {
-                    let mut identifier = [0u8; 32];
-                    identifier.copy_from_slice(&id.serialize());
+            let mut p = pkg
+                .serialize()
+                .map_err(|_| Error::InvalidProofOfKnowledge { culprit: id })?;
+            let mut identifier = [0u8; 32];
+            identifier.copy_from_slice(&id.serialize());
 
-                    p.shrink_to(p.len());
-                    r2_vec.push(Pkg {
-                        identifier,
-                        len: p.len(),
-                        buf: p.leak().as_ptr() as *const u8,
-                    });
-                }
-            }
+            p.shrink_to(p.len());
+            r2_vec.push(Pkg {
+                identifier,
+                len: p.len(),
+                buf: p.leak().as_ptr() as *const u8,
+            });
         }
         let count = r2_vec.len() as i32;
+
         unsafe {
             *r2_secret = to_void(s);
             *r2_pkgs_ptr = r2_vec.leak().as_ptr();
