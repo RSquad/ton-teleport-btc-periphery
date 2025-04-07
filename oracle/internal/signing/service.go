@@ -123,19 +123,14 @@ func (s *SignService) cachePegout(
 	return s.cachedPegout, nil
 }
 
-func (s *SignService) FindValidatorIdx(dkg *coordinator.DKG) (uint16, error) {
-	for idx, pubkey := range dkg.VSet {
-		sessionPubkey, ok := dkg.SessionKeys.PubKeys[idx]
-		if !ok {
-			continue
-		}
-
+func (s *SignService) FindValidatorIdx(dkg *coordinator.DKG, sessionPubkey []byte) (uint16, error) {
+	for idx, pubkey := range dkg.SessionKeys.PubKeys {
 		if bytes.Equal(pubkey, sessionPubkey) {
 			return idx, nil
 		}
 	}
 
-	return 0, errors.New("Failed to find validator idx")
+	return 0, errors.New("failed to find validator idx")
 }
 
 func (s *SignService) ExecuteSign(ctx context.Context) {
@@ -182,7 +177,7 @@ func (s *SignService) execute(ctx context.Context, dkg *coordinator.DKG) {
 	}
 
 	// Get validator idx
-	validatorIdx, err := s.FindValidatorIdx(dkg)
+	validatorIdx, err := s.FindValidatorIdx(dkg, s.sessionSigner.PublicKey())
 	if err != nil {
 		s.logError("failed to get validator idx from session key and VSet", err)
 		return
