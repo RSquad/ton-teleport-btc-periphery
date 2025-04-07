@@ -366,6 +366,10 @@ func (e *Executor) executeR3(dkg *coordinator.DKG, validatorIdx uint16) bool {
 		e.sessionPublicKey,
 		e.artifacts.r3.publicKeyPackage,
 	); err != nil {
+		exitCode, _ := helpers.ExtractExitCode(err.Error())
+		if exitCode == helpers.TvmExitCodeDifferentPubkeyPackages {
+			e.claimCulpritByR3Mask(dkg, validatorIdx)
+		}
 		e.logSendPubkeyPackageFailed(dkg, err)
 	}
 	return false
@@ -380,22 +384,23 @@ func (e *Executor) executeClaim(dkg *coordinator.DKG, validatorIdx uint16, culpr
 	}
 
 	e.logMessage(dkg, fmt.Sprintf("sending claim packages. Culprit validator idx: %d", culpritIdx))
-	withErrors := false
-
-	// claim package is not sent yet, send it to coordinator
 	_, err := e.coordinatorContract.SendDKGClaim(
 		validatorIdx,
 		dkg.Until.Unix(),
 		culpritIdx,
 	)
 	if err != nil {
-		e.logSendClaimPackage(dkg, culpritIdx, err)
-		withErrors = true
-	}
-
-	if withErrors {
-		e.logError(dkg, "claim packages sent with errors", nil)
+		e.logSendClaimFailed(dkg, culpritIdx, err)
 	} else {
 		e.logDKGProcess(dkg, "claim packages sent")
+	}
+}
+
+func (e *Executor) claimCulpritByR3Mask(dkg *coordinator.DKG, validatorIdx uint16) {
+	for i := uint16(0); i < dkg.MaxSigners; i++ {
+		if dkg.R3.Mask.Bit(int(i)) > 0 {
+			e.executeClaim(dkg, validatorIdx, i)
+			return
+		}
 	}
 }
