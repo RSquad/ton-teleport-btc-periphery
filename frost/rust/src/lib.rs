@@ -74,17 +74,9 @@ macro_rules! from_bytes_for {
                 unsafe {
                     let packages = slice::from_raw_parts(ptr, len);
                     for p in packages {
-                        match Identifier::deserialize(&p.identifier) {
-                            Err(err) => {
-                                return Err(err);
-                            }
-                            Ok(identifier) => match $T::from_raw_parts(p.buf, p.len) {
-                                Err(err) => return Err(err),
-                                Ok(pkg) => {
-                                    map.insert(identifier, pkg);
-                                }
-                            },
-                        }
+                        let identifier = Identifier::deserialize(&p.identifier)?;
+                        let pkg = $T::from_raw_parts(p.buf, p.len)?;
+                        map.insert(identifier, pkg);
                     }
                 }
                 return Ok(map);
