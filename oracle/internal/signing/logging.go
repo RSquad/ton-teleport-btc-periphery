@@ -143,8 +143,8 @@ func (s *SignService) logExecuteClaim(pegoutID uint64) {
 	infoEventWithPegoutID(pegoutID).Msg("execute claim")
 }
 
-func (s *SignService) logSendClaim(pegoutID uint64, maliciousValidatorIdx []byte) {
-	infoEventWithPegoutID(pegoutID).Msg("Send calim, malicious validator idx: " + hex.EncodeToString(maliciousValidatorIdx))
+func (s *SignService) logSendClaim(pegoutID uint64, culpritIdx []byte) {
+	infoEventWithPegoutID(pegoutID).Msg("Send calim, culprit validator idx: " + hex.EncodeToString(culpritIdx))
 }
 
 func (s *SignService) logSigningClaimSent(pegoutID uint64) {

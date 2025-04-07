@@ -40,13 +40,13 @@ func BuildSendRound3Body(ttl int64, validatorIdx uint16, dkgUntil int64, session
 		EndCell()
 }
 
-func BuildSendDKGClaimBody(ttl int64, validatorIdx uint16, dkgUntil int64, maliciousValidatorIdx []byte) *cell.Cell {
+func BuildSendDKGClaimBody(ttl int64, validatorIdx uint16, dkgUntil int64, culpritIdx []byte) *cell.Cell {
 	return cell.BeginCell().
 		MustStoreUInt(OpCodeCoordinatorDkgClaim, 32).
 		MustStoreUInt(uint64(time.Now().Unix()+ttl), 32).
 		MustStoreUInt(uint64(validatorIdx), 16).
 		MustStoreUInt(uint64(dkgUntil), 32).
-		MustStoreUInt(uint64(binary.BigEndian.Uint16(maliciousValidatorIdx[30:32])), 16).
+		MustStoreUInt(uint64(binary.BigEndian.Uint16(culpritIdx[30:32])), 16).
 		EndCell()
 }
 
@@ -102,7 +102,7 @@ func BuildSendSigningClaimBody(ttl int64, req *SigningClaimRequest) *cell.Cell {
 		MustStoreUInt(uint64(time.Now().Unix()+ttl), 32).
 		MustStoreUInt(uint64(req.ValidatorIdx), 16).
 		MustStoreUInt(req.PegoutID, 64).
-		MustStoreUInt(uint64(binary.BigEndian.Uint16(req.maliciousValidatorIdx[30:32])), 16).
+		MustStoreUInt(uint64(binary.BigEndian.Uint16(req.culpritIdx[30:32])), 16).
 		EndCell()
 }
 

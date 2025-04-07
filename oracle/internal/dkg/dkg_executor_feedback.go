@@ -93,16 +93,16 @@ func (e *Executor) logSendRound2Package(dkg *coordinator.DKG, toIdx uint16, err 
 		Msg("failed to send round2 package: " + msg)
 }
 
-func (e *Executor) logSendClaimPackage(dkg *coordinator.DKG, maliciousValidatorIdx []byte, err error) {
+func (e *Executor) logSendClaimPackage(dkg *coordinator.DKG, culpritIdx []byte, err error) {
 	msg := helpers.HandleTvmError(err)
 
-	maliciousValidatorIdxStr := "NO"
-	if maliciousValidatorIdx != nil {
-		maliciousValidatorIdxStr = hex.EncodeToString(maliciousValidatorIdx)
+	culpritIdxStr := "NO"
+	if culpritIdx != nil {
+		culpritIdxStr = hex.EncodeToString(culpritIdx)
 	}
 
 	errorEventWithDkg(dkg).
-		Str("malicious validator idx: ", maliciousValidatorIdxStr).
+		Str("culprit validator idx: ", culpritIdxStr).
 		Msg("failed to send claim package: " + msg)
 }
 

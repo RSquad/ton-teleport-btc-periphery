@@ -311,7 +311,7 @@ func (s *SignService) doSign(
 		signShares = make([][]byte, 0, len(pegout.signingHashes))
 		// generate signing share for each input
 		for i, input := range pegout.inputs {
-			signShare, maliciousValidatorIdx, err := s.Sign(
+			signShare, culpritIdx, err := s.Sign(
 				publicKey,                    // public key
 				input.BitcoinMerkleRoot,      // tap merkle root used as tweak for tweaking signing share
 				pegout.signingHashes[i],      // signing hash for current input
@@ -320,9 +320,9 @@ func (s *SignService) doSign(
 			)
 
 			if err != nil {
-				if maliciousValidatorIdx != nil {
-					s.logError(fmt.Sprintf("Sign failed. Malicious validator found: %x", maliciousValidatorIdx), err)
-					s.executeClaim(pegout, validatorKey, maliciousValidatorIdx)
+				if culpritIdx != nil {
+					s.logError(fmt.Sprintf("Sign failed. Culprit validator found: %x", culpritIdx), err)
+					s.executeClaim(pegout, validatorKey, culpritIdx)
 				} else {
 					s.logError(fmt.Sprintf("failed to sign hash %d", i), err)
 				}
@@ -361,7 +361,7 @@ func (s *SignService) doAggregate(
 	for i, input := range pegout.inputs {
 		hashOnlyShares := filterSharesByHashIndex(pegout.artifacts.SigningShares, uint16(i))
 		tapTweak := input.BitcoinMerkleRoot
-		signature, maliciousValidatorIdx, err := frost.AggregateWithTweak(
+		signature, culpritIdx, err := frost.AggregateWithTweak(
 			pegout.signingHashes[i],
 			commitmentsPackages,
 			hashOnlyShares,
@@ -370,9 +370,9 @@ func (s *SignService) doAggregate(
 		)
 
 		if err != nil {
-			if maliciousValidatorIdx != nil {
-				s.logError(fmt.Sprintf("AggregateWithTweak failed. Malicious validator found: %x", maliciousValidatorIdx), err)
-				s.executeClaim(pegout, validatorKey, maliciousValidatorIdx)
+			if culpritIdx != nil {
+				s.logError(fmt.Sprintf("AggregateWithTweak failed. Culprit validator found: %x", culpritIdx), err)
+				s.executeClaim(pegout, validatorKey, culpritIdx)
 			} else {
 				s.logAggregateSignSharesError(err)
 			}
@@ -452,7 +452,7 @@ func (s *SignService) getLatestBlock(ctx context.Context) *ton.BlockIDExt {
 	return block
 }
 
-func (s *SignService) executeClaim(pegout *CachedPegout, validatorKey *validator.KeyInfo, maliciousValidatorIdx []byte) {
+func (s *SignService) executeClaim(pegout *CachedPegout, validatorKey *validator.KeyInfo, culpritIdx []byte) {
 	s.logExecuteClaim(pegout.ID)
 
 	if s.ClaimCompleted(pegout, validatorKey.VsetIdx) {
@@ -460,15 +460,15 @@ func (s *SignService) executeClaim(pegout *CachedPegout, validatorKey *validator
 		return
 	}
 
-	s.logMessage("sending claim packages. Malicious validator idx: " + hex.EncodeToString(maliciousValidatorIdx))
+	s.logMessage("sending claim packages. Culprit validator idx: " + hex.EncodeToString(culpritIdx))
 
 	// claim package is not sent yet, send it to coordinator
-	s.logSendClaim(pegout.ID, maliciousValidatorIdx)
+	s.logSendClaim(pegout.ID, culpritIdx)
 
 	if _, err := s.coordinator.SendSigningClaim(
 		pegout.ID,
 		validatorKey.VsetIdx,
-		maliciousValidatorIdx,
+		culpritIdx,
 	); err != nil {
 		s.logSigningClaimSentError(pegout.ID, err)
 	} else {

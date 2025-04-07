@@ -54,7 +54,7 @@ func DkgPart1(identifier Identifier, min_signers uint16, max_signers uint16) ([]
 		&secret,
 	)
 	if pkgLen < 0 {
-		return nil, 0, fmt.Errorf("dkg_part1 error %d", pkgLen)
+		return nil, 0, Error(int32(pkgLen))
 	}
 	pkg := make([]byte, pkgLen)
 
@@ -257,7 +257,7 @@ func Verify(
 	)
 
 	if ret < 0 {
-		return false, fmt.Errorf("%d", ret)
+		return false, Error(int32(ret))
 	}
 
 	return true, nil
@@ -270,7 +270,7 @@ func ExtractPublicKeyFromPackage(pkg []byte) ([]byte, error) {
 		&publicKey,
 	)
 	if ret < 0 {
-		return nil, fmt.Errorf("%d", ret)
+		return nil, Error(int32(ret))
 	}
 	return extractSlice(publicKey), nil
 }
