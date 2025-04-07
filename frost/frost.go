@@ -96,12 +96,9 @@ func DkgPart2(
 	round2Packages := make(map[Identifier]Package)
 
 	if r2PackagesLen <= 0 {
-		if r2PackagesLen != -3 {
-			r2CulpritIdx = nil
-		}
-
-		return round2Packages, 0, r2CulpritIdx, fmt.Errorf("dkg_part2 error %d", r2PackagesLen)
+		return round2Packages, 0, CulpritData(r2CulpritIdx, int32(r2PackagesLen)), Error(int32(r2PackagesLen))
 	}
+
 	pkgs = unsafe.Slice((*C.Pkg)(r2Packages), r2PackagesLen)
 	for _, v := range pkgs {
 		id := Identifier{}
@@ -151,11 +148,7 @@ func DkgPart3(
 	)
 
 	if ret < 0 {
-		if ret != -3 {
-			r3CulpritIdx = nil
-		}
-
-		return nil, nil, r3CulpritIdx, fmt.Errorf("%d", ret)
+		return nil, nil, CulpritData(r3CulpritIdx, int32(ret)), Error(int32(ret))
 	}
 
 	publicKeyPackage := make([]byte, publicPkgLen)
@@ -209,11 +202,7 @@ func SignWithTweak(
 	)
 
 	if ret < 0 {
-		if ret != -3 {
-			culpritIdx = nil
-		}
-
-		return nil, culpritIdx, fmt.Errorf("%d", ret)
+		return nil, CulpritData(culpritIdx, int32(ret)), Error(int32(ret))
 	}
 
 	return extractSlice(signingShares), nil, nil
@@ -248,11 +237,7 @@ func AggregateWithTweak(
 	)
 
 	if ret < 0 {
-		if ret != -3 {
-			culpritIdx = nil
-		}
-
-		return nil, culpritIdx, fmt.Errorf("%d", ret)
+		return nil, CulpritData(culpritIdx, int32(ret)), Error(int32(ret))
 	}
 
 	return extractSlice(signature), nil, nil

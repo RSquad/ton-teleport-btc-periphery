@@ -16,6 +16,71 @@ use frost_secp256k1_tr::{
 use rand::thread_rng;
 use std::{collections::BTreeMap, ffi::c_void, ptr};
 
+enum ReturnCode {
+    Success = 0,
+    NullArgument = -126,
+    Unknown = -127,
+}
+
+pub fn frost_err_to_code(ref err: Error) -> i32 {
+    match err {
+        Error::InvalidMinSigners => -1,
+        Error::InvalidMaxSigners => -2,
+        Error::InvalidCoefficients => -3,
+        Error::MalformedIdentifier => -4,
+        Error::DuplicatedIdentifier => -5,
+        Error::UnknownIdentifier => -6,
+        Error::IncorrectNumberOfIdentifiers => -7,
+        Error::MalformedSigningKey => -8,
+        Error::MalformedVerifyingKey => -9,
+        Error::MalformedSignature => -10,
+        Error::InvalidSignature => -11,
+        Error::DuplicatedShares => -12,
+        Error::IncorrectNumberOfShares => -13,
+        Error::IdentityCommitment => -14,
+        Error::MissingCommitment => -15,
+        Error::IncorrectCommitment => -16,
+        Error::IncorrectNumberOfCommitments => -17,
+        Error::InvalidSignatureShare { culprit: _ } => -18,
+        Error::InvalidSecretShare { culprit: _ } => -19,
+        Error::PackageNotFound => -20,
+        Error::IncorrectNumberOfPackages => -21,
+        Error::IncorrectPackage => -22,
+        Error::DKGNotSupported => -23,
+        Error::InvalidProofOfKnowledge { culprit: _ } => -24,
+        Error::FieldError(_) => -25,
+        Error::GroupError(_) => -26,
+        Error::InvalidCoefficient => -27,
+        Error::IdentifierDerivationNotSupported => -28,
+        Error::SerializationError => -29,
+        Error::DeserializationError => -30,
+        _ => ReturnCode::Unknown as i32,
+    }
+}
+
+fn culprit_id_to_bytes(ref culprit: Identifier) -> [u8; 32] {
+    let mut culprit_bytes: [u8; 32] = [0; 32];
+    let culprit_data = culprit.serialize();
+
+    unsafe {
+        ptr::copy_nonoverlapping(culprit_data.as_ptr(), culprit_bytes.as_mut_ptr(), 32);
+    }
+
+    culprit_bytes
+}
+
+pub fn get_culprit_bytes(ref err: Error) -> Option<[u8; 32]> {
+    match err {
+        Error::InvalidSignatureShare { culprit } => Some(culprit_id_to_bytes(*culprit)),
+        Error::InvalidProofOfKnowledge { culprit } => Some(culprit_id_to_bytes(*culprit)),
+        Error::InvalidSecretShare { culprit } => match culprit {
+            Some(culprit_val) => Some(culprit_id_to_bytes(*culprit_val)),
+            None => None,
+        },
+        _ => None,
+    }
+}
+
 #[inline]
 fn to_void<T: Sized>(obj: T) -> *const c_void {
     Box::into_raw(Box::new(obj)) as *const c_void
@@ -30,15 +95,6 @@ fn from_void<T: Sized>(ptr: *const c_void) -> Box<T> {
 pub struct Buffer {
     data: *const u8,
     len: usize,
-}
-
-macro_rules! print_msg {
-    ($msg:expr) => {
-        println!("[{}:{}] {}", file!(), line!(), $msg);
-    };
-    ($fmt:expr, $($arg:tt)*) => {
-        println!(concat!("[{}:{}] ", $fmt), file!(), line!(), $($arg)*);
-    };
 }
 
 impl Buffer {
@@ -73,9 +129,22 @@ macro_rules! from_bytes_for {
                 let mut map: BTreeMap<Identifier, $T> = BTreeMap::new();
                 unsafe {
                     let packages = slice::from_raw_parts(ptr, len);
+
                     for p in packages {
-                        let identifier = Identifier::deserialize(&p.identifier)?;
-                        let pkg = $T::from_raw_parts(p.buf, p.len)?;
+                        let identifier = match Identifier::deserialize(&p.identifier) {
+                            Ok(id) => id,
+                            Err(err) => return Err(err),
+                        };
+
+                        let pkg = match $T::from_raw_parts(p.buf, p.len) {
+                            Ok(pkg) => pkg,
+                            Err(_) => {
+                                return Err(Error::InvalidSignatureShare {
+                                    culprit: identifier,
+                                })
+                            }
+                        };
+
                         map.insert(identifier, pkg);
                     }
                 }
@@ -101,21 +170,6 @@ pub struct Pkg {
     len: usize,
 }
 
-fn culprit_to_bytes(ref culprit: Identifier, identifier_out: &mut [u8; 32]) -> i32 {
-    let culprit_data = culprit.serialize();
-
-    if culprit_data.len() != 32 {
-        print_msg!("culprit_data.len() != 32");
-        return -1;
-    }
-
-    unsafe {
-        ptr::copy_nonoverlapping(culprit_data.as_ptr(), identifier_out.as_mut_ptr(), 32);
-    }
-
-    -3
-}
-
 #[no_mangle]
 pub extern "C" fn ext_get_identifier(key: u16, identifier: *mut [u8; 32]) -> i32 {
     let participant_identifier: Identifier = key.try_into().expect("should be nonzero");
@@ -124,7 +178,7 @@ pub extern "C" fn ext_get_identifier(key: u16, identifier: *mut [u8; 32]) -> i32
     let arr = unsafe { identifier.as_mut().unwrap() };
     arr.copy_from_slice(vector.as_slice());
 
-    0
+    ReturnCode::Success as i32
 }
 
 #[no_mangle]
@@ -154,13 +208,8 @@ pub extern "C" fn dkg_part1(
     })();
 
     match result {
-        Err(err) => {
-            print_msg!("FROST error: {}", err);
-            return -1;
-        }
-        Ok(count) => {
-            return count;
-        }
+        Err(err) => frost_err_to_code(err),
+        Ok(count) => count,
     }
 }
 
@@ -175,16 +224,10 @@ pub extern "C" fn dkg_part2(
 ) -> i32 {
     if r1_secret.is_null() || r1_pkgs_ptr.is_null() || r2_pkgs_ptr.is_null() || r2_secret.is_null()
     {
-        print_msg!("Input data error");
-        return -1;
+        ReturnCode::NullArgument as i32;
     }
 
-    enum ResVariant {
-        Count(i32),
-        CulpritId(Identifier),
-    }
-
-    let result = (|| -> Result<ResVariant, Error> {
+    let result = (|| -> Result<i32, Error> {
         let r1_secret_box_tmp: Box<
             frost_core::keys::dkg::round1::SecretPackage<frost_secp256k1_tr::Secp256K1Sha256TR>,
         > = from_void(r1_secret);
@@ -198,10 +241,7 @@ pub extern "C" fn dkg_part2(
 
         for (id, pkg) in r2_map {
             match pkg.serialize() {
-                Err(err) => {
-                    print_msg!("FROST error: {}", err);
-                    return Ok(ResVariant::CulpritId(id));
-                }
+                Err(_) => return Err(Error::InvalidProofOfKnowledge { culprit: id }),
                 Ok(mut p) => {
                     let mut identifier = [0u8; 32];
                     identifier.copy_from_slice(&id.serialize());
@@ -221,21 +261,17 @@ pub extern "C" fn dkg_part2(
             *r2_pkgs_ptr = r2_vec.leak().as_ptr();
         }
 
-        Ok(ResVariant::Count(count))
+        Ok(count)
     })();
 
     match result {
-        Err(Error::InvalidProofOfKnowledge { ref culprit }) => {
-            culprit_to_bytes(*culprit, r2_culprit_idx_out)
-        }
         Err(err) => {
-            print_msg!("FROST error: {}", err);
-            -1
+            if let Some(culprit_idx) = get_culprit_bytes(err) {
+                *r2_culprit_idx_out = culprit_idx;
+            }
+            frost_err_to_code(err)
         }
-        Ok(variant) => match variant {
-            ResVariant::Count(count) => count,
-            ResVariant::CulpritId(ref culprit) => culprit_to_bytes(*culprit, r2_culprit_idx_out),
-        },
+        Ok(count) => count,
     }
 }
 
@@ -258,8 +294,7 @@ pub extern "C" fn dkg_part3(
         || r1_pkgs_ptr.is_null()
         || r2_pkgs_ptr.is_null()
     {
-        print_msg!("Input data is null");
-        return -1;
+        ReturnCode::NullArgument as i32;
     }
 
     let r2_secret_box_tmp: Box<
@@ -288,18 +323,13 @@ pub extern "C" fn dkg_part3(
     })();
 
     match result {
-        Err(Error::InvalidSecretShare { ref culprit }) => match culprit {
-            Some(culprit_val) => culprit_to_bytes(*culprit_val, r3_culprit_idx_out),
-            None => {
-                print_msg!("FROST error: culprit value empty");
-                -1
-            }
-        },
         Err(err) => {
-            print_msg!("FROST error: {}", err);
-            -1
+            if let Some(culprit_idx) = get_culprit_bytes(err) {
+                *r3_culprit_idx_out = culprit_idx;
+            }
+            frost_err_to_code(err)
         }
-        Ok(()) => 0,
+        Ok(()) => ReturnCode::Success as i32,
     }
 }
 
@@ -363,11 +393,8 @@ pub extern "C" fn commit(
     })();
 
     match result {
-        Err(err) => {
-            print_msg!("FROST error: {}", err);
-            -1
-        }
-        Ok(()) => 0,
+        Err(err) => frost_err_to_code(err),
+        Ok(()) => ReturnCode::Success as i32,
     }
 }
 
@@ -404,21 +431,13 @@ pub extern "C" fn sign_with_tweak(
     })();
 
     match result {
-        Err(Error::InvalidSignatureShare { ref culprit }) => {
-            culprit_to_bytes(*culprit, culprit_idx_out)
-        }
-        Err(Error::InvalidSecretShare { ref culprit }) => match culprit {
-            Some(culprit_val) => culprit_to_bytes(*culprit_val, culprit_idx_out),
-            None => {
-                print_msg!("FROST error: culprit value empty");
-                -1
-            }
-        },
         Err(err) => {
-            print_msg!("FROST error: {}", err);
-            -1
+            if let Some(culprit_idx) = get_culprit_bytes(err) {
+                *culprit_idx_out = culprit_idx;
+            }
+            frost_err_to_code(err)
         }
-        Ok(()) => 0,
+        Ok(()) => ReturnCode::Success as i32,
     }
 }
 
@@ -457,21 +476,13 @@ pub extern "C" fn aggregate_with_tweak(
     })();
 
     match result {
-        Err(Error::InvalidSignatureShare { ref culprit }) => {
-            culprit_to_bytes(*culprit, culprit_idx_out)
-        }
-        Err(Error::InvalidSecretShare { ref culprit }) => match culprit {
-            Some(culprit_val) => culprit_to_bytes(*culprit_val, culprit_idx_out),
-            None => {
-                print_msg!("FROST error: culprit value empty");
-                -1
-            }
-        },
         Err(err) => {
-            print_msg!("FROST error: {}", err);
-            -1
+            if let Some(culprit_idx) = get_culprit_bytes(err) {
+                *culprit_idx_out = culprit_idx;
+            }
+            frost_err_to_code(err)
         }
-        Ok(()) => 0,
+        Ok(()) => ReturnCode::Success as i32,
     }
 }
 
@@ -494,11 +505,8 @@ pub extern "C" fn verify(
     })();
 
     match result {
-        Err(err) => {
-            print_msg!("FROST error: {}", err);
-            -1
-        }
-        Ok(()) => 0,
+        Err(err) => frost_err_to_code(err),
+        Ok(()) => ReturnCode::Success as i32,
     }
 }
 
@@ -509,18 +517,12 @@ pub extern "C" fn extract_public_key_from_package(
 ) -> i32 {
     let pubkey_package = match PublicKeyPackage::from_buf(pubkey_package_buf) {
         Ok(x) => x,
-        Err(err) => {
-            print_msg!("FROST error: {}", err);
-            return -1;
-        }
+        Err(err) => return frost_err_to_code(err),
     };
 
     let key_vec = match pubkey_package.verifying_key().serialize() {
         Ok(x) => x,
-        Err(err) => {
-            print_msg!("FROST error: {}", err);
-            return -1;
-        }
+        Err(err) => return frost_err_to_code(err),
     };
 
     unsafe {
@@ -528,5 +530,5 @@ pub extern "C" fn extract_public_key_from_package(
         (*public_key).data = key_vec.leak().as_ptr();
     }
 
-    0
+    ReturnCode::Success as i32
 }
