@@ -209,7 +209,7 @@ func (c *CoordinatorContract) GetUnsignedPegouts() ([]PegoutRecord, error) {
 
 		MaxSigners := uint16(value.MustLoadUInt(16))
 		ExpiredAt := time.Unix(int64(value.MustLoadUInt(32)), 0)
-		SigningMask := value.MustLoadSlice(256)
+		SigningMask := value.MustLoadBigUInt(256)
 
 		CommitmentsMask := value.MustLoadSlice(256)
 		value.MustLoadUInt(16)

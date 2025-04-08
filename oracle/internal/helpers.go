@@ -12,6 +12,8 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 )
 
+const TvmExitCodeDifferentPubkeyPackages = 152
+
 // Helpers
 
 func ConvertMapToFrostPackages(origMap map[uint16][]byte) (frostMap map[frost.Identifier]frost.Package) {

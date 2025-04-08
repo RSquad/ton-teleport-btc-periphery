@@ -90,9 +90,11 @@ func Error(code int32) error {
 	return fmt.Errorf("unknown FROST error code: %d", code)
 }
 
-func CulpritData(culpritData []byte, code int32) []byte {
+func CulpritData(culpritData []byte, code int32) *Identifier {
 	if code == int32(ErrInvalidSignatureShare) || code == int32(ErrInvalidSecretShare) || code == int32(ErrInvalidProofOfKnowledge) {
-		return culpritData
+		var arr Identifier
+		copy(arr[:], culpritData)
+		return &arr
 	}
 
 	return nil

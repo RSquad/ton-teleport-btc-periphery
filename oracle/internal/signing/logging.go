@@ -1,7 +1,6 @@
 package signing
 
 import (
-	"encoding/hex"
 	"fmt"
 
 	"github.com/rs/zerolog"
@@ -54,8 +53,8 @@ func (s *SignService) logProcessingPegout(pegout *coordinator.PegoutRecord) {
 	infoEventWithPegoutID(pegout.ID).Msgf("address %s", pegout.PegoutAddress)
 }
 
-func (s *SignService) logOracleNotValidator(pegoutID uint64) {
-	err := fmt.Errorf("oracle is not a validator. Cannot participate in signing pegout: %x", pegoutID)
+func (s *SignService) logOracleEvictedFromSigning(pegoutID uint64) {
+	err := fmt.Errorf("the Oracle has been evicted from pegout signing: %x", pegoutID)
 	errorEvent().Err(err)
 }
 
@@ -143,8 +142,8 @@ func (s *SignService) logExecuteClaim(pegoutID uint64) {
 	infoEventWithPegoutID(pegoutID).Msg("execute claim")
 }
 
-func (s *SignService) logSendClaim(pegoutID uint64, culpritIdx []byte) {
-	infoEventWithPegoutID(pegoutID).Msg("Send calim, culprit validator idx: " + hex.EncodeToString(culpritIdx))
+func (s *SignService) logSendClaim(pegoutID uint64, culpritIdx uint16) {
+	infoEventWithPegoutID(pegoutID).Msg(fmt.Sprintf("Send claim, culprit validator idx: %d", culpritIdx))
 }
 
 func (s *SignService) logSigningClaimSent(pegoutID uint64) {
