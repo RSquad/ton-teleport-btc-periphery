@@ -39,3 +39,4 @@ jobs:
       APP_NAMESPACE: ton-teleport-sand
     secrets:
       KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
+
