@@ -1,8 +1,9 @@
 deploymentType: StatefulSet
-replicaCount: 3
+replicaCount: 50
 
 storage:
   size: 100Mi
+  path: /app/keystore
 
 SecretNames:
   pubkey: ORACLE_PUBKEY

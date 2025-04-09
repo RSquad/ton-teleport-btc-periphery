@@ -20,8 +20,18 @@ jobs:
     secrets:
       KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
 
-  automation:
+  oracle_automation:
     if: github.ref == 'refs/heads/oracle_automation'
+    uses: ./.github/workflows/build-and-deploy.yml
+    with:
+      APPS: '["oracle"]'
+      STAGE: develop
+      APP_NAMESPACE: ton-teleport-dev
+    secrets:
+      KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
+
+  develop-2:
+    if: github.ref == 'refs/heads/develop-2'
     uses: ./.github/workflows/build-and-deploy.yml
     with:
       APPS: '["db-backup", "indexer", "relayer"]'
