@@ -1,5 +1,5 @@
 deploymentType: StatefulSet
-replicaCount: 25
+replicaCount: 50
 
 storage:
   size: 50Mi
