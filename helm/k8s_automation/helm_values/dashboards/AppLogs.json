@@ -1,131 +1,150 @@
 {
-    "annotations": {
-      "list": [
-        {
-          "builtIn": 1,
-          "datasource": {
-            "type": "grafana",
-            "uid": "-- Grafana --"
-          },
-          "enable": true,
-          "hide": true,
-          "iconColor": "rgba(0, 211, 255, 1)",
-          "name": "Annotations & Alerts",
-          "type": "dashboard"
-        }
-      ]
-    },
-    "editable": true,
-    "fiscalYearStartMonth": 0,
-    "graphTooltip": 0,
-    "id": 1,
-    "links": [],
-    "panels": [
+  "annotations": {
+    "list": [
       {
-        "datasource": "Loki",
-        "fieldConfig": {
-          "defaults": {},
-          "overrides": []
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
         },
-        "gridPos": {
-          "h": 19,
-          "w": 24,
-          "x": 0,
-          "y": 0
-        },
-        "id": 1,
-        "options": {
-          "dedupStrategy": "none",
-          "enableInfiniteScrolling": false,
-          "enableLogDetails": false,
-          "prettifyLogMessage": false,
-          "showCommonLabels": false,
-          "showLabels": false,
-          "showTime": true,
-          "sortOrder": "Descending",
-          "wrapLogMessage": true
-        },
-        "pluginVersion": "11.5.2",
-        "targets": [
-          {
-            "datasource": "Loki",
-            "direction": "backward",
-            "editorMode": "code",
-            "expr": "{app=~\"$app\", namespace=~\"$namespace\"} |= `` | json | line_format \"{{.message}}\"",
-            "queryType": "range",
-            "refId": "A"
-          }
-        ],
-        "title": "App logs",
-        "transparent": true,
-        "type": "logs"
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
       }
-    ],
-    "preload": false,
-    "refresh": "10s",
-    "schemaVersion": 40,
-    "tags": [],
-    "templating": {
-      "list": [
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": 4,
+  "links": [],
+  "panels": [
+    {
+      "datasource": "Loki",
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 19,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "options": {
+        "dedupStrategy": "none",
+        "enableInfiniteScrolling": false,
+        "enableLogDetails": false,
+        "prettifyLogMessage": false,
+        "showCommonLabels": false,
+        "showLabels": false,
+        "showTime": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": true
+      },
+      "pluginVersion": "11.5.2",
+      "targets": [
         {
-          "current": {
-            "text": [
-              "ton-teleport-dev"
-            ],
-            "value": [
-              "ton-teleport-dev"
-            ]
-          },
           "datasource": "Loki",
-          "definition": "",
-          "includeAll": true,
-          "multi": true,
-          "name": "namespace",
-          "options": [],
-          "query": {
-            "label": "namespace",
-            "refId": "LokiVariableQueryEditor-VariableQuery",
-            "stream": "",
-            "type": 1
-          },
-          "refresh": 1,
-          "regex": "ton.+",
-          "type": "query"
-        },
-        {
-          "current": {
-            "text": "All",
-            "value": [
-              "$__all"
-            ]
-          },
-          "datasource": "Loki",
-          "definition": "",
-          "includeAll": true,
-          "multi": true,
-          "name": "app",
-          "options": [],
-          "query": {
-            "label": "app",
-            "refId": "LokiVariableQueryEditor-VariableQuery",
-            "stream": "{namespace=~\"$namespace\"}",
-            "type": 1
-          },
-          "refresh": 2,
-          "regex": "",
-          "type": "query"
+          "direction": "backward",
+          "editorMode": "code",
+          "expr": "{app=~\"$app\", namespace=~\"$namespace\", pod=~\"$pod\"} |= `` | json | line_format \"{{.message}}\"",
+          "queryType": "range",
+          "refId": "A"
         }
-      ]
-    },
-    "time": {
-      "from": "now-15m",
-      "to": "now"
-    },
-    "timepicker": {},
-    "timezone": "browser",
-    "title": "App Logs",
-    "uid": "ceesqz3mqxvk0d",
-    "version": 6,
-    "weekStart": ""
-  }
-  
+      ],
+      "title": "App logs",
+      "transparent": true,
+      "type": "logs"
+    }
+  ],
+  "preload": false,
+  "refresh": "10s",
+  "schemaVersion": 40,
+  "tags": [],
+  "templating": {
+    "list": [
+      {
+        "current": {
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "datasource": "Loki",
+        "definition": "",
+        "includeAll": true,
+        "multi": true,
+        "name": "namespace",
+        "options": [],
+        "query": {
+          "label": "namespace",
+          "refId": "LokiVariableQueryEditor-VariableQuery",
+          "stream": "",
+          "type": 1
+        },
+        "refresh": 1,
+        "regex": "ton.+",
+        "type": "query"
+      },
+      {
+        "current": {
+          "text": "All",
+          "value": [
+            "$__all"
+          ]
+        },
+        "datasource": "Loki",
+        "definition": "",
+        "includeAll": true,
+        "multi": true,
+        "name": "app",
+        "options": [],
+        "query": {
+          "label": "app",
+          "refId": "LokiVariableQueryEditor-VariableQuery",
+          "stream": "{namespace=~\"$namespace\"}",
+          "type": 1
+        },
+        "refresh": 2,
+        "regex": "",
+        "type": "query"
+      },
+      {
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "datasource": "Loki",
+        "definition": "",
+        "includeAll": true,
+        "name": "pod",
+        "options": [],
+        "query": {
+          "label": "pod",
+          "refId": "LokiVariableQueryEditor-VariableQuery",
+          "stream": "{namespace=~\"$namespace\", app=~\"$app\"}",
+          "type": 1
+        },
+        "refresh": 1,
+        "regex": "",
+        "type": "query"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-15m",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "App Logs",
+  "uid": "ceesqz3mqxvk0d",
+  "version": 5,
+  "weekStart": ""
+}

@@ -8,3 +8,6 @@ ingress:
     - hosts:
         - ton-teleport.dev2.rsquad.solutions
       secretName: ton-teleport.dev2.rsquad.solutions-tls
+sidecar:
+  dashboards:
+    searchNamespace: ton-teleport-dev-2

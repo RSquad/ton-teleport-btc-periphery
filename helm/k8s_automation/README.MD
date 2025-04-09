@@ -142,7 +142,7 @@ helm repo update
 Create new configmap which should contain all the dashboards from the **dashboards** directory:
 
 ```bash
-kubectl create configmap grafana-dashboards --from-file=grafana/dashboards/ -n "ton-teleport-dev" --dry-run=client -o yaml | kubectl apply -f -
+kubectl create configmap grafana-dashboards --from-file=helm_values/dashboards/ -n "ton-teleport-dev" --dry-run=client -o yaml | kubectl apply -f -
 kubectl label configmap grafana-dashboards -n "ton-teleport-dev" grafana_dashboard=1 --overwrite
 ```
 
@@ -164,7 +164,7 @@ This command installs (or upgrades) a Grafana instance in the **ton-teleport-dev
 helm upgrade --install grafana grafana/grafana \
   --namespace ton-teleport-dev \
   --values ./helm_values/grafana-base.yml \
-  --values ./helm_values/grafana-dev.yml
+  --values ./helm_values/grafana-dev-2.yml
 ```
 ## Final Checks
 

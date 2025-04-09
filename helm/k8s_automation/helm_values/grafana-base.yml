@@ -31,7 +31,6 @@ sidecar:
   dashboards:
     enabled: true
     label: grafana_dashboard
-    searchNamespace: ton-teleport-dev
     provider:
       allowUiUpdates: true
 envFromSecrets:
