@@ -2,7 +2,7 @@ deploymentType: StatefulSet
 replicaCount: 50
 
 storage:
-  size: 100Mi
+  size: 50Mi
   path: /app/keystore
 
 SecretNames:
