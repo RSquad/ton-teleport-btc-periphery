@@ -20,6 +20,8 @@ spec:
         app: {{ include "app.name" $ }}
         instance: "{{ $i }}"
     spec:
+      securityContext:
+        fsGroup: 1000
       containers:
         - name: oracle
           image: {{ $.Values.image.repository }}:{{ $.Values.image.tag | default "latest" }}
