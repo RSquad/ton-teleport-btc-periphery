@@ -44,7 +44,7 @@ A smart contract acting as the central coordination point that:
 
 The Coordinator enables secure coordination without requiring direct trust between Oracle instances.
 
-## 3. Data Architecture
+## 3. Data Layout
 
 The system uses two distinct sets of data structures: one for the Distributed Key Generation (DKG) process and another for the Signing process.
 
