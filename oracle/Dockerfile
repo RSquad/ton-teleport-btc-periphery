@@ -1,4 +1,4 @@
-FROM rust:1.75-alpine AS rust-builder
+FROM rust:1.86.0-alpine AS rust-builder
 
 # Install build dependencies for FROST
 RUN apk add --no-cache build-base pkgconfig openssl-dev

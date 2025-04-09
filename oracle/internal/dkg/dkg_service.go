@@ -14,15 +14,21 @@ import (
 type Service struct {
 	coordinatorContract *coordinator.CoordinatorContract
 	validator           *validator.Validator
+	fetchPeriod         int64 // Fetch period (in seconds)
+	sendStartDKGPeriod  int64 // sendStartDKG period (in seconds)
 }
 
 func NewService(
 	coordinatorContract *coordinator.CoordinatorContract,
 	validator *validator.Validator,
+	fetchPeriod int64,
+	sendStartDKGPeriod int64,
 ) *Service {
 	return &Service{
 		coordinatorContract: coordinatorContract,
 		validator:           validator,
+		fetchPeriod:         fetchPeriod,
+		sendStartDKGPeriod:  sendStartDKGPeriod,
 	}
 }
 
@@ -32,7 +38,7 @@ func (s *Service) Work(ctx context.Context, wg *sync.WaitGroup, keystore keystor
 	logger.DefaultLogStartWork("DKGService: starting...")
 
 	outChan := make(chan *coordinator.DKG)
-	fetcher := NewFetcher(s.coordinatorContract, outChan)
+	fetcher := NewFetcher(s.coordinatorContract, outChan, s.fetchPeriod)
 	executor := NewExecutor(outChan, s.coordinatorContract, keystore, s.validator)
 
 	wg.Add(1)
@@ -41,12 +47,12 @@ func (s *Service) Work(ctx context.Context, wg *sync.WaitGroup, keystore keystor
 	wg.Add(1)
 	go executor.Work(ctx, wg)
 
-	// A periodic event that triggers every 10 seconds to call the SendStartDKG() function
+	// A periodic event that triggers every sendStartDKGPeriod seconds to call the SendStartDKG() function
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
 
-		ticker := time.NewTicker(10 * time.Second)
+		ticker := time.NewTicker(time.Duration(s.sendStartDKGPeriod) * time.Second)
 		defer ticker.Stop()
 
 		for {

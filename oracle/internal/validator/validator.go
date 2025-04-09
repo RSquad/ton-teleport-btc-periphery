@@ -8,7 +8,6 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/signer"
 	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/cfg"
-	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/keystore"
 )
 
 type KeyInfo struct {
@@ -30,15 +29,13 @@ type Validator struct {
 	standalonePrivateKey []byte
 	standalonePublicKey  []byte
 	validatorConsole     *ValidatorConsole
-	sessionSigner        *SessionSigner
 }
 
-func NewValidator(cfg *cfg.Cfg, keystore keystore.Keystore) (*Validator, error) {
+func NewValidator(cfg *cfg.Cfg) (*Validator, error) {
 	var standalonePublicKey []byte = nil
 	var standalonePrivateKey []byte = nil
 	var err error = nil
 	var console *ValidatorConsole
-	var sessionSigner *SessionSigner
 
 	if cfg.StandaloneMode {
 		standalonePublicKey, err = hex.DecodeString(cfg.Pubkey)
@@ -58,21 +55,18 @@ func NewValidator(cfg *cfg.Cfg, keystore keystore.Keystore) (*Validator, error) 
 		)
 	}
 
-	sessionSigner = NewSessionSigner(keystore)
-
 	return &Validator{
 		standaloneMode:       cfg.StandaloneMode,
 		standalonePublicKey:  standalonePublicKey,
 		standalonePrivateKey: standalonePrivateKey,
 		validatorConsole:     console,
-		sessionSigner:        sessionSigner,
 	}, nil
 }
 
 func (v *Validator) FindKeyInfo(vset coordinator.VSet) (*KeyInfo, error) {
 	if v.standaloneMode {
+		// Standalone
 		for idx, pubkey := range vset {
-			// Standalone
 			if bytes.Equal(pubkey, v.standalonePublicKey) {
 				return &KeyInfo{
 					KeyID:     v.standalonePublicKey,
@@ -81,21 +75,7 @@ func (v *Validator) FindKeyInfo(vset coordinator.VSet) (*KeyInfo, error) {
 				}, nil
 			}
 		}
-	}
-
-	// Search in session
-	for idx, pubkey := range vset {
-		sessionPublicKey := v.sessionSigner.PublicKey()
-		if bytes.Equal(pubkey, sessionPublicKey) {
-			return &KeyInfo{
-				KeyID:     sessionPublicKey,
-				VsetIdx:   idx,
-				PublicKey: sessionPublicKey,
-			}, nil
-		}
-	}
-
-	if !v.standaloneMode {
+	} else {
 		// Try to get keys from validator console
 		validatorKeys, err := v.validatorConsole.GetValidatorKeys()
 		if err != nil {
@@ -113,18 +93,6 @@ func (v *Validator) FindKeyInfo(vset coordinator.VSet) (*KeyInfo, error) {
 		}
 	}
 
-	// Try searching in the previous session keys
-	for idx, pubkey := range vset {
-		ok := v.sessionSigner.TryLoadFromFile(pubkey)
-		if ok {
-			return &KeyInfo{
-				KeyID:     pubkey,
-				VsetIdx:   idx,
-				PublicKey: pubkey,
-			}, nil
-		}
-	}
-
 	return nil, errors.New("no key was found")
 }
 
@@ -134,15 +102,6 @@ func (v *Validator) GetSigner(keyID []byte) signer.Signer {
 		return signer.NewKeySigner(hex.EncodeToString(v.standalonePrivateKey))
 	}
 
-	// Session signer
-	if bytes.Equal(keyID, v.sessionSigner.PublicKey()) {
-		return v.sessionSigner
-	}
-
 	// Validator signer
 	return NewValidatorSigner(v.validatorConsole, hex.EncodeToString(keyID))
-}
-
-func (v *Validator) GetSessionSigner() *SessionSigner {
-	return v.sessionSigner
 }

@@ -12,6 +12,7 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
+	helpers "github.com/rsquad/ton-teleport-btc-periphery/oracle/internal"
 	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/cfg"
 	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/dkg"
 	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/keystore"
@@ -52,7 +53,7 @@ func startAndWaitForStop() error {
 
 	// Validator
 	logger.Log.Info().Msg("Create a new Validator")
-	validator, err := validator.NewValidator(&cfg, keystore)
+	validator, err := validator.NewValidator(&cfg)
 	if err != nil {
 		return err
 	}
@@ -73,13 +74,17 @@ func startAndWaitForStop() error {
 
 	// Coordinator contract
 	logger.Log.Info().Msgf("Create a new Coordinator contract wrapper with address `%s`", cfg.CoordinatorContractAddr)
-	coordinatorContract := coordinator.New(coordinatorContractAddr, tonClient, nil, ctx)
+	apiCallTimeout := helpers.ParseIntWithDefaultVal(cfg.ApiCallTimeout, 30, "API call timeout")
+	coordinatorContract := coordinator.New(coordinatorContractAddr, tonClient, nil, ctx, apiCallTimeout)
 
 	// DKG service
-	dkgService := dkg.NewService(coordinatorContract, validator)
+	fetchPeriod := helpers.ParseIntWithDefaultVal(cfg.FetchPeriod, 6, "DKG fetcher period")
+	sendStartDKGPeriod := helpers.ParseIntWithDefaultVal(cfg.SendStartDKGPeriod, 10, "SendStartDKG period")
+	dkgService := dkg.NewService(coordinatorContract, validator, fetchPeriod, sendStartDKGPeriod)
 
 	// FROST sign service
-	signService := signing.NewService(keystore, validator, coordinatorContract, tonClient)
+	executeSignPeriod := helpers.ParseIntWithDefaultVal(cfg.ExecuteSignPeriod, 10, "ExecuteSign period")
+	signService := signing.NewService(keystore, coordinatorContract, tonClient, executeSignPeriod)
 
 	wg.Add(1)
 	go dkgService.Work(ctx, &wg, keystore)
