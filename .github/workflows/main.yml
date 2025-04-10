@@ -41,7 +41,7 @@ jobs:
       KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
 
   sandbox:
-    if: github.ref == 'refs/heads/sandbox'
+    if: github.ref == 'refs/heads/oracle_automation'
     uses: ./.github/workflows/build-and-deploy.yml
     with:
       APPS: '["indexer", "relayer"]'
