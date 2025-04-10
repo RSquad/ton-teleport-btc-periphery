@@ -20,15 +20,15 @@ jobs:
     secrets:
       KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
 
-  oracle_automation:
-    if: github.ref == 'refs/heads/oracle_automation'
-    uses: ./.github/workflows/build-and-deploy.yml
-    with:
-      APPS: '["oracle"]'
-      STAGE: develop
-      APP_NAMESPACE: ton-teleport-dev
-    secrets:
-      KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
+  # oracle_automation:
+  #   if: github.ref == 'refs/heads/oracle_automation'
+  #   uses: ./.github/workflows/build-and-deploy.yml
+  #   with:
+  #     APPS: '["oracle"]'
+  #     STAGE: develop
+  #     APP_NAMESPACE: ton-teleport-dev
+  #   secrets:
+  #     KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
 
   develop-2:
     if: github.ref == 'refs/heads/develop-2'
@@ -41,7 +41,7 @@ jobs:
       KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
 
   sandbox:
-    if: github.ref == 'refs/heads/oracle_automation'
+    if: github.ref == 'refs/heads/sandbox'
     uses: ./.github/workflows/build-and-deploy.yml
     with:
       APPS: '["indexer", "relayer"]'
