@@ -13,77 +13,60 @@ import (
 
 type Service struct {
 	coordinatorContract *coordinator.CoordinatorContract
-	endpoint            *Endpoint
 	validator           *validator.Validator
-}
-
-func (s *Service) GetClient() *Client {
-	return CreateClient(s.endpoint)
+	fetchPeriod         int64 // Fetch period (in seconds)
+	sendStartDKGPeriod  int64 // sendStartDKG period (in seconds)
 }
 
 func NewService(
 	coordinatorContract *coordinator.CoordinatorContract,
 	validator *validator.Validator,
+	fetchPeriod int64,
+	sendStartDKGPeriod int64,
 ) *Service {
 	return &Service{
 		coordinatorContract: coordinatorContract,
-		endpoint:            CreateEndpoint(),
 		validator:           validator,
+		fetchPeriod:         fetchPeriod,
+		sendStartDKGPeriod:  sendStartDKGPeriod,
 	}
 }
 
-func (s *Service) Work(ctx context.Context, keystore keystore.Keystore) (err error) {
-	logger.DefaultLogStartWork("DKGService")
-	defer logger.DefaultLogFinishWork("DKGService", err)
+func (s *Service) Work(ctx context.Context, wg *sync.WaitGroup, keystore keystore.Keystore) {
+	defer wg.Done()
+	defer logger.DefaultLogFinishWork("DKGService: started")
+	logger.DefaultLogStartWork("DKGService: starting...")
 
 	outChan := make(chan *coordinator.DKG)
-	fetcher := NewFetcher(s.coordinatorContract, outChan)
+	fetcher := NewFetcher(s.coordinatorContract, outChan, s.fetchPeriod)
 	executor := NewExecutor(outChan, s.coordinatorContract, keystore, s.validator)
 
-	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go fetcher.Work(ctx, wg)
 
+	wg.Add(1)
+	go executor.Work(ctx, wg)
+
+	// A periodic event that triggers every sendStartDKGPeriod seconds to call the SendStartDKG() function
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		err = fetcher.Work(ctx)
-		if err != nil {
-			logger.Log.Error().Err(err).Msg("Fetcher failed")
-		}
-	}()
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		err = executor.Work(ctx)
-		if err != nil {
-			logger.Log.Error().Err(err).Msg("Executor failed")
-		}
-	}()
+		ticker := time.NewTicker(time.Duration(s.sendStartDKGPeriod) * time.Second)
+		defer ticker.Stop()
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		err = executor.startDkgServer(ctx, s.endpoint)
-		if err != nil {
-			logger.Log.Error().Err(err).Msg("DKG Server failed")
-		}
-	}()
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		tick := time.Tick(10 * time.Second)
 		for {
 			select {
-			case <-tick:
-				s.coordinatorContract.SendStartDKG()
 			case <-ctx.Done():
-				break
+				logger.Log.Info().Msg("DKG service received shutdown signal...")
+				return
+			case _, ok := <-ticker.C:
+				if !ok {
+					logger.Log.Warn().Msg("Start DKG ticker closed")
+					return
+				}
+				s.coordinatorContract.SendStartDKG()
 			}
 		}
 	}()
-
-	wg.Wait()
-
-	return nil
 }

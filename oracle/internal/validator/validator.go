@@ -36,6 +36,7 @@ func NewValidator(cfg *cfg.Cfg) (*Validator, error) {
 	var standalonePrivateKey []byte = nil
 	var err error = nil
 	var console *ValidatorConsole
+
 	if cfg.StandaloneMode {
 		standalonePublicKey, err = hex.DecodeString(cfg.Pubkey)
 		if err != nil {
@@ -53,6 +54,7 @@ func NewValidator(cfg *cfg.Cfg) (*Validator, error) {
 			cfg.ValidatorServerAddr,
 		)
 	}
+
 	return &Validator{
 		standaloneMode:       cfg.StandaloneMode,
 		standalonePublicKey:  standalonePublicKey,
@@ -63,7 +65,7 @@ func NewValidator(cfg *cfg.Cfg) (*Validator, error) {
 
 func (v *Validator) FindKeyInfo(vset coordinator.VSet) (*KeyInfo, error) {
 	if v.standaloneMode {
-		// find vset idx by public key in dkg.VSet
+		// Standalone
 		for idx, pubkey := range vset {
 			if bytes.Equal(pubkey, v.standalonePublicKey) {
 				return &KeyInfo{
@@ -73,27 +75,33 @@ func (v *Validator) FindKeyInfo(vset coordinator.VSet) (*KeyInfo, error) {
 				}, nil
 			}
 		}
-		return nil, errors.New("validator key not found")
-	}
-	validatorKeys, err := v.validatorConsole.GetValidatorKeys()
-	if err != nil {
-		return nil, err
-	}
-	for _, keyInfo := range validatorKeys {
+	} else {
+		// Try to get keys from validator console
+		validatorKeys, err := v.validatorConsole.GetValidatorKeys()
+		if err != nil {
+			return nil, err
+		}
+
 		for idx, pubkey := range vset {
-			if bytes.Equal(pubkey, keyInfo.PublicKey) {
-				keyInfo.VsetIdx = idx
-				return &keyInfo, nil
+			// Search in validators
+			for _, keyInfo := range validatorKeys {
+				if bytes.Equal(pubkey, keyInfo.PublicKey) {
+					keyInfo.VsetIdx = idx
+					return &keyInfo, nil
+				}
 			}
 		}
 	}
 
-	return nil, errors.New("validator key not found")
+	return nil, errors.New("no key was found")
 }
 
 func (v *Validator) GetSigner(keyID []byte) signer.Signer {
-	if v.standaloneMode {
+	// Standalone
+	if bytes.Equal(keyID, v.standalonePublicKey) {
 		return signer.NewKeySigner(hex.EncodeToString(v.standalonePrivateKey))
 	}
+
+	// Validator signer
 	return NewValidatorSigner(v.validatorConsole, hex.EncodeToString(keyID))
 }

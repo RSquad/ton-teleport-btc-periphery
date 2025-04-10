@@ -1,4 +1,4 @@
 #!/bin/bash
 
-cargo build
+cargo build --release
 cbindgen --config cbindgen.toml --crate frost --output ./frost.h

@@ -58,7 +58,9 @@ func main() {
 }
 
 func initialize() (*App, error) {
-	logger.Init()
+	if err := logger.Init(""); err != nil {
+		return nil, fmt.Errorf("failed to initialize logger: %w", err)
+	}
 
 	logger.Log.Info().
 		Str("component", "main").
@@ -97,6 +99,7 @@ func initialize() (*App, error) {
 		tonClient,
 		nil,
 		context.Background(),
+		30,
 	)
 
 	repo, err := ent.Open(dialect.Postgres, indexerConfig.DatabaseURL)
