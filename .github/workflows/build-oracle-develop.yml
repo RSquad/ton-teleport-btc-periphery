@@ -36,5 +36,5 @@ jobs:
       - name: Build and push Docker image
         run: |
           STAGE=${{ github.ref == 'refs/heads/develop' && 'dev' || 'sandbox' }}
-          docker build -t registry.digitalocean.com/rsquad-$STAGE/ton-teleport-btc-oracle:latest -f ${{ env.WORKSPACE }}/oracle/Dockerfile .
-          docker push registry.digitalocean.com/rsquad-$STAGE/ton-teleport-btc-oracle:latest
+          docker build -t registry.digitalocean.com/rsquad-dev/ton-teleport-btc-oracle-$STAGE:latest -f ${{ env.WORKSPACE }}/oracle/Dockerfile .
+          docker push registry.digitalocean.com/rsquad-dev/ton-teleport-btc-oracle-$STAGE:latest
