@@ -10,7 +10,6 @@ import (
 
 	"github.com/rsquad/ton-teleport-btc-periphery/frost"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
 )
 
 const TvmExitCodeDifferentPubkeyPackages = 152
@@ -22,18 +21,6 @@ func ConvertMapToFrostPackages(origMap map[uint16][]byte) (frostMap map[frost.Id
 	for k, v := range origMap {
 		id := ValidatorIdxToFrost(k)
 		frostMap[id] = frost.NewPackage(v)
-	}
-	return
-}
-
-func ConvertMapToFrostPackages2(origMap map[uint16][]byte, sessionKeys *coordinator.SessionKeys) (frostMap map[frost.Identifier]frost.Package) {
-	frostMap = make(map[frost.Identifier]frost.Package)
-	for k, v := range origMap {
-		id, ok := sessionKeys.PubKeys[k]
-		if !ok {
-			panic(fmt.Sprintf("validator index %d not found in session keys", k))
-		}
-		frostMap[frost.Identifier(id)] = frost.NewPackage(v)
 	}
 	return
 }

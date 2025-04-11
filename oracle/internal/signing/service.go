@@ -221,8 +221,8 @@ func (s *SignService) execute(ctx context.Context, dkg *coordinator.DKG) {
 
 	// Execute signing steps
 	if s.doCommit(validatorIdx, cachedPegout, minSigners) {
-		if s.doSign(validatorIdx, cachedPegout, minSigners, dkg.SessionKeys) {
-			if s.doAggregate(validatorIdx, cachedPegout, pubkeyPackage, dkg.SessionKeys) {
+		if s.doSign(validatorIdx, cachedPegout, minSigners) {
+			if s.doAggregate(validatorIdx, cachedPegout, pubkeyPackage) {
 				s.logPegoutSigned(cachedPegout.ID)
 			}
 		}
@@ -285,7 +285,6 @@ func (s *SignService) doSign(
 	validatorIdx uint16,
 	pegout *CachedPegout,
 	minSigners uint16,
-	sessionKeys *coordinator.SessionKeys,
 ) bool {
 	s.logSignPegout(pegout.ID)
 
@@ -328,8 +327,8 @@ func (s *SignService) doSign(
 				pegout.signingHashes[i],      // signing hash for current input
 				pegout.artifacts.Commitments, // oracle's commitments to sign pegout hashes
 				pegout.addrStr,               // pegout address used as key to load nonce from keystore
-				sessionKeys,
 			)
+
 			if err != nil {
 				if culpritFrostIdx != nil {
 					culpritIdx := helpers.FrostToValidatorIdx(*culpritFrostIdx)
@@ -364,15 +363,14 @@ func (s *SignService) doAggregate(
 	validatorIdx uint16,
 	pegout *CachedPegout,
 	pubkeyPackage []byte,
-	sessionKeys *coordinator.SessionKeys,
 ) bool {
 	s.logAggregateSignShares(pegout.ID)
 
-	commitmentsPackages := helpers.ConvertMapToFrostPackages2(pegout.artifacts.Commitments, sessionKeys)
+	commitmentsPackages := helpers.ConvertMapToFrostPackages(pegout.artifacts.Commitments)
 	signatures := make([][]byte, 0, len(pegout.signingHashes))
 
 	for i, input := range pegout.inputs {
-		hashOnlyShares := filterSharesByHashIndex(pegout.artifacts.SigningShares, uint16(i), sessionKeys)
+		hashOnlyShares := filterSharesByHashIndex(pegout.artifacts.SigningShares, uint16(i))
 		tapTweak := input.BitcoinMerkleRoot
 		signature, culpritFrostIdx, err := frost.AggregateWithTweak(
 			pegout.signingHashes[i],
@@ -381,6 +379,7 @@ func (s *SignService) doAggregate(
 			frost.NewPackage(pubkeyPackage),
 			tapTweak,
 		)
+
 		if err != nil {
 			if culpritFrostIdx != nil {
 				culpritIdx := helpers.FrostToValidatorIdx(*culpritFrostIdx)
@@ -414,7 +413,6 @@ func (s *SignService) Sign(
 	signingHash []byte,
 	commitments map[uint16][]byte,
 	nonceName string,
-	sessionKeys *coordinator.SessionKeys,
 ) ([]byte, *frost.Identifier, error) {
 	secretPackage := s.keyStore.LoadSecret(publicKey)
 	if secretPackage == nil {
@@ -427,7 +425,7 @@ func (s *SignService) Sign(
 	return frost.SignWithTweak(
 		frost.NewPackage(secretPackage),
 		signingHash,
-		helpers.ConvertMapToFrostPackages2(commitments, sessionKeys),
+		helpers.ConvertMapToFrostPackages(commitments),
 		frost.NewPackage(nonces),
 		tapTweak,
 	)
@@ -452,15 +450,10 @@ func filterSharesByHashIndex(
 	// second key is the signing hash index
 	shares map[uint16]map[uint16][]byte,
 	index uint16,
-	sessionKeys *coordinator.SessionKeys,
 ) map[frost.Identifier]frost.Package {
 	sharesMap := make(map[frost.Identifier]frost.Package)
 	for identifier, participantShares := range shares {
-		id, ok := sessionKeys.PubKeys[identifier]
-		if !ok {
-			panic(fmt.Sprintf("validator index %d not found in session keys", identifier))
-		}
-		sharesMap[frost.Identifier(id)] = frost.NewPackage(participantShares[index])
+		sharesMap[helpers.ValidatorIdxToFrost(identifier)] = frost.NewPackage(participantShares[index])
 	}
 	return sharesMap
 }
