@@ -59,54 +59,111 @@ The **Coordinator** is a smart contract that:
 
 The **Coordinator** is deployed on the TON blockchain and does not require trust in individual **Oracle** instances, relying instead on cryptographic validation and consensus rules.
 
-## 3. Algorithms
+## 3. Core Protocol Algorithms
 
-This section describes algorithms of DKG and Signing without implementation details. Implementation will be described in section 4.
-FROST (Flexible Round-Optimized Schnorr Threshold Signatures) is a threshold signature scheme that enables a group of signers to collaboratively produce a single Schnorr signature.
+This section describes the abstract algorithms behind the **DKG** and **Signing** processes that form the cryptographic foundation of the **System**. The concrete implementation details are covered separately in Section 4.
 
-### 3.1. Distributed Key Generation (DKG)
+### 3.1. DKG
 
-The Distributed Key Generation protocol enables participants to collectively generate a single public key while having each participant hold only a share of the corresponding private key. No single participant (or fewer than the threshold) can reconstruct the full private key. This is description of abstract algorithm, implementation will be described below in separate paragraph. Here we have Participants and Coordinator. Participants are independent actors who generate and store part of the key. Coordinator used as storage of DKG global state and point of data exchange.
+The **DKG** process allows a group of **Oracles** to collaboratively generate an **InternalKey** while each **Oracle** maintains only a share (**Secret**) of the corresponding private key. No individual **Oracle** or any group smaller than the threshold `t` can reconstruct the complete private key.
 
-To generate distributed key we need to go through next steps:
+In this process, **Oracles** act as independent participants that generate and securely store their portions of the key material. The **Coordinator** serves as the central storage for the global state of the **DKG** process and facilitates secure data exchange between participants without revealing their **Secrets**.
 
-**Step 1. Setup initial parameters for DKG:**
-1.1. Number of participants (max_signers): Total number of participants in the signing group.
-1.2. Threshold value (min_signers): Minimum number of participants required to create a valid signature (t ≤ n).
-1.3. Time period for DKG. If DKG is not finished in this period, then all process needs to be restarted from the beginning.
-1.4. List of participants. Each participant have unique ID.
-1.5. List of participants who was evicted from DKG process (they don`t send all necessary data in Time period or they send corrupted data).
-1.6. Unique ID for DKG. In our implementation we use unix timestamp of DKG period end.
-1.7. Public key associated with participant ID. On each step every message is signed with private key of the participant and verified by Coordinator (storage of share data). Participants trust the Coordinator and do not execute additional verification. Additionally Coordinator checks that participant was not evicted from DKG. If participant message has incorrect signature or participant was evicted, then message from such participant is ignored. On all steps the Coordinator verify only signature, eviction list, DKG step and timeout. So every participant can send only one variant of data. We have additional voting mechanism for participants eviction.
-1.8. Current DKG state. At the beginning state is ROUND_1.
-1.9. List of participants session keys. Those keys will be used for message signing in the Signing process instead of the public keys from List of participants. At the beginning this list is empty.
+#### Initial Parameters Setup
 
-**Step 2 (Round 1)**
-Each participant generates Secret and Public packages. Round 1 Secret participants keeps locally in secure, while public packages need to be published (all packages sends to the Coordinator). When all participants published their Round 1 Public packages then round is considered complete. We go to the Round 2. If not all participants (< max_signers) sent their data until DKG timeout, then we go to Restarting DKG step. We do not vote for eviction at this step, only DKG timeout can happen.
-Coordinator decides when Round 1 is finished. State updated to the ROUND_2.
+The **DKG** process begins by configuring the following parameters that define how the distributed key will be generated and later used for transaction signing:
 
-**Step 3 (Round 2)**
-Each participant gets: Round 1 public packages from all other participants, Round 1 secret. Then generate Round 2 Secret and set of unique packages (one for every other participants). Round 2 Secret participants keeps locally in secure, while public packages need to be published (all packages for all participants sends to the Coordinator). When all participants published their Round 2 Public packages then round is considered complete. We go to the Round 3. If not all participants (< max_signers) sent their data until DKG timeout, then we go to Restarting DKG step. Additionally we check data packages on participants side. If we found some corrupted data (wrong number of commitments or just junk data) then we sent special `claim` message to the Coordinator were we set ID of `culprit` participant. When Coordinator detects that at least 2/3 of current participants voted for eviction of some participant then list of evicted participants updated (add `culprit` participant) and DKG process need to be restarted.
-Coordinator decides when Round 2 is finished. State updated to the ROUND_3.
+1. **Max Signers**: Total number of **Oracle** participants that will collectively generate the **InternalKey** and hold shares of the private key.
+2. **Min Signers**: Threshold value `t` of **Oracles** required to later collaborate in creating valid signatures. This ensures that no smaller group can forge signatures (where `t ≤ n`).
+3. **DKG timeout**: Maximum duration allowed for the **DKG** process to complete. If exceeded, the process restarts.
+4. **Participant list**: Registry of all participating **Oracles** with unique IDs.
+5. **Eviction list**: **Oracles** removed from the **DKG** process due to timeouts or submission of corrupted data.
+6. **DKG ID**: Unique identifier for this specific **DKG** session (implementation uses the UNIX timestamp of the session end period).
+7. **Participant keys**: Public keys of each **Oracle**, used to sign and verify all protocol messages during both **DKG** and subsequent **Signing** processes.
+8. **DKG State**: Current step of the process, initially set to `R1`.
+9. **Session keys list**: Special-purpose keys generated during **DKG** that will be used for message signing in the later **Signing** process. Initially empty.
 
-**Step 4 (Round 3)**
-Each participant collects their Round 2 public packages from all other participants. Then get those packages, Round 2 secret and generate Round 3 Secret and Public Key. This Public Key must be the same for all participants. Round 3 Secret participants keeps locally in secure, while public key package need to be published (all packages sends to the Coordinator). If not all participants (< max_signers) sent their data until DKG timeout, then we go to Restarting DKG step. Additionally we check data packages on participants side. If we found some corrupted data (wrong secret share) then we sent special `claim` message to the Coordinator were we set ID of `culprit` participant. When Coordinator detects that at least 2/3 of current participants voted for eviction of some participant then list of evicted participants updated (add `culprit` participant) and DKG process need to be restarted.
-Coordinator decides when Round 3 is finished. State updated to the DONE.
+All messages in the **DKG** process must be cryptographically signed before being sent to the **Coordinator**. In the implementation, each **Oracle** requests its associated **Validator** to sign every message with the validator's key for the current epoch. The **Coordinator** verifies these signatures, rejects messages without valid **Validator** signatures, checks that the **Oracle** hasn't been evicted, and enforces timeouts.
 
-**Restarting DKG**
-If DKG is restarting:
+#### DKG Round 1
 
-1. Number of participants (max_signers): value updated with respect to List of participants who was evicted. So new max_signers can be smaller than previous.
-2. Threshold value (min_signers): keeps the same.
-3. Time period for DKG. Keeps the same
-4. List of participants. From this list we removes participants who was evicted.
-5. List of participants who was evicted remains the same.
-6. Unique ID for DKG. Sets new value = current timestamp + Time period for DKG.
-7. Public key associated with participant ID. Keeps the same.
-8. Current DKG state. State is ROUND_1.
-9. List of participants session keys. This list is cleared and make empty.
+In this initial round, each **Oracle**:
 
-When DKG state is DONE then we can use it for signing transactions. Each participant stores their part of key, Coordinator contains public key.
+1. Generates both a secret package (`sR1-o{i}`) and a public package (`pR1-o{i}`) using the specified **Max Signers** and **Min Signers** threshold parameters, where `{i}` represents the **Oracle's ID** (e.g., `sR1-o1` for **Oracle 1**, `pR1-o2` for **Oracle 2**, etc.)
+2. Keeps the secret package (`sR1-o{i}`) secure in local storage
+3. Sends the public package (`pR1-o{i}`) to the **Coordinator**
+
+The round progresses as follows:
+
+- The **Coordinator** collects `pR1-o{i}` from all **Oracles**
+- When all **Oracles** have published their packages, the round is considered complete
+- If any **Oracle** fails to submit data before the **DKG timeout**, the process moves to the **Restart** procedure (described in the [DKG Restart Procedure](#dkg-restart-procedure) section)
+- No eviction voting (**Eviction**) occurs during this round; only timeout-based evictions are possible
+- Once all required data is collected, the **Coordinator** updates the state to `R2`
+
+#### DKG Round 2
+
+In this round, each **Oracle** (for example with **ID 1**):
+
+1. Retrieves `pR1-o{i}` of all other participants from the **Coordinator**
+2. Generates a Round 2 secret package (`sR2-o{i}`) and set of public packages packages (`pR2-o{1}-o{i}`), one targeted for each other **Oracle** using `sR1-o{1}` along with others' public packages
+3. Stores `sR2-o{i}` locally
+4. Sends all packages `pR2-o{1}-o{i}` to the **Coordinator**
+
+The round progresses as follows:
+
+- The **Coordinator** collects all `pR2-o{i}-o{j}` packages from participating **Oracles** (for example, with 100 **Oracles**, each generates 99 packages for other **Oracles**, resulting in a total of 9,900 packages)
+- Each **Oracle** verifies received data and may detect corrupted packages
+- If corrupted data is detected, the **Oracle** sends a `claim` message to the **Coordinator** identifying the malicious participant
+- When at least 2/3 of active participants vote to evict an **Oracle**, the **Coordinator**:
+  1. Adds the malicious **Oracle** to the **Eviction list**
+  2. Moves to the **Restart** procedure (described in the [DKG Restart Procedure](#dkg-restart-procedure) section)
+- If fewer than **Max Signers** send their data before the **DKG timeout**, the process moves to the **Restart** procedure (described in the [DKG Restart Procedure](#dkg-restart-procedure) section)
+- Once all required packages are successfully submitted, the **Coordinator** updates the state to `R3`
+
+#### DKG Round 3
+
+In this final round, each **Oracle** (for example with **ID 1**):
+
+1. Retrieves all packages `pR2-o{i}-o{1}` targeted to itself from the **Coordinator**
+2. Generates its **Secret** share (`s-o{1}`) and the **InternalKey** by combining `sR2-o{1}` with the received packages
+3. Stores **Secret** locally
+4. Sends the **InternalKey** and **Verification Data** to the **Coordinator** (details about **Verification Data** are described in the [Session Key Generation](#session-key-generation) section)
+
+The round completes as follows:
+
+- The **Coordinator** verifies that all submitted **InternalKey** values match
+- **Oracles** may detect inconsistencies and submit `claim` messages about malicious participants
+- When at least 2/3 of active participants vote to evict an **Oracle**, the **Coordinator**:
+  1. Adds the malicious **Oracle** to the **Eviction list**
+  2. Moves to the **Restart** procedure (described in the [DKG Restart Procedure](#dkg-restart-procedure) section)
+- If fewer than **Min Signers** send their data before the **DKG timeout**, the process moves to the **Restart** procedure (described in the [DKG Restart Procedure](#dkg-restart-procedure) section)
+- When successful, the **Coordinator** updates the state to `DONE`
+
+At this point, the distributed key generation is complete. Each **Oracle** holds its unique **Secret** (`s-o{i}`), while the **Coordinator** stores the **InternalKey** that will be used to verify signatures.
+
+#### DKG Restart Procedure
+
+When the **DKG** process fails to complete successfully (due to timeouts or evictions), the **Coordinator** initiates the restart procedure with the following parameter updates:
+
+- **Max Signers**: Adjusted to the current number of active **Oracles** (excluding those in the **Eviction list**)
+- **Participant list**: Updated by removing all evicted **Oracles**
+- **DKG ID**: Regenerated using the formula: current timestamp + **DKG timeout**
+- **DKG State**: Reset to `R1`
+- **Session keys list**: Fully purged with no entries retained
+- All other parameters remain unchanged from the current **DKG** state
+
+After these updates, the **Coordinator** restarts the **DKG** process from [Round 1](#dkg-round-1).
+
+#### DKG Final State
+
+When the **DKG** process eventually completes successfully (reaching the `DONE` state), each **Oracle** securely holds its unique **Secret** (`s-o{i}`), while the **Coordinator** stores the collective **InternalKey**. At this point, each **Oracle** permanently deletes all intermediate secrets (`sR1-o{i}`, `sR2-o{i}`) from previous rounds, retaining only the final **Secret**. This successful completion of the key generation phase prepares the **System** for the subsequent **Signing** process.
+
+#### Session Key Generation
+
+As part of the **DKG** completion, each **Oracle** generates an additional Ed25519 key pair. The **Oracle** securely stores the private key portion (referred to as **SessionSecret**) locally, while sending the public key to the **Coordinator** for storage in the **Session keys list**. This public key is signed by the **Validator's** key, allowing the **Coordinator** to verify its authenticity.
+
+These session keys serve an important optimization purpose: they allow the **Oracle** to sign future **Signing** process messages without requiring repeated signature requests to the **Validator** node. In essence, the **Validator** delegates signing authority to this session key for the duration of the epoch, significantly reducing the number of validator signature requests and improving overall system performance.
 
 **DKG Flow**
 
@@ -417,7 +474,7 @@ The goal of the DKG process is to generate a cryptographic key distributed acros
 
 **Step 2: Check if DKG is Complete**
 
-- If DKG state is `DKGStateFinished`, then the DKG process is done
+- If DKG State is `DKGStateFinished`, then the DKG process is done
 - Oracle will pause DKG for N seconds
 - If DKG is not finished, proceed to Step 3
 
@@ -425,7 +482,7 @@ The goal of the DKG process is to generate a cryptographic key distributed acros
 
 - Verify that the DKG has not timed out by checking that the `until` value is after the current timestamp
 - If DKG is not timed out, proceed to Step 4
-- If DKG is timed out, Oracle resets its DKG state:
+- If DKG is timed out, Oracle resets its DKG State:
   - Generate new Session key and save it to a file (filename matches the `until` value)
   - Clean all artifacts
   - Save Coordinator's `until` DKG value to the Oracle's `until` DKG value
