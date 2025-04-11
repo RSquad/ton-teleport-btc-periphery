@@ -97,41 +97,41 @@ When DKG state is DONE then we can use it for signing transactions. Each partici
 ```mermaid
 flowchart TD
     Start[Start DKG] --> Init[Setup Initial Parameters]
-    Init --> Round1[Round 1: Generate Secret and Public Packages]
+    Init --> Round1[Round 1: Generate Secret<br>and Public Packages]
     
-    Round1 --> CheckR1{All participants\nsent packages?}
+    Round1 --> CheckR1{All participants<br>sent packages?}
     CheckR1 -- Yes --> StateR2[Update State to ROUND_2]
     CheckR1 -- No/Timeout --> Restart[Restart DKG]
     
-    StateR2 --> Round2[Round 2: Process Round 1 data\nGenerate Secret and Unique Packages]
-    Round2 --> CheckR2{All participants\nsent packages?}
+    StateR2 --> Round2[Round 2: Process Round 1<br>dataGenerate Secret<br>and Unique Packages]
+    Round2 --> CheckR2{All participants<br>sent packages?}
     CheckR2 -- Yes --> StateR3[Update State to ROUND_3]
     CheckR2 -- No/Timeout --> Restart
     
-    Round2 --> Corrupt2{Corrupted\ndata detected?}
+    Round2 --> Corrupt2{Corrupted<br>data detected?}
     Corrupt2 -- Yes --> Claim2[Send Claim to Coordinator]
-    Claim2 --> VoteCheck2{≥2/3 votes\nfor eviction?}
+    Claim2 --> VoteCheck2{≥2/3 votes<br>for eviction?}
     VoteCheck2 -- Yes --> UpdateEvict2[Update Eviction List]
     UpdateEvict2 --> Restart
     VoteCheck2 -- No --> StateR3
     Corrupt2 -- No --> CheckR2
     
-    StateR3 --> Round3[Round 3: Process Round 2 data\nGenerate Secret and Public Key]
-    Round3 --> CheckR3{All participants\nsent packages?}
+    StateR3 --> Round3[Round 3: Process Round 2<br>dataGenerate Secret<br>and Public Key]
+    Round3 --> CheckR3{All participants<br>sent packages?}
     CheckR3 -- Yes --> StateDone[Update State to DONE]
     CheckR3 -- No/Timeout --> Restart
     
-    Round3 --> Corrupt3{Corrupted\ndata detected?}
+    Round3 --> Corrupt3{Corrupted<br>data detected?}
     Corrupt3 -- Yes --> Claim3[Send Claim to Coordinator]
-    Claim3 --> VoteCheck3{≥2/3 votes\nfor eviction?}
+    Claim3 --> VoteCheck3{≥2/3 votes<br>for eviction?}
     VoteCheck3 -- Yes --> UpdateEvict3[Update Eviction List]
     UpdateEvict3 --> Restart
     VoteCheck3 -- No --> StateDone
     Corrupt3 -- No --> CheckR3
     
-    StateDone --> Complete[DKG Complete\nReady for Signing]
+    StateDone --> Complete[DKG Complete<br>Ready for Signing]
     
-    Restart --> UpdateMaxSigners[Update max_signers\nRemove evicted participants]
+    Restart --> UpdateMaxSigners[Update max_signers<br>Remove evicted participants]
     UpdateMaxSigners --> ResetID[Generate new DKG ID]
     ResetID --> ClearKeys[Clear session keys]
     ClearKeys --> StateR1[Set State to ROUND_1]
@@ -220,34 +220,34 @@ When signing is complete, the signature is returned along with the transaction d
 
 ```mermaid
 flowchart TD
-    Start[Start Signing] --> Oracle[Oracle Provides Data to Sign]
-    Oracle --> Round1[Round 1: Generate Nonces and Commitments]
+    Start[Start Signing] --> OracleProvides[Oracle Provides Data<br>to Sign]
+    OracleProvides --> Round1[Round 1: Generate<br>Nonces and Commitments]
     
-    Round1 --> CheckR1{At least min_signers\ncommitments received?}
+    Round1 --> CheckR1{At least min_signers<br>commitments received?}
     CheckR1 -- No/Timeout --> Restart[Restart Signing]
     CheckR1 -- Yes --> StateR2[Update State to ROUND_2]
     
-    StateR2 --> Round2[Round 2: Generate Signature Shares]
-    Round2 --> CheckR2{At least min_signers\nsignature shares?}
+    StateR2 --> Round2[Round 2: Generate<br>Signature Shares]
+    Round2 --> CheckR2{At least min_signers<br>signature shares?}
     CheckR2 -- No/Timeout --> Restart
     
-    Round2 --> Corrupt2{Corrupted\ndata detected?}
+    Round2 --> Corrupt2{Corrupted<br>data detected?}
     Corrupt2 -- Yes --> Claim2[Send Claim to Coordinator]
-    Claim2 --> VoteCheck2{≥2/3 votes\nfor eviction?}
+    Claim2 --> VoteCheck2{≥2/3 votes<br>for eviction?}
     VoteCheck2 -- Yes --> UpdateEvict2[Update Eviction List]
     UpdateEvict2 --> Restart
     VoteCheck2 -- No --> StateR3
     Corrupt2 -- No --> CheckR2
     
     CheckR2 -- Yes --> StateR3[Update State to ROUND_3]
-    StateR3 --> Round3[Round 3: Aggregate Signature]
+    StateR3 --> Round3[Round 3: Aggregate<br>Signature]
     
-    Round3 --> CheckR3{Signature shares\nconsistent?}
+    Round3 --> CheckR3{Signature shares<br>consistent?}
     CheckR3 -- No/Timeout --> Restart
     
-    Round3 --> Corrupt3{Corrupted\ndata detected?}
+    Round3 --> Corrupt3{Corrupted<br>data detected?}
     Corrupt3 -- Yes --> Claim3[Send Claim to Coordinator]
-    Claim3 --> VoteCheck3{≥2/3 votes\nfor eviction?}
+    Claim3 --> VoteCheck3{≥2/3 votes<br>for eviction?}
     VoteCheck3 -- Yes --> UpdateEvict3[Update Eviction List]
     UpdateEvict3 --> Restart
     VoteCheck3 -- No --> StateDone
@@ -256,7 +256,7 @@ flowchart TD
     CheckR3 -- Yes --> StateDone[Update State to DONE]
     StateDone --> Complete[Signing Complete]
     
-    Restart --> UpdateMaxSigners[Update max_signers\nRemove evicted participants]
+    Restart --> UpdateMaxSigners[Update max_signers<br>Remove evicted participants]
     UpdateMaxSigners --> StateR1[Set State to ROUND_1]
     StateR1 --> Round1
 
@@ -283,10 +283,6 @@ flowchart TD
         Corrupt3
         Claim2
         Claim3
-    end
-    
-    subgraph "Oracle"
-        Oracle
     end
 
     style Start fill:#9ff,stroke:#333,stroke-width:2px
