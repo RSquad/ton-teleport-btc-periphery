@@ -24,7 +24,7 @@ This section describes the core entities involved in the signing protocol and th
 
 **Oracles** are the specialized software modules that:
 
-- Participate in the **DKG** process to collectively generate a public key (**InternalKey**) while each **Oracle** holds only a partial share of the private key (**Secret**)
+- Participate in the **DKG** process to collectively generate a public key (**InternalKey**) while each **Oracle** holds only a partial share of the private key (**SecretShare**)
 - Use their **Secrets** in the **Signing** process to contribute partial signatures that are aggregated into one complete Bitcoin signature
 - Store secret data locally for both **DKG** and **Signing** rounds (secret shares, nonces, etc.)
 - Communicate with other **Oracles** indirectly via the **Coordinator**
@@ -65,7 +65,7 @@ This section describes the abstract algorithms behind the **DKG** and **Signing*
 
 ### 3.1. DKG
 
-The **DKG** process allows a group of **Oracles** to collaboratively generate an **InternalKey** while each **Oracle** maintains only a share (**Secret**) of the corresponding private key. No individual **Oracle** or any group smaller than the threshold `t` can reconstruct the complete private key.
+The **DKG** process allows a group of **Oracles** to collaboratively generate an **InternalKey** while each **Oracle** maintains only a share (**SecretShare**) of the corresponding private key. No individual **Oracle** or any group smaller than the threshold `t` can reconstruct the complete private key.
 
 In this process, **Oracles** act as independent participants that generate and securely store their portions of the key material. The **Coordinator** serves as the central storage for the global state of the **DKG** process and facilitates secure data exchange between participants without revealing their **Secrets**.
 
@@ -181,8 +181,8 @@ flowchart LR
 In this final round, each **Oracle** (for example with **ID 1**):
 
 1. Retrieves all packages `pR2-o{i}-o{1}` targeted to itself from the **Coordinator**
-2. Generates its **Secret** share (`s-o{1}`) and the **InternalKey** by combining `sR2-o{1}` with the received packages
-3. Stores **Secret** locally
+2. Generates its **SecretShare** share (`s-o{1}`) and the **InternalKey** by combining `sR2-o{1}` with the received packages
+3. Stores **SecretShare** locally
 4. Sends the **InternalKey** and **Verification Data** to the **Coordinator** (details about **Verification Data** are described in the [Session Key Generation](#session-key-generation) section)
 
 The round completes as follows:
@@ -227,7 +227,7 @@ flowchart LR
     style Timeout fill:#fff, stroke:#333, color:#000
 ```
 
-At this point, the distributed key generation is complete. Each **Oracle** holds its unique **Secret** (`s-o{i}`), while the **Coordinator** stores the **InternalKey** that will be used to verify signatures.
+At this point, the distributed key generation is complete. Each **Oracle** holds its unique **SecretShare** (`s-o{i}`), while the **Coordinator** stores the **InternalKey** that will be used to verify signatures.
 
 #### DKG Restart Procedure
 
@@ -264,7 +264,7 @@ flowchart LR
 
 #### DKG Final State
 
-When the **DKG** process eventually completes successfully (reaching the `DONE` state), each **Oracle** securely holds its unique **Secret** (`s-o{i}`), while the **Coordinator** stores the collective **InternalKey**. At this point, each **Oracle** permanently deletes all intermediate secrets (`sR1-o{i}`, `sR2-o{i}`) from previous rounds, retaining only the final **Secret**. This successful completion of the key generation phase prepares the **System** for the subsequent **Signing** process.
+When the **DKG** process eventually completes successfully (reaching the `DONE` state), each **Oracle** securely holds its unique **SecretShare** (`s-o{i}`), while the **Coordinator** stores the collective **InternalKey**. At this point, each **Oracle** permanently deletes all intermediate secrets (`sR1-o{i}`, `sR2-o{i}`) from previous rounds, retaining only the final **SecretShare**. This successful completion of the key generation phase prepares the **System** for the subsequent **Signing** process.
 
 #### Session Key Generation
 
@@ -323,126 +323,247 @@ flowchart TB
     style UpdateParams fill:#fff, stroke:#333, color:#000
 ```
 
-### 3.2. Distributed Transaction Signing
+### 3.2. Signing
 
-The FROST (Flexible Round-Optimized Schnorr Threshold Signatures) Distributed Transaction Signing protocol enables a threshold number of participants to collaboratively sign a transaction using their key shares generated during the Distributed Key Generation (DKG) process.
+The **Signing** process enables a threshold number of **Oracles** to collaboratively sign a transaction using **InternalKey** and **SecretShare** generated during the **DKG** process.
 
-To sign a transaction using distributed key shares, we need to go through the following steps:
+> **Note**: For more detailed information about the underlying cryptographic mechanisms of FROST signing, see the [FROST Signing Tutorial](https://frost.zfnd.org/tutorial/signing.html).
 
-We assume that:
+In this process, **Oracles** act as signers that use their **SecretShare** shares to contribute to a collective signature without revealing their private key material. The **Coordinator** facilitates the signing by managing the global state and coordinating communication between participants.
 
-1. There are some data to sign.
-2. DKG process is DONE with N participants.
-3. Oracle contains session public keys for each participant.
-4. min_signers <= N.
-5. Oracle contains DKG public key.
-6. Participants contain separated secret parts for signing.
-7. For each data to sign there is a Time period. If Signing is not finished in this period, then the entire Signing process needs to be restarted from the beginning (DKG stays the same).
-8. Current Signing state = ROUND_1.
+#### Prerequisites
 
-Logic of Rounds are the same as in DKG process. Participants do some calculations and send signed messages to the Coordinator.
+1. The DKG process is successfully completed and in the `DONE` state
+2. At least **Min Signers** amount of **Oracles** are available to participate in signing (this threshold value is established during the [Initial Parameters Setup](#initial-parameters-setup) phase of the DKG process)
+3. Each participating **Oracle** has access to its **SecretShare** from the passed **DKG**
+4. The **Coordinator** has all **Session public keys** for each **Oracle**
+5. There is **Data** to be signed
 
-To sign a transaction using distributed key shares, we need to go through the following steps:
+The **Signing** process consists of three rounds, similar to the DKG process. If not completed within a defined time period, the entire **Signing** process is restarted from the beginning, while the DKG remains unchanged.
 
-**Step 1.**
-Oracle gives to the participants (we trust the Oracle) the same data to sign.
+#### System Context and Pegouts
 
-**Step 2 (Round 1). Commitment Generation**
-Each participant generates Nonces and Commitment packages. Round 1 Nonces participants keeps locally, while Commitment packages need to be published (all packages sends to the Coordinator). When min_signers participants published their Round 1 Commitments then round is considered complete. All participants that do not send their Commitments will be ignored in next steps. We go to the Round 2. We do not vote for eviction at this step, only timeout can happen.
-Coordinator decides when Round 1 is finished. State updated to the ROUND_2.
+In the **System**, signing requests come from "pegouts" — Bitcoin transactions that transfer funds from the TON ecosystem back to the Bitcoin blockchain. When a pegout is deployed, the transaction **Data** is sent to the **Coordinator** for signing. **Oracles** periodically check the **Coordinator** for pending signing requests and initiate the signing process when new requests are detected.
 
-**Step 3 (Round 2). Signature Share Generation**
-Each participant gets: Round 1 Commitment packages from all other participants, Round 1 Nonce, Secret package from DKG Round 3, hash of the data to sign (and in implementation of the Oracle additionally we use tap merkle root as tweak for tweaking signing share). Then generate Round 2 Sign Share. Round 2 Sign Share need to be published (all packages sends to the Coordinator). When all participants (min_signers) published their Round 2 Sign Share packages then round is considered complete. We go to the Round 3. If not all participants (< min_signers) sent their data until Signing timeout, then we go to Restarting Signing from the begining (Step 1). Additionally we check data packages on participants side. If we found some corrupted data then we sent special `claim` message to the Coordinator (the same algorithm as in DKG) and Signing process need to be restarted.
-Coordinator decides when Round 2 is finished. State updated to the ROUND_3.
+It's important to note that during a single validation epoch, multiple signing requests can be processed using the same **InternalKey**. The **System** is designed to handle these concurrent requests, with each request being processed independently through the three-round signing process.
 
-**Step 4 (Round 3). Signature Aggregation**
-Each participant gets: Signing Shares from other participants, commitment packages, public key and tap tweak. From this data with FROST we aggregate signature and send it to the Oracle. Signature must be the same for all participants. If not all participants (< min_signers) sent their data until Signing timeout, then we go to Restarting Signing step. Additionally we check data packages on participants side. If we found some corrupted data then we sent special claim message to the Coordinator (the same algorithm as in DKG) and Signing process need to be restarted.
-Coordinator decides when Round 3 is finished. State updated to the DONE.
+This document focuses on the signing protocol itself rather than the specific mechanisms by which pegout **Data** is generated or processed by the **Coordinator**.
 
-**Restarting Signing**
-When Signing is restarting:
+#### **Data** Distribution
 
-1. Number of participants (max_signers): value updated with respect to List of participants who was evicted.
-2. Threshold value (min_signers): keeps the same.
-3. Time period for Signing. Keeps the same
-4. List of participants. From this list we removes participants who was evicted.
-5. List of participants who was evicted remains the same.
-6. Current Signing state. State is ROUND_1.
+Before the signing rounds begin, all participating **Oracles** must obtain the same transaction **Data** to sign. Each **Oracle** retrieves the **Data** that needs to be signed from the **Coordinator**, who maintains a queue of pending sign requests.
 
-When signing is complete, the signature is returned along with the transaction data. The signature can be verified by anyone using the group public key generated during the DKG process.
+**Signing Round 1: Commitment Generation**
+Each **Oracle**:
 
-**Transaction Signing Flow**
+1. Generates `nonce` and commitment package (`signR1-o{i}`), where `{i}` represents the **Oracle's ID** (e.g., `sR1-o1` for **Oracle 1**, `signR1-o2` for **Oracle 2**, etc.) using their **SecretShare** share
+2. Keeps the `nonce` locally for security
+3. Sends `signR1-o{i}` to the **Coordinator**
+
+The round progresses as follows:
+
+- The **Coordinator** collects `signR1-o{i}` from participating **Oracles**
+- When at least **Min Signers** amount of **Oracles** have submitted their commitment packages, the round is considered complete
+- **Oracles** that do not submit commitments will be ignored in subsequent steps
+- No eviction voting occurs during this round; only timeout-based evictions are possible
+- Once enough commitments are collected, the **Coordinator** updates the state to `R2`
 
 ```mermaid
-flowchart TD
-    Start[Start Signing] --> OracleProvides[Oracle Provides Data<br>to Sign]
-    OracleProvides --> Round1[Round 1: Generate<br>Nonces and Commitments]
+flowchart LR
+    Oracle["Oracle"] -- "Generate nonce & commitment" --> LocalStore[("nonce<br>(Local Storage)")]
+    Oracle -- "Send commitment" --> Coordinator[("Coordinator<br>(signR1-o{i})")]
+    Coordinator -- "State: R2" --> NextRound["Round 2"]
 
-    Round1 --> CheckR1{At least min_signers<br>commitments received?}
-    CheckR1 -- No/Timeout --> Restart[Restart Signing]
-    CheckR1 -- Yes --> StateR2[Update State to ROUND_2]
-
-    StateR2 --> Round2[Round 2: Generate<br>Signature Shares]
-    Round2 --> CheckR2{At least min_signers<br>signature shares?}
-    CheckR2 -- No/Timeout --> Restart
-
-    Round2 --> Corrupt2{Corrupted<br>data detected?}
-    Corrupt2 -- Yes --> Claim2[Send Claim to Coordinator]
-    Claim2 --> VoteCheck2{≥2/3 votes<br>for eviction?}
-    VoteCheck2 -- Yes --> UpdateEvict2[Update Eviction List]
-    UpdateEvict2 --> Restart
-    VoteCheck2 -- No --> StateR3
-    Corrupt2 -- No --> CheckR2
-
-    CheckR2 -- Yes --> StateR3[Update State to ROUND_3]
-    StateR3 --> Round3[Round 3: Aggregate<br>Signature]
-
-    Round3 --> CheckR3{Signature shares<br>consistent?}
-    CheckR3 -- No/Timeout --> Restart
-
-    Round3 --> Corrupt3{Corrupted<br>data detected?}
-    Corrupt3 -- Yes --> Claim3[Send Claim to Coordinator]
-    Claim3 --> VoteCheck3{≥2/3 votes<br>for eviction?}
-    VoteCheck3 -- Yes --> UpdateEvict3[Update Eviction List]
-    UpdateEvict3 --> Restart
-    VoteCheck3 -- No --> StateDone
-    Corrupt3 -- No --> CheckR3
-
-    CheckR3 -- Yes --> StateDone[Update State to DONE]
-    StateDone --> Complete[Signing Complete]
-
-    Restart --> UpdateMaxSigners[Update max_signers<br>Remove evicted participants]
-    UpdateMaxSigners --> StateR1[Set State to ROUND_1]
-    StateR1 --> Round1
-
-    subgraph "Coordinator"
-        StateR1
-        StateR2
-        StateR3
-        StateDone
-        UpdateEvict2
-        UpdateEvict3
-        UpdateMaxSigners
-        VoteCheck2
-        VoteCheck3
-        CheckR1
-        CheckR2
-        CheckR3
+    subgraph "Timeout Check"
+        Coordinator -- "Check" --> Timeout{"Timeout?"}
+        Timeout -- "Yes" --> Restart["Restart Signing"]
     end
 
-    subgraph "Participants"
-        Round1
-        Round2
-        Round3
-        Corrupt2
-        Corrupt3
-        Claim2
-        Claim3
+    style Oracle fill:#b9e, stroke:#333, color:#000
+    style Coordinator fill:#fe9, stroke:#333, color:#000
+    style LocalStore fill:#9f9, stroke:#333, color:#000
+    style NextRound fill:#fff, stroke:#333, color:#000
+    style Restart fill:#f99, stroke:#333, color:#000
+    style Timeout fill:#fff, stroke:#333, color:#000
+```
+
+**Signing Round 2: Signature Share Generation**
+Each **Oracle**:
+
+1. Retrieves `signR1-o{i}` from all other participants via the **Coordinator**
+2. Uses its Round 1 `nonce`, **SecretShare** (`s-o{i}`) share, and the hash of the **Data** to sign
+3. Generates a Round 2 signature share (`signR2-o{i}`) and sends it to the **Coordinator**
+
+The round progresses as follows:
+
+- The **Coordinator** collects all `signR1-o{i}` from participating **Oracles**
+- When at least **Min Signers** **Oracles** have submitted their `signR2-o{i}`, the round is considered complete
+- Each **Oracle** verifies received data and may detect corrupted packages
+- If corrupted data is detected, the **Oracle** sends a `claim` message to the **Coordinator** identifying the malicious participant
+- When at least 2/3 of active participants vote to evict an **Oracle**, the **Coordinator** adds the malicious **Oracle** to the **Eviction list** and restarts the **Signing** process from the beginning (Step 1)
+- If fewer than **Min Signers** **Oracles** send their data before the **Signing timeout**, the process moves to restarting **Signing**
+- Once all required signature shares are successfully submitted, the **Coordinator** updates the state to `R3`
+
+```mermaid
+flowchart LR
+    Oracle["Oracle"] -- "Get Commitments" --> Coordinator[("Coordinator<br>(signR1-o{i})")]
+    Oracle -- "Generate Signature Share" --> LocalStore[("Signature Share<br>(Local Storage)")]
+    Oracle -- "Send Signature Share" --> Coordinator2[("Coordinator<br>(signR2-o{i})")]
+
+    subgraph "Verification"
+        Oracle -- "Verify Data" --> Corrupt{"Corrupted?"}
+        Corrupt -- "Yes" --> Claim["Send Claim"]
+        Corrupt -- "No" --> Continue["Continue"]
     end
 
-    style Start fill:#9ff,stroke:#333,stroke-width:2px
-    style Complete fill:#9f9,stroke:#333,stroke-width:2px
-    style Restart fill:#f99,stroke:#333,stroke-width:2px
+    Coordinator2 -- "Check" --> MinPackages{">= Min Signers<br>Packages?"}
+    MinPackages -- "Yes" --> NextState["State: R3"]
+    MinPackages -- "No" --> Timeout{"Timeout?"}
+    Timeout -- "Yes" --> Restart["Restart Signing"]
+
+    style Oracle fill:#b9e, stroke:#333, color:#000
+    style Coordinator fill:#fe9, stroke:#333, color:#000
+    style Coordinator2 fill:#fe9, stroke:#333, color:#000
+    style LocalStore fill:#9f9, stroke:#333, color:#000
+    style Claim fill:#fff, stroke:#333, color:#000
+    style Continue fill:#fff, stroke:#333, color:#000
+    style NextState fill:#fff, stroke:#333, color:#000
+    style Restart fill:#f99, stroke:#333, color:#000
+    style Corrupt fill:#fff, stroke:#333, color:#000
+    style MinPackages fill:#fff, stroke:#333, color:#000
+    style Timeout fill:#fff, stroke:#333, color:#000
+```
+
+<!-- TODO: We have to check if 2/3 oracles send us same signature -->
+
+**Signing Round 3: Signature Aggregation**
+Each **Oracle**:
+
+1. Retrieves `signR2-o{i}` from other **Oracles**, `signR1-o{i}`, **InternalKey**, and the tap tweak via the **Coordinator**
+2. Aggregates a complete signature using the **FROST** algorithm
+3. Sends the final signature (`sign`) to the **Coordinator**
+
+The round completes as follows:
+
+- The **Coordinator** verifies that all `signR2-o{i}` match
+- **Oracles** may detect inconsistencies and submit `claim` messages about malicious participants
+- When at least 2/3 of active participants vote to evict an **Oracle**, the **Coordinator** adds the malicious **Oracle** to the **Eviction list** and restarts the **Signing** process
+- If fewer than **Min Signers** **Oracles** send their data before the **Signing** timeout, the process restarts
+- When successful, the **Coordinator** updates the state to `DONE`
+
+```mermaid
+flowchart LR
+    Oracle["Oracle"] -- "Get Signature Shares" --> Coordinator[("Coordinator<br>(signR2-o{i})")]
+    Oracle -- "Aggregation" --> AggSig[("Aggregated<br>Signature")]
+    Oracle -- "Send Signature" --> Coordinator2[("Coordinator<br>(sign)")]
+
+    subgraph "Verification"
+        Oracle -- "Verify Data" --> Corrupt{"Corrupted?"}
+        Corrupt -- "Yes" --> Claim["Send Claim"]
+        Corrupt -- "No" --> Continue["Continue"]
+    end
+
+    Coordinator2 -- "Check" --> MinPackages{">= Min Signers<br>Signatures?"}
+    MinPackages -- "Yes" --> NextState["State: DONE"]
+    MinPackages -- "No" --> Timeout{"Timeout?"}
+    Timeout -- "Yes" --> Restart["Restart Signing"]
+
+    style Oracle fill:#b9e, stroke:#333, color:#000
+    style Coordinator fill:#fe9, stroke:#333, color:#000
+    style Coordinator2 fill:#fe9, stroke:#333, color:#000
+    style AggSig fill:#9f9, stroke:#333, color:#000
+    style Claim fill:#fff, stroke:#333, color:#000
+    style Continue fill:#fff, stroke:#333, color:#000
+    style NextState fill:#fff, stroke:#333, color:#000
+    style Restart fill:#f99, stroke:#333, color:#000
+    style Corrupt fill:#fff, stroke:#333, color:#000
+    style MinPackages fill:#fff, stroke:#333, color:#000
+    style Timeout fill:#fff, stroke:#333, color:#000
+```
+
+#### Signing Restart Procedure
+
+When the **Signing** process needs to be restarted, the following parameters are updated:
+
+- **Max Signers**: Adjusted to the current number of active **Oracles** (excluding those in the **Eviction list**)
+- **Participant list**: Updated by removing all evicted **Oracles**
+- **Eviction list**: Preserved from the previous attempt
+- **Signing state**: Reset to `R1`
+- All other parameters remain unchanged
+
+After these updates, the **Coordinator** restarts the **Signing** process from [**Data Distribution**](#data-distribution).
+
+**Signing Restart Process**:
+
+```mermaid
+flowchart LR
+    Restart(["Restart Triggered"]) --> UpdateSigners["Update Max Signers"]
+    UpdateSigners --> UpdateList["Update Participant List"]
+    UpdateList --> ResetState["Reset State to R1"]
+    ResetState --> StartR1["Start Data Distribution"]
+
+    style Restart fill:#f99, stroke:#333, color:#000
+    style StartR1 fill:#9ff, stroke:#333, color:#000
+    style UpdateSigners fill:#fff, stroke:#333, color:#000
+    style UpdateList fill:#fff, stroke:#333, color:#000
+    style ResetState fill:#fff, stroke:#333, color:#000
+```
+
+#### Signing Final State
+
+When the **Signing** process completes successfully (reaching the `DONE` state), the **Coordinator** has the valid `sign` for the transaction. This `sign` can be verified by anyone using the **InternalKey** generated during the DKG process. Once a signing request is completed, the **Coordinator** is ready to process the next signing request in the queue, allowing multiple transactions to be processed sequentially during the same validation epoch.
+
+#### Signing Flow Overview
+
+The following diagram illustrates the high-level flow of the **Signing** process:
+
+```mermaid
+flowchart TB
+    Start(["Start Signing"]) --> Setup["Data Distribution"]
+    Setup --> R1["Signing Round 1"]
+    R1 --> CheckR1{"Complete?"}
+    CheckR1 -- No --> RestartProcess["Signing Restart"]
+    CheckR1 -- Yes --> R2["Signing Round 2"]
+    R2 --> CheckR2{"Complete?"}
+    CheckR2 -- No --> RestartProcess
+    R2 --> CorruptR2{"Corrupted Data?"}
+    CorruptR2 -- Yes --> ClaimR2["Submit Claims"]
+    ClaimR2 --> VoteR2{">= 2/3 Votes?"}
+    VoteR2 -- Yes --> RestartProcess
+    VoteR2 -- No --> R3["Signing Round 3"]
+    CorruptR2 -- No --> CheckR2
+    CheckR2 -- Yes --> R3
+    R3 --> CheckR3{"Complete?"}
+    CheckR3 -- No --> RestartProcess
+    R3 --> CorruptR3{"Corrupted Data?"}
+    CorruptR3 -- Yes --> ClaimR3["Submit Claims"]
+    ClaimR3 --> VoteR3{">= 2/3 Votes?"}
+    VoteR3 -- Yes --> RestartProcess
+    VoteR3 -- No --> Done
+    CorruptR3 -- No --> CheckR3
+    CheckR3 -- Yes --> Done(["Signing Complete"])
+    RestartProcess --> UpdateParams["Update Parameters"]
+    UpdateParams --> R1
+    Done --> NextRequest["Process Next Request"]
+
+    style Start fill:#9ff, stroke:#333, color:#000
+    style Done fill:#9f9, stroke:#333, color:#000
+    style RestartProcess fill:#f99, stroke:#333, color:#000
+    style NextRequest fill:#9ff, stroke:#333, color:#000
+    style R1 fill:#fff, stroke:#333, color:#000
+    style R2 fill:#fff, stroke:#333, color:#000
+    style R3 fill:#fff, stroke:#333, color:#000
+    style Setup fill:#fff, stroke:#333, color:#000
+    style CheckR1 fill:#fff, stroke:#333, color:#000
+    style CheckR2 fill:#fff, stroke:#333, color:#000
+    style CheckR3 fill:#fff, stroke:#333, color:#000
+    style CorruptR2 fill:#fff, stroke:#333, color:#000
+    style CorruptR3 fill:#fff, stroke:#333, color:#000
+    style ClaimR2 fill:#fff, stroke:#333, color:#000
+    style ClaimR3 fill:#fff, stroke:#333, color:#000
+    style VoteR2 fill:#fff, stroke:#333, color:#000
+    style VoteR3 fill:#fff, stroke:#333, color:#000
+    style UpdateParams fill:#fff, stroke:#333, color:#000
 ```
 
 ## 4. Implementation of the DKG and Signing
