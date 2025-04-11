@@ -69,6 +69,8 @@ The **DKG** process allows a group of **Oracles** to collaboratively generate an
 
 In this process, **Oracles** act as independent participants that generate and securely store their portions of the key material. The **Coordinator** serves as the central storage for the global state of the **DKG** process and facilitates secure data exchange between participants without revealing their **Secrets**.
 
+> **Note**: For more detailed information about the underlying cryptographic mechanisms of FROST DKG, see the [FROST DKG Tutorial](https://frost.zfnd.org/tutorial/dkg.html).
+
 #### Initial Parameters Setup
 
 The **DKG** process begins by configuring the following parameters that define how the distributed key will be generated and later used for transaction signing:
@@ -101,6 +103,27 @@ The round progresses as follows:
 - No eviction voting (**Eviction**) occurs during this round; only timeout-based evictions are possible
 - Once all required data is collected, the **Coordinator** updates the state to `R2`
 
+**Round 1 Process**:
+
+```mermaid
+flowchart LR
+    Oracle["Oracle"] -- "Generate Secret & Public Package" --> LocalStore[("Secret Package<br>(Local Storage)")]
+    Oracle -- "Send Public Package" --> Coordinator[("Coordinator<br>(pR1-o{i})")]
+    Coordinator -- "State: R2" --> NextRound["Round 2"]
+
+    subgraph "Timeout Check"
+        Coordinator -- "Check" --> Timeout{"Timeout?"}
+        Timeout -- "Yes" --> Restart["Restart DKG"]
+    end
+
+    style Oracle fill:#b9e, stroke:#333, color:#000
+    style Coordinator fill:#fe9, stroke:#333, color:#000
+    style LocalStore fill:#9f9, stroke:#333, color:#000
+    style NextRound fill:#fff, stroke:#333, color:#000
+    style Restart fill:#f99, stroke:#333, color:#000
+    style Timeout fill:#fff, stroke:#333, color:#000
+```
+
 #### DKG Round 2
 
 In this round, each **Oracle** (for example with **ID 1**):
@@ -121,6 +144,38 @@ The round progresses as follows:
 - If fewer than **Max Signers** send their data before the **DKG timeout**, the process moves to the **Restart** procedure (described in the [DKG Restart Procedure](#dkg-restart-procedure) section)
 - Once all required packages are successfully submitted, the **Coordinator** updates the state to `R3`
 
+**Round 2 Process**:
+
+```mermaid
+flowchart LR
+    Oracle["Oracle"] -- "Get Public Packages" --> Coordinator[("Coordinator<br>(pR1-o{i})")]
+    Oracle -- "Generate R2 Packages" --> LocalStore[("R2 Secret<br>(Local Storage)")]
+    Oracle -- "Send R2 Packages to Others" --> Coordinator2[("Coordinator<br>(pR2-o{i}-o{j})")]
+
+    subgraph "Verification"
+        Oracle -- "Verify Data" --> Corrupt{"Corrupted?"}
+        Corrupt -- "Yes" --> Claim["Send Claim"]
+        Corrupt -- "No" --> Continue["Continue"]
+    end
+
+    Coordinator2 -- "Check" --> MinPackages{">= Max Signers<br>Packages?"}
+    MinPackages -- "Yes" --> NextState["State: R3"]
+    MinPackages -- "No" --> Timeout{"Timeout?"}
+    Timeout -- "Yes" --> Restart["Restart DKG"]
+
+    style Oracle fill:#b9e, stroke:#333, color:#000
+    style Coordinator fill:#fe9, stroke:#333, color:#000
+    style Coordinator2 fill:#fe9, stroke:#333, color:#000
+    style LocalStore fill:#9f9, stroke:#333, color:#000
+    style Claim fill:#fff, stroke:#333, color:#000
+    style Continue fill:#fff, stroke:#333, color:#000
+    style NextState fill:#fff, stroke:#333, color:#000
+    style Restart fill:#f99, stroke:#333, color:#000
+    style Corrupt fill:#fff, stroke:#333, color:#000
+    style MinPackages fill:#fff, stroke:#333, color:#000
+    style Timeout fill:#fff, stroke:#333, color:#000
+```
+
 #### DKG Round 3
 
 In this final round, each **Oracle** (for example with **ID 1**):
@@ -140,6 +195,38 @@ The round completes as follows:
 - If fewer than **Min Signers** send their data before the **DKG timeout**, the process moves to the **Restart** procedure (described in the [DKG Restart Procedure](#dkg-restart-procedure) section)
 - When successful, the **Coordinator** updates the state to `DONE`
 
+**Round 3 Process**:
+
+```mermaid
+flowchart LR
+    Oracle["Oracle"] -- "Get R2 Packages" --> Coordinator[("Coordinator<br>(pR2-o{i}-o{j})")]
+    Oracle -- "Generate Secret Share & Internal Key" --> LocalStore[("Secret<br>(Local Storage)")]
+    Oracle -- "Send Internal Key & Session Key" --> Coordinator2[("Coordinator")]
+
+    subgraph "Verification"
+        Oracle -- "Verify Data" --> Corrupt{"Corrupted?"}
+        Corrupt -- "Yes" --> Claim["Send Claim"]
+        Corrupt -- "No" --> Continue["Continue"]
+    end
+
+    Coordinator2 -- "Check" --> MinPackages{">= Min Signers<br>Packages?"}
+    MinPackages -- "Yes" --> NextState["State: DONE"]
+    MinPackages -- "No" --> Timeout{"Timeout?"}
+    Timeout -- "Yes" --> Restart["Restart DKG"]
+
+    style Oracle fill:#b9e, stroke:#333, color:#000
+    style Coordinator fill:#fe9, stroke:#333, color:#000
+    style Coordinator2 fill:#fe9, stroke:#333, color:#000
+    style LocalStore fill:#9f9, stroke:#333, color:#000
+    style Claim fill:#fff, stroke:#333, color:#000
+    style Continue fill:#fff, stroke:#333, color:#000
+    style NextState fill:#fff, stroke:#333, color:#000
+    style Restart fill:#f99, stroke:#333, color:#000
+    style Corrupt fill:#fff, stroke:#333, color:#000
+    style MinPackages fill:#fff, stroke:#333, color:#000
+    style Timeout fill:#fff, stroke:#333, color:#000
+```
+
 At this point, the distributed key generation is complete. Each **Oracle** holds its unique **Secret** (`s-o{i}`), while the **Coordinator** stores the **InternalKey** that will be used to verify signatures.
 
 #### DKG Restart Procedure
@@ -155,92 +242,85 @@ When the **DKG** process fails to complete successfully (due to timeouts or evic
 
 After these updates, the **Coordinator** restarts the **DKG** process from [Round 1](#dkg-round-1).
 
+**DKG Restart Process**:
+
+```mermaid
+flowchart LR
+    Restart(["Restart Triggered"]) --> UpdateSigners["Update Max Signers"]
+    UpdateSigners --> UpdateList["Update Participant List"]
+    UpdateList --> NewID["Generate New DKG ID"]
+    NewID --> ResetState["Reset State to R1"]
+    ResetState --> ClearKeys["Clear Session Keys"]
+    ClearKeys --> StartR1["Start Round 1"]
+
+    style Restart fill:#f99, stroke:#333, color:#000
+    style StartR1 fill:#9ff, stroke:#333, color:#000
+    style UpdateSigners fill:#fff, stroke:#333, color:#000
+    style UpdateList fill:#fff, stroke:#333, color:#000
+    style NewID fill:#fff, stroke:#333, color:#000
+    style ResetState fill:#fff, stroke:#333, color:#000
+    style ClearKeys fill:#fff, stroke:#333, color:#000
+```
+
 #### DKG Final State
 
 When the **DKG** process eventually completes successfully (reaching the `DONE` state), each **Oracle** securely holds its unique **Secret** (`s-o{i}`), while the **Coordinator** stores the collective **InternalKey**. At this point, each **Oracle** permanently deletes all intermediate secrets (`sR1-o{i}`, `sR2-o{i}`) from previous rounds, retaining only the final **Secret**. This successful completion of the key generation phase prepares the **System** for the subsequent **Signing** process.
 
 #### Session Key Generation
 
-As part of the **DKG** completion, each **Oracle** generates an additional Ed25519 key pair. The **Oracle** securely stores the private key portion (referred to as **SessionSecret**) locally, while sending the public key to the **Coordinator** for storage in the **Session keys list**. This public key is signed by the **Validator's** key, allowing the **Coordinator** to verify its authenticity.
+As part of the **DKG** completion, each **Oracle** generates an additional Ed25519 key pair. The **Oracle** securely stores the private key (**SessionSecret**) locally, while sending the public key together with **InternalKey** to the **Coordinator** for storage in the **Session keys list**. This message is signed by the **Validator's** key, allowing the **Coordinator** to verify its authenticity.
 
-These session keys serve an important optimization purpose: they allow the **Oracle** to sign future **Signing** process messages without requiring repeated signature requests to the **Validator** node. In essence, the **Validator** delegates signing authority to this session key for the duration of the epoch, significantly reducing the number of validator signature requests and improving overall system performance.
+These session keys serve an important optimization purpose: they allow the **Oracle** to sign future **Signing** process messages without requiring repeated signature requests to the **Validator** node. In essence, the **Validator** delegates signing authority to this session key for the duration of the epoch, significantly reducing the number of validator signature requests and improving overall security.
 
-**DKG Flow**
+#### DKG Flow Overview
+
+The following diagram illustrates the high-level flow of the **DKG** process:
 
 ```mermaid
-flowchart TD
-    Start[Start DKG] --> Init[Setup Initial Parameters]
-    Init --> Round1[Round 1: Generate Secret<br>and Public Packages]
+flowchart TB
+    Start(["Start DKG"]) --> Setup["Initial Parameters Setup"]
+    Setup --> R1["DKG Round 1"]
+    R1 --> CheckR1{"Complete?"}
+    CheckR1 -- No --> RestartProcess["DKG Restart"]
+    CheckR1 -- Yes --> R2["DKG Round 2"]
+    R2 --> CheckR2{"Complete?"}
+    CheckR2 -- No --> RestartProcess
+    R2 --> CorruptR2{"Corrupted Data?"}
+    CorruptR2 -- Yes --> ClaimR2["Submit Claims"]
+    ClaimR2 --> VoteR2{"\>= 2/3 Votes?"}
+    VoteR2 -- Yes --> RestartProcess
+    VoteR2 -- No --> R3["DKG Round 3"]
+    CorruptR2 -- No --> CheckR2
+    CheckR2 -- Yes --> R3
+    R3 --> CheckR3{"Complete?"}
+    CheckR3 -- No --> RestartProcess
+    R3 --> CorruptR3{"Corrupted Data?"}
+    CorruptR3 -- Yes --> ClaimR3["Submit Claims"]
+    ClaimR3 --> VoteR3{"\>= 2\/3 Votes?"}
+    VoteR3 -- Yes --> RestartProcess
+    VoteR3 -- No --> Done
+    CorruptR3 -- No --> CheckR3
+    CheckR3 -- Yes --> Done(["DKG Complete"])
+    RestartProcess --> UpdateParams["Update Parameters"]
+    UpdateParams --> R1
 
-    Round1 --> CheckR1{All participants<br>sent packages?}
-    CheckR1 -- Yes --> StateR2[Update State to ROUND_2]
-    CheckR1 -- No/Timeout --> Restart[Restart DKG]
-
-    StateR2 --> Round2[Round 2: Process Round 1<br>dataGenerate Secret<br>and Unique Packages]
-    Round2 --> CheckR2{All participants<br>sent packages?}
-    CheckR2 -- Yes --> StateR3[Update State to ROUND_3]
-    CheckR2 -- No/Timeout --> Restart
-
-    Round2 --> Corrupt2{Corrupted<br>data detected?}
-    Corrupt2 -- Yes --> Claim2[Send Claim to Coordinator]
-    Claim2 --> VoteCheck2{≥2/3 votes<br>for eviction?}
-    VoteCheck2 -- Yes --> UpdateEvict2[Update Eviction List]
-    UpdateEvict2 --> Restart
-    VoteCheck2 -- No --> StateR3
-    Corrupt2 -- No --> CheckR2
-
-    StateR3 --> Round3[Round 3: Process Round 2<br>dataGenerate Secret<br>and Public Key]
-    Round3 --> CheckR3{All participants<br>sent packages?}
-    CheckR3 -- Yes --> StateDone[Update State to DONE]
-    CheckR3 -- No/Timeout --> Restart
-
-    Round3 --> Corrupt3{Corrupted<br>data detected?}
-    Corrupt3 -- Yes --> Claim3[Send Claim to Coordinator]
-    Claim3 --> VoteCheck3{≥2/3 votes<br>for eviction?}
-    VoteCheck3 -- Yes --> UpdateEvict3[Update Eviction List]
-    UpdateEvict3 --> Restart
-    VoteCheck3 -- No --> StateDone
-    Corrupt3 -- No --> CheckR3
-
-    StateDone --> Complete[DKG Complete<br>Ready for Signing]
-
-    Restart --> UpdateMaxSigners[Update max_signers<br>Remove evicted participants]
-    UpdateMaxSigners --> ResetID[Generate new DKG ID]
-    ResetID --> ClearKeys[Clear session keys]
-    ClearKeys --> StateR1[Set State to ROUND_1]
-    StateR1 --> Round1
-
-    subgraph "Coordinator"
-        Init
-        StateR1
-        StateR2
-        StateR3
-        StateDone
-        UpdateEvict2
-        UpdateEvict3
-        UpdateMaxSigners
-        ResetID
-        ClearKeys
-        VoteCheck2
-        VoteCheck3
-        CheckR1
-        CheckR2
-        CheckR3
-    end
-
-    subgraph "Participants"
-        Round1
-        Round2
-        Round3
-        Corrupt2
-        Corrupt3
-        Claim2
-        Claim3
-    end
-
-    style Start fill:#9ff,stroke:#333,stroke-width:2px
-    style Complete fill:#9f9,stroke:#333,stroke-width:2px
-    style Restart fill:#f99,stroke:#333,stroke-width:2px
+    style Start fill:#9ff, stroke:#333, color:#000
+    style Done fill:#9f9, stroke:#333, color:#000
+    style RestartProcess fill:#f99, stroke:#333, color:#000
+    style R1 fill:#fff, stroke:#333, color:#000
+    style R2 fill:#fff, stroke:#333, color:#000
+    style R3 fill:#fff, stroke:#333, color:#000
+    style Setup fill:#fff, stroke:#333, color:#000
+    style CheckR1 fill:#fff, stroke:#333, color:#000
+    style CheckR2 fill:#fff, stroke:#333, color:#000
+    style CheckR3 fill:#fff, stroke:#333, color:#000
+    style CorruptR2 fill:#fff, stroke:#333, color:#000
+    style CorruptR3 fill:#fff, stroke:#333, color:#000
+    style ClaimR2 fill:#fff, stroke:#333, color:#000
+    style ClaimR3 fill:#fff, stroke:#333, color:#000
+    style VoteR2 fill:#fff, stroke:#333, color:#000
+    style VoteR3 fill:#fff, stroke:#333, color:#000
+    style UpdateParams fill:#fff, stroke:#333, color:#000
 ```
 
 ### 3.2. Distributed Transaction Signing
