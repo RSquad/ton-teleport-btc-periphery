@@ -1,20 +1,20 @@
-# ORACLE and COORDINATOR
+# TON Teleport BTC Signing Protocol Specification
 
 ## 1. Introduction & Overview
 
-This document describes a critical component of a cross-blockchain bridge system connecting TON and Bitcoin blockchains. The system enables secure transaction signing between blockchains through two core processes:
+This document specifies the protocol for signing Bitcoin transactions within the TON Teleport BTC system (**System**). The signers are TON validators (**Validators**) that run specialized software modules called **Oracles**.
 
-1. **Distributed Key Generation (DKG)**: Creates cryptographic keys distributed across multiple parties with no single entity holding the complete key.
-2. **Distributed Transaction Signing**: Enables secure signing of Bitcoin transactions (pegouts) using the distributed key.
+In the production environment, each **Oracle** is an integral part of a **Validator** in the masterchain. The number of **Oracles** precisely matches the number of **Validators** in the TON network, establishing a one-to-one correspondence. While a standalone mode exists for testing purposes (allowing **Oracles** to operate independently of validator nodes), this document focuses exclusively on the production configuration.
 
-The system architecture follows a distributed design with multiple Oracle instances coordinated by a central smart contract Coordinator. These Oracles work alongside TON Validators, with new distributed keys generated whenever the Validator set changes.
+The protocol implements two core processes:
 
-Key characteristics:
-- Supports both standalone (test) and production operational modes
-- DKG and Signing processes operate independently
-- New DKG processes can run concurrently with ongoing Signing operations
+1. **Distributed Key Generation (DKG)**: A process where a group of `n` **Oracles** collectively generate a single Bitcoin public key while each **Oracle** holds only a partial share of the corresponding private key. No individual **Oracle** or subset smaller than a defined threshold `t` can reconstruct the complete private key.
 
-This document focuses exclusively on the DKG and Signing components of the bridge system.
+2. **Transaction Signing (Signing)**: A process allowing a threshold subset of **Oracles** (at least `t` out of `n`) to collaboratively sign Bitcoin transactions (pegouts) using their key shares without revealing their individual private key fragments.
+
+Both processes are implemented using Flexible Round-Optimized Schnorr Threshold Signatures (**FROST**)[^1], producing standard Bitcoin-compatible Schnorr signatures.
+
+The **System** employs a distributed architecture with multiple **Oracle** instances coordinated by a central smart contract called the **Coordinator**. The **Coordinator** stores and manages the global state for both **DKG** and **Signing** processes, validates messages from **Oracle** instances, and ensures consistency across all participants without requiring direct trust between **Oracles**. The protocol automatically regenerates distributed keys whenever the **Validator** set changes, ensuring continuous operation of the **System**.
 
 ## 2. System Components
 
@@ -23,6 +23,7 @@ The distributed system consists of three primary components:
 ### 2.1 Oracle Instances
 
 Oracles are the core operational units that:
+
 - Execute both DKG and transaction signing processes
 - Store cryptographic keys and signing-related data
 - Run independently but coordinate through the central smart contract
@@ -33,11 +34,13 @@ Each Oracle maintains its own configuration, including unique identifiers, keypa
 ### 2.2 Validators
 
 TON blockchain validators that:
+
 - Provide signature services to Oracle instances in production mode
 
 ### 2.3 Coordinator
 
 A smart contract acting as the central coordination point that:
+
 - Stores and manages data for both DKG and Signing processes
 - Processes and validates messages from Oracle instances
 - Ensures consistent system state across all participants
@@ -58,20 +61,20 @@ To generate distributed key we need to go through next steps:
 **Step 1. Setup initial parameters for DKG:**
 1.1. Number of participants (max_signers): Total number of participants in the signing group.
 1.2. Threshold value (min_signers): Minimum number of participants required to create a valid signature (t ≤ n).
-1.3. Time period for DKG. If DKG is not finished in this period, then all process needs to be restarted from the beginning. 
+1.3. Time period for DKG. If DKG is not finished in this period, then all process needs to be restarted from the beginning.
 1.4. List of participants. Each participant have unique ID.
 1.5. List of participants who was evicted from DKG process (they don`t send all necessary data in Time period or they send corrupted data).
-1.6. Unique ID for DKG. In our implementation we use unix timestamp of DKG period end. 
+1.6. Unique ID for DKG. In our implementation we use unix timestamp of DKG period end.
 1.7. Public key associated with participant ID. On each step every message is signed with private key of the participant and verified by Coordinator (storage of share data). Participants trust the Coordinator and do not execute additional verification. Additionally Coordinator checks that participant was not evicted from DKG. If participant message has incorrect signature or participant was evicted, then message from such participant is ignored. On all steps the Coordinator verify only signature, eviction list, DKG step and timeout. So every participant can send only one variant of data. We have additional voting mechanism for participants eviction.
 1.8. Current DKG state. At the beginning state is ROUND_1.
 1.9. List of participants session keys. Those keys will be used for message signing in the Signing process instead of the public keys from List of participants. At the beginning this list is empty.
- 
+
 **Step 2 (Round 1)**
 Each participant generates Secret and Public packages. Round 1 Secret participants keeps locally in secure, while public packages need to be published (all packages sends to the Coordinator). When all participants published their Round 1 Public packages then round is considered complete. We go to the Round 2. If not all participants (< max_signers) sent their data until DKG timeout, then we go to Restarting DKG step. We do not vote for eviction at this step, only DKG timeout can happen.
 Coordinator decides when Round 1 is finished. State updated to the ROUND_2.
 
 **Step 3 (Round 2)**
-Each participant gets: Round 1 public packages from all other participants, Round 1 secret. Then generate Round 2 Secret and set of unique packages (one for every other participants). Round 2 Secret participants keeps locally in secure, while public packages need to be published (all packages for all participants sends to the Coordinator). When all participants published their Round 2 Public packages then round is considered complete. We go to the Round 3.  If not all participants (< max_signers) sent their data until DKG timeout, then we go to Restarting DKG step. Additionally we check data packages on participants side. If we found some corrupted data (wrong number of commitments or just junk data) then we sent special `claim` message to the Coordinator were we set ID of `culprit` participant. When Coordinator detects that at least 2/3 of current participants voted for eviction of some participant then list of evicted participants updated (add `culprit` participant) and DKG process need to be restarted.
+Each participant gets: Round 1 public packages from all other participants, Round 1 secret. Then generate Round 2 Secret and set of unique packages (one for every other participants). Round 2 Secret participants keeps locally in secure, while public packages need to be published (all packages for all participants sends to the Coordinator). When all participants published their Round 2 Public packages then round is considered complete. We go to the Round 3. If not all participants (< max_signers) sent their data until DKG timeout, then we go to Restarting DKG step. Additionally we check data packages on participants side. If we found some corrupted data (wrong number of commitments or just junk data) then we sent special `claim` message to the Coordinator were we set ID of `culprit` participant. When Coordinator detects that at least 2/3 of current participants voted for eviction of some participant then list of evicted participants updated (add `culprit` participant) and DKG process need to be restarted.
 Coordinator decides when Round 2 is finished. State updated to the ROUND_3.
 
 **Step 4 (Round 3)**
@@ -80,12 +83,13 @@ Coordinator decides when Round 3 is finished. State updated to the DONE.
 
 **Restarting DKG**
 If DKG is restarting:
+
 1. Number of participants (max_signers): value updated with respect to List of participants who was evicted. So new max_signers can be smaller than previous.
 2. Threshold value (min_signers): keeps the same.
 3. Time period for DKG. Keeps the same
 4. List of participants. From this list we removes participants who was evicted.
 5. List of participants who was evicted remains the same.
-6. Unique ID for DKG. Sets new value = current timestamp + Time period for DKG. 
+6. Unique ID for DKG. Sets new value = current timestamp + Time period for DKG.
 7. Public key associated with participant ID. Keeps the same.
 8. Current DKG state. State is ROUND_1.
 9. List of participants session keys. This list is cleared and make empty.
@@ -98,16 +102,16 @@ When DKG state is DONE then we can use it for signing transactions. Each partici
 flowchart TD
     Start[Start DKG] --> Init[Setup Initial Parameters]
     Init --> Round1[Round 1: Generate Secret<br>and Public Packages]
-    
+
     Round1 --> CheckR1{All participants<br>sent packages?}
     CheckR1 -- Yes --> StateR2[Update State to ROUND_2]
     CheckR1 -- No/Timeout --> Restart[Restart DKG]
-    
+
     StateR2 --> Round2[Round 2: Process Round 1<br>dataGenerate Secret<br>and Unique Packages]
     Round2 --> CheckR2{All participants<br>sent packages?}
     CheckR2 -- Yes --> StateR3[Update State to ROUND_3]
     CheckR2 -- No/Timeout --> Restart
-    
+
     Round2 --> Corrupt2{Corrupted<br>data detected?}
     Corrupt2 -- Yes --> Claim2[Send Claim to Coordinator]
     Claim2 --> VoteCheck2{≥2/3 votes<br>for eviction?}
@@ -115,12 +119,12 @@ flowchart TD
     UpdateEvict2 --> Restart
     VoteCheck2 -- No --> StateR3
     Corrupt2 -- No --> CheckR2
-    
+
     StateR3 --> Round3[Round 3: Process Round 2<br>dataGenerate Secret<br>and Public Key]
     Round3 --> CheckR3{All participants<br>sent packages?}
     CheckR3 -- Yes --> StateDone[Update State to DONE]
     CheckR3 -- No/Timeout --> Restart
-    
+
     Round3 --> Corrupt3{Corrupted<br>data detected?}
     Corrupt3 -- Yes --> Claim3[Send Claim to Coordinator]
     Claim3 --> VoteCheck3{≥2/3 votes<br>for eviction?}
@@ -128,9 +132,9 @@ flowchart TD
     UpdateEvict3 --> Restart
     VoteCheck3 -- No --> StateDone
     Corrupt3 -- No --> CheckR3
-    
+
     StateDone --> Complete[DKG Complete<br>Ready for Signing]
-    
+
     Restart --> UpdateMaxSigners[Update max_signers<br>Remove evicted participants]
     UpdateMaxSigners --> ResetID[Generate new DKG ID]
     ResetID --> ClearKeys[Clear session keys]
@@ -177,6 +181,7 @@ The FROST (Flexible Round-Optimized Schnorr Threshold Signatures) Distributed Tr
 To sign a transaction using distributed key shares, we need to go through the following steps:
 
 We assume that:
+
 1. There are some data to sign.
 2. DKG process is DONE with N participants.
 3. Oracle contains session public keys for each participant.
@@ -207,6 +212,7 @@ Coordinator decides when Round 3 is finished. State updated to the DONE.
 
 **Restarting Signing**
 When Signing is restarting:
+
 1. Number of participants (max_signers): value updated with respect to List of participants who was evicted.
 2. Threshold value (min_signers): keeps the same.
 3. Time period for Signing. Keeps the same
@@ -222,15 +228,15 @@ When signing is complete, the signature is returned along with the transaction d
 flowchart TD
     Start[Start Signing] --> OracleProvides[Oracle Provides Data<br>to Sign]
     OracleProvides --> Round1[Round 1: Generate<br>Nonces and Commitments]
-    
+
     Round1 --> CheckR1{At least min_signers<br>commitments received?}
     CheckR1 -- No/Timeout --> Restart[Restart Signing]
     CheckR1 -- Yes --> StateR2[Update State to ROUND_2]
-    
+
     StateR2 --> Round2[Round 2: Generate<br>Signature Shares]
     Round2 --> CheckR2{At least min_signers<br>signature shares?}
     CheckR2 -- No/Timeout --> Restart
-    
+
     Round2 --> Corrupt2{Corrupted<br>data detected?}
     Corrupt2 -- Yes --> Claim2[Send Claim to Coordinator]
     Claim2 --> VoteCheck2{≥2/3 votes<br>for eviction?}
@@ -238,13 +244,13 @@ flowchart TD
     UpdateEvict2 --> Restart
     VoteCheck2 -- No --> StateR3
     Corrupt2 -- No --> CheckR2
-    
+
     CheckR2 -- Yes --> StateR3[Update State to ROUND_3]
     StateR3 --> Round3[Round 3: Aggregate<br>Signature]
-    
+
     Round3 --> CheckR3{Signature shares<br>consistent?}
     CheckR3 -- No/Timeout --> Restart
-    
+
     Round3 --> Corrupt3{Corrupted<br>data detected?}
     Corrupt3 -- Yes --> Claim3[Send Claim to Coordinator]
     Claim3 --> VoteCheck3{≥2/3 votes<br>for eviction?}
@@ -252,10 +258,10 @@ flowchart TD
     UpdateEvict3 --> Restart
     VoteCheck3 -- No --> StateDone
     Corrupt3 -- No --> CheckR3
-    
+
     CheckR3 -- Yes --> StateDone[Update State to DONE]
     StateDone --> Complete[Signing Complete]
-    
+
     Restart --> UpdateMaxSigners[Update max_signers<br>Remove evicted participants]
     UpdateMaxSigners --> StateR1[Set State to ROUND_1]
     StateR1 --> Round1
@@ -300,26 +306,31 @@ The Coordinator serves as the central place for both the DKG and Signing process
 The DKG process utilizes a hierarchical data structure that tracks the state and components of the distributed key generation protocol:
 
 #### Main DKG Structure
+
 - **State**: Tracks the current phase of the DKG process (Finished, InProgress, Part1Finished, or Part2Finished)
 - **VSet**: Set of validators participating in the DKG process, mapped by ValidatorID [0..99] which is the same ID used for OracleID. Each element contains the public key of the participant (validator key in case of production mode and oracle hard-coded key in standalone mode)
 - **MaxSigners**: Maximum number of signers allowed in the process. The Minimum number of Signers is calculated as 2/3 of the maximum number of signers.
 - **VSetMask**: Bit mask indicating which validators are active in the DKG process. In this mask, each bit position corresponds to the OracleID (e.g., bit position 5 represents Oracle with ID 5). There is a "claim" process which allows Oracles to vote for another oracle's eviction from DKG in case of malicious actions. Additionally, in case of timeouts, the Coordinator can automatically evict Oracles from the DKG process.
 - **SessionKeys**: Public keys generated by validators during the final part of DKG (Round 3) and used to sign messages for the Coordinator during the Signing process. These should not be confused with the FROST distributed key that signs the actual pegout transactions.
 - **Round Data**: Structures for each of the three DKG rounds (R1, R2, R3)
-  - **Round 1 Data**: 
+
+  - **Round 1 Data**:
+
     - **Mask**: Bit mask tracking which validators have submitted their R1 data
     - **Count**: Number of submissions received for Round 1
     - **Packages**: Collection of cryptographic packages from each participant mapped by validator ID. These are FROST-specific packages containing commitment data.
-  
+
   - **Round 2 Data**:
+
     - **Mask**: Bit mask tracking which validators have submitted their R2 data
     - **Count**: Number of submissions received for Round 2
     - **PackagesTo**: Two-level mapping of packages from sender to recipient validators (PackagesTo[FromId][ToId]). These are FROST-specific packages where each Oracle generates a unique package for every other Oracle.
-  
+
   - **Round 3 Data**:
     - **Mask**: Bit mask tracking which validators have submitted their R3 data
     - **Count**: Number of submissions received for Round 3
     - **PubkeyData**: Contains the distributed public key package and internal key data for verification. These are FROST-specific packages.
+
 - **Claims**: Data about validator claims during the DKG process. It contains:
   - **Mask**: Bit mask indicating Oracles who have submitted claims
   - **Count**: Total number of claims received
@@ -336,6 +347,7 @@ The core data structure for the signing process is the `PegoutRecord`, which tra
 
 - **ID**: Unique identifier for the pegout record
 - **PegoutAddress**: TON blockchain address information, which includes:
+
   - **Address Type**: Can be NoneAddress (0), ExtAddress (1), StdAddress (2), or VarAddress (3)
   - **Workchain**: The TON blockchain workchain ID (with Masterchain having a special value of -1)
   - **Flags**: Configuration flags (bounceable, testnet)
@@ -365,12 +377,14 @@ Oracle instances operate in a stateless manner, with periodic timer events trigg
 The system supports two operational modes:
 
 **Standalone Mode**:
+
 - Designed for test environments
 - Uses "hardcoded" keys in the configuration for message signing
 - Coordinator contract must be deployed with pre-configured VSet for specific Oracles and their associated keys
 - No Validator is required in this mode
 
 **Production Mode**:
+
 - Designed for production environments
 - Oracle must have access to validator-console to make signing requests
 - Coordinator contract must be deployed with production settings
@@ -383,17 +397,20 @@ The system supports two operational modes:
 The goal of the DKG process is to generate a cryptographic key distributed across all participating Oracles. No single Oracle has access to the complete key.
 
 **Step 1: Get DKG Data from Coordinator**
+
 - A timer event fires every N seconds
 - Oracle calls the `get_dkg` method from the Coordinator (getter)
 - On success: Coordinator returns the current DKG structure
 - On failure: Oracle pauses the DKG process for N seconds
 
 **Step 2: Check if DKG is Complete**
+
 - If DKG state is `DKGStateFinished`, then the DKG process is done
 - Oracle will pause DKG for N seconds
 - If DKG is not finished, proceed to Step 3
 
 **Step 3: Check DKG Timeout**
+
 - Verify that the DKG has not timed out by checking that the `until` value is after the current timestamp
 - If DKG is not timed out, proceed to Step 4
 - If DKG is timed out, Oracle resets its DKG state:
@@ -403,6 +420,7 @@ The goal of the DKG process is to generate a cryptographic key distributed acros
   - Pause DKG for N seconds
 
 **Step 4: Get Key Information**
+
 - Iterate over all VSet records to find a match with the public keys Oracle has
   - In production mode: Validator key
   - In standalone mode: Key hardcoded in config
@@ -410,13 +428,14 @@ The goal of the DKG process is to generate a cryptographic key distributed acros
 - If match is found, continue to Step 5
 
 **Step 5: Check for Eviction**
+
 - Check VSetMask to determine if the Oracle has been evicted
 - If Oracle is evicted, pause DKG for N seconds
 - If Oracle is not evicted, continue to Step 6
-Eviction status is checked on the Coordinator side. On the Oracle side, this check is only used for logging and timeout cases.
+  Eviction status is checked on the Coordinator side. On the Oracle side, this check is only used for logging and timeout cases.
 
 **Step 6: DKG Round 1**
- We assume that DKG initial state setup as described in 3.1. Distributed Key Generation (DKG).
+We assume that DKG initial state setup as described in 3.1. Distributed Key Generation (DKG).
 
 - Check if DKG is at Round 1 state (`DKGStateInProgress`)
   - If not, proceed to Step 7 (DKG Round 2)
@@ -431,6 +450,7 @@ Eviction status is checked on the Coordinator side. On the Oracle side, this che
   - Pause DKG for N seconds
 
 **Step 7: DKG Round 2**
+
 - Check if DKG is at Round 2 state (`DKGStatePart1Finished`)
   - If not, proceed to Step 8 (DKG Round 3)
 - Check if Oracle already sent DKG Round 2 packages and is waiting for others
@@ -444,6 +464,7 @@ Eviction status is checked on the Coordinator side. On the Oracle side, this che
 **NOTE**: In Round 2, FROST may detect a "culprit" Oracle that sent corrupted Round 1 package. FROST can detect one culprit at a time. If a culprit is detected, Oracle sends a claim message to the Coordinator (OpCode: `0x0000f387`). If at least 2/3 of DKG participants claim an Oracle, it will be evicted from this DKG round and the DKG must be restarted.
 
 **Step 8: DKG Round 3**
+
 - Check if DKG is at Round 3 state (`DKGStatePart2Finished`)
   - If not, proceed to Step 9 (DKG Finished)
 - Check if Oracle already sent DKG Round 3 packages and is waiting for others
@@ -457,6 +478,7 @@ Eviction status is checked on the Coordinator side. On the Oracle side, this che
 **NOTE**: Similar to Round 2, FROST may detect a "culprit" Oracle that sent corrupted Round 2 packages. If a culprit is detected, Oracle sends a claim message to the Coordinator. If at least 2/3 of DKG participants claim an Oracle, it will be evicted and DKG must be restarted.
 
 **Step 9: DKG Finished**
+
 - After completing all rounds, the Coordinator's DKG data contains:
   - The distributed public key
   - The set of Oracles who can participate in pegout signing
@@ -470,31 +492,31 @@ stateDiagram-v2
     [*] --> GetDKG: Timer Event Fires
     GetDKG --> CheckDKGState: Get DKG Success
     GetDKG --> PauseDKG: Get DKG Failure
-    
+
     CheckDKGState --> PauseDKG: DKG is Finished
     CheckDKGState --> CheckTimeout: DKG not Finished
-    
+
     CheckTimeout --> GetKeyInfo: Not Timed Out
     CheckTimeout --> ResetDKG: Timed Out
     ResetDKG --> PauseDKG: After Reset
-    
+
     GetKeyInfo --> CheckEviction: Key Found
     GetKeyInfo --> PauseDKG: No Key Match
-    
+
     CheckEviction --> CheckRound1: Not Evicted
     CheckEviction --> PauseDKG: Evicted
-    
+
     CheckRound1 --> ProcessRound1: In Round 1
     CheckRound1 --> CheckRound2: Not in Round 1
-    
+
     ProcessRound1 --> CheckRound1AlreadySent: Check if already sent
     CheckRound1AlreadySent --> PauseDKG: Already sent
     CheckRound1AlreadySent --> GenerateRound1: Not sent yet
     GenerateRound1 --> PauseDKG: After sending to Coordinator
-    
+
     CheckRound2 --> ProcessRound2: In Round 2
     CheckRound2 --> CheckRound3: Not in Round 2
-    
+
     ProcessRound2 --> CheckRound2AlreadySent: Check if already sent
     CheckRound2AlreadySent --> PauseDKG: Already sent
     CheckRound2AlreadySent --> GenerateRound2: Not sent yet
@@ -502,10 +524,10 @@ stateDiagram-v2
     DetectCulprit --> SendClaim: Culprit detected
     DetectCulprit --> PauseDKG: No culprits
     SendClaim --> PauseDKG: After sending claim
-    
+
     CheckRound3 --> ProcessRound3: In Round 3
     CheckRound3 --> DKGFinished: Not in Round 3
-    
+
     ProcessRound3 --> CheckRound3AlreadySent: Check if already sent
     CheckRound3AlreadySent --> PauseDKG: Already sent
     CheckRound3AlreadySent --> GenerateRound3: Not sent yet
@@ -513,9 +535,9 @@ stateDiagram-v2
     DetectCulpritR3 --> SendClaimR3: Culprit detected
     DetectCulpritR3 --> PauseDKG: No culprits
     SendClaimR3 --> PauseDKG: After sending claim
-    
+
     DKGFinished --> PauseDKG: DKG process complete
-    
+
     PauseDKG --> [*]: Wait N Seconds
 ```
 
@@ -526,3 +548,5 @@ stateDiagram-v2
 ### 4.6 Coordinator
 
 ... Work in progress...
+
+[^1]: https://github.com/ZcashFoundation/frost
