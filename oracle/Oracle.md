@@ -16,36 +16,48 @@ Both processes are implemented using Flexible Round-Optimized Schnorr Threshold 
 
 The **System** employs a distributed architecture with multiple **Oracle** instances coordinated by a central smart contract called the **Coordinator**. The **Coordinator** stores and manages the global state for both **DKG** and **Signing** processes, validates messages from **Oracle** instances, and ensures consistency across all participants without requiring direct trust between **Oracles**. The protocol automatically regenerates distributed keys whenever the **Validator** set changes, ensuring continuous operation of the **System**.
 
-## 2. System Components
+## 2. Key Protocol Components
 
-The distributed system consists of three primary components:
+This section describes the core entities involved in the signing protocol and their specific roles in enabling Bitcoin transaction signing.
 
 ### 2.1 Oracle Instances
 
-Oracles are the core operational units that:
+**Oracles** are the specialized software modules that:
 
-- Execute both DKG and transaction signing processes
-- Store cryptographic keys and signing-related data
-- Run independently but coordinate through the central smart contract
-- Operate in either standalone mode (with keys from configuration) or production mode (integrated with Validators)
+- Participate in the **DKG** process to collectively generate a public key (**InternalKey**) while each **Oracle** holds only a partial share of the private key (**Secret**)
+- Use their **Secrets** in the **Signing** process to contribute partial signatures that are aggregated into one complete Bitcoin signature
+- Store secret data locally for both **DKG** and **Signing** rounds (secret shares, nonces, etc.)
+- Communicate with other **Oracles** indirectly via the **Coordinator**
+- Retrieve **DKG** and **Signing** session data and state from the **Coordinator**
+- Run as part of **Validators**
+- Request signatures from their associated **Validator** (using the validator's keys for the current epoch)
 
-Each Oracle maintains its own configuration, including unique identifiers, keypairs for signing, and other instance-specific parameters.
+Each **Oracle** maintains security-critical information locally, including private key shares that are never shared with other components.
 
 ### 2.2 Validators
 
-TON blockchain validators that:
+**Validators** in the TON blockchain:
 
-- Provide signature services to Oracle instances in production mode
+- Host and operate **Oracle** instances in production mode
+- Provide signature services (using their validator keys) to their associated **Oracle** instances
+- Form a decentralized trust base for the entire **System**
+
+The one-to-one relationship between **Validators** and **Oracles** ensures that validator consensus rules extend to the **Signing** protocol.
 
 ### 2.3 Coordinator
 
-A smart contract acting as the central coordination point that:
+The **Coordinator** is a smart contract that:
 
-- Stores and manages data for both DKG and Signing processes
-- Processes and validates messages from Oracle instances
-- Ensures consistent system state across all participants
+- Acts as the single source of truth for the protocol state
+- Stores and manages the **DKG** and **Signing** data
+- Maintains the **VSet** (set of validators/oracles participating in the protocol)
+- Verifies that messages from **Oracle** instances are properly signed, confirming they came from legitimate TON **Validators** and not random sources
+- Stores the **InternalKey** and session keys
+- Enforces timeouts for **DKG** and **Signing** processes
+- Manages claims against malicious behavior and eviction voting
+- Initiates new **DKG** rounds when validator set changes occur
 
-The Coordinator enables secure coordination without requiring direct trust between Oracle instances.
+The **Coordinator** is deployed on the TON blockchain and does not require trust in individual **Oracle** instances, relying instead on cryptographic validation and consensus rules.
 
 ## 3. Algorithms
 
