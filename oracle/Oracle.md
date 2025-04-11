@@ -198,7 +198,7 @@ Each participant generates Nonces and Commitment packages. Round 1 Nonces partic
 Coordinator decides when Round 1 is finished. State updated to the ROUND_2.
 
 **Step 3 (Round 2). Signature Share Generation**
-Each participant gets: Round 1 Commitment packages from all other participants, Round 1 Nonce, Secret package from DKG Round 3, hash of the data to sign (and in implementation of the Oracle additionally we use tap merkle root as tweak for tweaking signing share). Then generate Round 2 Sign Share. Round 2 Sign Share need to be published (all packages sends to the Coordinator). When all participants (min_signers) published their Round 2 Sign Share packages then round is considered complete. We go to the Round 3. If not all participants (< min_signers) sent their data until Signing timeout, then we go to Restarting Signing step. Additionally we check data packages on participants side. If we found some corrupted data then we sent special `claim` message to the Coordinator (the same algorithm as in DKG) and Signing process need to be restarted.
+Each participant gets: Round 1 Commitment packages from all other participants, Round 1 Nonce, Secret package from DKG Round 3, hash of the data to sign (and in implementation of the Oracle additionally we use tap merkle root as tweak for tweaking signing share). Then generate Round 2 Sign Share. Round 2 Sign Share need to be published (all packages sends to the Coordinator). When all participants (min_signers) published their Round 2 Sign Share packages then round is considered complete. We go to the Round 3. If not all participants (< min_signers) sent their data until Signing timeout, then we go to Restarting Signing from the begining (Step 1). Additionally we check data packages on participants side. If we found some corrupted data then we sent special `claim` message to the Coordinator (the same algorithm as in DKG) and Signing process need to be restarted.
 Coordinator decides when Round 2 is finished. State updated to the ROUND_3.
 
 **Step 4 (Round 3). Signature Aggregation**
@@ -521,8 +521,192 @@ stateDiagram-v2
 
 ### 4.5 Signing Process
 
-... Work in progress...
+The signing process enables Oracles to collectively sign Bitcoin transactions (pegouts) using the distributed key generated during the DKG process. The system operates in epochs, with each epoch having its own set of validators.
 
-### 4.6 Coordinator
+#### 4.5.1 Epochs and DKG Coordination
 
-... Work in progress...
+Life cycle of Oracles is separated into epochs. In each epoch there is a different set of validators (sets can intersect or be the same). When the next validator set becomes known, a new DKG must be initiated for the next epoch. This leads to two DKGs existing simultaneously:
+
+1. **New DKG**: Will be used for signing in the next epoch
+2. **Current DKG**: Used for signing in the current epoch
+
+If the system is just starting and there is no current DKG, signing will only be available from the next epoch onwards.
+
+#### 4.5.2 Signing Workflow
+
+The signing procedure is used for Bitcoin transactions (pegouts). The Coordinator maintains a list of unsigned pegouts, and Oracles periodically check this list to initiate the signing process when needed.
+
+**Step 1: Check for Unsigned Pegouts**
+- A timer event fires every N seconds
+- Oracle calls the `get_pegout_records` method from the Coordinator (getter)
+- On success: Coordinator returns list of unsigned pegouts
+  - If list is not empty, proceed to Step 2
+  - If list is empty, pause Signing for N seconds
+- On failure: Oracle pauses the Signing process for N seconds
+
+**Step 2: Load Session Signer**
+- Oracle loads the session signer from the file system
+  - File name will be equal to the `dkg.Until` value
+- On success: Session signer contains private key for message signing
+  - Proceed to Step 3
+- On failure: Oracle pauses the Signing process for N seconds
+
+**Step 3: Select Pegout**
+- Get oldest pegout (first element from the pegouts list)
+- Proceed to Step 4
+
+**Step 4: Check for Eviction**
+- Check SignMask to determine if the Oracle has been evicted
+- If Oracle is evicted, pause Signing for N seconds
+- If Oracle is not evicted, continue to Step 5
+- *Note*: Eviction status is checked on the Coordinator side. On the Oracle side, this check is only used for logging and timeout cases
+
+**Step 5: Check for Signing Restart**
+- The Coordinator works in passive mode and requires external messages to trigger actions
+- Oracle checks for Signing timeout condition
+- If timeout condition is met:
+  - Oracle sends Restart Signing message (OpCodeCoordinatorResetPegoutSigning = 0xe6c20000)
+  - Oracle pauses the Signing process for N seconds
+- If timeout condition is NOT met, proceed to Step 6
+
+**Step 6: Get Pegout Data**
+- Oracle stores current signing pegout data between steps
+- If there is no cached pegout data in Oracle artifacts:
+  - Data is requested from Pegout Contract identified by Pegout Address
+  - Contract returns: txParts, txInputs, signingHashes
+  - This data is cached in Oracle artifacts
+- If there is cached pegout data in Oracle artifacts, use this data
+- Proceed to Step 7
+
+**Step 7: Calculate Minimum Signers**
+- Calculate min_signers value as 2/3 of all Oracles from DKG
+- Proceed to Step 8
+
+**Step 8: Round 1 - Generate Signing Commitment**
+- Check if commitment has already been generated and sent to the Oracle
+  - If so, proceed to Step 9
+- Check if commitments count >= min_signers (value contained in pegout info from Coordinator)
+  - If condition is met, required number of signatures has been collected
+  - Oracle pauses the Signing process for N seconds
+- Try to load nonces and commitments from keystore
+  - If not found, generate new ones with FROST and save to file
+  - To generate new data, use Secret package from DKG Round 3
+- Send commitments to the Coordinator (OpCodeCoordinatorSendCommitments = 0x58e40000)
+- Oracle pauses the Signing process for N seconds
+
+**Step 9: Round 2 - Aggregate Sign Shares**
+- Get commitment packages from Pegout artifacts
+  - If no commitments found, Oracle pauses the Signing process for N seconds
+- Check if sign shares have already been generated and sent to the Oracle
+  - If so, proceed to Step 10
+- Check if signing shares count >= min_signers (value contained in pegout info from Coordinator)
+  - If condition is met, required number of shares has been collected
+  - Oracle pauses the Signing process for N seconds
+- For each pegout input, generate signature using:
+  - Secret package from DKG Round 3
+  - Signing hash for current input
+  - Commitments
+  - Nonces
+  - Tap merkle root (used as tweak for tweaking signing share)
+- If corrupted data is detected:
+  - Send special `claim` message to the Coordinator identifying the `culprit` Oracle
+  - If at least 2/3 of current Oracles vote for eviction, the culprit is added to the eviction list
+  - Signing process is restarted
+- Aggregate all sign shares for all inputs
+- Store sign shares for all inputs in keystore
+- Send sign shares to the Coordinator (OpCodeCoordinatorSendSigningShare = 0x706b0000)
+- Oracle pauses the Signing process for N seconds
+
+**Step 10: Signature Aggregation**
+- Each Oracle retrieves:
+  - Signing Shares from other Oracles
+  - Commitment packages
+  - Public key
+  - Tap tweak
+- From this data, aggregate signature for each pegout input (using pegout input hash and merkle root)
+- If corrupted data is detected:
+  - Send special `claim` message to the Coordinator identifying the culprit Oracle
+  - If at least 2/3 of current Oracles vote for eviction, the culprit is added to the eviction list
+  - Signing process is restarted
+- Aggregate all signatures for all inputs and send to the Coordinator (OpCodeCoordinatorSendSignature = 0xd0720000)
+- The signing procedure is now complete
+- Oracle pauses the Signing process for N seconds
+
+**Signature Done**
+When signature for a specific pegout ID is complete, the Coordinator has the signature for this pegout and the transaction can be published to the Bitcoin network.
+
+#### 4.5.3 Restarting Signing
+
+When Signing is restarted:
+1. Number of Oracles (max_signers): Value updated with respect to the list of Oracles who were evicted
+2. Threshold value (min_signers): Remains the same
+3. Time period for Signing: Remains the same
+4. List of Oracles: Oracles who were evicted are removed from this list
+5. List of evicted Oracles: Remains the same
+
+#### 4.5.4 Signing Process State Diagram
+
+The following diagram illustrates the state transitions in the Signing process:
+
+```mermaid
+stateDiagram-v2
+    [*] --> CheckPegouts: Timer Event Fires
+    CheckPegouts --> LoadSigner: Unsigned Pegouts Found
+    CheckPegouts --> PauseSigning: No Unsigned Pegouts
+    CheckPegouts --> PauseSigning: Get Pegouts Failure
+    
+    LoadSigner --> SelectPegout: Session Signer Loaded
+    LoadSigner --> PauseSigning: Session Signer Load Failed
+    
+    SelectPegout --> CheckEviction: Oldest Pegout Selected
+    
+    CheckEviction --> CheckTimeout: Not Evicted
+    CheckEviction --> PauseSigning: Evicted
+    
+    CheckTimeout --> GetPegoutData: No Timeout
+    CheckTimeout --> SendRestart: Timeout Detected
+    SendRestart --> PauseSigning: After Restart Message
+    
+    GetPegoutData --> CalculateMinSigners: Pegout Data Retrieved
+    
+    CalculateMinSigners --> Round1: Min Signers Calculated
+    
+    Round1 --> CheckCommitmentSent: Check if already sent
+    CheckCommitmentSent --> Round2: Already sent
+    CheckCommitmentSent --> CheckCommitmentCount: Not sent yet
+    
+    CheckCommitmentCount --> PauseSigning: Enough commitments
+    CheckCommitmentCount --> GenerateCommitment: Need more commitments
+    GenerateCommitment --> SendCommitment: Commitment Generated
+    SendCommitment --> PauseSigning: After sending to Coordinator
+    
+    Round2 --> GetCommitments: Proceed to Round 2
+    GetCommitments --> CheckSharesSent: Get Commitments Success
+    GetCommitments --> PauseSigning: No Commitments
+    
+    CheckSharesSent --> Round3: Already sent
+    CheckSharesSent --> CheckSharesCount: Not sent yet
+    
+    CheckSharesCount --> PauseSigning: Enough shares
+    CheckSharesCount --> GenerateShares: Need more shares
+    
+    GenerateShares --> DetectCorruptData: Generate for each input
+    DetectCorruptData --> SendClaim: Corrupt data detected
+    SendClaim --> PauseSigning: After sending claim
+    
+    DetectCorruptData --> AggregateShares: No corrupt data
+    AggregateShares --> StoreShares: Shares Aggregated
+    StoreShares --> SendShares: Shares Stored
+    SendShares --> PauseSigning: After sending to Coordinator
+    
+    Round3 --> AggregateSignatures: Get all signing data
+    AggregateSignatures --> DetectCorruptSigs: Check data integrity
+    DetectCorruptSigs --> SendClaimR3: Corrupt data detected
+    SendClaimR3 --> PauseSigning: After sending claim
+    
+    DetectCorruptSigs --> FinalizeSignature: No corrupt data
+    FinalizeSignature --> SendSignature: Signature Aggregated
+    SendSignature --> PauseSigning: Signature Complete
+    
+    PauseSigning --> [*]: Wait N Seconds
+```
