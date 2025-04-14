@@ -15,10 +15,12 @@ CustomInitScript: |
   echo "Pod ordinal is: $ORDINAL"
   OLD_PUBKEY="ORACLE_PUBKEY-$ORDINAL"
   TMP_OLD_PUBKEY="$(eval echo \$$OLD_PUBKEY)"
+  echo "Value in $OLD_PUBKEY: $TMP_OLD_PUBKEY"
 
   if [ -n "$TMP_OLD_PUBKEY" ]; then
     export ORACLE_PUBKEY="$TMP_OLD_PUBKEY"
     echo "Set ORACLE_PUBKEY from $OLD_PUBKEY"
+    echo "New ORACLE_PUBKEY: $ORACLE_PUBKEY"
   else
     echo "WARNING: $OLD_PUBKEY not found or empty"
   fi
@@ -27,6 +29,7 @@ CustomInitScript: |
   if [ -n "$TMP_OLD_SECRET" ]; then
     export ORACLE_SECRET="$TMP_OLD_SECRET"
     echo "Set ORACLE_SECRET from $OLD_SECRET"
+    echo "New ORACLE_SECRET: $ORACLE_SECRET"
   else
     echo "WARNING: $OLD_SECRET not found or empty"
   fi
