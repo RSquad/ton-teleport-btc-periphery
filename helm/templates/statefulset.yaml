@@ -28,6 +28,7 @@ spec:
           args:
             - |
               {{ .Values.mainScript | nindent 14 }}
+          {{ - end }}
           {{- if or $.Values.configMapName $.Values.secretName }}
           envFrom:
             {{- if $.Values.configMapName }}
