@@ -23,7 +23,7 @@ spec:
         - name: oracle
           image: {{ $.Values.image.repository }}:{{ $.Values.image.tag | default "latest" }}
           imagePullPolicy: {{ $.Values.image.pullPolicy | default "IfNotPresent" }}
-          {{- if $.Values.CustomInit }}
+          {{- if $.Values.CustomInitScript }}
           command: ["/bin/sh", "-c"]
           args:
             - |

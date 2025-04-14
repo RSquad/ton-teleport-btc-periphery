@@ -28,5 +28,4 @@ CustomInitScript: |
     echo "WARNING: $OLD_SECRET not found or empty"
   fi
   echo "Starting main application..."
-  sleep 300
   exec /app/bin
