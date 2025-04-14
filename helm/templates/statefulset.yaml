@@ -3,19 +3,19 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: {{ include "app.name" . }}
+  name: {{ include "app.name" $ }}
   labels:
-    app: {{ include "app.name" . }}
+    app: {{ include "app.name" $ }}
 spec:
   replicas: {{ .Values.replicaCount }}
-  serviceName: {{ include "app.name" . }}-headless
+  serviceName: {{ include "app.name" $ }}-headless
   selector:
     matchLabels:
-      app: {{ include "app.name" . }}
+      app: {{ include "app.name" $ }}
   template:
     metadata:
       labels:
-        app: {{ include "app.name" . }}
+        app: {{ include "app.name" $ }}
     spec:
       securityContext:
         fsGroup: 1000
