@@ -8,6 +8,7 @@ metadata:
     app: {{ include "app.name" $ }}
 spec:
   replicas: {{ $.Values.replicaCount }}
+  podManagementPolicy: Parallel
   serviceName: {{ include "app.name" $ }}-headless
   selector:
     matchLabels:
