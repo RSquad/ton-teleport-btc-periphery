@@ -9,7 +9,7 @@ SecretNames:
   pubkey: ORACLE_PUBKEY
   secret: ORACLE_SECRET
 
-CustomInit: |
+CustomInitScript: |
   echo "Pod hostname is: $HOSTNAME"
   ORDINAL=$(echo "${HOSTNAME##*-}")
   echo "Pod ordinal is: $ORDINAL"
