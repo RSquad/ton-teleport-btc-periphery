@@ -1,24 +1,21 @@
 {{- if and .Values.deploymentType (eq .Values.deploymentType "StatefulSet") }}
-{{- range $i, $_ := until (.Values.replicaCount | int) }}
 ---
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: {{ include "app.name" $ }}-{{ $i }}
+  name: {{ include "app.name" . }}
   labels:
-    app: {{ include "app.name" $ }}
-    instance: "{{ $i }}"
+    app: {{ include "app.name" . }}
 spec:
-  replicas: 1
+  replicas: {{ .Values.replicaCount }}
+  serviceName: {{ include "app.name" . }}-headless
   selector:
     matchLabels:
-      app: {{ include "app.name" $ }}
-      instance: "{{ $i }}"
+      app: {{ include "app.name" . }}
   template:
     metadata:
       labels:
-        app: {{ include "app.name" $ }}
-        instance: "{{ $i }}"
+        app: {{ include "app.name" . }}
     spec:
       securityContext:
         fsGroup: 1000
@@ -26,22 +23,21 @@ spec:
         - name: oracle
           image: {{ $.Values.image.repository }}:{{ $.Values.image.tag | default "latest" }}
           imagePullPolicy: {{ $.Values.image.pullPolicy | default "IfNotPresent" }}
+          {{- if $.Values.CustomInit }}
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              {{ .Values.mainScript | nindent 14 }}
           {{- if or $.Values.configMapName $.Values.secretName }}
-          {{- if $.Values.configMapName }}
           envFrom:
+            {{- if $.Values.configMapName }}
             - configMapRef:
                 name: {{ $.Values.configMapName }}
-          {{- end }}
-          {{- if $.Values.secretName }}
-          env:
-            {{- range $key, $name := $.Values.SecretNames }}
-            - name: {{ $name }}
-              valueFrom:
-                secretKeyRef:
-                  name: {{ $.Values.secretName }}
-                  key: {{ $name }}-{{ $i }}
             {{- end }}
-          {{- end }}
+            {{- if $.Values.secretName }}
+            - secretRef:
+                name: {{ $.Values.secretName }}
+            {{- end }}
           {{- end }}
           volumeMounts:
             - name: data
@@ -56,5 +52,4 @@ spec:
         resources:
           requests:
             storage: {{ $.Values.storage.size }}
-{{- end }}
 {{- end }}

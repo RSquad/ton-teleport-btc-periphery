@@ -8,3 +8,24 @@ storage:
 SecretNames:
   pubkey: ORACLE_PUBKEY
   secret: ORACLE_SECRET
+
+CustomInit: |
+  echo "Pod hostname is: $HOSTNAME"
+  ORDINAL=$(echo "${HOSTNAME##*-}")
+  echo "Pod ordinal is: $ORDINAL"
+  OLD_PUBKEY="ORACLE_PUBKEY-$ORDINAL"
+  if [ ! -z "${!OLD_PUBKEY}" ]; then
+    export ORACLE_PUBKEY="${!OLD_PUBKEY}"
+    echo "Set ORACLE_PUBKEY from $OLD_PUBKEY"
+  else
+    echo "WARNING: $OLD_PUBKEY not found or empty"
+  fi
+  OLD_SECRET="ORACLE_SECRET-$ORDINAL"
+  if [ ! -z "${!OLD_SECRET}" ]; then
+    export ORACLE_SECRET="${!OLD_SECRET}"
+    echo "Set ORACLE_SECRET from $OLD_SECRET"
+  else
+    echo "WARNING: $OLD_SECRET not found or empty"
+  fi
+  echo "Starting main application..."
+  exec /app/bin
