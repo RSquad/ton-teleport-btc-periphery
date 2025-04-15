@@ -16,6 +16,25 @@ const TvmExitCodeDifferentPubkeyPackages = 152
 
 // Helpers
 
+func ConvertMapToFrostPackagesAndPubKey(origMap map[uint16][]byte) (map[frost.Identifier]frost.Package, map[uint16][]byte, uint16, error) {
+	frostMap := make(map[frost.Identifier]frost.Package)
+	pubKeysMap := make(map[uint16][]byte)
+
+	for k, v := range origMap {
+		if len(v) <= 32 {
+			return nil, nil, k, errors.New("wrong package len")
+		}
+
+		pubKeyX25519 := v[:32]
+		frostPackage := v[32:]
+
+		pubKeysMap[k] = pubKeyX25519
+		frostMap[ValidatorIdxToFrost(k)] = frost.NewPackage(frostPackage)
+	}
+
+	return frostMap, pubKeysMap, 0, nil
+}
+
 func ConvertMapToFrostPackages(origMap map[uint16][]byte) (frostMap map[frost.Identifier]frost.Package) {
 	frostMap = make(map[frost.Identifier]frost.Package)
 	for k, v := range origMap {

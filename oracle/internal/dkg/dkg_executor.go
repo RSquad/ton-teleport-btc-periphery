@@ -2,6 +2,7 @@ package dkg
 
 import (
 	"context"
+	"crypto/rand"
 	"fmt"
 	"sync"
 	"time"
@@ -12,6 +13,7 @@ import (
 	helpers "github.com/rsquad/ton-teleport-btc-periphery/oracle/internal"
 	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/keystore"
 	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/validator"
+	"golang.org/x/crypto/nacl/box"
 )
 
 type Secret struct {
@@ -23,8 +25,10 @@ func NewSecret(ptr uintptr) Secret {
 }
 
 type Round1Result struct {
-	pkg    []byte
-	secret Secret
+	pkg             []byte
+	secret          Secret
+	r2PublicX25519  []byte
+	r2PrivateX25519 []byte
 }
 
 type Round2Result struct {
@@ -204,9 +208,19 @@ func (e *Executor) executeR1(dkg *coordinator.DKG, validatorIdx uint16) bool {
 			e.logDKGPart1Failed(dkg, err)
 			return false
 		}
+
+		// Generate key pair for Round2 encryption
+		r2PublicX25519, r2PrivateX25519, err := box.GenerateKey(rand.Reader)
+		if err != nil {
+			e.logDKGPart1Failed(dkg, err)
+			return false
+		}
+
 		e.artifacts.r1 = &Round1Result{
-			pkg:    r1Package,
-			secret: NewSecret(r1SecretPtr),
+			pkg:             r1Package,
+			secret:          NewSecret(r1SecretPtr),
+			r2PublicX25519:  r2PublicX25519[:],
+			r2PrivateX25519: r2PrivateX25519[:],
 		}
 	}
 
@@ -214,6 +228,7 @@ func (e *Executor) executeR1(dkg *coordinator.DKG, validatorIdx uint16) bool {
 		validatorIdx,
 		dkg.Until.Unix(),
 		e.artifacts.r1.pkg,
+		e.artifacts.r1.r2PublicX25519,
 	)
 	if err != nil {
 		e.logSendRound1Package(dkg, err)
@@ -231,6 +246,7 @@ func (e *Executor) executeR2(dkg *coordinator.DKG, validatorIdx uint16) bool {
 	}
 
 	localIdentifier := helpers.ValidatorIdxToFrost(validatorIdx)
+	var r2PublicKeysX25519 map[uint16][]byte
 
 	if e.artifacts.r2 == nil {
 		if e.artifacts.r1 == nil {
@@ -239,7 +255,14 @@ func (e *Executor) executeR2(dkg *coordinator.DKG, validatorIdx uint16) bool {
 		}
 
 		e.logMessage(dkg, "generating round2 artifacts")
-		r1Packages := helpers.ConvertMapToFrostPackages(dkg.GetR1Packages())
+		r1Packages, r2PublicKeys, culpritIdx, err := helpers.ConvertMapToFrostPackagesAndPubKey(dkg.GetR1Packages())
+		if err != nil {
+			e.logError(dkg, "Failed to parse Round1 packages. Culprit validator found.", err)
+			e.executeClaim(dkg, validatorIdx, culpritIdx)
+			return false
+		}
+		r2PublicKeysX25519 = r2PublicKeys
+
 		delete(r1Packages, localIdentifier)
 
 		r2Packages, r2SecretPtr, culpritFrostIdx, err := frost.DkgPart2(e.artifacts.r1.secret.ptr, r1Packages)
@@ -258,6 +281,7 @@ func (e *Executor) executeR2(dkg *coordinator.DKG, validatorIdx uint16) bool {
 			pkgs:   r2Packages,
 			secret: NewSecret(r2SecretPtr),
 		}
+
 	}
 
 	e.logMessage(dkg, "sending r2 packages...")
@@ -267,7 +291,6 @@ func (e *Executor) executeR2(dkg *coordinator.DKG, validatorIdx uint16) bool {
 	// Go through all r2 packages generated locally
 	for toIdentificator, r2pkg := range e.artifacts.r2.pkgs {
 		// Check if oracle has already sent this package to coordinator
-
 		toIdx := helpers.FrostToValidatorIdx(toIdentificator)
 		sentPackages, foundToPackages := dkg.GetR2PackagesTo(toIdx)
 
@@ -278,12 +301,27 @@ func (e *Executor) executeR2(dkg *coordinator.DKG, validatorIdx uint16) bool {
 			}
 		}
 
+		//
+		r2PublicKeyX25519, ok := r2PublicKeysX25519[toIdx]
+		if !ok {
+			e.logError(dkg, fmt.Sprintf("No X25519 public key was found for Oracle {%d}", toIdx), nil)
+			withErrors = true
+			continue
+		}
+
+		r2pkgEncrypted, err := Encrypt(r2pkg.ToBytes(), e.artifacts.r1.r2PrivateX25519, r2PublicKeyX25519)
+		if err != nil {
+			e.logError(dkg, fmt.Sprintf("Failed to encrypt R2 packages for Oracle {%d}", toIdx), err)
+			withErrors = true
+			continue
+		}
+
 		// local r2 package is not sent yet, send it to coordinator
-		_, err := e.coordinatorContract.SendRound2(
+		_, err = e.coordinatorContract.SendRound2(
 			validatorIdx,
 			dkg.Until.Unix(),
 			toIdx,
-			r2pkg.ToBytes(),
+			r2pkgEncrypted,
 		)
 		if err != nil {
 			e.logSendRound2Package(dkg, toIdx, err)
@@ -320,7 +358,12 @@ func (e *Executor) executeR3(dkg *coordinator.DKG, validatorIdx uint16) bool {
 			return false
 		}
 
-		r1Packages := helpers.ConvertMapToFrostPackages(dkg.GetR1Packages())
+		r1Packages, r2PublicKeysX25519, culpritIdx, err := helpers.ConvertMapToFrostPackagesAndPubKey(dkg.GetR1Packages())
+		if err != nil {
+			e.logError(dkg, "Failed to parse Round1 packages. Culprit validator found.", err)
+			e.executeClaim(dkg, validatorIdx, culpritIdx)
+			return false
+		}
 		delete(r1Packages, localIdentifier)
 
 		sentPackages, foundToPackages := dkg.GetR2PackagesTo(validatorIdx)
@@ -330,6 +373,14 @@ func (e *Executor) executeR3(dkg *coordinator.DKG, validatorIdx uint16) bool {
 		}
 
 		r2Packages := helpers.ConvertMapToFrostPackages(sentPackages)
+
+		// Decrypt r2Packages
+		r2Packages, err = DecryptPackages(r2Packages, e.artifacts.r1.r2PrivateX25519, r2PublicKeysX25519)
+		if err != nil {
+			e.logError(dkg, "Failed to decrypt Round2 packages. Culprit validator found.", err)
+			e.executeClaim(dkg, validatorIdx, culpritIdx)
+			return false
+		}
 
 		keyPackage, publicKeyPackage, culpritFrostIdx, err := frost.DkgPart3(e.artifacts.r2.secret.ptr, r1Packages, r2Packages)
 		if err != nil {
