@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 	"time"
 
@@ -61,7 +62,20 @@ var (
 		Name: "tx_created",
 		Help: "Is transaction in mempool (1) or not (0)",
 	}, []string{"tx_id"})
+
+	cpfpCounter = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "cpfp_count",
+		Help: "CPFP Count",
+	}, []string{"tx_id"})
 )
+
+func (m *Metrics) getCpfpCount(storage teleportcontract.Storage) (*bitcoin.TxChildrenCount, error) {
+	txChildrenCount, err := m.bitcoinClient.GetTxChildrenCount(storage.LastPegoutTxID)
+	if err != nil {
+		return &bitcoin.TxChildrenCount{}, err
+	}
+	return txChildrenCount, nil
+}
 
 func (m *Metrics) getBalances() (map[string]float64, error) {
 	balances := make(map[string]float64)
@@ -102,6 +116,7 @@ func (m *Metrics) recordMetrics(
 	balances map[string]float64,
 	pegouts float64,
 	txStatus txStatus,
+	txChildrenCount *bitcoin.TxChildrenCount,
 ) (err error) {
 	for key, value := range balances {
 		contractBalances.WithLabelValues(
@@ -111,6 +126,9 @@ func (m *Metrics) recordMetrics(
 	}
 	pegoutCounter.Set(pegouts)
 	txCreated.WithLabelValues(txStatus.txID).Set(txStatus.isCreated)
+	if cpfpCounter != nil {
+		cpfpCounter.WithLabelValues(txChildrenCount.ParentTxID.String()).Set(float64(txChildrenCount.ChildrenCount))
+	}
 	return nil
 }
 
@@ -122,20 +140,28 @@ func (m *Metrics) Work(ctx context.Context) (err error) {
 		default:
 			balances, err := m.getBalances()
 			if err != nil {
-				return err
+				fmt.Println(err)
 			}
 			storage, err := m.teleportContract.GetStorage(nil)
 			if err != nil {
-				return err
+				fmt.Println(err)
 			}
 			txStatus, err := m.getTxStatus(storage)
 			if err != nil {
-				return err
+				fmt.Println(err)
 			}
+			// txChildrenCount, err := m.getCpfpCount(storage)
+			// if err != nil {
+			// 	fmt.Println(err)
+			// }
 			m.recordMetrics(
 				balances,
 				float64(storage.PegoutChainCounter),
 				txStatus,
+				&bitcoin.TxChildrenCount{
+					ParentTxID:    storage.LastPegoutTxID,
+					ChildrenCount: 0,
+				},
 			)
 			time.Sleep(10 * time.Second)
 		}

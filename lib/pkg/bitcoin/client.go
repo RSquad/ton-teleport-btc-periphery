@@ -2,6 +2,7 @@ package bitcoin
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/btcsuite/btcd/btcjson"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
@@ -10,6 +11,11 @@ import (
 
 type Client struct {
 	RPCClient *rpcclient.Client
+}
+
+type TxChildrenCount struct {
+	ParentTxID    *chainhash.Hash
+	ChildrenCount int
 }
 
 func NewClient(host string, user string, pass string) (*Client, error) {
@@ -81,6 +87,50 @@ func (c *Client) GetTxProof(txID *chainhash.Hash, blockHash *chainhash.Hash) (st
 	}
 
 	return proof, nil
+}
+
+func (c *Client) GetTxChildrenCount(parentHash *chainhash.Hash) (*TxChildrenCount, error) {
+	_, err := c.RPCClient.GetRawTransaction(parentHash)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get parent transaction: %v", err)
+	}
+
+	mempool, err := c.RPCClient.GetRawMempool()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get mempool: %v", err)
+	}
+
+	childrenCount := 0
+
+	for _, txID := range mempool {
+		txHash, err := chainhash.NewHashFromStr(txID.String())
+		if err != nil {
+			continue
+		}
+
+		tx, err := c.RPCClient.GetRawTransaction(txHash)
+		if err != nil {
+			continue
+		}
+
+		var inputsFromParent int
+		for _, txIn := range tx.MsgTx().TxIn {
+			if txIn.PreviousOutPoint.Hash.IsEqual(parentHash) {
+				inputsFromParent++
+			}
+		}
+
+		if inputsFromParent > 0 {
+			childrenCount++
+		}
+	}
+
+	result := &TxChildrenCount{
+		ParentTxID:    parentHash,
+		ChildrenCount: childrenCount,
+	}
+
+	return result, nil
 }
 
 func (c *Client) ShutdownRPCClient() {
