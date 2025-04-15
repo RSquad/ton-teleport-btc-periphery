@@ -7,10 +7,12 @@ package gql
 import (
 	"context"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"math/big"
 	"time"
 
+	"github.com/btcsuite/btcd/btcec/v2"
 	"github.com/btcsuite/btcd/btcec/v2/schnorr"
 	"github.com/btcsuite/btcd/btcjson"
 	"github.com/btcsuite/btcd/btcutil"
@@ -18,112 +20,280 @@ import (
 	entburn "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated/burn"
 	entinternalkey "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated/internalkey"
 	entmint "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated/mint"
+	entpegin "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated/pegin"
 	entpegout "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated/pegout"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/peginutils"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/credscontract"
 	"github.com/xssnick/tonutils-go/address"
 )
 
 // CreatePegin is the resolver for the createPegin field.
 func (r *mutationResolver) CreatePegin(ctx context.Context, input ent.CreatePeginInput) (*ent.Pegin, error) {
-	recoveryKeyBytes, err := hex.DecodeString(*input.RecoveryKey)
-	if err != nil {
-		return nil, fmt.Errorf("invalid recovery key: %w", err)
-	}
-	recoveryKey, err := schnorr.ParsePubKey(recoveryKeyBytes)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse recovery key: %w", err)
+	repo := ent.FromContext(ctx)
+
+	// 0. Check if Pegin already exists for this Bitcoin Tx
+	existingPegin, err := repo.Pegin.
+		Query().
+		Where(entpegin.BitcoinTxIDEQ(input.BitcoinTxID)).
+		Only(ctx)
+	if err == nil {
+		return existingPegin, nil
 	}
 
-	internalKeyBytes, err := hex.DecodeString(*input.InternalKey)
-	if err != nil {
-		return nil, fmt.Errorf("invalid internal key: %w", err)
-	}
-	internalKey, err := schnorr.ParsePubKey(internalKeyBytes)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse internal key: %w", err)
-	}
-
+	// 1. Parse Receiver Address
 	receiverAddr, err := address.ParseRawAddr(input.ReceiverAddr)
 	if err != nil {
 		return nil, fmt.Errorf("invalid receiver address: %w", err)
 	}
 
-	teleportContractStorage, err := r.teleportContract.GetStorage(nil)
+	// 2. Fetch Bitcoin Transaction
+	bitcoinTxExists, bitcoinTx, err := r.bitcoinTxExists(input.BitcoinTxID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to check bitcoin tx: %w", err)
+	}
+	if !bitcoinTxExists {
+		return nil, fmt.Errorf("bitcoin tx not found: %s", input.BitcoinTxID)
+	}
+
+	// 3. Fetch Teleport Contract Storage for CSV locks and limits
+	teleportContractStorage, err := r.teleportContract.GetStorage(nil) // Use ctx?
 	if err != nil {
 		return nil, fmt.Errorf("failed to get teleport contract storage: %w", err)
 	}
+	possibleCvsLocks := []uint32{teleportContractStorage.CsvLock, 36, 29} // Consider making these configurable or constants
 
-	repo := ent.FromContext(ctx)
+	// 4. Prepare list of potential Internal Keys
+	var internalKeys []*btcec.PublicKey
+	var internalKeyModels []*ent.InternalKey
+	var targetInternalKeyModel *ent.InternalKey // The model corresponding to the key found in the tx
 
-	peginExists, err := r.peginExists(ctx, input.BitcoinTxID)
-	if peginExists {
-		return nil, fmt.Errorf("pegin with the same bitcoin tx id already exists: %w", err)
+	if input.InternalKey != nil && *input.InternalKey != "" {
+		internalKeyBytes, err := hex.DecodeString(*input.InternalKey)
+		if err != nil {
+			return nil, fmt.Errorf("invalid provided internal key hex: %w", err)
+		}
+		parsedKey, err := schnorr.ParsePubKey(internalKeyBytes)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse provided internal key: %w", err)
+		}
+		internalKeys = append(internalKeys, parsedKey)
+
+		// Find the specific model for the provided key
+		model, err := r.findInternalKey(ctx, *input.InternalKey)
+		if err != nil {
+			// Even if provided, it must exist in our DB
+			return nil, fmt.Errorf("provided internal key %s not found in indexer DB: %w", *input.InternalKey, err)
+		}
+		internalKeyModels = append(internalKeyModels, model) // Add to list for consistency, though we'll likely use targetInternalKeyModel directly
+		targetInternalKeyModel = model                       // Set directly since it was provided
+	} else {
+		// Fetch all internal keys from DB
+		allModels, err := repo.InternalKey.Query().
+			Order(ent.Desc(entinternalkey.FieldCompletedAt)).
+			Limit(100).
+			All(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to query latest 100 internal keys: %w", err)
+		}
+		if len(allModels) == 0 {
+			return nil, fmt.Errorf("no internal keys found in the database")
+		}
+		internalKeyModels = allModels // Store all models
+		for _, model := range allModels {
+			internalKeyBytes, err := hex.DecodeString(model.Key)
+			if err != nil {
+				// Log this error? Skip this key?
+				continue // Skip invalid keys stored in DB
+			}
+			parsedKey, err := schnorr.ParsePubKey(internalKeyBytes)
+			if err != nil {
+				// Log this error? Skip this key?
+				continue // Skip invalid keys stored in DB
+			}
+			internalKeys = append(internalKeys, parsedKey)
+		}
+		if len(internalKeys) == 0 {
+			return nil, fmt.Errorf("no valid internal keys could be parsed from database")
+		}
 	}
 
-	internalKeyModel, err := r.findInternalKey(ctx, *input.InternalKey)
-	if err != nil {
-		return nil, fmt.Errorf("internal key not found: %w", err)
+	// 5. Prepare list of potential Recovery Keys
+	var recoveryKeys []*btcec.PublicKey
+	if input.RecoveryKey != nil && *input.RecoveryKey != "" {
+		recoveryKeyBytes, err := hex.DecodeString(*input.RecoveryKey)
+		if err != nil {
+			return nil, fmt.Errorf("invalid provided recovery key hex: %w", err)
+		}
+		parsedKey, err := schnorr.ParsePubKey(recoveryKeyBytes)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse provided recovery key: %w", err)
+		}
+		recoveryKeys = append(recoveryKeys, parsedKey)
+	} else {
+		// Fetch recovery keys from Creds Contract
+		credsContract, err := credscontract.NewFromStateInit(
+			r.tonClient,
+			&credscontract.StateInit{
+				Code: credscontract.GetCode(),
+				InitData: &credscontract.InitData{
+					Owner: receiverAddr, // Use parsed receiver address
+				},
+			},
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to init creds contract: %w", err)
+		}
+
+		credsContractStorage, err := credsContract.GetStorage(ctx, nil) // Use ctx?
+		if err != nil {
+			// If storage can't be retrieved, we can't get recovery keys
+			return nil, fmt.Errorf("failed to get creds contract storage for receiver %s: %w", input.ReceiverAddr, err)
+		}
+
+		// Extract keys from the map[string][]byte structure
+		if len(credsContractStorage.Creds) == 0 {
+			return nil, fmt.Errorf("no recovery keys found in creds contract storage for receiver %s", input.ReceiverAddr)
+		}
+
+		for keyStr := range credsContractStorage.Creds {
+			keyBytes, err := hex.DecodeString(keyStr)
+			if err != nil {
+				fmt.Printf("Warning: Failed to decode recovery key hex string '%s' from creds contract for receiver %s: %v\n", keyStr, input.ReceiverAddr, err)
+				continue
+			}
+
+			if len(keyBytes) == 0 {
+				// Log or handle empty key bytes?
+				continue
+			}
+			parsedKey, err := schnorr.ParsePubKey(keyBytes)
+			if err != nil {
+				// Log? Skip?
+				fmt.Printf("Warning: Failed to parse recovery key from creds contract for receiver %s: %v\n", input.ReceiverAddr, err)
+				continue
+			}
+			recoveryKeys = append(recoveryKeys, parsedKey)
+		}
+		if len(recoveryKeys) == 0 {
+			return nil, fmt.Errorf("no valid recovery keys could be parsed from creds contract storage for receiver %s", input.ReceiverAddr)
+		}
 	}
 
-	bitcoinTxExists, bitcoinTx, err := r.bitcoinTxExists(input.BitcoinTxID)
-	if !bitcoinTxExists {
-		return nil, fmt.Errorf("bitcoin tx not found: %w", err)
-	}
+	// 6. Iterate through all combinations to find the matching output
+	var foundInternalKey *btcec.PublicKey
+	var foundRecoveryKey *btcec.PublicKey
+	var foundVout *btcjson.Vout
 
-	possibleCvsLocks := []uint32{teleportContractStorage.CsvLock, 36, 29}
-
-	var vout *btcjson.Vout
-
-	for _, cvsLock := range possibleCvsLocks {
-		if peginBitcoinAddr, err := peginutils.CalcPeginBitcoinAddr(internalKey, recoveryKey, receiverAddr, cvsLock); err == nil {
-			if addrFound, voutFound := bitcoin.TxContainsOutWithAddr(bitcoinTx, peginBitcoinAddr.String()); addrFound {
-				vout = voutFound
-				break
+searchLoop:
+	for _, ik := range internalKeys {
+		for _, rk := range recoveryKeys {
+			for _, cvsLock := range possibleCvsLocks {
+				peginBitcoinAddr, err := peginutils.CalcPeginBitcoinAddr(ik, rk, receiverAddr, cvsLock)
+				if err != nil {
+					// Log? Should this error be fatal or just skip combination?
+					fmt.Printf("Warning: Failed to calculate pegin address for combination: %v\n", err)
+					continue // Skip this combination
+				}
+				addrStr := peginBitcoinAddr.String()
+				if addrFound, voutFound := bitcoin.TxContainsOutWithAddr(bitcoinTx, addrStr); addrFound {
+					foundInternalKey = ik
+					foundRecoveryKey = rk
+					foundVout = voutFound
+					break searchLoop // Found the matching output
+				}
 			}
 		}
 	}
 
-	if vout == nil {
-		return nil, fmt.Errorf("calculated pegin bitcoin address not found in the bitcoin transaction")
+	// 7. Check if a match was found
+	if foundVout == nil {
+		// Construct a more informative error message
+		errMsg := fmt.Sprintf("[PEGIN_MATCH_NOT_FOUND] no matching pegin output found in bitcoin tx %s for receiver %s", input.BitcoinTxID, input.ReceiverAddr)
+		if input.InternalKey != nil {
+			errMsg += fmt.Sprintf(" with provided internal key %s", *input.InternalKey)
+		} else {
+			errMsg += fmt.Sprintf(" using %d possible internal keys", len(internalKeys))
+		}
+		if input.RecoveryKey != nil {
+			errMsg += fmt.Sprintf(" and provided recovery key %s", *input.RecoveryKey)
+		} else {
+			errMsg += fmt.Sprintf(" and %d possible recovery keys from creds contract", len(recoveryKeys))
+		}
+		return nil, errors.New(errMsg)
 	}
 
-	amount, err := btcutil.NewAmount(vout.Value)
+	// 8. Determine the Internal Key Model corresponding to the found key
+	// If internal key was provided, targetInternalKeyModel is already set
+	if targetInternalKeyModel == nil {
+		// Find the model matching foundInternalKey
+		foundInternalKeyHex := hex.EncodeToString(foundInternalKey.SerializeCompressed())
+		for _, model := range internalKeyModels {
+			if model.Key == foundInternalKeyHex {
+				targetInternalKeyModel = model
+				break
+			}
+		}
+		// This should ideally not happen if foundInternalKey came from internalKeyModels
+		if targetInternalKeyModel == nil {
+			return nil, fmt.Errorf("internal inconsistency: could not find DB model for the matched internal key %s", foundInternalKeyHex)
+		}
+	}
+
+	// 9. Calculate Amount
+	amount, err := btcutil.NewAmount(foundVout.Value)
 	if err != nil {
-		return nil, fmt.Errorf("failed to convert vout value to btcutil.Amount: %w", err)
+		return nil, fmt.Errorf("failed to convert vout value %f to btcutil.Amount: %w", foundVout.Value, err)
 	}
 
+	// 10. Prepare Mint creation
 	mintCreateAt := time.Now()
-
 	if bitcoinTx.Time != 0 {
 		mintCreateAt = time.Unix(bitcoinTx.Time, 0)
 	}
 
 	mintCreate := repo.Mint.Create().
-		SetAmount(fmt.Sprintf("%d", amount)).
+		SetAmount(fmt.Sprintf("%d", amount)). // Store as satoshis string
 		SetCreatedAt(mintCreateAt)
 
+	// 11. Apply Mint status checks (Refund conditions)
+	// Check 1: Minimum Pegin Amount
 	if amount.ToUnit(btcutil.AmountSatoshi) < float64(teleportContractStorage.Limits.MinPeginAmount) {
 		mintCreate.SetStatus(entmint.StatusRefund)
 	}
 
+	// Check 2: Internal Key Rotation (using targetInternalKeyModel)
 	latestInternalKey, err := repo.InternalKey.Query().
 		Order(ent.Desc(entinternalkey.FieldCompletedAt)).
 		First(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to query latest internal key: %w", err)
+		return nil, fmt.Errorf("failed to query latest internal key for rotation check: %w", err)
 	}
 
-	if !internalKeyModel.CompletedAt.Equal(latestInternalKey.CompletedAt) {
+	// Ensure the target key (the one used in the successful pegin) is the latest completed one
+	if targetInternalKeyModel.CompletedAt.IsZero() || !targetInternalKeyModel.CompletedAt.Equal(latestInternalKey.CompletedAt) {
 		mintCreate.SetStatus(entmint.StatusRefund)
 	}
 
+	// 12. Save Mint
 	mint, err := mintCreate.Save(ctx)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to save mint record: %w", err)
 	}
 
-	return repo.Pegin.Create().SetInput(input).SetMint(mint).SetVoutIndex(int(vout.N)).Save(ctx)
+	// 13. Save Pegin
+	// We need to ensure the Pegin record stores the keys that were actually used.
+	finalInternalKeyHex := hex.EncodeToString(foundInternalKey.SerializeCompressed())
+	finalRecoveryKeyHex := hex.EncodeToString(foundRecoveryKey.SerializeCompressed())
+
+	return repo.Pegin.Create().
+		SetBitcoinTxID(input.BitcoinTxID).   // Use original input TxID
+		SetReceiverAddr(input.ReceiverAddr). // Use original input ReceiverAddr
+		SetInternalKey(finalInternalKeyHex). // Use the key found in the tx
+		SetRecoveryKey(finalRecoveryKeyHex). // Use the key found in the tx
+		SetMint(mint).
+		SetVoutIndex(int(foundVout.N)).
+		Save(ctx)
 }
 
 // Statistics is the resolver for the statistics field.
