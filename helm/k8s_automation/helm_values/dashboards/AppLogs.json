@@ -53,10 +53,7 @@
   "links": [],
   "panels": [
     {
-      "datasource": {
-        "type": "victoriametrics-logs-datasource",
-        "uid": "${DS_VICTORIALOGS}"
-      },
+      "datasource": "VictoriaLogs",
       "gridPos": {
         "h": 19,
         "w": 24,
@@ -78,12 +75,9 @@
       "pluginVersion": "11.6.0",
       "targets": [
         {
-          "datasource": {
-            "type": "victoriametrics-logs-datasource",
-            "uid": "${DS_VICTORIALOGS}"
-          },
+          "datasource": "VictoriaLogs",
           "editorMode": "code",
-          "expr": "kubernetes.pod_namespace:~\"$namespace\" kubernetes.container_name:~\"$app\" kubernetes.pod_name:~\"$pod\"",
+          "expr": "kubernetes.pod_namespace:~\"$namespace\" kubernetes.pod_labels.app:~\"$app\" kubernetes.pod_name:~\"$pod\"",
           "queryType": "instant",
           "refId": "A"
         }
@@ -100,10 +94,7 @@
     "list": [
       {
         "current": {},
-        "datasource": {
-          "type": "victoriametrics-logs-datasource",
-          "uid": "${DS_VICTORIALOGS}"
-        },
+        "datasource": "VictoriaLogs",
         "definition": "",
         "includeAll": true,
         "multi": true,
@@ -122,10 +113,7 @@
       },
       {
         "current": {},
-        "datasource": {
-          "type": "victoriametrics-logs-datasource",
-          "uid": "${DS_VICTORIALOGS}"
-        },
+        "datasource": "VictoriaLogs",
         "definition": "kubernetes.pod_namespace:~\"$namespace\"",
         "includeAll": true,
         "multi": true,
@@ -145,18 +133,15 @@
       },
       {
         "current": {},
-        "datasource": {
-          "type": "victoriametrics-logs-datasource",
-          "uid": "${DS_VICTORIALOGS}"
-        },
-        "definition": "kubernetes.pod_namespace:~\"$namespace\" kubernetes.container_name:~\"$app\"",
+        "datasource": "VictoriaLogs",
+        "definition": "kubernetes.pod_namespace:~\"$namespace\" kubernetes.pod_labels.app:~\"$app\"",
         "includeAll": true,
         "name": "pod",
         "options": [],
         "query": {
           "field": "kubernetes.pod_name",
           "limit": 100,
-          "query": "kubernetes.pod_namespace:~\"$namespace\" kubernetes.container_name:~\"$app\"",
+          "query": "kubernetes.pod_namespace:~\"$namespace\" kubernetes.pod_labels.app:~\"$app\"",
           "refId": "VictoriaLogsVariableQueryEditor-VariableQuery",
           "type": "fieldValue"
         },
