@@ -7,7 +7,7 @@ This guide provides detailed instructions on installing and configuring Alertman
 - [Prerequisites](#prerequisites)
 - [Step 0: Preparations](#step-0-preparations)
 - [Step 1: Alertmanager Setup](#step-1-alertmanager-setup)
-- [Step 2: Loki Setup](#step-2-loki-setup)
+- [Step 2: VictoriMetricsLogs Setup](#step-2-vmlogs-setup)
 - [Step 3: Prometheus Setup](#step-3-prometheus-setup)
 - [Step 4: Grafana Development Environment Setup](#Step-4-grafana-ton-teleport-dev-environment-setup)
 - [Final Checks](#final-checks)
@@ -17,7 +17,7 @@ This guide provides detailed instructions on installing and configuring Alertman
 This guide will walk you through:
 - Installing the required tools (`kubectl` and `helm3`)
 - Configuring your Kubernetes context
-- Deploying Alertmanager, Loki, Prometheus, and two Grafana instances in separate namespaces
+- Deploying Alertmanager, VictoriMetricsLogs, Prometheus, and two Grafana instances in separate namespaces
 
 ## Prerequisites
 
@@ -27,7 +27,6 @@ Before starting, ensure that you have:
 - Access to the Kubernetes cluster with the proper permissions.
 - Custom values files available in the `.helm_values` directory for each deployment:
   - `alertmagaer.yml` (Note: Verify the file name, it might be intended as `alertmanager.yml`)
-  - `loki.yml`
   - `prometheus.yml`
   - `grafana-dev.yml`
   - `grafana-sand.yml`
@@ -94,22 +93,21 @@ helm upgrade --install alertmanager prometheus-community/alertmanager \
   --values ./helm_values/alertmanager.yml
 ```
 
-## Step 2: Loki Setup
+## Step 2: VMLogs Setup
 
-Add the Grafana Helm repository:
+Add the VM Helm repository:
 
 ```bash
-helm repo add grafana https://grafana.github.io/helm-charts
+helm repo add vm https://victoriametrics.github.io/helm-charts/
 helm repo update
 ```
 
-Deploy Loki using Helm:
-This command installs (or upgrades) Loki in the **ton-teleport-dev** namespace with your custom configuration.
+Deploy VictoriMetricsLogs using Helm:
+This command installs (or upgrades) VictoriMetricsLogs in the **ton-teleport-dev** namespace with your custom configuration.
 
 ```bash
-helm upgrade --install loki grafana/loki \
-  --namespace ton-teleport-dev \
-  --values ./helm_values/loki.yml
+helm upgrade --install vmlogs vm/victoria-logs-single \
+  --namespace ton-teleport-dev
 ```
 
 ## Step 3: Prometheus Setup

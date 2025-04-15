@@ -1,4 +1,35 @@
 {
+  "__inputs": [
+    {
+      "name": "DS_VICTORIALOGS",
+      "label": "VictoriaLogs",
+      "description": "",
+      "type": "datasource",
+      "pluginId": "victoriametrics-logs-datasource",
+      "pluginName": "VictoriaLogs"
+    }
+  ],
+  "__elements": {},
+  "__requires": [
+    {
+      "type": "grafana",
+      "id": "grafana",
+      "name": "Grafana",
+      "version": "11.6.0"
+    },
+    {
+      "type": "panel",
+      "id": "logs",
+      "name": "Logs",
+      "version": ""
+    },
+    {
+      "type": "datasource",
+      "id": "victoriametrics-logs-datasource",
+      "name": "VictoriaLogs",
+      "version": "0.16.3"
+    }
+  ],
   "annotations": {
     "list": [
       {
@@ -18,14 +49,13 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 4,
+  "id": null,
   "links": [],
   "panels": [
     {
-      "datasource": "Loki",
-      "fieldConfig": {
-        "defaults": {},
-        "overrides": []
+      "datasource": {
+        "type": "victoriametrics-logs-datasource",
+        "uid": "${DS_VICTORIALOGS}"
       },
       "gridPos": {
         "h": 19,
@@ -45,14 +75,16 @@
         "sortOrder": "Descending",
         "wrapLogMessage": true
       },
-      "pluginVersion": "11.5.2",
+      "pluginVersion": "11.6.0",
       "targets": [
         {
-          "datasource": "Loki",
-          "direction": "backward",
+          "datasource": {
+            "type": "victoriametrics-logs-datasource",
+            "uid": "${DS_VICTORIALOGS}"
+          },
           "editorMode": "code",
-          "expr": "{app=~\"$app\", namespace=~\"$namespace\", pod=~\"$pod\"} |= `` | json | line_format \"{{.message}}\"",
-          "queryType": "range",
+          "expr": "kubernetes.pod_namespace:~\"$namespace\" kubernetes.container_name:~\"$app\" kubernetes.pod_name:~\"$pod\"",
+          "queryType": "instant",
           "refId": "A"
         }
       ],
@@ -61,75 +93,72 @@
       "type": "logs"
     }
   ],
-  "preload": false,
   "refresh": "10s",
-  "schemaVersion": 40,
+  "schemaVersion": 41,
   "tags": [],
   "templating": {
     "list": [
       {
-        "current": {
-          "text": [
-            "All"
-          ],
-          "value": [
-            "$__all"
-          ]
+        "current": {},
+        "datasource": {
+          "type": "victoriametrics-logs-datasource",
+          "uid": "${DS_VICTORIALOGS}"
         },
-        "datasource": "Loki",
         "definition": "",
         "includeAll": true,
         "multi": true,
         "name": "namespace",
         "options": [],
         "query": {
-          "label": "namespace",
-          "refId": "LokiVariableQueryEditor-VariableQuery",
-          "stream": "",
-          "type": 1
+          "field": "kubernetes.pod_namespace",
+          "limit": 25,
+          "query": "",
+          "refId": "VictoriaLogsVariableQueryEditor-VariableQuery",
+          "type": "fieldValue"
         },
         "refresh": 1,
         "regex": "ton.+",
         "type": "query"
       },
       {
-        "current": {
-          "text": "All",
-          "value": [
-            "$__all"
-          ]
+        "current": {},
+        "datasource": {
+          "type": "victoriametrics-logs-datasource",
+          "uid": "${DS_VICTORIALOGS}"
         },
-        "datasource": "Loki",
-        "definition": "",
+        "definition": "kubernetes.pod_namespace:~\"$namespace\"",
         "includeAll": true,
         "multi": true,
         "name": "app",
         "options": [],
         "query": {
-          "label": "app",
-          "refId": "LokiVariableQueryEditor-VariableQuery",
-          "stream": "{namespace=~\"$namespace\"}",
-          "type": 1
+          "field": "kubernetes.pod_labels.app",
+          "limit": 25,
+          "query": "kubernetes.pod_namespace:~\"$namespace\"",
+          "refId": "VictoriaLogsVariableQueryEditor-VariableQuery",
+          "type": "fieldValue"
         },
         "refresh": 2,
-        "regex": "",
+        "regex": "/(indexer|relayer|oracle)$/",
+        "sort": 1,
         "type": "query"
       },
       {
-        "current": {
-          "text": "All",
-          "value": "$__all"
+        "current": {},
+        "datasource": {
+          "type": "victoriametrics-logs-datasource",
+          "uid": "${DS_VICTORIALOGS}"
         },
-        "datasource": "Loki",
-        "definition": "",
+        "definition": "kubernetes.pod_namespace:~\"$namespace\" kubernetes.container_name:~\"$app\"",
         "includeAll": true,
         "name": "pod",
         "options": [],
         "query": {
-          "label": "pod",
-          "refId": "LokiVariableQueryEditor-VariableQuery",
-          "stream": "{namespace=~\"$namespace\", app=~\"$app\"}",
-          "type": 1
+          "field": "kubernetes.pod_name",
+          "limit": 100,
+          "query": "kubernetes.pod_namespace:~\"$namespace\" kubernetes.container_name:~\"$app\"",
+          "refId": "VictoriaLogsVariableQueryEditor-VariableQuery",
+          "type": "fieldValue"
         },
         "refresh": 1,
         "regex": "",
@@ -145,6 +174,6 @@
   "timezone": "browser",
   "title": "App Logs",
   "uid": "ceesqz3mqxvk0d",
-  "version": 5,
+  "version": 8,
   "weekStart": ""
 }
