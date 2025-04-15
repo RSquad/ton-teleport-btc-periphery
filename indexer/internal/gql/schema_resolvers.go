@@ -9,6 +9,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"log"
 	"math/big"
 	"time"
 
@@ -61,7 +62,7 @@ func (r *mutationResolver) CreatePegin(ctx context.Context, input ent.CreatePegi
 	if err != nil {
 		return nil, fmt.Errorf("failed to get teleport contract storage: %w", err)
 	}
-	possibleCvsLocks := []uint32{teleportContractStorage.CsvLock, 36, 29} // Consider making these configurable or constants
+	possibleCvsLocks := []uint32{teleportContractStorage.CsvLock, 36, 29}
 
 	// 4. Prepare list of potential Internal Keys
 	var internalKeys []*btcec.PublicKey
@@ -227,16 +228,28 @@ searchLoop:
 	// If internal key was provided, targetInternalKeyModel is already set
 	if targetInternalKeyModel == nil {
 		// Find the model matching foundInternalKey
-		foundInternalKeyHex := hex.EncodeToString(foundInternalKey.SerializeCompressed())
+		// We need to compare the X-coordinate hex string with the key stored in the DB.
+		foundInternalKeyBytesCompressed := foundInternalKey.SerializeCompressed() // 33 bytes (prefix + X)
+		if len(foundInternalKeyBytesCompressed) != 33 {
+			// Maybe add logging here if this happens in production? For now, just error.
+			return nil, fmt.Errorf("internal inconsistency: compressed key has unexpected length %d", len(foundInternalKeyBytesCompressed))
+		}
+		foundInternalKeyXBytes := foundInternalKeyBytesCompressed[1:]      // 32 bytes (X-coordinate)
+		foundInternalKeyXHex := hex.EncodeToString(foundInternalKeyXBytes) // 64 hex chars (X-coordinate)
+
+		foundMatch := false
 		for _, model := range internalKeyModels {
-			if model.Key == foundInternalKeyHex {
+			// Compare model.Key (64 hex chars from DB) with foundInternalKeyXHex (64 hex chars derived from found key)
+			if model.Key == foundInternalKeyXHex {
 				targetInternalKeyModel = model
+				foundMatch = true
 				break
 			}
 		}
 		// This should ideally not happen if foundInternalKey came from internalKeyModels
-		if targetInternalKeyModel == nil {
-			return nil, fmt.Errorf("internal inconsistency: could not find DB model for the matched internal key %s", foundInternalKeyHex)
+		if !foundMatch {
+			log.Printf("[ERROR] Internal inconsistency: Could not find DB model for the matched internal key X-coordinate hex %s", foundInternalKeyXHex)
+			return nil, fmt.Errorf("internal inconsistency: could not find DB model for the matched internal key X-coordinate hex %s", foundInternalKeyXHex)
 		}
 	}
 
