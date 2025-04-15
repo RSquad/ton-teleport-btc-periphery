@@ -14,3 +14,7 @@ func (m *Metrics) formatGetBalanceError(addr *address.Address) error {
 func (m *Metrics) formatParseFloatError(s string) error {
 	return fmt.Errorf("can not convert string %v to float", s)
 }
+
+func (m *Metrics) formatGetTxError(txID string) error {
+	return fmt.Errorf("can not get transaction: %v", txID)
+}
