@@ -7,6 +7,11 @@ metadata:
   labels:
     app: {{ include "app.name" $ }}
 spec:
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      partition: 0
+      maxUnavailable: "50%"
   replicas: {{ $.Values.replicaCount }}
   podManagementPolicy: Parallel
   serviceName: {{ include "app.name" $ }}-headless
