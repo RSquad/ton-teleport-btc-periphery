@@ -71,11 +71,14 @@ templates:
     {{ if .Labels.balance -}}
     - <b>Balance: </b>{{ .Labels.balance }}
     {{ end -}}
-    {{ if .Labels.threshold -}}
-    - <b>Threshold: </b>{{ .Labels.threshold }}
+    {{ if .Annotations.threshold -}}
+    - <b>Threshold: </b>{{ .Annotations.threshold }}
     {{ end -}}
     {{ if .Labels.instance -}}
     - <b>Instance: </b>{{ reReplaceAll ":.*" "" .Labels.instance }}
+    {{ end -}}
+    {{ if .Annotations.namespace -}}
+    - <b>Namespace: </b>{{ reReplaceAll ":.*" "" .Annotations.namespace }}
     {{ end -}}
     {{ if .Labels.addr -}}
     - <b>link: </b>https://testnet.tonviewer.com/{{ .Labels.addr }}
