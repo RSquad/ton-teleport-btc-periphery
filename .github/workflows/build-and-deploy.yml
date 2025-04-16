@@ -164,7 +164,7 @@ jobs:
               --set app.name="${app}" \
               --set configMapName="envs-config" \
               $SECRET_PARAM \
-              --atomic --timeout 5m \
+              --atomic --timeout 10m \
               --history-max 2 \
               $BASE_VALUES \
               $ADDITIONAL_VALUES &
