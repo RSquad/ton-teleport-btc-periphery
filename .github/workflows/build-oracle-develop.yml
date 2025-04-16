@@ -1,9 +1,10 @@
-name: Build and Publish Oracle to develop
+name: Build and Publish Oracle
 
 on:
   push:
     branches:
       - develop
+      - sandbox
     paths:
       - 'oracle/**'
       - 'frost/**'
@@ -16,7 +17,7 @@ env:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
-    environment: develop
+    environment: ${{ github.ref == 'refs/heads/develop' && 'develop' || 'sandbox' }}
       
     steps:
       - name: Checkout repository
@@ -34,5 +35,6 @@ jobs:
 
       - name: Build and push Docker image
         run: |
-          docker build -t registry.digitalocean.com/rsquad-dev/ton-teleport-btc-oracle:latest -f ${{ env.WORKSPACE }}/oracle/Dockerfile .
-          docker push registry.digitalocean.com/rsquad-dev/ton-teleport-btc-oracle:latest
+          STAGE=${{ github.ref == 'refs/heads/develop' && 'dev' || 'sandbox' }}
+          docker build -t registry.digitalocean.com/rsquad-dev/ton-teleport-btc-oracle-$STAGE:latest -f ${{ env.WORKSPACE }}/oracle/Dockerfile .
+          docker push registry.digitalocean.com/rsquad-dev/ton-teleport-btc-oracle-$STAGE:latest
