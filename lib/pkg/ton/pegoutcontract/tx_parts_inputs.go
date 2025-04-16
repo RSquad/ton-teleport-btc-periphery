@@ -36,8 +36,8 @@ func parseTxPartsInputValue(valueSlice *cell.Slice) (*TxPartsInput, error) {
 	merkleRootInt := valueSlice.MustLoadBigUInt(256)
 
 	var bitcoinMerkleRoot []byte
-	if merkleRootInt != big.NewInt(0) {
-		bitcoinMerkleRoot = merkleRootInt.Bytes()
+	if merkleRootInt.Sign() != 0 {
+		bitcoinMerkleRoot = merkleRootInt.FillBytes(make([]byte, 32))
 	}
 	receiver := valueSlice.MustLoadAddr()
 	bitcoinScriptSlice := valueSlice.MustLoadRef()
