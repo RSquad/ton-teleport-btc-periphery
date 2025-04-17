@@ -13,7 +13,7 @@ import (
 type (
 	TxPartsInput struct {
 		Amount            *big.Int
-		Index             uint8
+		Index             uint32
 		Receiver          *address.Address
 		BitcoinMerkleRoot []byte
 		BitcoinScript     []byte

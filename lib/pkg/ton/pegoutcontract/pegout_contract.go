@@ -125,7 +125,7 @@ func (c *PegoutContract) GetInputs(block *ton.BlockIDExt) ([]TxPartsInput, error
 func (c *PegoutContract) GetSigningHashes(block *ton.BlockIDExt) ([][]byte, error) {
 	result, err := c.tonClient.API.RunGetMethod(c.ctx, block, c.Addr, "get_signing_hashes")
 	if err != nil {
-		return nil, fmt.Errorf("failed to get tx parts: %w", err)
+		return nil, fmt.Errorf("failed to get signing hashes: %w", err)
 	}
 	cell, err := result.Cell(0)
 	if err != nil {
