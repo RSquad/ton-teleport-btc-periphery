@@ -26,8 +26,8 @@ serverFiles:
       rules:
       - alert: InstanceDown
         annotations:
-          description: "{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 1 minutes."
-          summary: "Instance {{ $labels.instance }} down"
+          description: '{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 1 minutes.'
+          summary: Instance {{ $labels.instance }} down
         expr: up == 0
         for: 1m
         labels:
@@ -40,10 +40,11 @@ serverFiles:
         labels:
           severity: "{{ if lt $value 0.5 }}critical{{ else }}warning{{ end }}"
         annotations:
-          balance: "{{ $value }}"
+          balance: '{{ $value | printf "%.9f" }}'
           threshold: "5.0"
           summary: "Low balance for contract {{ $labels.name }}"
-          description: "Contract {{ $labels.name }} on instance {{ $labels.instance }} balance is {{ $value }}"
+          description: 'Contract {{ $labels.name }} on instance {{ $labels.instance | reReplaceAll ":.*" ""}} balance is {{ $value | printf "%.9f" }}'
+          namespace: "develop-2"
   prometheus.yml:
     rule_files:
       - /etc/config/recording_rules.yml
