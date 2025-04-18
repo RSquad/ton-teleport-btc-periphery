@@ -226,7 +226,7 @@ func (c *PegoutManager) buildPegoutTx(txParts *pegoutcontract.TxParts) (*wire.Ms
 
 		txIn := wire.NewTxIn(&wire.OutPoint{
 			Hash:  *hash,
-			Index: uint32(input.Index),
+			Index: input.Index,
 		}, nil, nil)
 		txIn.Sequence = RBF_SEQUENCE
 		packet.UnsignedTx.AddTxIn(txIn)
