@@ -1,9 +1,12 @@
 package pegoutcontract
 
 import (
+	"bytes"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"math/big"
+	"slices"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/parseddict"
 	"github.com/xssnick/tonutils-go/address"
@@ -19,6 +22,10 @@ type (
 		BitcoinScript     []byte
 	}
 	TxPartsInputs map[string]*TxPartsInput
+	TxInput       struct {
+		TxHash []byte
+		Data   *TxPartsInput
+	}
 )
 
 func parseTxPartsInputKey(keySlice *cell.Slice, keySize uint) string {
@@ -59,4 +66,22 @@ func NewTxPartsInputs(dict *cell.Dictionary) (*TxPartsInputs, error) {
 	}
 	txPartsInputs := TxPartsInputs(*result)
 	return &txPartsInputs, nil
+}
+
+func (inputs TxPartsInputs) ToSortedSlice() ([]TxInput, error) {
+	sortedInputs := make([]TxInput, 0, len(inputs))
+	for txHashString := range inputs {
+		hash, err := hex.DecodeString(txHashString)
+		if err != nil {
+			return nil, errors.New("error decoding tx hash " + txHashString + ": " + err.Error())
+		}
+		sortedInputs = append(sortedInputs, TxInput{
+			TxHash: hash,
+			Data:   inputs[txHashString],
+		})
+	}
+	slices.SortFunc(sortedInputs, func(a, b TxInput) int {
+		return bytes.Compare(a.TxHash, b.TxHash)
+	})
+	return sortedInputs, nil
 }

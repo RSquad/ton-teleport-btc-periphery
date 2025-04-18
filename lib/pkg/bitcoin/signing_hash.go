@@ -1,10 +1,7 @@
 package bitcoin
 
 import (
-	"bytes"
-	"encoding/hex"
 	"fmt"
-	"slices"
 
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/txscript"
@@ -22,25 +19,10 @@ func BuildTaprootSigningHashes(
 
 	prevOutputFetcher := make(map[wire.OutPoint]*wire.TxOut)
 
-	type Input struct {
-		TxHash []byte
-		Data   *pegoutcontract.TxPartsInput
+	sortedInputs, err := inputs.ToSortedSlice()
+	if err != nil {
+		return nil, fmt.Errorf("error sorting inputs: %v", err)
 	}
-
-	sortedInputs := make([]Input, 0, len(inputs))
-	for txHashString := range inputs {
-		hash, err := hex.DecodeString(txHashString)
-		if err != nil {
-			return nil, fmt.Errorf("error decoding tx hash %s: %v", txHashString, err)
-		}
-		sortedInputs = append(sortedInputs, Input{
-			TxHash: hash,
-			Data:   inputs[txHashString],
-		})
-	}
-	slices.SortFunc(sortedInputs, func(a, b Input) int {
-		return bytes.Compare(a.TxHash, b.TxHash)
-	})
 
 	for _, input := range sortedInputs {
 		prevTxHash, err := chainhash.NewHash(input.TxHash)
