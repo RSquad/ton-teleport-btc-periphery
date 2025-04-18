@@ -85,11 +85,10 @@ func (e *Executor) logSendRound1Package(dkg *coordinator.DKG, err error) {
 	errorEventWithDkg(dkg).Err(err).Msg("failed to send round1 package: " + msg)
 }
 
-func (e *Executor) logSendRound2Package(dkg *coordinator.DKG, toIdx uint16, err error) {
+func (e *Executor) logSendRound2Package(dkg *coordinator.DKG, err error) {
 	msg := helpers.HandleTvmError(err)
 	errorEventWithDkg(dkg).
-		Str("to", fmt.Sprintf("%d", toIdx)).
-		Msg("failed to send round2 package: " + msg)
+		Msg("R2 packages sent with errors: " + msg)
 }
 
 func (e *Executor) logSendClaimFailed(dkg *coordinator.DKG, culpritIdx uint16, err error) {

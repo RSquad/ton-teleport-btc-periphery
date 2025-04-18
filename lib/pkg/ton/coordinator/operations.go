@@ -48,11 +48,10 @@ func (c *CoordinatorContract) SendRound1(
 func (c *CoordinatorContract) SendRound2(
 	validatorIdx uint16,
 	dkgUntil int64,
-	toIdx uint16,
 	round2Package []byte,
 ) (*tlb.Transaction, error) {
 	return c.sendBodyCell(BuildSendRound2Body(
-		int64(c.ttl.Seconds()), validatorIdx, dkgUntil, toIdx, round2Package,
+		int64(c.ttl.Seconds()), validatorIdx, dkgUntil, round2Package,
 	), "SendRound2")
 }
 

@@ -3,6 +3,7 @@ package dkg
 import (
 	"context"
 	"crypto/rand"
+	"encoding/binary"
 	"fmt"
 	"sync"
 	"time"
@@ -32,8 +33,8 @@ type Round1Result struct {
 }
 
 type Round2Result struct {
-	pkgs   map[frost.Identifier]frost.Package
-	secret Secret
+	packagesBatched []byte // Encrypted and batched packages
+	secret          Secret
 }
 
 type Round3Result struct {
@@ -191,6 +192,11 @@ func (e *Executor) executeR1(dkg *coordinator.DKG, validatorIdx uint16) bool {
 		return false
 	}
 
+	// Check R1 mask
+	if dkg.CheckR1Mask(validatorIdx) {
+
+	}
+
 	if e.artifacts.r1 == nil {
 		e.logMessage(dkg, "generating round1 artifacts")
 		minSigners, err := helpers.CalcMinSigners(dkg.MaxSigners)
@@ -245,8 +251,12 @@ func (e *Executor) executeR2(dkg *coordinator.DKG, validatorIdx uint16) bool {
 		return true
 	}
 
+	if dkg.CheckR2Mask(validatorIdx) {
+		e.logDKGProcess(dkg, "R2 packages already stored in DKG")
+		return false
+	}
+
 	localIdentifier := helpers.ValidatorIdxToFrost(validatorIdx)
-	var r2PublicKeysX25519 map[uint16][]byte
 
 	if e.artifacts.r2 == nil {
 		if e.artifacts.r1 == nil {
@@ -255,14 +265,12 @@ func (e *Executor) executeR2(dkg *coordinator.DKG, validatorIdx uint16) bool {
 		}
 
 		e.logMessage(dkg, "generating round2 artifacts")
-		r1Packages, r2PublicKeys, culpritIdx, err := helpers.ConvertMapToFrostPackagesAndPubKey(dkg.GetR1Packages())
+		r1Packages, r2PublicKeysX25519, culpritIdx, err := helpers.ConvertMapToFrostPackagesAndPubKey(dkg.GetR1Packages())
 		if err != nil {
 			e.logError(dkg, "Failed to parse Round1 packages. Culprit validator found.", err)
 			e.executeClaim(dkg, validatorIdx, culpritIdx)
 			return false
 		}
-		r2PublicKeysX25519 = r2PublicKeys
-
 		delete(r1Packages, localIdentifier)
 
 		r2Packages, r2SecretPtr, culpritFrostIdx, err := frost.DkgPart2(e.artifacts.r1.secret.ptr, r1Packages)
@@ -277,60 +285,49 @@ func (e *Executor) executeR2(dkg *coordinator.DKG, validatorIdx uint16) bool {
 			return false
 		}
 
-		e.artifacts.r2 = &Round2Result{
-			pkgs:   r2Packages,
-			secret: NewSecret(r2SecretPtr),
-		}
+		// Convert R2 packages to bytes
+		var r2packagesBatched []byte
+		for toIdentificator, r2pkg := range r2Packages {
+			// Serialize validator idx
+			toValidatorIdx := helpers.FrostToValidatorIdx(toIdentificator)
+			binary.BigEndian.PutUint16(r2packagesBatched, toValidatorIdx)
 
-	}
-
-	e.logMessage(dkg, "sending r2 packages...")
-	withErrors := false
-	// Get r2 packages that are already sent to coordinator.
-	// But only from this oracle to others
-	// Go through all r2 packages generated locally
-	for toIdentificator, r2pkg := range e.artifacts.r2.pkgs {
-		// Check if oracle has already sent this package to coordinator
-		toIdx := helpers.FrostToValidatorIdx(toIdentificator)
-		sentPackages, foundToPackages := dkg.GetR2PackagesTo(toIdx)
-
-		if foundToPackages {
-			_, foundFromMePackage := sentPackages[validatorIdx]
-			if foundFromMePackage {
-				continue
+			// Encrypt r2pkg
+			r2PublicKeyX25519, ok := r2PublicKeysX25519[toValidatorIdx]
+			if !ok {
+				e.logError(dkg, fmt.Sprintf("No X25519 public key was found for Oracle {%d}", toValidatorIdx), nil)
+				return false
 			}
+
+			r2pkgEncrypted, err := Encrypt(r2pkg.ToBytes(), e.artifacts.r1.r2PrivateX25519, r2PublicKeyX25519)
+			if err != nil {
+				e.logError(dkg, fmt.Sprintf("Failed to encrypt R2 packages for Oracle {%d}", toValidatorIdx), err)
+				return false
+			}
+
+			// Serialize r2pkgEncrypted
+			binary.BigEndian.PutUint16(r2packagesBatched, uint16(len(r2pkgEncrypted)))
+			r2packagesBatched = append(r2packagesBatched, r2pkgEncrypted...)
 		}
 
-		//
-		r2PublicKeyX25519, ok := r2PublicKeysX25519[toIdx]
-		if !ok {
-			e.logError(dkg, fmt.Sprintf("No X25519 public key was found for Oracle {%d}", toIdx), nil)
-			withErrors = true
-			continue
-		}
-
-		r2pkgEncrypted, err := Encrypt(r2pkg.ToBytes(), e.artifacts.r1.r2PrivateX25519, r2PublicKeyX25519)
-		if err != nil {
-			e.logError(dkg, fmt.Sprintf("Failed to encrypt R2 packages for Oracle {%d}", toIdx), err)
-			withErrors = true
-			continue
-		}
-
-		// local r2 package is not sent yet, send it to coordinator
-		_, err = e.coordinatorContract.SendRound2(
-			validatorIdx,
-			dkg.Until.Unix(),
-			toIdx,
-			r2pkgEncrypted,
-		)
-		if err != nil {
-			e.logSendRound2Package(dkg, toIdx, err)
-			withErrors = true
+		// Save the result into the artifacts
+		e.artifacts.r2 = &Round2Result{
+			packagesBatched: r2packagesBatched,
+			secret:          NewSecret(r2SecretPtr),
 		}
 	}
 
-	if withErrors {
-		e.logError(dkg, "R2 packages sent with errors", nil)
+	// Send  r2 package is not sent yet, send it to coordinator
+	e.logMessage(dkg, "Sending R2 batched package...")
+
+	_, err := e.coordinatorContract.SendRound2(
+		validatorIdx,
+		dkg.Until.Unix(),
+		e.artifacts.r2.packagesBatched,
+	)
+
+	if err != nil {
+		e.logSendRound2Package(dkg, err)
 	} else {
 		e.logDKGProcess(dkg, "R2 packages sent")
 	}
@@ -366,19 +363,16 @@ func (e *Executor) executeR3(dkg *coordinator.DKG, validatorIdx uint16) bool {
 		}
 		delete(r1Packages, localIdentifier)
 
-		sentPackages, foundToPackages := dkg.GetR2PackagesTo(validatorIdx)
-		if !foundToPackages {
-			e.logError(dkg, "Part3 failed. R2 packages were not found", nil)
+		expectedPackageBatchesCount := len(r1Packages)
+		r2Packages, isCulpritFound, culpritIdx, err := DecryptR2Packages(dkg.R2.PackagesFrom, validatorIdx, r2PublicKeysX25519, e.artifacts.r1.r2PrivateX25519, expectedPackageBatchesCount)
+		if isCulpritFound {
+			e.logError(dkg, "Failed to parse Round2 packages. Culprit validator found.", err)
+			e.executeClaim(dkg, validatorIdx, culpritIdx)
 			return false
 		}
 
-		r2Packages := helpers.ConvertMapToFrostPackages(sentPackages)
-
-		// Decrypt r2Packages
-		r2Packages, err = DecryptPackages(r2Packages, e.artifacts.r1.r2PrivateX25519, r2PublicKeysX25519)
 		if err != nil {
-			e.logError(dkg, "Failed to decrypt Round2 packages. Culprit validator found.", err)
-			e.executeClaim(dkg, validatorIdx, culpritIdx)
+			e.logError(dkg, "Round3 failed. An error occurred while trying to get R2 packages", err)
 			return false
 		}
 
