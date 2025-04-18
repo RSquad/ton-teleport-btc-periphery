@@ -1,7 +1,6 @@
 package dict
 
 import (
-	"encoding/hex"
 	"math/big"
 
 	"github.com/xssnick/tonutils-go/address"
@@ -40,10 +39,10 @@ func (c *UnsignedPegoutsDict) Get(key *big.Int) *UnsignedPegout {
 
 	commitmentsMask := valueSlice.MustLoadSlice(256)
 	valueSlice.MustLoadUInt(16)
-	commitmentsDict := valueSlice.MustLoadDict(256)
+	commitmentsDict := valueSlice.MustLoadDict(16)
 	signingSharesMask := valueSlice.MustLoadSlice(256)
 	valueSlice.MustLoadUInt(16)
-	signingSharesDict := valueSlice.MustLoadDict(256)
+	signingSharesDict := valueSlice.MustLoadDict(16)
 	pegoutContractAddr := valueSlice.MustLoadAddr()
 	internalKey := valueSlice.MustLoadRef().MustLoadSlice(256)
 

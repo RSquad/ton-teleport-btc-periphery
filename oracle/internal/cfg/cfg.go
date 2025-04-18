@@ -1,7 +1,7 @@
 package cfg
 
 type Cfg struct {
-	TonConfigUrl               string `env:"COMMON_TON_CONFIG_URL,required"`
+	TonConfigPathOrURL         string `env:"COMMON_TON_CONFIG,required"`
 	CoordinatorContractAddr    string `env:"COMMON_TON_CONTRACT_COORDINATOR,required"`
 	StandaloneMode             bool   `env:"ORACLE_STANDALONE_MODE,required"`
 	Pubkey                     string `env:"ORACLE_PUBKEY"`
@@ -11,4 +11,9 @@ type Cfg struct {
 	ClientPrivateKeyPath       string `env:"ORACLE_CLIENT_PRIVATE_KEY_PATH"`
 	ValidatorServerAddr        string `env:"ORACLE_VALIDATOR_SERVER_ADDR"`
 	KeystorePath               string `env:"ORACLE_KEYSTORE_PATH"`
+	FetchPeriod                string `env:"ORACLE_DKG_FETCH_PERIOD"`
+	SendStartDKGPeriod         string `env:"ORACLE_SEND_START_DKG_PERIOD"`
+	ExecuteSignPeriod          string `env:"ORACLE_EXECUTE_SIGN_PERIOD"`
+	LogFile                    string `env:"LOG_FILE"`
+	ApiCallTimeout             string `env:"API_CALL_TIMEOUT"`
 }

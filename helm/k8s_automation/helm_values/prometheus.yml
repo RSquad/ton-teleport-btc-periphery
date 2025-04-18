@@ -1,0 +1,67 @@
+alertmanager:
+  enabled: false
+kube-state-metrics:
+  enabled: false
+networkPolicy:
+  enabled: false
+podSecurityPolicy:
+  enabled: false
+prometheus-node-exporter:
+  enabled: false
+prometheus-pushgateway:
+  enabled: false
+server:
+  global:
+    evaluation_interval: 1m
+    scrape_interval: 1m
+    scrape_timeout: 30s
+  persistentVolume:
+    size: 5Gi
+rbac:
+  create: false
+serverFiles:
+  alerting_rules.yml:
+    groups:
+    - name: alert rules
+      rules:
+      - alert: InstanceDown
+        annotations:
+          description: "{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 1 minutes."
+          summary: "Instance {{ $labels.instance }} down"
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+    - name: contract_balance_alerts
+      rules:
+      - alert: LowContractBalance
+        expr: contract_balance{} < 5
+        for: 5m
+        labels:
+          severity: "{{ if lt $value 0.5 }}critical{{ else }}warning{{ end }}"
+        annotations:
+          balance: "{{ $value }}"
+          threshold: "5.0"
+          summary: "Low balance for contract {{ $labels.name }}"
+          description: "Contract {{ $labels.name }} on instance {{ $labels.instance }} balance is {{ $value }}"
+  prometheus.yml:
+    rule_files:
+      - /etc/config/recording_rules.yml
+      - /etc/config/alerting_rules.yml
+      - /etc/config/rules
+      - /etc/config/alerts
+    scrape_configs:
+      - job_name: prometheus
+        static_configs:
+          - targets:
+              - localhost:9090
+      - job_name: 'indexer'
+        static_configs:
+          - targets:
+              - indexer:80
+    alerting:
+      alertmanagers:
+        - scheme: http
+          static_configs:
+            - targets:
+                - alertmanager:9093

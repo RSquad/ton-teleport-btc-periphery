@@ -49,9 +49,11 @@ func TestGetIdentifierFromHex(t *testing.T) {
 
 func TestDkgPart1(t *testing.T) {
 	fmt.Printf("%s\n", t.Name())
-	identifier := "900924ca1a6d37bd613419f55038d4e210c4e347cf9a8f128181c823684a212f"
-	idVec, _ := hex.DecodeString(identifier)
-	pkg, sp, err := DkgPart1(idVec, 2, 3)
+	identifier, err := DecodeIdentifier("900924ca1a6d37bd613419f55038d4e210c4e347cf9a8f128181c823684a212f")
+	if err != nil {
+		t.Error(err)
+	}
+	pkg, sp, err := DkgPart1(*identifier, 2, 3)
 	if err != nil {
 		t.Error(err)
 	}
@@ -77,8 +79,11 @@ func TestDKG(t *testing.T) {
 	receivedR2Packages := make(map[Identifier]map[Identifier]Package)
 
 	for i := uint16(0); i < maxSigners; i++ {
-		sender, _ := DecodeIdentifier(identifiers[i])
-		pkg, sp, err := DkgPart1(sender[:], minSigners, maxSigners)
+		sender, err := DecodeIdentifier(identifiers[i])
+		if err != nil {
+			t.Error(err)
+		}
+		pkg, sp, err := DkgPart1(*sender, minSigners, maxSigners)
 		if err != nil {
 			t.Error(err)
 		}
@@ -99,11 +104,25 @@ func TestDKG(t *testing.T) {
 	for i := uint16(0); i < maxSigners; i++ {
 		sender, _ := DecodeIdentifier(identifiers[i])
 		secret := r1Secrets[*sender]
-		delete(r1Secrets, *sender)
-		r2Packages, r2s, err := DkgPart2(secret, receivedR1Packages[*sender])
+		r2Packages, r2s, culpritIdx, err := DkgPart2(secret, receivedR1Packages[*sender])
 		if err != nil {
-			t.Error(err)
+			if culpritIdx != nil {
+				t.Error(fmt.Errorf("culprit idx: %v", culpritIdx))
+			} else {
+				t.Error(err)
+			}
 		}
+		if i == 0 {
+			// try to call DkgPart2 twice with the same secret
+			// to be sure that r1 secret is not freed
+			_, _, _, err := DkgPart2(secret, receivedR1Packages[*sender])
+			if err != nil {
+				t.Error(err)
+			}
+		}
+		// free r1 secret manually
+		FreeR1Secret(secret)
+		delete(r1Secrets, *sender)
 		fmt.Printf("round2Packages %x\n", r2Packages)
 		r2Secrets[*sender] = r2s
 		for receiver, r2package := range r2Packages {
@@ -120,13 +139,17 @@ func TestDKG(t *testing.T) {
 	pubkeyPackages := make(map[Identifier]Package)
 	for i := uint16(0); i < maxSigners; i++ {
 		sender, _ := DecodeIdentifier(identifiers[i])
-		keyPackage, publicKeyPackage, err := DkgPart3(
+		keyPackage, publicKeyPackage, culpritIdx, err := DkgPart3(
 			r2Secrets[*sender],
 			receivedR1Packages[*sender],
 			receivedR2Packages[*sender],
 		)
 		if err != nil {
-			t.Error(err)
+			if culpritIdx != nil {
+				t.Error(fmt.Errorf("culprit idx: %v", culpritIdx))
+			} else {
+				t.Error(err)
+			}
 		}
 		keyPackages[*sender] = Package{keyPackage}
 		pubkeyPackages[*sender] = Package{publicKeyPackage}
@@ -156,7 +179,7 @@ func TestDKG(t *testing.T) {
 	for i := uint16(0); i < maxSigners; i++ {
 		sender, _ := DecodeIdentifier(identifiers[i])
 
-		signatureShare, err := SignWithTweak(
+		signatureShare, culpritIdx, err := SignWithTweak(
 			keyPackages[*sender],
 			message,
 			commitments,
@@ -164,14 +187,19 @@ func TestDKG(t *testing.T) {
 			merkleRoot,
 		)
 		if err != nil {
-			t.Error(err)
+			if culpritIdx != nil {
+				t.Error(fmt.Errorf("culprit idx: %v", culpritIdx))
+			} else {
+				t.Error(err)
+			}
 		}
+
 		fmt.Printf("SignatureShares %x\n", signatureShare)
 		signatureShares[*sender] = Package{signatureShare}
 	}
 
 	sender, _ := DecodeIdentifier(identifiers[0])
-	groupSignature, err := AggregateWithTweak(
+	groupSignature, culpritIdx, err := AggregateWithTweak(
 		message,
 		commitments,
 		signatureShares,
@@ -179,8 +207,13 @@ func TestDKG(t *testing.T) {
 		merkleRoot,
 	)
 	if err != nil {
-		t.Error(err)
+		if culpritIdx != nil {
+			t.Error(fmt.Errorf("culprit idx: %v", culpritIdx))
+		} else {
+			t.Error(err)
+		}
 	}
+
 	fmt.Printf("groupSignature %x\n", groupSignature)
 
 	res, err := Verify(

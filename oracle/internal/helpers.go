@@ -1,6 +1,7 @@
 package helpers
 
 import (
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"math"
@@ -8,15 +9,18 @@ import (
 	"strconv"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/frost"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 )
+
+const TvmExitCodeDifferentPubkeyPackages = 152
 
 // Helpers
 
-func ConvertMapToFrostPackages(origMap map[string][]byte) (frostMap map[frost.Identifier]frost.Package) {
+func ConvertMapToFrostPackages(origMap map[uint16][]byte) (frostMap map[frost.Identifier]frost.Package) {
 	frostMap = make(map[frost.Identifier]frost.Package)
 	for k, v := range origMap {
-		id, _ := frost.DecodeIdentifier(k)
-		frostMap[*id] = frost.NewPackage(v)
+		id := ValidatorIdxToFrost(k)
+		frostMap[id] = frost.NewPackage(v)
 	}
 	return
 }
@@ -53,17 +57,55 @@ func HandleTvmError(tvmError error) string {
 	}
 
 	switch exitCode {
+	case 113:
+		return "invalid signature"
 	case 114:
 		return "package already sent"
+	case 117:
+		return "signature exists"
 	case 127:
 		return "R1 is not completed yet"
 	case 128:
 		return "R2 is not completed yet"
+	case 135:
+		return "pegout not found"
+	case 145:
+		return "Commitments threshold is reached"
 	case 147:
 		return "R1 is already completed"
 	case 150:
 		return "Coordinator balance is not enough to continue"
+	case 151:
+		return "Culprit not found"
+	case 161:
+		return "Unauthorized validator"
+	case 166:
+		return "Pegout is not expired"
 	default:
 		return fmt.Sprintf("Unknown error: %d", exitCode)
 	}
+}
+
+func ValidatorIdxToFrost(validatorIdx uint16) frost.Identifier {
+	validatorIdx |= 0x80
+	return frost.GetIdentifier(validatorIdx)
+}
+
+func FrostToValidatorIdx(frostIdentificator frost.Identifier) uint16 {
+	return binary.BigEndian.Uint16(frostIdentificator[30:32]) & (^uint16(0x80))
+}
+
+func ParseIntWithDefaultVal(str string, defaultValue int64, name string) int64 {
+	value := defaultValue
+
+	if len(str) > 0 {
+		val, err := strconv.ParseInt(str, 10, 64)
+		if err != nil {
+			logger.Log.Warn().Msgf("Failed to parse %s value `%s`. Default value of %ds will be used.", name, str, defaultValue)
+		} else {
+			value = val
+		}
+	}
+
+	return value
 }

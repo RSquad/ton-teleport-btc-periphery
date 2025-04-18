@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/parseddict"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/signer"
@@ -15,23 +16,27 @@ import (
 )
 
 const (
-	OpCodeStartDKG                    = 0xe16b89c0
-	OpCodeCoordinatorRound1           = 0x0000eaea
-	OpCodeCoordinatorRound2           = 0x0000bb50
-	OpCodeCoordinatorRound3           = 0x00008bc6
-	OpCodeCoordinatorSendCommitments  = 0x58e40000
-	OpCodeCoordinatorSendSigningShare = 0x706b0000
-	OpCodeCoordinatorSendSignature    = 0xd0720000
+	OpCodeStartDKG                      = 0xe16b89c0
+	OpCodeCoordinatorRound1             = 0x0000eaea
+	OpCodeCoordinatorRound2             = 0x0000bb50
+	OpCodeCoordinatorRound3             = 0x00008bc6
+	OpCodeCoordinatorDkgClaim           = 0x0000f387
+	OpCodeCoordinatorSendCommitments    = 0x58e40000
+	OpCodeCoordinatorSendSigningShare   = 0x706b0000
+	OpCodeCoordinatorSendSignature      = 0xd0720000
+	OpCodeCoordinatorSigningClaim       = 0x5fcb0000
+	OpCodeCoordinatorResetPegoutSigning = 0xe6c20000
 )
 
 const DefaultDGKTTL = time.Minute
 
 type CoordinatorContract struct {
 	ton.Contract
-	signer    signer.Signer
-	tonClient *tonclient.TonClient
-	ctx       context.Context
-	ttl       time.Duration
+	signer            signer.Signer
+	tonClient         *tonclient.TonClient
+	ctx               context.Context
+	ttl               time.Duration
+	tonApiCallTimeout int64
 }
 
 func New(
@@ -39,23 +44,54 @@ func New(
 	tonClient *tonclient.TonClient,
 	signer signer.Signer,
 	ctx context.Context,
+	tonApiCallTimeout int64,
 ) *CoordinatorContract {
 	ttl := DefaultDGKTTL
 	return &CoordinatorContract{
-		ton.Contract{Addr: addr}, signer, tonClient, ctx, ttl,
+		ton.Contract{Addr: addr}, signer, tonClient, ctx, ttl, tonApiCallTimeout,
 	}
+}
+
+func CallApiWithTimeout[T any](fn func(ctx context.Context) (T, error), parentCtx context.Context, timeout int64, name string) (T, error) {
+	startTs := time.Now()
+	apiCtx, cancelFn := context.WithTimeout(parentCtx, time.Duration(timeout)*time.Second)
+	defer cancelFn()
+	res, err := fn(apiCtx)
+	endTs := time.Now()
+	duration := endTs.Unix() - startTs.Unix()
+
+	logger.Log.Debug().Msgf("Ton API call: '%s', total time {%d}s", name, duration)
+
+	return res, err
 }
 
 func (c *CoordinatorContract) GetDkg(block *tonutils.BlockIDExt) (*DKG, error) {
 	if block == nil {
 		var err error
-		block, err = c.tonClient.API.CurrentMasterchainInfo(c.ctx)
+
+		block, err = CallApiWithTimeout(
+			func(apiCallCtx context.Context) (*tonutils.BlockIDExt, error) {
+				return c.tonClient.API.CurrentMasterchainInfo(apiCallCtx)
+			},
+			c.ctx,
+			c.tonApiCallTimeout,
+			"CurrentMasterchainInfo",
+		)
+
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	result, err := c.tonClient.API.RunGetMethod(c.ctx, block, c.Addr, "get_dkg")
+	result, err := CallApiWithTimeout(
+		func(apiCallCtx context.Context) (*tonutils.ExecutionResult, error) {
+			return c.tonClient.API.RunGetMethod(apiCallCtx, block, c.Addr, "get_dkg")
+		},
+		c.ctx,
+		c.tonApiCallTimeout,
+		"get_dkg",
+	)
+
 	if err != nil {
 		return nil, err
 	}
@@ -78,12 +114,28 @@ func (c *CoordinatorContract) GetDkg(block *tonutils.BlockIDExt) (*DKG, error) {
 }
 
 func (c *CoordinatorContract) GetPrevDKG() (*DKG, error) {
-	block, err := c.tonClient.API.CurrentMasterchainInfo(c.ctx)
+	block, err := CallApiWithTimeout(
+		func(apiCallCtx context.Context) (*tonutils.BlockIDExt, error) {
+			return c.tonClient.API.CurrentMasterchainInfo(apiCallCtx)
+		},
+		c.ctx,
+		c.tonApiCallTimeout,
+		"CurrentMasterchainInfo",
+	)
+
 	if err != nil {
 		return nil, err
 	}
 
-	result, err := c.tonClient.API.RunGetMethod(c.ctx, block, c.Addr, "get_prev_dkg")
+	result, err := CallApiWithTimeout(
+		func(apiCallCtx context.Context) (*tonutils.ExecutionResult, error) {
+			return c.tonClient.API.RunGetMethod(apiCallCtx, block, c.Addr, "get_prev_dkg")
+		},
+		c.ctx,
+		c.tonApiCallTimeout,
+		"get_prev_dkg",
+	)
+
 	if err != nil {
 		return nil, err
 	}
@@ -101,12 +153,28 @@ func (c *CoordinatorContract) GetPrevDKG() (*DKG, error) {
 }
 
 func (c *CoordinatorContract) GetUnsignedPegouts() ([]PegoutRecord, error) {
-	block, err := c.tonClient.API.CurrentMasterchainInfo(c.ctx)
+	block, err := CallApiWithTimeout(
+		func(apiCallCtx context.Context) (*tonutils.BlockIDExt, error) {
+			return c.tonClient.API.CurrentMasterchainInfo(apiCallCtx)
+		},
+		c.ctx,
+		c.tonApiCallTimeout,
+		"CurrentMasterchainInfo",
+	)
+
 	if err != nil {
 		return nil, err
 	}
 
-	result, err := c.tonClient.API.RunGetMethod(c.ctx, block, c.Addr, "get_pegout_records")
+	result, err := CallApiWithTimeout(
+		func(apiCallCtx context.Context) (*tonutils.ExecutionResult, error) {
+			return c.tonClient.API.RunGetMethod(apiCallCtx, block, c.Addr, "get_pegout_records")
+		},
+		c.ctx,
+		c.tonApiCallTimeout,
+		"get_pegout_records",
+	)
+
 	if err != nil {
 		return nil, err
 	}
@@ -135,28 +203,69 @@ func (c *CoordinatorContract) GetUnsignedPegouts() ([]PegoutRecord, error) {
 
 	pegouts := make([]PegoutRecord, 0, len(entries))
 	for _, kv := range entries {
-		ID := kv.Key.MustLoadUInt(64)
+
+		ID := kv.Key.MustLoadUInt(64) // TODO:
 		value := kv.Value.MustLoadRef()
+
+		MaxSigners := uint16(value.MustLoadUInt(16))
+		ExpiredAt := time.Unix(int64(value.MustLoadUInt(32)), 0)
+		SigningMask := value.MustLoadBigUInt(256)
+
 		CommitmentsMask := value.MustLoadSlice(256)
 		value.MustLoadUInt(16)
-		commitmentsDict := value.MustLoadDict(256)
-		commitmentsPtr, _ := parseddict.New(
+		commitmentsDict := value.MustLoadDict(16)
+		commitmentsPtr, err := parseddict.ParseDict(
 			commitmentsDict,
-			parseddict.ParseKey,
+			parseddict.ParseKeyUI16,
 			readBuffer,
 		)
+
+		if err != nil {
+			return nil, err
+		}
+
 		Commitments := *commitmentsPtr
 		SigningSharesMask := value.MustLoadSlice(256)
 		value.MustLoadUInt(16)
-		signingSharesDict := value.MustLoadDict(256)
-		signingSharesPtr, _ := parseddict.New(
+		signingSharesDict := value.MustLoadDict(16)
+		signingSharesPtr, err := parseddict.ParseDict(
 			signingSharesDict,
-			parseddict.ParseKey,
+			parseddict.ParseKeyUI16,
 			loadSharesMap,
 		)
+
+		if err != nil {
+			return nil, err
+		}
+
 		SigningShares := *signingSharesPtr
-		PegoutAddress := value.MustLoadAddr()
-		InternalKey := value.MustLoadRef().MustLoadSlice(256)
+
+		sigSlice := value.MustLoadRef()
+		Signatures := PegoutSignatures{
+			mask:  sigSlice.MustLoadBigUInt(256),
+			count: uint16(sigSlice.MustLoadUInt(16)),
+			hash:  sigSlice.MustLoadSlice(256),
+		}
+
+		refSlice := value.MustLoadRef()
+		claimsSlice := refSlice.MustLoadRef()
+		ClaimsMask := claimsSlice.MustLoadBigUInt(256)
+		ClaimsCount := uint16(claimsSlice.MustLoadUInt(16))
+		claimsCountersDict := claimsSlice.MustLoadDict(16)
+		claimsCountersPtr, err := parseddict.ParseDict(
+			claimsCountersDict,
+			parseddict.ParseKeyUI16,
+			loadUI16Map,
+		)
+
+		if err != nil {
+			return nil, err
+		}
+
+		ClaimsCounters := *claimsCountersPtr
+
+		InternalKey := refSlice.MustLoadSlice(256)
+		PegoutAddress := refSlice.MustLoadAddr()
 
 		pegouts = append(pegouts, PegoutRecord{
 			ID,
@@ -164,64 +273,102 @@ func (c *CoordinatorContract) GetUnsignedPegouts() ([]PegoutRecord, error) {
 			InternalKey,
 			Commitments,
 			CommitmentsMask,
-			SigningShares, // map[string]*Cell
+			SigningShares,
 			SigningSharesMask,
+			Signatures,
+			ClaimsMask,
+			ClaimsCount,
+			ClaimsCounters,
+			MaxSigners,
+			ExpiredAt,
+			SigningMask,
 		})
 	}
 	return pegouts, nil
 }
 
 func parseDGKSlice(dkgSlice *cell.Slice) (*DKG, error) {
-	status := DKGStatus(dkgSlice.MustLoadUInt(2))
+	// State
+	state := DKGState(dkgSlice.MustLoadUInt(2))
 
+	// VSet
 	vSetDictCell := dkgSlice.MustLoadDict(16)
 	vSet, err := NewVSet(vSetDictCell)
 	if err != nil {
 		return nil, err
 	}
 
+	// Max signers
 	maxSigners := uint16(dkgSlice.MustLoadUInt(16))
 
+	// VSet mask
+	vSetMask := dkgSlice.MustLoadBigUInt(256)
+
+	// R1
 	r1State, err := loadRoundMaskAndCount(dkgSlice)
 	if err != nil {
 		return nil, err
 	}
-	r1PkgDictCell := dkgSlice.MustLoadDict(256)
+	r1PkgDictCell := dkgSlice.MustLoadDict(16)
 	r1, err := NewDKGR1(r1PkgDictCell, r1State)
 	if err != nil {
 		return nil, err
 	}
 
+	// R2
 	r2State, err := loadRoundMaskAndCount(dkgSlice)
 	if err != nil {
 		return nil, err
 	}
-	r2PkgDictCell := dkgSlice.MustLoadDict(256)
+	r2PkgDictCell := dkgSlice.MustLoadDict(16)
 	r2, err := NewDKGR2(r2PkgDictCell, r2State)
 	if err != nil {
 		return nil, err
 	}
 
-	cfgHash := dkgSlice.MustLoadSlice(256)
+	// Attempts
 	attempts := dkgSlice.MustLoadUInt(8)
+
+	// DKG lifetime (timestamp)
 	untilUnix := dkgSlice.MustLoadUInt(32)
 	until := time.Unix(int64(untilUnix), 0)
 
-	r3, err := LoadDKGR3(dkgSlice.MustLoadRef())
+	dkgNextRef := dkgSlice.MustLoadRef()
+
+	// VSet config hash
+	cfgHash := dkgNextRef.MustLoadSlice(256)
+
+	// R3
+	r3, err := LoadDKGR3(dkgNextRef)
+	if err != nil {
+		return nil, err
+	}
+
+	// Claims
+	claims, err := LoadDKGClaims(dkgNextRef)
+	if err != nil {
+		return nil, err
+	}
+
+	// Session keys
+	sessionKeys, err := LoadSessionKeys(dkgNextRef)
 	if err != nil {
 		return nil, err
 	}
 
 	return &DKG{
-		Status:     status,
-		VSet:       vSet,
-		MaxSigners: maxSigners,
-		R1:         r1,
-		R2:         r2,
-		R3:         r3,
-		Until:      until,
-		CfgHash:    cfgHash,
-		Attempts:   attempts,
+		State:       state,
+		VSet:        vSet,
+		MaxSigners:  maxSigners,
+		VSetMask:    vSetMask,
+		SessionKeys: sessionKeys,
+		R1:          r1,
+		R2:          r2,
+		R3:          r3,
+		Claims:      claims,
+		CfgHash:     cfgHash,
+		Attempts:    attempts,
+		Until:       until,
 	}, nil
 }
 
@@ -244,16 +391,23 @@ func readBuffer(value *cell.Slice) ([]byte, error) {
 	return utils.WriteSlicesToBuffer(value.MustLoadRef()), nil
 }
 
-func loadSharesMap(value *cell.Slice) (map[int][]byte, error) {
+func loadSharesMap(value *cell.Slice) (map[uint16][]byte, error) {
 	dict, _ := value.MustLoadRef().ToDict(64)
 	sharesMap, err := parseddict.ParseDict(
 		dict,
-		func(s *cell.Slice, keyLenBits uint) int {
-			return int(s.MustLoadUInt(keyLenBits))
-		},
+		parseddict.ParseKeyUI16,
 		func(s *cell.Slice) ([]byte, error) {
 			return utils.WriteSlicesToBuffer(s), nil
 		},
 	)
+
+	if err != nil {
+		return nil, err
+	}
+
 	return *sharesMap, err
+}
+
+func loadUI16Map(s *cell.Slice) (uint16, error) {
+	return uint16(s.MustLoadUInt(16)), nil
 }

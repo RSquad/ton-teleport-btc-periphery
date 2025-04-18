@@ -1,6 +1,8 @@
 module github.com/rsquad/ton-teleport-btc-periphery/relayer
 
-go 1.22
+go 1.23.1
+
+toolchain go1.24.0
 
 replace github.com/rsquad/ton-teleport-btc-periphery/lib => ../lib
 
@@ -8,7 +10,7 @@ require (
 	github.com/btcsuite/btcd v0.24.2
 	github.com/btcsuite/btcd/chaincfg/chainhash v1.1.0
 	github.com/rsquad/ton-teleport-btc-periphery/lib v0.0.1
-	github.com/xssnick/tonutils-go v1.10.2
+	github.com/xssnick/tonutils-go v1.11.1
 )
 
 require (
@@ -21,9 +23,13 @@ require (
 	github.com/decred/dcrd/crypto/blake256 v1.0.0 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.0.1 // indirect
 	github.com/joho/godotenv v1.5.1 // indirect
+	github.com/mattn/go-colorable v0.1.14 // indirect
+	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/oasisprotocol/curve25519-voi v0.0.0-20220328075252-7dd334e3daae // indirect
+	github.com/rs/zerolog v1.33.0 // indirect
 	github.com/sigurn/crc16 v0.0.0-20211026045750-20ab5afb07e3 // indirect
-	github.com/stretchr/testify v1.9.0 // indirect
-	golang.org/x/crypto v0.17.0 // indirect
-	golang.org/x/sys v0.21.0 // indirect
+	golang.org/x/crypto v0.33.0 // indirect
+	golang.org/x/sync v0.12.0 // indirect
+	golang.org/x/sys v0.30.0 // indirect
+	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
 )

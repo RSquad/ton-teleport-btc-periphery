@@ -1,4 +1,4 @@
-package pegoutsigner
+package signing
 
 import (
 	"fmt"
@@ -6,6 +6,7 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
+	helpers "github.com/rsquad/ton-teleport-btc-periphery/oracle/internal"
 )
 
 func strPegoutID(pegoutID uint64) string {
@@ -52,8 +53,8 @@ func (s *SignService) logProcessingPegout(pegout *coordinator.PegoutRecord) {
 	infoEventWithPegoutID(pegout.ID).Msgf("address %s", pegout.PegoutAddress)
 }
 
-func (s *SignService) logOracleNotValidator(pegoutID uint64) {
-	err := fmt.Errorf("oracle is not a validator. Cannot participate in signing pegout: %x", pegoutID)
+func (s *SignService) logOracleEvictedFromSigning(pegoutID uint64) {
+	err := fmt.Errorf("the Oracle has been evicted from pegout signing: %x", pegoutID)
 	errorEvent().Err(err)
 }
 
@@ -130,4 +131,37 @@ func (s *SignService) logSendCommitments(pegoutID uint64, commitments []byte) {
 
 func (s *SignService) logSendSigningShare(pegoutID uint64, signShares [][]byte) {
 	infoEventWithPegoutID(pegoutID).Msgf("send %d signing shares", len(signShares))
+}
+
+func (s *SignService) logSendSigningShareError(pegoutID uint64, err error) {
+	msg := helpers.HandleTvmError(err)
+	errorEventWithPegoutID(pegoutID).Err(err).Msg("failed to send signing share: " + msg)
+}
+
+func (s *SignService) logExecuteClaim(pegoutID uint64) {
+	infoEventWithPegoutID(pegoutID).Msg("execute claim")
+}
+
+func (s *SignService) logSendClaim(pegoutID uint64, culpritIdx uint16) {
+	infoEventWithPegoutID(pegoutID).Msg(fmt.Sprintf("Send claim, culprit validator idx: %d", culpritIdx))
+}
+
+func (s *SignService) logSigningClaimSent(pegoutID uint64) {
+	infoEventWithPegoutID(pegoutID).Msg("Signing claim sent")
+}
+
+func (s *SignService) logSigningClaimSentError(pegoutID uint64, err error) {
+	errorEventWithPegoutID(pegoutID).Err(err).Msg("failed to send signing claim")
+}
+
+func (s *SignService) logSendResetPegoutSigning(pegoutID uint64) {
+	infoEventWithPegoutID(pegoutID).Msg("Send reset pegout signing")
+}
+
+func (s *SignService) logResetPegoutSigningSent(pegoutID uint64) {
+	infoEventWithPegoutID(pegoutID).Msg("Reset pegout signing sent")
+}
+
+func (s *SignService) logResetPegoutSigningSentError(pegoutID uint64, err error) {
+	errorEventWithPegoutID(pegoutID).Err(err).Msg("failed to send reset pegout signing")
 }

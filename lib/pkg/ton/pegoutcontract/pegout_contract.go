@@ -97,35 +97,10 @@ func (c *PegoutContract) GetTxParts(block *ton.BlockIDExt) (*TxParts, error) {
 	}, nil
 }
 
-func (c *PegoutContract) GetInputs(block *ton.BlockIDExt) ([]TxPartsInput, error) {
-	res, err := c.tonClient.API.RunGetMethod(c.ctx, block, c.Addr, "get_tx_parts")
-	if err != nil {
-		return nil, fmt.Errorf("failed to get inputs: %w", err)
-	}
-	inputsDictCell, err := res.Cell(txPartsIndexInputsDictCell)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get inputs dict cell: %w", err)
-	}
-	inputsKV, err := inputsDictCell.AsDict(256).LoadAll()
-	if err != nil {
-		return nil, fmt.Errorf("failed to load inputs from dict: %w", err)
-	}
-
-	inputsSlice := make([]TxPartsInput, 0, len(inputsKV))
-	for _, input := range inputsKV {
-		parsedInput, err := parseTxPartsInputValue(input.Value)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse input: %w", err)
-		}
-		inputsSlice = append(inputsSlice, *parsedInput)
-	}
-	return inputsSlice, nil
-}
-
 func (c *PegoutContract) GetSigningHashes(block *ton.BlockIDExt) ([][]byte, error) {
 	result, err := c.tonClient.API.RunGetMethod(c.ctx, block, c.Addr, "get_signing_hashes")
 	if err != nil {
-		return nil, fmt.Errorf("failed to get tx parts: %w", err)
+		return nil, fmt.Errorf("failed to get signing hashes: %w", err)
 	}
 	cell, err := result.Cell(0)
 	if err != nil {
