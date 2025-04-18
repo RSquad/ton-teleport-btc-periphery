@@ -10,9 +10,7 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/pegoutcontract"
 )
 
-type Input struct {
-	Amount uint64
-}
+const TELEPORT_DEFAULT_SEQUENCE = uint32(0xFFFFFFFD)
 
 func BuildTaprootSigningHashes(
 	inputs pegoutcontract.TxPartsInputs,
@@ -32,7 +30,9 @@ func BuildTaprootSigningHashes(
 			return nil, fmt.Errorf("error creating hash: %v", err)
 		}
 		outPoint := wire.NewOutPoint(prevTxHash, input.Index)
-		tx.AddTxIn(wire.NewTxIn(outPoint, nil, nil))
+		txIn := wire.NewTxIn(outPoint, nil, nil)
+		txIn.Sequence = TELEPORT_DEFAULT_SEQUENCE
+		tx.AddTxIn(txIn)
 
 		prevOutputFetcher[*outPoint] = &wire.TxOut{
 			PkScript: input.BitcoinScript,

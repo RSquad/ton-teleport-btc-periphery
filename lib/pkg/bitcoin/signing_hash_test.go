@@ -5,6 +5,7 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/pegoutcontract"
 	"github.com/xssnick/tonutils-go/address"
 )
@@ -14,10 +15,15 @@ func stob(s string) []byte {
 	return bytes
 }
 
+func rev(s string) string {
+	hash, _ := chainhash.NewHashFromStr(s)
+	return hex.EncodeToString(hash[:])
+}
+
 func TestBuildTaprootSigningHashes(t *testing.T) {
 	// pegout 0:51b405fc9bef127b8ab9448f2a640324b19679003e1126f898f8545d7d9f5029
 	inputs := pegoutcontract.TxPartsInputs{
-		"a693bb75d008170d66a512e4ff96f1cdd40ca30d1e029389a9fad2d702ce641b": {
+		rev("a693bb75d008170d66a512e4ff96f1cdd40ca30d1e029389a9fad2d702ce641b"): {
 			Amount:            big.NewInt(25520022421),
 			Index:             1,
 			Receiver:          address.MustParseAddr("EQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAM9c"),
