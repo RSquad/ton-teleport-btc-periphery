@@ -45,7 +45,7 @@ func parseTxPartsInputValue(valueSlice *cell.Slice) (*TxPartsInput, error) {
 
 	return &TxPartsInput{
 		Amount:            amount,
-		Index:             uint8(index),
+		Index:             uint32(index),
 		BitcoinMerkleRoot: bitcoinMerkleRoot,
 		Receiver:          receiver,
 		BitcoinScript:     bitcoinScript,
