@@ -287,10 +287,12 @@ func (e *Executor) executeR2(dkg *coordinator.DKG, validatorIdx uint16) bool {
 
 		// Convert R2 packages to bytes
 		var r2packagesBatched []byte
+		tmpBuf := make([]byte, 2)
 		for toIdentificator, r2pkg := range r2Packages {
 			// Serialize validator idx
 			toValidatorIdx := helpers.FrostToValidatorIdx(toIdentificator)
-			binary.BigEndian.PutUint16(r2packagesBatched, toValidatorIdx)
+			binary.BigEndian.PutUint16(tmpBuf, toValidatorIdx)
+			r2packagesBatched = append(r2packagesBatched, tmpBuf...)
 
 			// Encrypt r2pkg
 			r2PublicKeyX25519, ok := r2PublicKeysX25519[toValidatorIdx]
@@ -306,7 +308,8 @@ func (e *Executor) executeR2(dkg *coordinator.DKG, validatorIdx uint16) bool {
 			}
 
 			// Serialize r2pkgEncrypted
-			binary.BigEndian.PutUint16(r2packagesBatched, uint16(len(r2pkgEncrypted)))
+			binary.BigEndian.PutUint16(tmpBuf, uint16(len(r2pkgEncrypted)))
+			r2packagesBatched = append(r2packagesBatched, tmpBuf...)
 			r2packagesBatched = append(r2packagesBatched, r2pkgEncrypted...)
 		}
 

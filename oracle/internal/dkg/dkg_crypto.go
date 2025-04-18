@@ -53,10 +53,14 @@ func DecryptR2Packages(
 	// Search packages to validatorIdx from all other validators
 	readOffset := 0
 	for fromValidatorIdx, batchedEnctyptedPkgs := range packagesFrom {
+		if fromValidatorIdx == validatorIdx {
+			continue
+		}
+
 		isPackagesFound := false
 		for i := 0; i < expectedPackageBatchesCount; i++ {
 			if (len(batchedEnctyptedPkgs) - readOffset) < 5 {
-				return nil, true, fromValidatorIdx, errors.New("not enough bytes in package")
+				return nil, true, fromValidatorIdx, errors.New("not enough bytes in package (idx and data size)")
 			}
 
 			// To validator idx
@@ -68,7 +72,7 @@ func DecryptR2Packages(
 			readOffset += 2
 
 			if (len(batchedEnctyptedPkgs) - readOffset) < int(packageSize) {
-				return nil, true, fromValidatorIdx, errors.New("not enough bytes in package")
+				return nil, true, fromValidatorIdx, errors.New("not enough bytes in package (wrong data size)")
 			}
 
 			encryptedData := batchedEnctyptedPkgs[readOffset : readOffset+int(packageSize)]
@@ -80,7 +84,7 @@ func DecryptR2Packages(
 			}
 
 			if isPackagesFound {
-				return nil, true, fromValidatorIdx, errors.New("Duplicate packages to this Oracle")
+				return nil, true, fromValidatorIdx, errors.New("duplicate packages to this Oracle")
 			}
 
 			isPackagesFound = true

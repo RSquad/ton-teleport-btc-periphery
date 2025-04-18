@@ -49,6 +49,8 @@ func (f *Fetcher) Work(ctx context.Context, wg *sync.WaitGroup) {
 			} else {
 				if dkg != nil {
 					f.outChan <- dkg
+				} else {
+					logger.Log.Debug().Msg("DKG Fetcher: Contract returns dkg==null")
 				}
 			}
 		}
