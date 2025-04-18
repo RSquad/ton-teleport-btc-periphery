@@ -3,7 +3,6 @@ package bitcoin
 import (
 	"context"
 	"encoding/hex"
-	_ "math/big"
 	"testing"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/pegoutcontract"
