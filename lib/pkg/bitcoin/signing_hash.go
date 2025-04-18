@@ -1,8 +1,10 @@
 package bitcoin
 
 import (
+	"bytes"
 	"encoding/hex"
 	"fmt"
+	"slices"
 
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/txscript"
@@ -20,23 +22,39 @@ func BuildTaprootSigningHashes(
 
 	prevOutputFetcher := make(map[wire.OutPoint]*wire.TxOut)
 
-	for txHash, input := range inputs {
-		hash, err := hex.DecodeString(txHash)
+	type Input struct {
+		TxHash []byte
+		Data   *pegoutcontract.TxPartsInput
+	}
+
+	sortedInputs := make([]Input, 0, len(inputs))
+	for txHashString := range inputs {
+		hash, err := hex.DecodeString(txHashString)
 		if err != nil {
-			return nil, fmt.Errorf("error decoding tx hash %s: %v", txHash, err)
+			return nil, fmt.Errorf("error decoding tx hash %s: %v", txHashString, err)
 		}
-		prevTxHash, err := chainhash.NewHash(hash)
+		sortedInputs = append(sortedInputs, Input{
+			TxHash: hash,
+			Data:   inputs[txHashString],
+		})
+	}
+	slices.SortFunc(sortedInputs, func(a, b Input) int {
+		return bytes.Compare(a.TxHash, b.TxHash)
+	})
+
+	for _, input := range sortedInputs {
+		prevTxHash, err := chainhash.NewHash(input.TxHash)
 		if err != nil {
 			return nil, fmt.Errorf("error creating hash: %v", err)
 		}
-		outPoint := wire.NewOutPoint(prevTxHash, input.Index)
+		outPoint := wire.NewOutPoint(prevTxHash, input.Data.Index)
 		txIn := wire.NewTxIn(outPoint, nil, nil)
 		txIn.Sequence = TELEPORT_DEFAULT_SEQUENCE
 		tx.AddTxIn(txIn)
 
 		prevOutputFetcher[*outPoint] = &wire.TxOut{
-			PkScript: input.BitcoinScript,
-			Value:    input.Amount.Int64(),
+			PkScript: input.Data.BitcoinScript,
+			Value:    input.Data.Amount.Int64(),
 		}
 	}
 
