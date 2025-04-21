@@ -366,7 +366,7 @@ func (s *SignService) doAggregate(
 ) bool {
 	s.logAggregateSignShares(pegout.ID)
 
-	commitmentsPackages := helpers.FromFrostPkg(pegout.artifacts.Commitments)
+	commitmentsPackages := helpers.ConvertMapToFrostPackages(pegout.artifacts.Commitments)
 	signatures := make([][]byte, 0, len(pegout.signingHashes))
 
 	for i, input := range pegout.inputs {
@@ -416,7 +416,7 @@ func (s *SignService) Sign(
 ) ([]byte, *frost.Identifier, error) {
 	secretPackage := s.keyStore.LoadSecret(publicKey)
 	if secretPackage == nil {
-		return nil, nil, fmt.Errorf("failed to load secret package by key %x", publicKey)
+		return nil, nil, fmt.Errorf("failed to load secret package by key %X", publicKey)
 	}
 	nonces := s.keyStore.LoadNonce(nonceName)
 	if nonces == nil {
@@ -425,7 +425,7 @@ func (s *SignService) Sign(
 	return frost.SignWithTweak(
 		frost.NewPackage(secretPackage),
 		signingHash,
-		helpers.FromFrostPkg(commitments),
+		helpers.ConvertMapToFrostPackages(commitments),
 		frost.NewPackage(nonces),
 		tapTweak,
 	)
@@ -434,7 +434,7 @@ func (s *SignService) Sign(
 func (s *SignService) Commit(publicKey []byte) ([]byte, []byte, error) {
 	secretPackage := s.keyStore.LoadSecret(publicKey)
 	if secretPackage == nil {
-		return nil, nil, fmt.Errorf("failed to load secret package by key %x", publicKey)
+		return nil, nil, fmt.Errorf("failed to load secret package by key %X", publicKey)
 	}
 	return frost.Commit(frost.NewPackage(secretPackage))
 }

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"math/big"
 	"regexp"
 	"strconv"
 
@@ -16,13 +17,13 @@ const TvmExitCodeDifferentPubkeyPackages = 152
 
 // Helpers
 
-func FromFrostAndPubKeyPkg(origMap map[uint16][]byte) (map[frost.Identifier]frost.Package, map[uint16][]byte, uint16, error) {
+func DeserializeDkgR1(origMap map[uint16][]byte) (map[frost.Identifier]frost.Package, map[uint16][]byte, uint16, error) {
 	frostMap := make(map[frost.Identifier]frost.Package)
 	pubKeysMap := make(map[uint16][]byte)
 
 	for validatorIdx, pkgData := range origMap {
-		if len(pkgData) < 33 { /*33 = 32 [public key] + 1[The length of the frost package is expected to be at least 1 byte]*/
-			return nil, nil, validatorIdx, errors.New("wrong package len") // TODO: add custom culprit error
+		if len(pkgData) != (32 + 137) { // 32 - public key; 137 - FROST R1 package
+			return nil, nil, validatorIdx, errors.New("wrong package len")
 		}
 
 		pubKeyX25519 := pkgData[:32]
@@ -35,10 +36,87 @@ func FromFrostAndPubKeyPkg(origMap map[uint16][]byte) (map[frost.Identifier]fros
 	return frostMap, pubKeysMap, 0, nil
 }
 
-func FromFrostPkg(origMap map[uint16][]byte) (frostMap map[frost.Identifier]frost.Package) {
+func SerializeR2Packages(r2Packages map[uint16][]byte) []byte {
+	serializedData := []byte{}
+	tmpBuf := make([]byte, 2)
+
+	// Serialize packages count
+	binary.BigEndian.PutUint16(tmpBuf, uint16(len(r2Packages)))
+	serializedData = append(serializedData, tmpBuf...)
+
+	for toValidatorIdx, r2pkg := range r2Packages {
+		// Serialize validator idx
+		binary.BigEndian.PutUint16(tmpBuf, toValidatorIdx)
+		serializedData = append(serializedData, tmpBuf...)
+
+		// Serialize r2pkg
+		serializedData = append(serializedData, r2pkg...)
+	}
+
+	return serializedData
+}
+
+func DeserializeDkgR2(r2Packages map[uint16][]byte /*map[FROM]data*/, vsetMask *big.Int, maxSigners uint16) (
+	map[uint16]map[uint16][]byte, /*map[FROM]map[TO]data*/
+	bool, /*is culprit was found*/
+	uint16, /*culprit*/
+	error) {
+	deserializedData := make(map[uint16]map[uint16][]byte)
+
+	for fromValidatorIdx, serializedToPkgs := range r2Packages {
+		toValidatorData := make(map[uint16][]byte)
+
+		readOffset := 0
+		bytesLeft := len(serializedToPkgs)
+
+		// Packages count
+		if bytesLeft < 2 {
+			return nil, true, fromValidatorIdx, errors.New("not enough bytes in package")
+		}
+
+		packagesCount := binary.BigEndian.Uint16(serializedToPkgs[readOffset : readOffset+2])
+		readOffset += 2
+
+		for range packagesCount {
+			sizeOfSinglePackage := 2 /*ToValidatorId*/ + 77 /*Encrypted FROST R2 package to single validator*/
+			if bytesLeft < sizeOfSinglePackage {
+				return nil, true, fromValidatorIdx, errors.New("not enough bytes in package")
+			}
+
+			// To validator idx
+			toValidatorIdx := binary.BigEndian.Uint16(serializedToPkgs[readOffset : readOffset+2])
+			readOffset += 2
+
+			// Check if toValidatorIdx is unique
+			_, exists := toValidatorData[toValidatorIdx]
+			if exists {
+				return nil, true, fromValidatorIdx, fmt.Errorf("validator ID %d is not unique", toValidatorIdx)
+			}
+
+			toValidatorData[toValidatorIdx] = serializedToPkgs[readOffset : readOffset+77]
+			readOffset += 77
+		}
+
+		// Check toValidatorData. All and only the validator indexes from VSet must be in toValidatorData (exept fromValidatorIdx)
+		count := uint(0)
+		for toValidatorIdx := range toValidatorData {
+			count += vsetMask.Bit(int(toValidatorIdx))
+		}
+
+		if count != uint(maxSigners-1 /*fromValidatorIdx*/) {
+			return nil, true, fromValidatorIdx, errors.New("validator did not send R2 packages for some validators from the VSet")
+		}
+
+		deserializedData[fromValidatorIdx] = toValidatorData
+	}
+
+	return deserializedData, false, 0, nil
+}
+
+func ConvertMapToFrostPackages(origMap map[uint16][]byte) (frostMap map[frost.Identifier]frost.Package) {
 	frostMap = make(map[frost.Identifier]frost.Package)
-	for validatorIdx, v := range origMap {
-		id := ValidatorIdxToFrost(validatorIdx)
+	for k, v := range origMap {
+		id := ValidatorIdxToFrost(k)
 		frostMap[id] = frost.NewPackage(v)
 	}
 	return

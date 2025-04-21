@@ -2,6 +2,7 @@ package coordinator
 
 import (
 	"math/big"
+	"math/bits"
 	"time"
 
 	"github.com/xssnick/tonutils-go/address"
@@ -55,6 +56,10 @@ func (dkg *DKG) GetR1Packages() DKGPkgs {
 	return dkg.R1.Packages
 }
 
+func (dkg *DKG) GetR2Packages() DKGPkgs {
+	return dkg.R2.Packages
+}
+
 func (dkg *DKG) Round1Completed() bool {
 	return dkg.State == DKGStateFinished ||
 		dkg.State >= DKGStatePart1Finished
@@ -69,16 +74,24 @@ func (dkg *DKG) Round3Completed() bool {
 	return dkg.State == DKGStateFinished
 }
 
-func (dkg *DKG) CheckR1Mask(validatorIdx uint16) bool {
-	return dkg.R1.mask.Bit(int(validatorIdx)) > 0
+func PopCountBigInt(x *big.Int) uint16 {
+	count := 0
+	for _, word := range x.Bits() {
+		count += bits.OnesCount(uint(word))
+	}
+	return uint16(count)
 }
 
-func (dkg *DKG) CheckR2Mask(validatorIdx uint16) bool {
-	return dkg.R2.mask.Bit(int(validatorIdx)) > 0
+func (dkg *DKG) CheckR1Mask(validatorIdx uint16) (bool, uint16) {
+	return dkg.R1.Mask.Bit(int(validatorIdx)) > 0, PopCountBigInt(new(big.Int).And(dkg.R1.Mask, dkg.VSetMask))
 }
 
-func (dkg *DKG) CheckR3Mask(validatorIdx uint16) bool {
-	return dkg.R1.mask.Bit(int(validatorIdx)) > 0
+func (dkg *DKG) CheckR2Mask(validatorIdx uint16) (bool, uint16) {
+	return dkg.R2.Mask.Bit(int(validatorIdx)) > 0, PopCountBigInt(new(big.Int).And(dkg.R2.Mask, dkg.VSetMask))
+}
+
+func (dkg *DKG) CheckR3Mask(validatorIdx uint16) (bool, uint16) {
+	return dkg.R3.Mask.Bit(int(validatorIdx)) > 0, PopCountBigInt(new(big.Int).And(dkg.R3.Mask, dkg.VSetMask))
 }
 
 func (dkg *DKG) ClaimCompleted(validatorIdx uint16) bool {
