@@ -7,13 +7,13 @@ import (
 	"github.com/xssnick/tonutils-go/tvm/cell"
 )
 
-func BuildSendRound1Body(ttl int64, validatorIdx uint16, dkgUntil int64, round1Package []byte, r2PublicX25519 []byte) *cell.Cell {
+func BuildSendRound1Body(ttl int64, validatorIdx uint16, dkgUntil int64, round1Package []byte, r2PublicX25519 *[32]byte) *cell.Cell {
 	return cell.BeginCell().
 		MustStoreUInt(OpCodeCoordinatorRound1, 32).
 		MustStoreUInt(uint64(time.Now().Unix()+ttl), 32).
 		MustStoreUInt(uint64(validatorIdx), 16).
 		MustStoreUInt(uint64(dkgUntil), 32).
-		MustStoreRef(utils.SplitBytesToCells(append(r2PublicX25519, round1Package...))).
+		MustStoreRef(utils.SplitBytesToCells(append(r2PublicX25519[:], round1Package...))).
 		EndCell()
 }
 

@@ -11,7 +11,7 @@ import (
 	"golang.org/x/crypto/nacl/box"
 )
 
-func Encrypt(data []byte, thisPrivateKey []byte, otherPublicKey []byte) ([]byte, error) {
+func Encrypt(data []byte, thisPrivateKey *[32]byte, otherPublicKey *[32]byte) ([]byte, error) {
 	// Generate nonce
 	var nonce [24]byte
 	if _, err := rand.Read(nonce[:]); err != nil {
@@ -19,13 +19,13 @@ func Encrypt(data []byte, thisPrivateKey []byte, otherPublicKey []byte) ([]byte,
 	}
 
 	// Encrypt
-	encryptedData := box.Seal(nil, data, &nonce, (*[32]byte)(otherPublicKey[:32]), (*[32]byte)(thisPrivateKey[:32]))
+	encryptedData := box.Seal(nil, data, &nonce, otherPublicKey, thisPrivateKey)
 
 	// Combine nonce and encrypted data
 	return append(nonce[:], encryptedData...), nil
 }
 
-func Decrypt(data []byte, thisPrivateKey []byte, otherPublicKey []byte) ([]byte, error) {
+func Decrypt(data []byte, thisPrivateKey *[32]byte, otherPublicKey *[32]byte) ([]byte, error) {
 	// Extract nonce
 	if len(data) <= 24 {
 		return nil, errors.New("data is too short; it must be longer than 24 bytes")
@@ -33,7 +33,7 @@ func Decrypt(data []byte, thisPrivateKey []byte, otherPublicKey []byte) ([]byte,
 
 	nonce := data[:24]
 	dataToDecrypt := data[24:]
-	decrypted, ok := box.Open(nil, dataToDecrypt, (*[24]byte)(nonce[:24]), (*[32]byte)(otherPublicKey[:32]), (*[32]byte)(thisPrivateKey[:32]))
+	decrypted, ok := box.Open(nil, dataToDecrypt, (*[24]byte)(nonce[:24]), otherPublicKey, thisPrivateKey)
 	if !ok {
 		return nil, fmt.Errorf("decryption failed for public key '%X'", otherPublicKey)
 	}
@@ -45,7 +45,7 @@ func DecryptR2Packages(
 	packagesFrom map[uint16][]byte,
 	validatorIdx uint16,
 	r2PublicKeysX25519 map[uint16][]byte,
-	r2PrivateX25519 []byte,
+	r2PrivateX25519 *[32]byte,
 	expectedPackageBatchesCount int) (map[frost.Identifier]frost.Package, bool, uint16 /*culprit*/, error) {
 
 	resultPackages := make(map[frost.Identifier]frost.Package)
@@ -95,7 +95,7 @@ func DecryptR2Packages(
 				return nil, false, 0, fmt.Errorf("public key not found for Oracle {%d}", fromValidatorIdx)
 			}
 
-			decryptedData, err := Decrypt(encryptedData, r2PrivateX25519, fromPublicKeyX25519)
+			decryptedData, err := Decrypt(encryptedData, r2PrivateX25519, (*[32]byte)(fromPublicKeyX25519[:32]))
 			if err != nil {
 				return nil, true, fromValidatorIdx, fmt.Errorf("failed to decrypt Round2 packages {%d}", fromValidatorIdx)
 			}

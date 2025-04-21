@@ -16,29 +16,29 @@ const TvmExitCodeDifferentPubkeyPackages = 152
 
 // Helpers
 
-func ConvertMapToFrostPackagesAndPubKey(origMap map[uint16][]byte) (map[frost.Identifier]frost.Package, map[uint16][]byte, uint16, error) {
+func FromFrostAndPubKeyPkg(origMap map[uint16][]byte) (map[frost.Identifier]frost.Package, map[uint16][]byte, uint16, error) {
 	frostMap := make(map[frost.Identifier]frost.Package)
 	pubKeysMap := make(map[uint16][]byte)
 
-	for k, v := range origMap {
-		if len(v) <= 32 {
-			return nil, nil, k, errors.New("wrong package len")
+	for validatorIdx, pkgData := range origMap {
+		if len(pkgData) < 33 { /*33 = 32 [public key] + 1[The length of the frost package is expected to be at least 1 byte]*/
+			return nil, nil, validatorIdx, errors.New("wrong package len") // TODO: add custom culprit error
 		}
 
-		pubKeyX25519 := v[:32]
-		frostPackage := v[32:]
+		pubKeyX25519 := pkgData[:32]
+		frostPackage := pkgData[32:]
 
-		pubKeysMap[k] = pubKeyX25519
-		frostMap[ValidatorIdxToFrost(k)] = frost.NewPackage(frostPackage)
+		pubKeysMap[validatorIdx] = pubKeyX25519
+		frostMap[ValidatorIdxToFrost(validatorIdx)] = frost.NewPackage(frostPackage)
 	}
 
 	return frostMap, pubKeysMap, 0, nil
 }
 
-func ConvertMapToFrostPackages(origMap map[uint16][]byte) (frostMap map[frost.Identifier]frost.Package) {
+func FromFrostPkg(origMap map[uint16][]byte) (frostMap map[frost.Identifier]frost.Package) {
 	frostMap = make(map[frost.Identifier]frost.Package)
-	for k, v := range origMap {
-		id := ValidatorIdxToFrost(k)
+	for validatorIdx, v := range origMap {
+		id := ValidatorIdxToFrost(validatorIdx)
 		frostMap[id] = frost.NewPackage(v)
 	}
 	return

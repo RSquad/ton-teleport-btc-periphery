@@ -28,8 +28,8 @@ func NewSecret(ptr uintptr) Secret {
 type Round1Result struct {
 	pkg             []byte
 	secret          Secret
-	r2PublicX25519  []byte
-	r2PrivateX25519 []byte
+	r2PublicX25519  [32]byte
+	r2PrivateX25519 [32]byte
 }
 
 type Round2Result struct {
@@ -225,8 +225,8 @@ func (e *Executor) executeR1(dkg *coordinator.DKG, validatorIdx uint16) bool {
 		e.artifacts.r1 = &Round1Result{
 			pkg:             r1Package,
 			secret:          NewSecret(r1SecretPtr),
-			r2PublicX25519:  r2PublicX25519[:],
-			r2PrivateX25519: r2PrivateX25519[:],
+			r2PublicX25519:  *r2PublicX25519,
+			r2PrivateX25519: *r2PrivateX25519,
 		}
 	}
 
@@ -234,7 +234,7 @@ func (e *Executor) executeR1(dkg *coordinator.DKG, validatorIdx uint16) bool {
 		validatorIdx,
 		dkg.Until.Unix(),
 		e.artifacts.r1.pkg,
-		e.artifacts.r1.r2PublicX25519,
+		&e.artifacts.r1.r2PublicX25519,
 	)
 	if err != nil {
 		e.logSendRound1Package(dkg, err)
@@ -265,7 +265,7 @@ func (e *Executor) executeR2(dkg *coordinator.DKG, validatorIdx uint16) bool {
 		}
 
 		e.logMessage(dkg, "generating round2 artifacts")
-		r1Packages, r2PublicKeysX25519, culpritIdx, err := helpers.ConvertMapToFrostPackagesAndPubKey(dkg.GetR1Packages())
+		r1Packages, r2PublicKeysX25519, culpritIdx, err := helpers.FromFrostAndPubKeyPkg(dkg.GetR1Packages())
 		if err != nil {
 			e.logError(dkg, "Failed to parse Round1 packages. Culprit validator found.", err)
 			e.executeClaim(dkg, validatorIdx, culpritIdx)
@@ -301,7 +301,7 @@ func (e *Executor) executeR2(dkg *coordinator.DKG, validatorIdx uint16) bool {
 				return false
 			}
 
-			r2pkgEncrypted, err := Encrypt(r2pkg.ToBytes(), e.artifacts.r1.r2PrivateX25519, r2PublicKeyX25519)
+			r2pkgEncrypted, err := Encrypt(r2pkg.ToBytes(), &e.artifacts.r1.r2PrivateX25519, (*[32]byte)(r2PublicKeyX25519[:32]))
 			if err != nil {
 				e.logError(dkg, fmt.Sprintf("Failed to encrypt R2 packages for Oracle {%d}", toValidatorIdx), err)
 				return false
@@ -358,7 +358,7 @@ func (e *Executor) executeR3(dkg *coordinator.DKG, validatorIdx uint16) bool {
 			return false
 		}
 
-		r1Packages, r2PublicKeysX25519, culpritIdx, err := helpers.ConvertMapToFrostPackagesAndPubKey(dkg.GetR1Packages())
+		r1Packages, r2PublicKeysX25519, culpritIdx, err := helpers.FromFrostAndPubKeyPkg(dkg.GetR1Packages())
 		if err != nil {
 			e.logError(dkg, "Failed to parse Round1 packages. Culprit validator found.", err)
 			e.executeClaim(dkg, validatorIdx, culpritIdx)
@@ -367,7 +367,14 @@ func (e *Executor) executeR3(dkg *coordinator.DKG, validatorIdx uint16) bool {
 		delete(r1Packages, localIdentifier)
 
 		expectedPackageBatchesCount := len(r1Packages)
-		r2Packages, isCulpritFound, culpritIdx, err := DecryptR2Packages(dkg.R2.PackagesFrom, validatorIdx, r2PublicKeysX25519, e.artifacts.r1.r2PrivateX25519, expectedPackageBatchesCount)
+		r2Packages, isCulpritFound, culpritIdx, err := DecryptR2Packages(
+			dkg.R2.PackagesFrom,
+			validatorIdx,
+			r2PublicKeysX25519,
+			&e.artifacts.r1.r2PrivateX25519,
+			expectedPackageBatchesCount,
+		)
+
 		if isCulpritFound {
 			e.logError(dkg, "Failed to parse Round2 packages. Culprit validator found.", err)
 			e.executeClaim(dkg, validatorIdx, culpritIdx)

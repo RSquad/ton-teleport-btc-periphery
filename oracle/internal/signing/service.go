@@ -366,7 +366,7 @@ func (s *SignService) doAggregate(
 ) bool {
 	s.logAggregateSignShares(pegout.ID)
 
-	commitmentsPackages := helpers.ConvertMapToFrostPackages(pegout.artifacts.Commitments)
+	commitmentsPackages := helpers.FromFrostPkg(pegout.artifacts.Commitments)
 	signatures := make([][]byte, 0, len(pegout.signingHashes))
 
 	for i, input := range pegout.inputs {
@@ -425,7 +425,7 @@ func (s *SignService) Sign(
 	return frost.SignWithTweak(
 		frost.NewPackage(secretPackage),
 		signingHash,
-		helpers.ConvertMapToFrostPackages(commitments),
+		helpers.FromFrostPkg(commitments),
 		frost.NewPackage(nonces),
 		tapTweak,
 	)
