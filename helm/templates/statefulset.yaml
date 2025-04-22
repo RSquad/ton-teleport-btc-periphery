@@ -11,7 +11,7 @@ spec:
     type: RollingUpdate
     rollingUpdate:
       partition: 0
-      maxUnavailable: "50%"
+      maxUnavailable: 100%
   replicas: {{ $.Values.replicaCount }}
   podManagementPolicy: Parallel
   serviceName: {{ include "app.name" $ }}-headless
