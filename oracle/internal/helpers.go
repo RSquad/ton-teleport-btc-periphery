@@ -14,7 +14,9 @@ import (
 )
 
 const TvmExitCodeDifferentPubkeyPackages = 152
-const SizeOfSingleDkgR2Package = 2 /*ToValidatorId*/ + 24 /*nonce for encryption*/ + 16 /*encryption header*/ + 37 /*FROST R2 package to single validator*/
+const FrostDkgR2PackageSize = 37 /*FROST R2 package to single validator*/
+const EncryptedFrostDkgR2PackageSize = 24 /*nonce for encryption*/ + 16 /*encryption header*/ + FrostDkgR2PackageSize
+const SizeOfSingleDkgR2Package = 2 /*ToValidatorId*/ + EncryptedFrostDkgR2PackageSize
 
 // Helpers
 
@@ -93,8 +95,8 @@ func DeserializeDkgR2(r2Packages map[uint16][]byte /*map[FROM]data*/, vsetMask *
 				return nil, true, fromValidatorIdx, fmt.Errorf("validator ID %d is not unique", toValidatorIdx)
 			}
 
-			toValidatorData[toValidatorIdx] = serializedToPkgs[readOffset : readOffset+77]
-			readOffset += 77
+			toValidatorData[toValidatorIdx] = serializedToPkgs[readOffset : readOffset+EncryptedFrostDkgR2PackageSize]
+			readOffset += EncryptedFrostDkgR2PackageSize
 		}
 
 		// Check toValidatorData. All and only the validator indexes from VSet must be in toValidatorData (exept fromValidatorIdx)
