@@ -297,8 +297,8 @@ func (e *Executor) executeR2(dkg *coordinator.DKG, validatorIdx uint16) bool {
 		}
 	}
 
-	// Send  r2 package is not sent yet, send it to coordinator
-	e.logMessage(dkg, "Sending R2 batched package...")
+	// R2 package is not sent yet, send it to coordinator
+	e.logMessage(dkg, "Sending R2 package...")
 
 	_, err := e.coordinatorContract.SendRound2(
 		validatorIdx,
