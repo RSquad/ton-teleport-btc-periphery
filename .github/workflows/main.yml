@@ -14,17 +14,7 @@ jobs:
     if: github.ref == 'refs/heads/develop'
     uses: ./.github/workflows/build-and-deploy.yml
     with:
-      APPS: '["indexer", "relayer"]'
-      STAGE: develop
-      APP_NAMESPACE: ton-teleport-dev
-    secrets:
-      KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
-
-  oracle_automation:
-    if: github.ref == 'refs/heads/oracle_automation'
-    uses: ./.github/workflows/build-and-deploy.yml
-    with:
-      APPS: '["oracle"]'
+      APPS: '["indexer", "relayer", "oracle"]'
       STAGE: develop
       APP_NAMESPACE: ton-teleport-dev
     secrets:
@@ -34,7 +24,7 @@ jobs:
     if: github.ref == 'refs/heads/develop-2'
     uses: ./.github/workflows/build-and-deploy.yml
     with:
-      APPS: '["db-backup", "indexer", "relayer"]'
+      APPS: '["indexer", "relayer"]'
       STAGE: develop-2
       APP_NAMESPACE: ton-teleport-dev-2
     secrets:
