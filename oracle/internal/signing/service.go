@@ -416,7 +416,7 @@ func (s *SignService) Sign(
 ) ([]byte, *frost.Identifier, error) {
 	secretPackage := s.keyStore.LoadSecret(publicKey)
 	if secretPackage == nil {
-		return nil, nil, fmt.Errorf("failed to load secret package by key %x", publicKey)
+		return nil, nil, fmt.Errorf("failed to load secret package by key %X", publicKey)
 	}
 	nonces := s.keyStore.LoadNonce(nonceName)
 	if nonces == nil {
@@ -434,7 +434,7 @@ func (s *SignService) Sign(
 func (s *SignService) Commit(publicKey []byte) ([]byte, []byte, error) {
 	secretPackage := s.keyStore.LoadSecret(publicKey)
 	if secretPackage == nil {
-		return nil, nil, fmt.Errorf("failed to load secret package by key %x", publicKey)
+		return nil, nil, fmt.Errorf("failed to load secret package by key %X", publicKey)
 	}
 	return frost.Commit(frost.NewPackage(secretPackage))
 }
