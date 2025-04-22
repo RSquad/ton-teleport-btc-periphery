@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/hex"
 	"errors"
+	"fmt"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/signer"
@@ -75,6 +76,8 @@ func (v *Validator) FindKeyInfo(vset coordinator.VSet) (*KeyInfo, error) {
 				}, nil
 			}
 		}
+
+		return nil, fmt.Errorf("no STANDALONE public key '%X' was found in VSet", v.standalonePublicKey)
 	} else {
 		// Try to get keys from validator console
 		validatorKeys, err := v.validatorConsole.GetValidatorKeys()
@@ -91,9 +94,9 @@ func (v *Validator) FindKeyInfo(vset coordinator.VSet) (*KeyInfo, error) {
 				}
 			}
 		}
-	}
 
-	return nil, errors.New("no key was found")
+		return nil, errors.New("no Validator public key was found in VSet")
+	}
 }
 
 func (v *Validator) GetSigner(keyID []byte) signer.Signer {

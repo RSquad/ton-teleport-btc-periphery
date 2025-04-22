@@ -38,20 +38,20 @@ func (c *CoordinatorContract) SendRound1(
 	validatorIdx uint16,
 	dkgUntil int64,
 	round1Package []byte,
+	r2PublicX25519 *[32]byte,
 ) (*tlb.Transaction, error) {
 	return c.sendBodyCell(BuildSendRound1Body(
-		int64(c.ttl.Seconds()), validatorIdx, dkgUntil, round1Package,
+		int64(c.ttl.Seconds()), validatorIdx, dkgUntil, round1Package, r2PublicX25519,
 	), "SendRound1")
 }
 
 func (c *CoordinatorContract) SendRound2(
 	validatorIdx uint16,
 	dkgUntil int64,
-	toIdx uint16,
-	round2Package []byte,
+	round2Packages []byte,
 ) (*tlb.Transaction, error) {
 	return c.sendBodyCell(BuildSendRound2Body(
-		int64(c.ttl.Seconds()), validatorIdx, dkgUntil, toIdx, round2Package,
+		int64(c.ttl.Seconds()), validatorIdx, dkgUntil, round2Packages,
 	), "SendRound2")
 }
 
