@@ -14,6 +14,7 @@ import (
 )
 
 const TvmExitCodeDifferentPubkeyPackages = 152
+const SizeOfSingleDkgR2Package = 2 /*ToValidatorId*/ + 24 /*nonce for encryption*/ + 16 /*encryption header*/ + 37 /*FROST R2 package to single validator*/
 
 // Helpers
 
@@ -78,8 +79,7 @@ func DeserializeDkgR2(r2Packages map[uint16][]byte /*map[FROM]data*/, vsetMask *
 		readOffset += 2
 
 		for range packagesCount {
-			sizeOfSinglePackage := 2 /*ToValidatorId*/ + 77 /*Encrypted FROST R2 package to single validator*/
-			if bytesLeft < sizeOfSinglePackage {
+			if bytesLeft < SizeOfSingleDkgR2Package {
 				return nil, true, fromValidatorIdx, errors.New("not enough bytes in package")
 			}
 
