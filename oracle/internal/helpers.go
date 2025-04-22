@@ -22,7 +22,7 @@ func DeserializeDkgR1(origMap map[uint16][]byte) (map[frost.Identifier]frost.Pac
 	pubKeysMap := make(map[uint16][]byte)
 
 	for validatorIdx, pkgData := range origMap {
-		if len(pkgData) != (32 + 137) { // 32 - public key; 137 - FROST R1 package
+		if len(pkgData) < (32 + 137) { // 32 - public key; 137 - minimal FROST R1 package
 			return nil, nil, validatorIdx, errors.New("wrong package len")
 		}
 
