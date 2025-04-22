@@ -50,3 +50,33 @@ func TestInputsOrder(t *testing.T) {
 		t.Errorf("slices are not equal:\nexpected: %v\nreceived: %v", expectedTxids, txids)
 	}
 }
+
+func TestGetTxParts(t *testing.T) {
+	client, err := tonclient.New("https://ton-blockchain.github.io/testnet-global.config.json")
+	if err != nil {
+		t.Fatalf("Failed to create ton client: %v", err)
+	}
+	ctx := context.Background()
+	pegout := New(address.MustParseRawAddr("0:60afbb7f1048cad73fc2e9220c523eb5e65213950f47396b7dc6ee62934b486f"), client, ctx)
+
+	block, err := client.API.CurrentMasterchainInfo(ctx)
+	if err != nil {
+		t.Errorf("call CurrentMasterchainInfo failed: %e", err)
+	}
+	txParts, err := pegout.GetTxParts(block)
+	if err != nil {
+		t.Fatalf("Failed to get tx parts: %v", err)
+	}
+
+	if txParts == nil {
+		t.Fatalf("txParts is nil")
+	}
+	input, ok := (*txParts.Inputs)["cbdae528d63a256f8e0324cc8d5660ad831c6a17c068578d8c22b69384d3ebf4"]
+	if !ok {
+		t.Fatalf("input not found")
+	}
+
+	if len(input.BitcoinMerkleRoot) != 0 {
+		t.Fatalf("bitcoin merkle root is not empty")
+	}
+}

@@ -1,9 +1,12 @@
 package pegoutcontract
 
 import (
+	"bytes"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"math/big"
+	"slices"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/parseddict"
 	"github.com/xssnick/tonutils-go/address"
@@ -13,12 +16,16 @@ import (
 type (
 	TxPartsInput struct {
 		Amount            *big.Int
-		Index             uint8
+		Index             uint32
 		Receiver          *address.Address
 		BitcoinMerkleRoot []byte
 		BitcoinScript     []byte
 	}
 	TxPartsInputs map[string]*TxPartsInput
+	TxInput       struct {
+		TxHash []byte
+		Data   *TxPartsInput
+	}
 )
 
 func parseTxPartsInputKey(keySlice *cell.Slice, keySize uint) string {
@@ -36,8 +43,8 @@ func parseTxPartsInputValue(valueSlice *cell.Slice) (*TxPartsInput, error) {
 	merkleRootInt := valueSlice.MustLoadBigUInt(256)
 
 	var bitcoinMerkleRoot []byte
-	if merkleRootInt != big.NewInt(0) {
-		bitcoinMerkleRoot = merkleRootInt.Bytes()
+	if merkleRootInt.Sign() != 0 {
+		bitcoinMerkleRoot = merkleRootInt.FillBytes(make([]byte, 32))
 	}
 	receiver := valueSlice.MustLoadAddr()
 	bitcoinScriptSlice := valueSlice.MustLoadRef()
@@ -45,7 +52,7 @@ func parseTxPartsInputValue(valueSlice *cell.Slice) (*TxPartsInput, error) {
 
 	return &TxPartsInput{
 		Amount:            amount,
-		Index:             uint8(index),
+		Index:             uint32(index),
 		BitcoinMerkleRoot: bitcoinMerkleRoot,
 		Receiver:          receiver,
 		BitcoinScript:     bitcoinScript,
@@ -59,4 +66,22 @@ func NewTxPartsInputs(dict *cell.Dictionary) (*TxPartsInputs, error) {
 	}
 	txPartsInputs := TxPartsInputs(*result)
 	return &txPartsInputs, nil
+}
+
+func (inputs TxPartsInputs) ToSortedSlice() ([]TxInput, error) {
+	sortedInputs := make([]TxInput, 0, len(inputs))
+	for txHashString := range inputs {
+		hash, err := hex.DecodeString(txHashString)
+		if err != nil {
+			return nil, errors.New("error decoding tx hash " + txHashString + ": " + err.Error())
+		}
+		sortedInputs = append(sortedInputs, TxInput{
+			TxHash: hash,
+			Data:   inputs[txHashString],
+		})
+	}
+	slices.SortFunc(sortedInputs, func(a, b TxInput) int {
+		return bytes.Compare(a.TxHash, b.TxHash)
+	})
+	return sortedInputs, nil
 }

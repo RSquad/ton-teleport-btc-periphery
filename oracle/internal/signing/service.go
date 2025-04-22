@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/frost"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/pegoutcontract"
@@ -22,7 +23,7 @@ import (
 type CachedPegout struct {
 	ID            uint64
 	addrStr       string
-	inputs        []pegoutcontract.TxPartsInput
+	inputs        []pegoutcontract.TxInput
 	tx            *pegoutcontract.TxParts
 	signingHashes [][]byte
 	artifacts     *coordinator.PegoutRecord
@@ -98,12 +99,13 @@ func (s *SignService) cachePegout(
 		s.logError("failed to cache pegout", err)
 		return nil, err
 	}
-	txInputs, err := pegoutContract.GetInputs(block)
+	txInputs, err := txParts.Inputs.ToSortedSlice()
 	if err != nil {
-		s.logError("failed to cache pegout", err)
+		s.logError("failed to sort inputs", err)
 		return nil, err
 	}
-	signingHashes, err := pegoutContract.GetSigningHashes(block)
+
+	signingHashes, err := bitcoin.BuildTaprootSigningHashes(*txParts.Inputs, txParts.Outputs)
 	if err != nil {
 		s.logError("failed to get signing hashes", err)
 		return nil, err
@@ -323,12 +325,11 @@ func (s *SignService) doSign(
 		for i, input := range pegout.inputs {
 			signShare, culpritFrostIdx, err := s.Sign(
 				publicKey,                    // public key
-				input.BitcoinMerkleRoot,      // tap merkle root used as tweak for tweaking signing share
+				input.Data.BitcoinMerkleRoot, // tap merkle root used as tweak for tweaking signing share
 				pegout.signingHashes[i],      // signing hash for current input
 				pegout.artifacts.Commitments, // oracle's commitments to sign pegout hashes
 				pegout.addrStr,               // pegout address used as key to load nonce from keystore
 			)
-
 			if err != nil {
 				if culpritFrostIdx != nil {
 					culpritIdx := helpers.FrostToValidatorIdx(*culpritFrostIdx)
@@ -371,7 +372,7 @@ func (s *SignService) doAggregate(
 
 	for i, input := range pegout.inputs {
 		hashOnlyShares := filterSharesByHashIndex(pegout.artifacts.SigningShares, uint16(i))
-		tapTweak := input.BitcoinMerkleRoot
+		tapTweak := input.Data.BitcoinMerkleRoot
 		signature, culpritFrostIdx, err := frost.AggregateWithTweak(
 			pegout.signingHashes[i],
 			commitmentsPackages,
@@ -379,7 +380,6 @@ func (s *SignService) doAggregate(
 			frost.NewPackage(pubkeyPackage),
 			tapTweak,
 		)
-
 		if err != nil {
 			if culpritFrostIdx != nil {
 				culpritIdx := helpers.FrostToValidatorIdx(*culpritFrostIdx)
@@ -416,7 +416,7 @@ func (s *SignService) Sign(
 ) ([]byte, *frost.Identifier, error) {
 	secretPackage := s.keyStore.LoadSecret(publicKey)
 	if secretPackage == nil {
-		return nil, nil, fmt.Errorf("failed to load secret package by key %x", publicKey)
+		return nil, nil, fmt.Errorf("failed to load secret package by key %X", publicKey)
 	}
 	nonces := s.keyStore.LoadNonce(nonceName)
 	if nonces == nil {
@@ -434,7 +434,7 @@ func (s *SignService) Sign(
 func (s *SignService) Commit(publicKey []byte) ([]byte, []byte, error) {
 	secretPackage := s.keyStore.LoadSecret(publicKey)
 	if secretPackage == nil {
-		return nil, nil, fmt.Errorf("failed to load secret package by key %x", publicKey)
+		return nil, nil, fmt.Errorf("failed to load secret package by key %X", publicKey)
 	}
 	return frost.Commit(frost.NewPackage(secretPackage))
 }

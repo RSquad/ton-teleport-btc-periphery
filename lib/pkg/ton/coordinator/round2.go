@@ -9,31 +9,18 @@ import (
 
 type (
 	DKGR2 struct {
-		mask       *big.Int
-		count      uint64
-		PackagesTo DKGR2Pkgs
+		Mask     *big.Int
+		Count    uint64
+		Packages map[uint16][]byte
 	}
-	DKGR2Pkgs map[uint16]DKGPkgs
 )
 
-func parseR2PkgValue(valueSlice *cell.Slice) (DKGPkgs, error) {
-	valueSlice.MustLoadUInt(256) // skip internal mask
-
-	dict := valueSlice.MustLoadDict(16)
-	result, err := NewDKGPkgs(dict)
+func NewR2Pkgs(dict *cell.Dictionary) (map[uint16][]byte, error) {
+	result, err := parseddict.ParseDict(dict, parseddict.ParseKeyUI16, readBuffer)
 	if err != nil {
 		return nil, err
 	}
-	return result, nil
-}
-
-func NewR2Pkgs(dict *cell.Dictionary) (DKGR2Pkgs, error) {
-	result, err := parseddict.ParseDict(dict, parseddict.ParseKeyUI16, parseR2PkgValue)
-	if err != nil {
-		return nil, err
-	}
-	dkgR2Pkgs := DKGR2Pkgs(*result)
-	return dkgR2Pkgs, nil
+	return *result, nil
 }
 
 func NewDKGR2(dict *cell.Dictionary, params *DKGRoundState) (*DKGR2, error) {
@@ -41,5 +28,5 @@ func NewDKGR2(dict *cell.Dictionary, params *DKGRoundState) (*DKGR2, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &DKGR2{mask: params.mask, count: params.count, PackagesTo: pkgs}, nil
+	return &DKGR2{Mask: params.mask, Count: params.count, Packages: pkgs}, nil
 }

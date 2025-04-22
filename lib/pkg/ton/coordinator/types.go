@@ -55,9 +55,8 @@ func (dkg *DKG) GetR1Packages() DKGPkgs {
 	return dkg.R1.Packages
 }
 
-func (dkg *DKG) GetR2PackagesTo(toIdx uint16) (DKGPkgs, bool) {
-	v, ok := dkg.R2.PackagesTo[toIdx]
-	return v, ok
+func (dkg *DKG) GetR2Packages() DKGPkgs {
+	return dkg.R2.Packages
 }
 
 func (dkg *DKG) Round1Completed() bool {
@@ -70,16 +69,28 @@ func (dkg *DKG) Round2Completed() bool {
 		dkg.State >= DKGStatePart2Finished
 }
 
-func (dkg *DKG) CheckVSetMask(validatorIdx uint16) bool {
-	return dkg.VSetMask.Bit(int(validatorIdx)) > 0
-}
-
 func (dkg *DKG) Round3Completed() bool {
 	return dkg.State == DKGStateFinished
 }
 
+func (dkg *DKG) CheckR1Mask(validatorIdx uint16) (bool, uint16) {
+	return dkg.R1.Mask.Bit(int(validatorIdx)) > 0, uint16(dkg.R1.Count)
+}
+
+func (dkg *DKG) CheckR2Mask(validatorIdx uint16) (bool, uint16) {
+	return dkg.R2.Mask.Bit(int(validatorIdx)) > 0, uint16(dkg.R2.Count)
+}
+
+func (dkg *DKG) CheckR3Mask(validatorIdx uint16) (bool, uint16) {
+	return dkg.R3.Mask.Bit(int(validatorIdx)) > 0, uint16(dkg.R3.Count)
+}
+
 func (dkg *DKG) ClaimCompleted(validatorIdx uint16) bool {
 	return dkg.Claims.Mask.Bit(int(validatorIdx)) > 0
+}
+
+func (dkg *DKG) CheckVSetMask(validatorIdx uint16) bool {
+	return dkg.VSetMask.Bit(int(validatorIdx)) > 0
 }
 
 // CommitmentRequest represents a request to send commitments
