@@ -169,7 +169,7 @@ func run(app *App) error {
 	go func() {
 		defer wg.Done()
 		srv := handler.NewDefaultServer(
-			gql.NewSchema(app.Repo, app.BitcoinClient, app.TeleportContract),
+			gql.NewSchema(app.Repo, app.BitcoinClient, app.TeleportContract, app.TonClient),
 		)
 		srv.Use(entgql.Transactioner{TxOpener: app.Repo})
 
