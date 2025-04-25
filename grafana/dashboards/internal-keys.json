@@ -18,7 +18,7 @@
     "editable": true,
     "fiscalYearStartMonth": 0,
     "graphTooltip": 0,
-    "id": 3,
+    "id": 6,
     "links": [],
     "panels": [
         {
@@ -31,7 +31,6 @@
             },
             "id": 2,
             "panels": [],
-            "repeat": "page_number",
             "title": "Row title",
             "type": "row"
         },
@@ -48,8 +47,7 @@
                     "custom": {
                         "align": "auto",
                         "cellOptions": {
-                            "type": "auto",
-                            "wrapText": false
+                            "type": "auto"
                         },
                         "inspect": false
                     },
@@ -68,11 +66,48 @@
                         ]
                     }
                 },
-                "overrides": []
+                "overrides": [
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "total_pages"
+                        },
+                        "properties": [
+                            {
+                                "id": "custom.hidden",
+                                "value": true
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "completed_at"
+                        },
+                        "properties": [
+                            {
+                                "id": "custom.width",
+                                "value": 200
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "__set_var"
+                        },
+                        "properties": [
+                            {
+                                "id": "custom.hidden",
+                                "value": true
+                            }
+                        ]
+                    }
+                ]
             },
             "gridPos": {
-                "h": 18,
-                "w": 21,
+                "h": 12,
+                "w": 24,
                 "x": 0,
                 "y": 1
             },
@@ -81,15 +116,13 @@
                 "cellHeight": "sm",
                 "footer": {
                     "countRows": false,
-                    "enablePagination": false,
                     "fields": "",
                     "reducer": [
                         "sum"
                     ],
                     "show": false
                 },
-                "showHeader": true,
-                "sortBy": []
+                "showHeader": true
             },
             "pluginVersion": "11.5.2",
             "targets": [
@@ -101,35 +134,12 @@
                     "editorMode": "code",
                     "format": "table",
                     "rawQuery": true,
-                    "rawSql": "select ik.completed_at, ik.key as internal_key, tt.hash as ton_tx from internal_keys as ik join ton_txes as tt ON tt.id = ik.ton_tx_internal_key  order by completed_at DESC limit ${page_size} offset (${page_number} - 1) * ${page_size}",
+                    "rawSql": "select ik.completed_at, ik.key as internal_key, CEIL(COUNT(*) OVER() / ${page_size}) AS total_pages, tt.hash as ton_tx from internal_keys as ik join ton_txes as tt ON tt.id = ik.ton_tx_internal_key  order by completed_at DESC limit ${page_size} offset (${page_number} - 1) * ${page_size}",
                     "refId": "A",
                     "sql": {
                         "columns": [
                             {
-                                "parameters": [
-                                    {
-                                        "name": "completed_at",
-                                        "type": "functionParameter"
-                                    }
-                                ],
-                                "type": "function"
-                            },
-                            {
-                                "parameters": [
-                                    {
-                                        "name": "key",
-                                        "type": "functionParameter"
-                                    }
-                                ],
-                                "type": "function"
-                            },
-                            {
-                                "parameters": [
-                                    {
-                                        "name": "ton_tx_internal_key",
-                                        "type": "functionParameter"
-                                    }
-                                ],
+                                "parameters": [],
                                 "type": "function"
                             }
                         ],
@@ -142,24 +152,69 @@
                             }
                         ],
                         "limit": 50
-                    },
-                    "table": "internal_keys"
-                },
-                {
-                    "datasource": {
-                        "type": "grafana-postgresql-datasource",
-                        "uid": "PCC52D03280B7034C"
-                    },
-                    "hide": false,
-                    "refId": "B"
+                    }
                 }
             ],
-            "title": "Internal keys",
+            "title": "Internal Keys",
+            "transformations": [
+                {
+                    "id": "calculateField",
+                    "options": {
+                        "alias": "__set_var",
+                        "binary": {
+                            "left": {
+                                "matcher": {
+                                    "id": "byName",
+                                    "options": "total_pages"
+                                }
+                            },
+                            "operator": "+",
+                            "right": {
+                                "fixed": "0"
+                            }
+                        },
+                        "mode": "binary",
+                        "reduce": {
+                            "reducer": "sum"
+                        },
+                        "unary": {
+                            "fieldName": "total_pages",
+                            "operator": "abs"
+                        }
+                    }
+                }
+            ],
             "type": "table"
+        },
+        {
+            "fieldConfig": {
+                "defaults": {},
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 2,
+                "w": 13,
+                "x": 5,
+                "y": 13
+            },
+            "id": 3,
+            "options": {
+                "code": {
+                    "language": "plaintext",
+                    "showLineNumbers": false,
+                    "showMiniMap": false
+                },
+                "content": "<div style=\"text-align: center; margin: 10px 0\">\n  <a href=\"${page_number}=1\" \n     style=\"padding: 5px 10px; margin: 0 5px; ${page_number} == 1 ? 'color: #999; pointer-events: none' : ''}\">\n     « First\n  </a>\n  \n  <a href=\"${page_number}=${math.max(1, ${page_number} - 1)}\" \n     style=\"padding: 5px 10px; margin: 0 5px; ${page_number} == 1 ? 'color: #999; pointer-events: none' : ''}\">\n     ‹ Previous\n  </a>\n  \n  <span style=\"padding: 5px 15px\">Page ${page_number} of ${total_pages}</span>\n  \n  <a href=\"${page_number}=${page_number + 1}\" \n     style=\"padding: 5px 10px; margin: 0 5px; ${page_number} == ${total_pages} ? 'color: #999; pointer-events: none' : ''}\">\n     Next ›\n  </a>\n  \n  <a href=\"${page_number}=${total_pages}\" \n     style=\"padding: 5px 10px; margin: 0 5px; ${page_number} == ${total_pages} ? 'color: #999; pointer-events: none' : ''}\">\n     Last »\n  </a>\n</div>",
+                "mode": "html"
+            },
+            "pluginVersion": "11.5.2",
+            "title": "",
+            "transparent": true,
+            "type": "text"
         }
     ],
     "preload": false,
-    "refresh": "1h",
+    "refresh": "",
     "schemaVersion": 40,
     "tags": [],
     "templating": {
@@ -201,20 +256,37 @@
             },
             {
                 "current": {
-                    "text": "1",
-                    "value": "1"
+                    "text": "10",
+                    "value": "10"
                 },
-                "description": "",
                 "name": "page_number",
                 "options": [
                     {
                         "selected": true,
-                        "text": "1",
-                        "value": "1"
+                        "text": "10",
+                        "value": "10"
                     }
                 ],
-                "query": "1",
+                "query": "10",
                 "type": "textbox"
+            },
+            {
+                "current": {
+                    "text": "87",
+                    "value": "87"
+                },
+                "datasource": {
+                    "type": "grafana-postgresql-datasource",
+                    "uid": "PCC52D03280B7034C"
+                },
+                "definition": "select ceil(count(*) OVER() / ${page_size}) AS total_pages from internal_keys;",
+                "hide": 2,
+                "name": "total_pages",
+                "options": [],
+                "query": "select ceil(count(*) OVER() / ${page_size}) AS total_pages from internal_keys;",
+                "refresh": 1,
+                "regex": "",
+                "type": "query"
             }
         ]
     },
@@ -224,8 +296,8 @@
     },
     "timepicker": {},
     "timezone": "browser",
-    "title": "Internal keys",
-    "uid": "bejh9eujzsd1cf",
-    "version": 1,
+    "title": "Internal Keys1",
+    "uid": "dejzsl4rkxjb4f",
+    "version": 11,
     "weekStart": ""
 }
