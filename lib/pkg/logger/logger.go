@@ -101,13 +101,13 @@ func ParseLevel(levelStr string, defaultLevel Level) (Level, error) {
 	}
 
 	switch strings.ToUpper(levelStr) {
-	case "DEBUG_LEVEL":
+	case "DEBUG":
 		return DebugLevel, nil
-	case "INFO_LEVEL":
+	case "INFO":
 		return InfoLevel, nil
-	case "WARN_LEVEL":
+	case "WARN":
 		return WarnLevel, nil
-	case "ERROR_LEVEL":
+	case "ERROR":
 		return ErrorLevel, nil
 	default:
 		return InfoLevel, errors.New("invalid level: " + levelStr)

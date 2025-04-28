@@ -65,12 +65,11 @@ The Oracle is configured using environment variables. You can set these in a `.e
 
 #### Log
 If not set, the default value is 10 seconds.
-- `LOG_LEVEL` - Minimum log level. Possible values: DEBUG_LEVEL, INFO_LEVEL, WARN_LEVEL, ERROR_LEVEL.
+- `LOG_LEVEL` - Minimum log level. Possible values: DEBUG, INFO, WARN, ERROR.
 - `LOG_FILE` - Path to the log file. A full path including the file name must be specified. If not set, logs will be written only to standard output (stdout).
 - `LOG_FILE_MAX_SIZE` - Maximum size of each log file, in megabytes (default 100).
-- `LOG_FILE_MAX_BACKUPS` - Maximum number of backup files to retain (default 1000).
+- `LOG_FILE_MAX_BACKUPS` - Maximum number of backup files to retain (default 50).
 - `LOG_FILE_MAX_BACKUP_AGE` - Maximum age of backup files, in days (default 365).
-- `LOG_COORDINATOR_DKG` - Dump DKG data from 
 
 ### Example .env File
 

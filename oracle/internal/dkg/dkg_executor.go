@@ -72,7 +72,7 @@ type Executor struct {
 	keystore            keystore.Keystore
 	validator           *validator.Validator
 	sessionPublicKey    []byte
-	currentValidatorIdx uint16
+	validatorIdx        uint16
 }
 
 func NewExecutor(
@@ -88,7 +88,7 @@ func NewExecutor(
 		artifacts:           ExecutionArtifacts{},
 		keystore:            keystore,
 		validator:           validator,
-		currentValidatorIdx: 255,
+		validatorIdx:        255,
 	}
 }
 
@@ -124,25 +124,25 @@ func (e *Executor) OnStartNewDKG(dkg *coordinator.DKG) bool {
 	{
 		sessionSigner, err := validator.NewSessionSigner(e.keystore, dkg.Until.Unix())
 		if err != nil {
-			e.logDKGProcess(dkg, e.currentValidatorIdx, fmt.Sprintf("Failed to create SessionSigner: %v", err))
+			e.logDKGProcess(dkg, fmt.Sprintf("Failed to create SessionSigner: %v", err))
 			return false
 		}
 		e.sessionPublicKey = sessionSigner.PublicKey()
 	}
 
 	e.until = dkg.Until
-	e.logNewDKGStarted(dkg, e.currentValidatorIdx)
+	e.logNewDKGStarted(dkg)
 	return true
 }
 
 func (e *Executor) Execute(dkg *coordinator.DKG) {
-	e.logStartExecuting(dkg, e.currentValidatorIdx)
-	defer e.logFinishExecuting(dkg, e.currentValidatorIdx)
+	e.logStartExecuting(dkg)
+	defer e.logFinishExecuting(dkg)
 
 	// Verify if DKG is finished
 	if dkg.State == coordinator.DKGStateFinished {
 		e.Cleanup()
-		e.logDKGFinished(dkg, e.currentValidatorIdx)
+		e.logDKGFinished(dkg)
 		return
 	}
 
@@ -155,19 +155,19 @@ func (e *Executor) Execute(dkg *coordinator.DKG) {
 
 	keyInfo, err := e.validator.FindKeyInfo(dkg.VSet)
 	if err != nil {
-		e.logDKGProcess(dkg, e.currentValidatorIdx, fmt.Sprintf("Error finding key info: %v", err))
+		e.logDKGProcess(dkg, fmt.Sprintf("Error finding key info: %v", err))
 		return
 	}
 
 	if keyInfo == nil {
-		e.logDKGProcess(dkg, e.currentValidatorIdx, "Oracle is not a future validator. Cannot participate in DKG.")
+		e.logDKGProcess(dkg, "Oracle is not a future validator. Cannot participate in DKG.")
 		return
 	}
 
-	e.currentValidatorIdx = keyInfo.VsetIdx
+	e.validatorIdx = keyInfo.VsetIdx
 
-	if !dkg.CheckVSetMask(e.currentValidatorIdx) {
-		e.logDKGProcess(dkg, e.currentValidatorIdx, "The Oracle has been EVICTED from DKG")
+	if !dkg.CheckVSetMask(e.validatorIdx) {
+		e.logDKGProcess(dkg, "The Oracle has been EVICTED from DKG")
 		return
 	}
 
@@ -176,49 +176,47 @@ func (e *Executor) Execute(dkg *coordinator.DKG) {
 	if e.executeR1(dkg) {
 		if e.executeR2(dkg) {
 			if e.executeR3(dkg) {
-				e.logDKGProcess(dkg, e.currentValidatorIdx, "Successfully completed all DKG rounds!")
+				e.logDKGProcess(dkg, "Successfully completed all DKG rounds!")
 			}
 		}
 	}
 }
 
 func (e *Executor) executeR1(dkg *coordinator.DKG) bool {
-	validatorIdx := e.currentValidatorIdx
-
-	e.logExecuteR1(dkg, validatorIdx)
+	e.logExecuteR1(dkg)
 	if dkg.Round1Completed() {
-		e.logDKGProcess(dkg, validatorIdx, "R1 completed")
+		e.logDKGProcess(dkg, "R1 completed")
 		return true
 	}
 
 	// Check R1 mask
-	if r, cnt := dkg.CheckR1Mask(validatorIdx); r {
-		e.logDKGProcess(dkg, validatorIdx, fmt.Sprintf("R1 package already stored in DKG. Waiting for other Oracles (ready %d of %d)...", cnt, dkg.MaxSigners))
+	if r, cnt := dkg.CheckR1Mask(e.validatorIdx); r {
+		e.logDKGProcess(dkg, fmt.Sprintf("R1 package already stored in DKG. Waiting for other Oracles (ready %d of %d)...", cnt, dkg.MaxSigners))
 		return false
 	}
 
 	if e.artifacts.r1 == nil {
-		e.logMessage(dkg, validatorIdx, "Generating R1 artifacts")
+		e.logMessage(dkg, "Generating R1 artifacts")
 		minSigners, err := helpers.CalcMinSigners(dkg.MaxSigners)
 		if err != nil {
-			e.logDKGProcess(dkg, validatorIdx, fmt.Sprintf("Failed to calculate min signers: %v", err))
+			e.logDKGProcess(dkg, fmt.Sprintf("Failed to calculate min signers: %v", err))
 			return false
 		}
 
 		r1Package, r1SecretPtr, err := frost.DkgPart1(
-			helpers.ValidatorIdxToFrost(validatorIdx),
+			helpers.ValidatorIdxToFrost(e.validatorIdx),
 			minSigners,
 			dkg.MaxSigners,
 		)
 		if err != nil {
-			e.logDKGPart1Failed(dkg, validatorIdx, err)
+			e.logDKGPart1Failed(dkg, err)
 			return false
 		}
 
 		// Generate key pair for Round2 encryption
 		r2PublicX25519, r2PrivateX25519, err := box.GenerateKey(rand.Reader)
 		if err != nil {
-			e.logDKGPart1Failed(dkg, validatorIdx, err)
+			e.logDKGPart1Failed(dkg, err)
 			return false
 		}
 
@@ -231,47 +229,45 @@ func (e *Executor) executeR1(dkg *coordinator.DKG) bool {
 	}
 
 	_, err := e.coordinatorContract.SendRound1(
-		validatorIdx,
+		e.validatorIdx,
 		dkg.Until.Unix(),
 		e.artifacts.r1.pkg,
 		e.artifacts.r1.r2PublicX25519,
 	)
 	if err != nil {
-		e.logSendRound1Package(dkg, validatorIdx, err)
+		e.logSendRound1Package(dkg, err)
 	} else {
-		e.logDKGProcess(dkg, validatorIdx, "R1 package sent")
+		e.logDKGProcess(dkg, "R1 package sent")
 	}
 	return false
 }
 
 func (e *Executor) executeR2(dkg *coordinator.DKG) bool {
-	validatorIdx := e.currentValidatorIdx
-
-	e.logExecuteR2(dkg, validatorIdx)
+	e.logExecuteR2(dkg)
 	if dkg.Round2Completed() {
-		e.logDKGProcess(dkg, validatorIdx, "R2 completed")
+		e.logDKGProcess(dkg, "R2 completed")
 		return true
 	}
 
 	// Check R2 mask
-	if r, cnt := dkg.CheckR2Mask(validatorIdx); r {
-		e.logDKGProcess(dkg, validatorIdx, fmt.Sprintf("R2 packages already stored in DKG. Waiting for other Oracles (ready %d of %d)...", cnt, dkg.MaxSigners))
+	if r, cnt := dkg.CheckR2Mask(e.validatorIdx); r {
+		e.logDKGProcess(dkg, fmt.Sprintf("R2 packages already stored in DKG. Waiting for other Oracles (ready %d of %d)...", cnt, dkg.MaxSigners))
 		return false
 	}
 
-	localIdentifier := helpers.ValidatorIdxToFrost(validatorIdx)
+	localIdentifier := helpers.ValidatorIdxToFrost(e.validatorIdx)
 
 	if e.artifacts.r2 == nil {
 		if e.artifacts.r1 == nil {
-			e.logError(dkg, validatorIdx, "R1 artifacts not found. Waiting for DKG to restart.", nil)
+			e.logError(dkg, "R1 artifacts not found. Waiting for DKG to restart.", nil)
 			return false
 		}
 
-		e.logMessage(dkg, validatorIdx, "Generating R2 artifacts")
+		e.logMessage(dkg, "Generating R2 artifacts")
 		r1Packages, r2PublicKeysX25519, culpritIdx, err := helpers.DeserializeDkgR1(dkg.GetR1Packages())
 		if err != nil {
-			e.logError(dkg, validatorIdx, "Failed to parse R1 packages. Culprit validator found.", err)
-			e.executeClaim(dkg, validatorIdx, culpritIdx)
+			e.logError(dkg, "Failed to parse R1 packages. Culprit validator found.", err)
+			e.executeClaim(dkg, culpritIdx)
 			return false
 		}
 		delete(r1Packages, localIdentifier)
@@ -280,10 +276,10 @@ func (e *Executor) executeR2(dkg *coordinator.DKG) bool {
 		if err != nil {
 			if culpritFrostIdx != nil {
 				culpritIdx := helpers.FrostToValidatorIdx(*culpritFrostIdx)
-				e.logError(dkg, validatorIdx, fmt.Sprintf("R2 failed. Culprit validator found: %d", culpritIdx), err)
-				e.executeClaim(dkg, validatorIdx, culpritIdx)
+				e.logError(dkg, fmt.Sprintf("R2 failed. Culprit validator found: %d", culpritIdx), err)
+				e.executeClaim(dkg, culpritIdx)
 			} else {
-				e.logError(dkg, validatorIdx, "R2 failed", err)
+				e.logError(dkg, "R2 failed", err)
 			}
 			return false
 		}
@@ -291,7 +287,7 @@ func (e *Executor) executeR2(dkg *coordinator.DKG) bool {
 		// Encrypt R2 packages
 		r2EncryptedPackages, err := EncryptR2Packages(r2Packages, r2PublicKeysX25519, e.artifacts.r1.r2PrivateX25519)
 		if err != nil {
-			e.logError(dkg, validatorIdx, "Failed to encrypt R2 packages", err)
+			e.logError(dkg, "Failed to encrypt R2 packages", err)
 			return false
 		}
 
@@ -306,51 +302,49 @@ func (e *Executor) executeR2(dkg *coordinator.DKG) bool {
 	}
 
 	// R2 package is not sent yet, send it to coordinator
-	e.logMessage(dkg, validatorIdx, "Sending R2 package...")
+	e.logMessage(dkg, "Sending R2 package...")
 
 	_, err := e.coordinatorContract.SendRound2(
-		validatorIdx,
+		e.validatorIdx,
 		dkg.Until.Unix(),
 		e.artifacts.r2.packages,
 	)
 
 	if err != nil {
-		e.logSendRound2Package(dkg, validatorIdx, err)
+		e.logSendRound2Package(dkg, err)
 	} else {
-		e.logDKGProcess(dkg, validatorIdx, "R2 packages sent")
+		e.logDKGProcess(dkg, "R2 packages sent")
 	}
 	return false
 }
 
 func (e *Executor) executeR3(dkg *coordinator.DKG) bool {
-	validatorIdx := e.currentValidatorIdx
-
-	e.logExecuteR3(dkg, validatorIdx)
+	e.logExecuteR3(dkg)
 
 	if dkg.Round3Completed() {
-		e.logDKGProcess(dkg, validatorIdx, "R3 completed")
+		e.logDKGProcess(dkg, "R3 completed")
 		return true
 	}
 
 	// Check R3 mask
-	if r, cnt := dkg.CheckR3Mask(validatorIdx); r {
-		e.logDKGProcess(dkg, validatorIdx, fmt.Sprintf("R3 packages already stored in DKG. Waiting for other Oracles (ready %d of %d)...", cnt, dkg.MaxSigners))
+	if r, cnt := dkg.CheckR3Mask(e.validatorIdx); r {
+		e.logDKGProcess(dkg, fmt.Sprintf("R3 packages already stored in DKG. Waiting for other Oracles (ready %d of %d)...", cnt, dkg.MaxSigners))
 		return false
 	}
 
-	localIdentifier := helpers.ValidatorIdxToFrost(validatorIdx)
+	localIdentifier := helpers.ValidatorIdxToFrost(e.validatorIdx)
 
 	if e.artifacts.r3 == nil {
 		if e.artifacts.r2 == nil {
-			e.logError(dkg, validatorIdx, "R2 artifacts not found. Waiting for DKG to restart", nil)
+			e.logError(dkg, "R2 artifacts not found. Waiting for DKG to restart", nil)
 			return false
 		}
 
 		// Get R1 packages
 		r1Packages, r2PublicKeysX25519, culpritIdx, err := helpers.DeserializeDkgR1(dkg.GetR1Packages())
 		if err != nil {
-			e.logError(dkg, validatorIdx, "Failed to parse R1 packages. Culprit validator found.", err)
-			e.executeClaim(dkg, validatorIdx, culpritIdx)
+			e.logError(dkg, "Failed to parse R1 packages. Culprit validator found.", err)
+			e.executeClaim(dkg, culpritIdx)
 			return false
 		}
 		delete(r1Packages, localIdentifier)
@@ -363,50 +357,50 @@ func (e *Executor) executeR3(dkg *coordinator.DKG) bool {
 		)
 
 		if isCulpritFound {
-			e.logError(dkg, validatorIdx, "R3 failed. Failed to parse R2 packages. Culprit validator found.", err)
-			e.executeClaim(dkg, validatorIdx, culpritIdx)
+			e.logError(dkg, "R3 failed. Failed to parse R2 packages. Culprit validator found.", err)
+			e.executeClaim(dkg, culpritIdx)
 			return false
 		}
 
 		if err != nil {
-			e.logError(dkg, validatorIdx, "R3 failed. An error occurred while trying to get R2 packages", err)
+			e.logError(dkg, "R3 failed. An error occurred while trying to get R2 packages", err)
 			return false
 		}
 
 		// Decrypt R2 packages
 		r2PackagesDecrypted, isCulpritFound, culpritIdx, err := DecryptR2Packages(
 			r2Packages,
-			validatorIdx,
+			e.validatorIdx,
 			r2PublicKeysX25519,
 			e.artifacts.r1.r2PrivateX25519,
 		)
 
 		if isCulpritFound {
-			e.logError(dkg, validatorIdx, "R3 failed. Failed to decrypt R2 packages. Culprit validator found.", err)
-			e.executeClaim(dkg, validatorIdx, culpritIdx)
+			e.logError(dkg, "R3 failed. Failed to decrypt R2 packages. Culprit validator found.", err)
+			e.executeClaim(dkg, culpritIdx)
 			return false
 		}
 
 		if err != nil {
-			e.logError(dkg, validatorIdx, "R3 failed. An error occurred while trying to decrypt R2 packages", err)
+			e.logError(dkg, "R3 failed. An error occurred while trying to decrypt R2 packages", err)
 			return false
 		}
 
 		keyPackage, publicKeyPackage, culpritFrostIdx, err := frost.DkgPart3(e.artifacts.r2.secret.ptr, r1Packages, r2PackagesDecrypted)
 		if err != nil {
 			if culpritFrostIdx != nil {
-				e.logError(dkg, validatorIdx, "Part3 failed. Culprit validator found.", err)
+				e.logError(dkg, "Part3 failed. Culprit validator found.", err)
 				culpritIdx := helpers.FrostToValidatorIdx(*culpritFrostIdx)
-				e.executeClaim(dkg, validatorIdx, culpritIdx)
+				e.executeClaim(dkg, culpritIdx)
 			} else {
-				e.logDKGProcess(dkg, validatorIdx, fmt.Sprintf("R3 failed: %v", err))
+				e.logDKGProcess(dkg, fmt.Sprintf("R3 failed: %v", err))
 			}
 			return false
 		}
 
 		publicKey, err := frost.ExtractPublicKeyFromPackage(publicKeyPackage)
 		if err != nil {
-			e.logError(dkg, validatorIdx, "failed to extract public key from package", err)
+			e.logError(dkg, "failed to extract public key from package", err)
 			return false
 		}
 		e.artifacts.r3 = &Round3Result{
@@ -416,51 +410,51 @@ func (e *Executor) executeR3(dkg *coordinator.DKG) bool {
 		}
 		err = e.keystore.StoreSecret(publicKey[1:], keyPackage)
 		if err != nil {
-			e.logError(dkg, validatorIdx, "failed to store secret", err)
+			e.logError(dkg, "failed to store secret", err)
 			return false
 		}
 	}
 
 	if _, err := e.coordinatorContract.SendPubkeyPackage(
-		validatorIdx,
+		e.validatorIdx,
 		dkg.Until.Unix(),
 		e.sessionPublicKey,
 		e.artifacts.r3.publicKeyPackage,
 	); err != nil {
 		exitCode, _ := helpers.ExtractExitCode(err.Error())
 		if exitCode == helpers.TvmExitCodeDifferentPubkeyPackages {
-			e.claimCulpritByR3Mask(dkg, validatorIdx)
+			e.claimCulpritByR3Mask(dkg)
 		}
-		e.logSendPubkeyPackageFailed(dkg, validatorIdx, err)
+		e.logSendPubkeyPackageFailed(dkg, err)
 	}
 	return false
 }
 
-func (e *Executor) executeClaim(dkg *coordinator.DKG, validatorIdx uint16, culpritIdx uint16) {
-	e.logExecuteClaim(dkg, validatorIdx)
+func (e *Executor) executeClaim(dkg *coordinator.DKG, culpritIdx uint16) {
+	e.logExecuteClaim(dkg)
 
-	if dkg.ClaimCompleted(validatorIdx) {
-		e.logDKGProcess(dkg, validatorIdx, "claim completed")
+	if dkg.ClaimCompleted(e.validatorIdx) {
+		e.logDKGProcess(dkg, "claim completed")
 		return
 	}
 
-	e.logMessage(dkg, validatorIdx, fmt.Sprintf("sending claim packages. Culprit validator idx: %d", culpritIdx))
+	e.logMessage(dkg, fmt.Sprintf("sending claim packages. Culprit validator idx: %d", culpritIdx))
 	_, err := e.coordinatorContract.SendDKGClaim(
-		validatorIdx,
+		e.validatorIdx,
 		dkg.Until.Unix(),
 		culpritIdx,
 	)
 	if err != nil {
-		e.logSendClaimFailed(dkg, validatorIdx, culpritIdx, err)
+		e.logSendClaimFailed(dkg, culpritIdx, err)
 	} else {
-		e.logDKGProcess(dkg, validatorIdx, "claim packages sent")
+		e.logDKGProcess(dkg, "claim packages sent")
 	}
 }
 
-func (e *Executor) claimCulpritByR3Mask(dkg *coordinator.DKG, validatorIdx uint16) {
+func (e *Executor) claimCulpritByR3Mask(dkg *coordinator.DKG) {
 	for i := uint16(0); i < dkg.MaxSigners; i++ {
 		if dkg.R3.Mask.Bit(int(i)) > 0 {
-			e.executeClaim(dkg, validatorIdx, i)
+			e.executeClaim(dkg, i)
 			return
 		}
 	}
