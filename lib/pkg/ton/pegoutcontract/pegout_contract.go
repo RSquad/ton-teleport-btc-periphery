@@ -93,7 +93,7 @@ func (c *PegoutContract) GetTxParts(block *ton.BlockIDExt) (*TxParts, error) {
 		Inputs:      inputs,
 		Outputs:     outputs,
 		Signatures:  signatures,
-		InternalKey: internalKey.Bytes(),
+		InternalKey: internalKey.FillBytes(make([]byte, 32)),
 	}, nil
 }
 

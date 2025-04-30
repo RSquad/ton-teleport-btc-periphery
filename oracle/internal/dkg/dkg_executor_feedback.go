@@ -20,24 +20,36 @@ func errorEvent() *zerolog.Event {
 	return logger.Log.Error().Str("component", component)
 }
 
-func infoEventWithDkg(dkg *coordinator.DKG) *zerolog.Event {
+func infoEventWithDkg(dkg *coordinator.DKG, validatorIdx uint16) *zerolog.Event {
+	validatorIdxStr := "unknown"
+	if validatorIdx < 255 {
+		validatorIdxStr = fmt.Sprintf("%d", validatorIdx)
+	}
+
 	return infoEvent().
+		Str("validator_idx", validatorIdxStr).
 		Str("dkg_state", dkg.State.String()).
 		Str("dkg_until", dkg.Until.Format(time.RFC3339))
 }
 
-func errorEventWithDkg(dkg *coordinator.DKG) *zerolog.Event {
+func errorEventWithDkg(dkg *coordinator.DKG, validatorIdx uint16) *zerolog.Event {
+	validatorIdxStr := "unknown"
+	if validatorIdx < 255 {
+		validatorIdxStr = fmt.Sprintf("%d", validatorIdx)
+	}
+
 	return errorEvent().
+		Str("validator_idx", validatorIdxStr).
 		Str("state", dkg.State.String()).
 		Str("until", dkg.Until.Format(time.RFC3339))
 }
 
 func (e *Executor) logMessage(dkg *coordinator.DKG, msg string) {
-	infoEventWithDkg(dkg).Msg(msg)
+	infoEventWithDkg(dkg, e.validatorIdx).Msg(msg)
 }
 
 func (e *Executor) logError(dkg *coordinator.DKG, msg string, err error) {
-	errorEventWithDkg(dkg).Err(err).Msg(msg)
+	errorEventWithDkg(dkg, e.validatorIdx).Err(err).Msg(msg)
 }
 
 func (e *Executor) logStartExecuting(dkg *coordinator.DKG) {
@@ -82,24 +94,24 @@ func (e *Executor) logExecuteR3(dkg *coordinator.DKG) {
 
 func (e *Executor) logSendRound1Package(dkg *coordinator.DKG, err error) {
 	msg := helpers.HandleTvmError(err)
-	errorEventWithDkg(dkg).Err(err).Msg("failed to send round1 package: " + msg)
+	errorEventWithDkg(dkg, e.validatorIdx).Err(err).Msg("failed to send round1 package: " + msg)
 }
 
 func (e *Executor) logSendRound2Package(dkg *coordinator.DKG, err error) {
 	msg := helpers.HandleTvmError(err)
-	errorEventWithDkg(dkg).
+	errorEventWithDkg(dkg, e.validatorIdx).
 		Msg("R2 packages sent with errors: " + msg)
 }
 
 func (e *Executor) logSendClaimFailed(dkg *coordinator.DKG, culpritIdx uint16, err error) {
 	msg := helpers.HandleTvmError(err)
 
-	errorEventWithDkg(dkg).
+	errorEventWithDkg(dkg, e.validatorIdx).
 		Str("culprit validator idx: ", fmt.Sprintf("%d", culpritIdx)).
 		Msg("failed to send claim package: " + msg)
 }
 
 func (e *Executor) logSendPubkeyPackageFailed(dkg *coordinator.DKG, err error) {
 	msg := helpers.HandleTvmError(err)
-	errorEventWithDkg(dkg).Msg("failed to send pubkey package: " + msg)
+	errorEventWithDkg(dkg, e.validatorIdx).Msg("failed to send pubkey package: " + msg)
 }

@@ -29,8 +29,19 @@ func startAndWaitForStop() error {
 	}
 
 	// Setup logger
-	if err := logger.Init(cfg.LogFile); err != nil {
-		return err
+	{
+		logMaxSize := helpers.ParseIntWithDefaultVal(cfg.LogMaxSize, 100, "Log max size")
+		logMaxBackups := helpers.ParseIntWithDefaultVal(cfg.LogMaxBackups, 50, "Max backups file count")
+		logMaxBackupAge := helpers.ParseIntWithDefaultVal(cfg.LogMaxBackupAge, 365, "Max backup file age")
+
+		logLevel, err := logger.ParseLevel(cfg.LogLevel, logger.InfoLevel)
+		if err != nil {
+			return err
+		}
+
+		if err := logger.Init(cfg.LogFile, logLevel, int(logMaxSize), int(logMaxBackups), int(logMaxBackupAge)); err != nil {
+			return err
+		}
 	}
 
 	logger.Log.Info().
