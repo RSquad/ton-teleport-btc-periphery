@@ -11,7 +11,7 @@ on:
 
 jobs:
   develop:
-    if: github.ref == 'refs/heads/develop'
+    if: github.ref == 'refs/heads/oracle_automation'
     uses: ./.github/workflows/build-and-deploy.yml
     with:
       APPS: '["indexer", "relayer", "oracle"]'
