@@ -58,7 +58,7 @@ func main() {
 }
 
 func initialize() (*App, error) {
-	if err := logger.Init(""); err != nil {
+	if err := logger.Init("", logger.DebugLevel, 0, 0, 0); err != nil {
 		return nil, fmt.Errorf("failed to initialize logger: %w", err)
 	}
 
