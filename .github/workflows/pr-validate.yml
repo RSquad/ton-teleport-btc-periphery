@@ -1,0 +1,45 @@
+name: Validate PR
+on:
+  pull_request:
+    branches: [ master, develop, sandbox ]
+    types: [opened, synchronize, reopened, ready_for_review]
+  pull_request_review:
+    types: [submitted]
+permissions:
+  contents: read
+  pull-requests: write   # only needed by the approval-gate job
+jobs:
+  build-only:
+    if: github.event_name == 'pull_request'
+    runs-on: self-hosted
+    strategy:
+      matrix:
+        app: [ indexer, relayer, oracle ]
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Build ${{ matrix.app }}
+        run: |
+          docker build --platform linux/amd64 \
+                       -f ${{ matrix.app }}/Dockerfile \
+                       -t pr-check/${{ matrix.app }}:${{ github.sha }} .
+  approval-gate:
+    needs: build-only
+    runs-on: self-hosted
+    if: github.event_name == 'pull_request_review' || github.event_name == 'pull_request'
+    permissions:
+      pull-requests: read
+    steps:
+      - name: Ensure PR has at least one approval
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const {owner, repo} = context.repo
+            const number = context.payload.pull_request.number
+            const {data: reviews} = await github.rest.pulls.listReviews({owner, repo, pull_number: number})
+            const approved = reviews.filter(r => r.state === 'APPROVED').length
+            if (!approved) {
+              core.setFailed('PR has no approving reviews yet')
+            } else {
+              core.notice(`✅  PR already has ${approved} approval(s)`)
+            }
