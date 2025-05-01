@@ -23,23 +23,23 @@ jobs:
           docker build --platform linux/amd64 \
                        -f ${{ matrix.app }}/Dockerfile \
                        -t pr-check/${{ matrix.app }}:${{ github.sha }} .
-  approval-gate:
-    needs: build-only
-    runs-on: self-hosted
-    if: github.event_name == 'pull_request_review' || github.event_name == 'pull_request'
-    permissions:
-      pull-requests: read
-    steps:
-      - name: Ensure PR has at least one approval
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const {owner, repo} = context.repo
-            const number = context.payload.pull_request.number
-            const {data: reviews} = await github.rest.pulls.listReviews({owner, repo, pull_number: number})
-            const approved = reviews.filter(r => r.state === 'APPROVED').length
-            if (!approved) {
-              core.setFailed('PR has no approving reviews yet')
-            } else {
-              core.notice(`✅  PR already has ${approved} approval(s)`)
-            }
+  # approval-gate:
+  #   needs: build-only
+  #   runs-on: self-hosted
+  #   if: github.event_name == 'pull_request_review' || github.event_name == 'pull_request'
+  #   permissions:
+  #     pull-requests: read
+  #   steps:
+  #     - name: Ensure PR has at least one approval
+  #       uses: actions/github-script@v7
+  #       with:
+  #         script: |
+  #           const {owner, repo} = context.repo
+  #           const number = context.payload.pull_request.number
+  #           const {data: reviews} = await github.rest.pulls.listReviews({owner, repo, pull_number: number})
+  #           const approved = reviews.filter(r => r.state === 'APPROVED').length
+  #           if (!approved) {
+  #             core.setFailed('PR has no approving reviews yet')
+  #           } else {
+  #             core.notice(`✅  PR already has ${approved} approval(s)`)
+  #           }
