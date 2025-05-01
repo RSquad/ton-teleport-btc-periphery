@@ -1,4 +1,4 @@
-name: Build PR
+name: PR Build check
 
 on:
   pull_request:
@@ -7,19 +7,23 @@ on:
 
 permissions:
   contents: read
-  checks: write
 
 jobs:
-  build-check:
+  build:
+    name: build check for ${{ matrix.app }}
     runs-on: self-hosted
+    strategy:
+      fail-fast: false
+      matrix:
+        app: [indexer, relayer, oracle]
+
     steps:
       - uses: actions/checkout@v3
-      - name: Build all Docker images
+
+      - name: Build ${{ matrix.app }}
         run: |
-          for app in indexer relayer oracle; do
-            echo "⏳ Building $app …"
-            docker build --platform linux/amd64 \
-                         -f "${app}/Dockerfile" \
-                         -t "pr-check/${app}:${GITHUB_SHA}" .
-          done
-          echo "✅  All images built successfully"
+          echo "⏳ Building ${{ matrix.app }} …"
+          docker build --platform linux/amd64 \
+                       -f "${{ matrix.app }}/Dockerfile" \
+                       -t "pr-check/${{ matrix.app }}:${GITHUB_SHA}" .
+          echo "✅  ${{ matrix.app }} built successfully"
