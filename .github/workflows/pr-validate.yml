@@ -24,7 +24,6 @@ jobs:
                        -f "${{ matrix.app }}/Dockerfile" \
                        -t "pr-check/${{ matrix.app }}:${GITHUB_SHA}" .
           echo "✅  ${{ matrix.app }} built successfully"
-
   complete:
     name: PR check complete
     needs: build
