@@ -1,7 +1,7 @@
 name: Validate PR
 on:
   pull_request:
-    branches: [ master, develop, sandbox ]
+    branches: [ master, develop, sandbox, pr-validate ]
     types: [opened, synchronize, reopened, ready_for_review]
   pull_request_review:
     types: [submitted]
