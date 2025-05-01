@@ -14,6 +14,11 @@ type Cfg struct {
 	FetchPeriod                string `env:"ORACLE_DKG_FETCH_PERIOD"`
 	SendStartDKGPeriod         string `env:"ORACLE_SEND_START_DKG_PERIOD"`
 	ExecuteSignPeriod          string `env:"ORACLE_EXECUTE_SIGN_PERIOD"`
-	LogFile                    string `env:"LOG_FILE"`
 	ApiCallTimeout             string `env:"API_CALL_TIMEOUT"`
+	LogLevel                   string `env:"LOG_LEVEL"`
+	LogFile                    string `env:"LOG_FILE"`
+	LogMaxSize                 string `env:"LOG_FILE_MAX_SIZE"`
+	LogMaxBackups              string `env:"LOG_FILE_MAX_BACKUPS"`
+	LogMaxBackupAge            string `env:"LOG_FILE_MAX_BACKUP_AGE"`
+	LogDKG                     string `env:"LOG_DKG"`
 }

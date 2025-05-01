@@ -201,6 +201,7 @@ func (s *SignService) execute(ctx context.Context, dkg *coordinator.DKG) {
 	if (unsignedPegout.ExpiredAt != time.Unix(0, 0)) && (unsignedPegout.ExpiredAt.Before(time.Now())) {
 		s.executeResetPegoutSigning(unsignedPegout.ID, validatorIdx)
 		s.cachePegoutClear()
+		return
 	}
 
 	// Try caching the pegout
