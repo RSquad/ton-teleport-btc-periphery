@@ -296,8 +296,8 @@ searchLoop:
 
 	// 13. Save Pegin
 	// We need to ensure the Pegin record stores the keys that were actually used.
-	finalInternalKeyHex := hex.EncodeToString(foundInternalKey.SerializeCompressed())
-	finalRecoveryKeyHex := hex.EncodeToString(foundRecoveryKey.SerializeCompressed())
+	finalInternalKeyHex := hex.EncodeToString(foundInternalKey.SerializeCompressed()[1:])
+	finalRecoveryKeyHex := hex.EncodeToString(foundRecoveryKey.SerializeCompressed()[1:])
 
 	return repo.Pegin.Create().
 		SetBitcoinTxID(input.BitcoinTxID).   // Use original input TxID
