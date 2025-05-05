@@ -169,7 +169,7 @@
                 "dynamicHtmlGraphics": true,
                 "dynamicProps": true,
                 "html": "<button id=\"first_btn\">First</button>\n<button id=\"prev_btn\">Previous</button>\n<button id=\"current_btn\"></button>\n<button id=\"next_btn\">Next</button>\n<button id=\"last_btn\">Last</button>\n",
-                "onInit": "const { total_pages, page_size, page_id } = customProperties;\nconst firstPageBtn = htmlNode.getElementById('first_btn');\nconst prevPageBtn = htmlNode.getElementById('prev_btn');\nconst currentPageBtn = htmlNode.getElementById('current_btn');\nconst nextPageBtn = htmlNode.getElementById('next_btn');\nconst lastPageBtn = htmlNode.getElementById('last_btn');\n\nfunction updateGrafanaVariable(variableName, value) {\n  var maxValue = getGrafanaVariableValue(total_pages);\n  if (value < 0) {\n    value = 0;\n  } else if (value >= maxValue) {\n    value = maxValue - 1;\n  }\n  getLocationSrv().update({\n    query: {\n      [`var-${variableName}`]: value,\n    },\n    partial: true,\n    replace: true,\n  });\n}\n\nfunction getGrafanaVariableValue(variable) {\n  return getTemplateSrv().replace(variable);\n}\n\nfunction updateCurrentButtonText() {\n  currentPageBtn.textContent = `${getGrafanaVariableValue(page_id)}`;\n}\n\nprevPageBtn.onclick = function () {\n  var val = `${getGrafanaVariableValue(page_id)}`;\n  updateGrafanaVariable(\"page_id\", Number(val) - 1);\n};\n\nnextPageBtn.onclick = function () {\n  var val = `${getGrafanaVariableValue(page_id)}`;\n  updateGrafanaVariable(\"page_id\", Number(val) + 1);\n};\n\nfirstPageBtn.onclick = function () {\n  updateGrafanaVariable(\"page_id\", 0);\n};\n\nlastPageBtn.onclick = function () {\n  var val = `${getGrafanaVariableValue(total_pages)}`;\n  updateGrafanaVariable(\"page_id\", Number(val) - 1);\n};\n\nhtmlNode.addEventListener('panelupdate', () => {\n  updateCurrentButtonText();\n});\n",
+                "onInit": "const { total_pages, page_size, page_id } = customProperties;\nconst firstPageBtn = htmlNode.getElementById('first_btn');\nconst prevPageBtn = htmlNode.getElementById('prev_btn');\nconst currentPageBtn = htmlNode.getElementById('current_btn');\nconst nextPageBtn = htmlNode.getElementById('next_btn');\nconst lastPageBtn = htmlNode.getElementById('last_btn');\n\nfunction updateGrafanaVariable(variableName, value) {\n  var maxValue = getGrafanaVariableValue(total_pages);\n  if (value < 0) {\n    value = 0;\n  } else if (value >= maxValue) {\n    value = maxValue - 1;\n  }\n  getLocationSrv().update({\n    query: {\n      [`var-${variableName}`]: value,\n    },\n    partial: true,\n    replace: true,\n  });\n}\n\nfunction getGrafanaVariableValue(variable) {\n  return getTemplateSrv().replace(variable);\n}\n\nfunction updateCurrentButtonText() {\n  var val = getGrafanaVariableValue(page_id)\n  currentPageBtn.textContent = `${Number(val) + 1}`;\n}\n\nprevPageBtn.onclick = function () {\n  var val = `${getGrafanaVariableValue(page_id)}`;\n  updateGrafanaVariable(\"page_id\", Number(val) - 1);\n};\n\nnextPageBtn.onclick = function () {\n  var val = `${getGrafanaVariableValue(page_id)}`;\n  updateGrafanaVariable(\"page_id\", Number(val) + 1);\n};\n\nfirstPageBtn.onclick = function () {\n  updateGrafanaVariable(\"page_id\", 0);\n};\n\nlastPageBtn.onclick = function () {\n  var val = `${getGrafanaVariableValue(total_pages)}`;\n  updateGrafanaVariable(\"page_id\", Number(val) - 1);\n};\n\nhtmlNode.addEventListener('panelupdate', () => {\n  updateCurrentButtonText();\n});\n",
                 "onInitOnResize": true,
                 "onRender": "",
                 "overflow": "visible",
@@ -246,6 +246,7 @@
                     "text": "50",
                     "value": "50"
                 },
+                "hide": 2,
                 "label": "Page size",
                 "name": "page_size",
                 "options": [
@@ -285,6 +286,7 @@
                     "value": "1"
                 },
                 "description": "",
+                "hide": 2,
                 "label": "Page",
                 "name": "page_id",
                 "options": [
