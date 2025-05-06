@@ -117,8 +117,9 @@ func (s *SignService) logSignatureSent(pegoutID uint64) {
 	infoEventWithPegoutID(pegoutID).Msg("Signature sent")
 }
 
-func (s *SignService) logSignatureSendError(err error) {
-	errorEvent().Err(err).Msg("failed to send signatures")
+func (s *SignService) logSignatureSendError(pegoutID uint64, err error) {
+	msg := helpers.HandleTvmError(err)
+	errorEventWithPegoutID(pegoutID).Err(err).Msg("failed to send signatures: " + msg)
 }
 
 func (s *SignService) logAggregateSignSharesError(err error) {
@@ -127,6 +128,11 @@ func (s *SignService) logAggregateSignSharesError(err error) {
 
 func (s *SignService) logSendCommitments(pegoutID uint64, commitments []byte) {
 	infoEventWithPegoutID(pegoutID).Msgf("send commitments: %x", commitments)
+}
+
+func (s *SignService) logSendCommitmentsError(pegoutID uint64, err error) {
+	msg := helpers.HandleTvmError(err)
+	errorEventWithPegoutID(pegoutID).Err(err).Msg("failed to send commitments: " + msg)
 }
 
 func (s *SignService) logSendSigningShare(pegoutID uint64, signShares [][]byte) {

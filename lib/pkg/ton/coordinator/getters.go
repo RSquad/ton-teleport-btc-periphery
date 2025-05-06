@@ -77,7 +77,6 @@ func (c *CoordinatorContract) GetDkg(block *tonutils.BlockIDExt) (*DKG, error) {
 			c.tonApiCallTimeout,
 			"CurrentMasterchainInfo",
 		)
-
 		if err != nil {
 			return nil, err
 		}
@@ -91,7 +90,6 @@ func (c *CoordinatorContract) GetDkg(block *tonutils.BlockIDExt) (*DKG, error) {
 		c.tonApiCallTimeout,
 		"get_dkg",
 	)
-
 	if err != nil {
 		return nil, err
 	}
@@ -122,7 +120,6 @@ func (c *CoordinatorContract) GetPrevDKG() (*DKG, error) {
 		c.tonApiCallTimeout,
 		"CurrentMasterchainInfo",
 	)
-
 	if err != nil {
 		return nil, err
 	}
@@ -135,7 +132,6 @@ func (c *CoordinatorContract) GetPrevDKG() (*DKG, error) {
 		c.tonApiCallTimeout,
 		"get_prev_dkg",
 	)
-
 	if err != nil {
 		return nil, err
 	}
@@ -161,7 +157,6 @@ func (c *CoordinatorContract) GetUnsignedPegouts() ([]PegoutRecord, error) {
 		c.tonApiCallTimeout,
 		"CurrentMasterchainInfo",
 	)
-
 	if err != nil {
 		return nil, err
 	}
@@ -174,7 +169,6 @@ func (c *CoordinatorContract) GetUnsignedPegouts() ([]PegoutRecord, error) {
 		c.tonApiCallTimeout,
 		"get_pegout_records",
 	)
-
 	if err != nil {
 		return nil, err
 	}
@@ -219,7 +213,6 @@ func (c *CoordinatorContract) GetUnsignedPegouts() ([]PegoutRecord, error) {
 			parseddict.ParseKeyUI16,
 			readBuffer,
 		)
-
 		if err != nil {
 			return nil, err
 		}
@@ -233,7 +226,6 @@ func (c *CoordinatorContract) GetUnsignedPegouts() ([]PegoutRecord, error) {
 			parseddict.ParseKeyUI16,
 			loadSharesMap,
 		)
-
 		if err != nil {
 			return nil, err
 		}
@@ -257,7 +249,6 @@ func (c *CoordinatorContract) GetUnsignedPegouts() ([]PegoutRecord, error) {
 			parseddict.ParseKeyUI16,
 			loadUI16Map,
 		)
-
 		if err != nil {
 			return nil, err
 		}
@@ -266,11 +257,13 @@ func (c *CoordinatorContract) GetUnsignedPegouts() ([]PegoutRecord, error) {
 
 		InternalKey := refSlice.MustLoadSlice(256)
 		PegoutAddress := refSlice.MustLoadAddr()
+		IsAutopegout := refSlice.MustLoadInt(1) == -1
 
 		pegouts = append(pegouts, PegoutRecord{
 			ID,
 			PegoutAddress,
 			InternalKey,
+			IsAutopegout,
 			Commitments,
 			CommitmentsMask,
 			SigningShares,
@@ -400,7 +393,6 @@ func loadSharesMap(value *cell.Slice) (map[uint16][]byte, error) {
 			return utils.WriteSlicesToBuffer(s), nil
 		},
 	)
-
 	if err != nil {
 		return nil, err
 	}
