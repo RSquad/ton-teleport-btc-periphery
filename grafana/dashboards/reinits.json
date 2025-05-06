@@ -37,6 +37,7 @@
                             "type": "auto",
                             "wrapText": false
                         },
+                        "filterable": false,
                         "inspect": false
                     },
                     "mappings": [],
@@ -54,7 +55,44 @@
                         ]
                     }
                 },
-                "overrides": []
+                "overrides": [
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "pegout_addr"
+                        },
+                        "properties": [
+                            {
+                                "id": "links",
+                                "value": [
+                                    {
+                                        "targetBlank": true,
+                                        "title": "",
+                                        "url": "https://testnet.tonviewer.com/${__value.text}"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "bitcoin_tx_id"
+                        },
+                        "properties": [
+                            {
+                                "id": "links",
+                                "value": [
+                                    {
+                                        "targetBlank": true,
+                                        "title": "",
+                                        "url": "https://mempool.space/signet/tx/${__value.text}"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
             },
             "gridPos": {
                 "h": 12,
@@ -73,7 +111,13 @@
                     ],
                     "show": false
                 },
-                "showHeader": true
+                "showHeader": true,
+                "sortBy": [
+                    {
+                        "desc": true,
+                        "displayName": "pegout_addr"
+                    }
+                ]
             },
             "pluginVersion": "11.5.2",
             "targets": [
