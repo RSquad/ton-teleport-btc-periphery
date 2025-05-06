@@ -106,6 +106,10 @@
                                         "url": "https://testnet.tonviewer.com/${__value.text}"
                                     }
                                 ]
+                            },
+                            {
+                                "id": "displayName",
+                                "value": "Receiver Address"
                             }
                         ]
                     },
@@ -124,6 +128,10 @@
                                         "url": "https://testnet.tonviewer.com/transaction/${__value.text}"
                                     }
                                 ]
+                            },
+                            {
+                                "id": "displayName",
+                                "value": "Ton Tx"
                             }
                         ]
                     },
@@ -142,6 +150,46 @@
                                         "url": "https://mempool.space/ru/signet/tx/${__value.text}"
                                     }
                                 ]
+                            },
+                            {
+                                "id": "displayName",
+                                "value": "Bitcoin Tx Id"
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "created_at"
+                        },
+                        "properties": [
+                            {
+                                "id": "displayName",
+                                "value": "Created At"
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "status"
+                        },
+                        "properties": [
+                            {
+                                "id": "displayName",
+                                "value": "Status"
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "amount"
+                        },
+                        "properties": [
+                            {
+                                "id": "displayName",
+                                "value": "Amount"
                             }
                         ]
                     }
@@ -165,7 +213,12 @@
                     "show": false
                 },
                 "showHeader": true,
-                "sortBy": []
+                "sortBy": [
+                    {
+                        "desc": true,
+                        "displayName": "created_at"
+                    }
+                ]
             },
             "pluginVersion": "11.5.2",
             "targets": [
@@ -418,6 +471,6 @@
     "timezone": "browser",
     "title": "Mints",
     "uid": "bejh9uzw12ps0a",
-    "version": 1,
+    "version": 3,
     "weekStart": ""
 }
