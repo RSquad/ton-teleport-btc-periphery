@@ -69,6 +69,10 @@
                                         "url": "https://testnet.tonviewer.com/${__value.text}"
                                     }
                                 ]
+                            },
+                            {
+                                "id": "displayName",
+                                "value": "Pegout Address"
                             }
                         ]
                     },
@@ -87,6 +91,10 @@
                                         "url": "https://testnet.tonviewer.com/${__value.text}"
                                     }
                                 ]
+                            },
+                            {
+                                "id": "displayName",
+                                "value": "Sender Address"
                             }
                         ]
                     },
@@ -105,6 +113,10 @@
                                         "url": "https://mempool.space/signet/tx/${__value.text}"
                                     }
                                 ]
+                            },
+                            {
+                                "id": "displayName",
+                                "value": "Bitcoin Tx ID"
                             }
                         ]
                     },
@@ -123,6 +135,46 @@
                                         "url": "https://testnet.tonviewer.com/transaction/${__value.text}"
                                     }
                                 ]
+                            },
+                            {
+                                "id": "displayName",
+                                "value": "TON Tx"
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "created_at"
+                        },
+                        "properties": [
+                            {
+                                "id": "displayName",
+                                "value": "Created At"
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "pegout_status"
+                        },
+                        "properties": [
+                            {
+                                "id": "displayName",
+                                "value": "Pegout Status"
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "amount"
+                        },
+                        "properties": [
+                            {
+                                "id": "displayName",
+                                "value": "Amount"
                             }
                         ]
                     }
@@ -398,6 +450,6 @@
     "timezone": "browser",
     "title": "Burns",
     "uid": "aejhaitesp340a",
-    "version": 1,
+    "version": 2,
     "weekStart": ""
 }
