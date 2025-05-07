@@ -25,6 +25,7 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/pegoutmanager"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/bitcoinclientcontract"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/teleportcontract"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
@@ -102,6 +103,14 @@ func initialize() (*App, error) {
 		30,
 	)
 
+	bitcoinClientContractAddr := address.MustParseAddr(indexerConfig.BitcoinClientContractAddr)
+	bitcoinclientcontract := bitcoinclientcontract.NewBitcoinClientContract(
+		bitcoinClientContractAddr,
+		tonClient,
+		nil,
+		context.Background(),
+	)
+
 	repo, err := ent.Open(dialect.Postgres, indexerConfig.DatabaseURL)
 	if err != nil {
 		log.Fatalf("failed to create repo: %v", err)
@@ -141,7 +150,12 @@ func initialize() (*App, error) {
 		coordinatorContract,
 	)
 
-	metrics := metrics.New(tonClient, indexerConfig)
+	metrics := metrics.New(
+		tonClient,
+		bitcoinClient,
+		bitcoinclientcontract,
+		indexerConfig,
+	)
 
 	logger.Log.Info().
 		Str("component", "main").
