@@ -23,7 +23,7 @@ on:
 jobs:
   build:
     name: Build and Push Images
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     environment: ${{ inputs.STAGE }}
     strategy:
       matrix:
@@ -93,7 +93,7 @@ jobs:
   deploy:
     name: Deploy via Helm
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     environment: ${{ inputs.STAGE }}
     env:
       STAGE: ${{ inputs.STAGE }}
