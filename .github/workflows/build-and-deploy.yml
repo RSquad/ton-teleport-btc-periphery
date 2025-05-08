@@ -147,6 +147,11 @@ jobs:
             if kubectl get secret "$SECRET_NAME" -n "${APP_NAMESPACE}" &>/dev/null; then
               SECRET_PARAM="--set secretName=${SECRET_NAME}"
             fi
+            BASE_VALUES=""
+            FILE="${app}/${app}-base.yml"
+            if [ -f "$FILE" ]; then
+              BASE_VALUES="-f $FILE"
+            fi
             ADDITIONAL_VALUES=""
             FILE="${app}/${app}-${STAGE}.yml"
             if [ -f "$FILE" ]; then
@@ -159,8 +164,9 @@ jobs:
               --set app.name="${app}" \
               --set configMapName="envs-config" \
               $SECRET_PARAM \
-              --atomic --timeout 5m \
+              --atomic --timeout 10m \
               --history-max 2 \
+              $BASE_VALUES \
               $ADDITIONAL_VALUES &
             pids[$app]=$!
           done
