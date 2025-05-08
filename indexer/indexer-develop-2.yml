@@ -1,5 +1,5 @@
 ingress:
   hosts:
-    - host: ton-teleport.dev.rsquad.solutions
+    - host: ton-teleport.dev2.rsquad.solutions
       paths:
         - /indexer
