@@ -19,6 +19,16 @@ jobs:
     secrets:
       KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
 
+  develop-2:
+    if: github.ref == 'refs/heads/develop'
+    uses: ./.github/workflows/build-and-deploy.yml
+    with:
+      APPS: '["indexer", "relayer"]'
+      STAGE: develop-2
+      APP_NAMESPACE: ton-teleport-dev-2
+    secrets:
+      KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
+
   sandbox:
     if: github.ref == 'refs/heads/sandbox'
     uses: ./.github/workflows/build-and-deploy.yml
