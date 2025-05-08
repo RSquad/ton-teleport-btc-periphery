@@ -13,10 +13,12 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 )
 
-const TvmExitCodeDifferentPubkeyPackages = 152
-const FrostDkgR2PackageSize = 37 /*FROST R2 package to single validator*/
-const EncryptedFrostDkgR2PackageSize = 24 /*nonce for encryption*/ + 16 /*encryption header*/ + FrostDkgR2PackageSize
-const SizeOfSingleDkgR2Package = 2 /*ToValidatorId*/ + EncryptedFrostDkgR2PackageSize
+const (
+	TvmExitCodeDifferentPubkeyPackages = 152
+	FrostDkgR2PackageSize              = 37 /*FROST R2 package to single validator*/
+	EncryptedFrostDkgR2PackageSize     = 24 /*nonce for encryption*/ + 16 /*encryption header*/ + FrostDkgR2PackageSize
+	SizeOfSingleDkgR2Package           = 2 /*ToValidatorId*/ + EncryptedFrostDkgR2PackageSize
+)
 
 // Helpers
 
@@ -63,7 +65,8 @@ func DeserializeDkgR2(r2Packages map[uint16][]byte /*map[FROM]data*/, vsetMask *
 	map[uint16]map[uint16][]byte, /*map[FROM]map[TO]data*/
 	bool, /*is culprit was found*/
 	uint16, /*culprit*/
-	error) {
+	error,
+) {
 	deserializedData := make(map[uint16]map[uint16][]byte)
 
 	for fromValidatorIdx, serializedToPkgs := range r2Packages {
@@ -180,6 +183,8 @@ func HandleTvmError(tvmError error) string {
 		return "Unauthorized validator"
 	case 166:
 		return "Pegout is not expired"
+	case 171:
+		return "Pegout id does not match expected pegout to sign"
 	default:
 		return fmt.Sprintf("Unknown error: %d", exitCode)
 	}

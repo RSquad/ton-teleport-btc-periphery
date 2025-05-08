@@ -133,6 +133,7 @@ type PegoutRecord struct {
 	ID                uint64
 	PegoutAddress     *address.Address
 	InternalKey       []byte
+	IsAutopegout      bool
 	Commitments       map[uint16][]byte
 	CommitmentsMask   []byte
 	SigningShares     map[uint16]map[uint16][]byte
