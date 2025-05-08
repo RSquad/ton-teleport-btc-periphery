@@ -10,31 +10,31 @@ on:
       - '**/*.md'
 
 jobs:
-  # develop:
-  #   if: github.ref == 'refs/heads/oracle_automation'
-  #   uses: ./.github/workflows/build-and-deploy.yml
-  #   with:
-  #     APPS: '["indexer", "relayer", "oracle"]'
-  #     STAGE: develop
-  #     APP_NAMESPACE: ton-teleport-dev
-  #   secrets:
-  #     KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
-
-  # develop-2:
-  #   if: github.ref == 'refs/heads/oracle_automation'
-  #   uses: ./.github/workflows/build-and-deploy.yml
-  #   with:
-  #     APPS: '["indexer", "relayer"]'
-  #     STAGE: develop-2
-  #     APP_NAMESPACE: ton-teleport-dev-2
-  #   secrets:
-  #     KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
-
-  sandbox:
+  develop:
     if: github.ref == 'refs/heads/oracle_automation'
     uses: ./.github/workflows/build-and-deploy.yml
     with:
-      APPS: '["db-backup"]'
+      APPS: '["indexer", "relayer", "oracle", "db-backup"]'
+      STAGE: develop
+      APP_NAMESPACE: ton-teleport-dev
+    secrets:
+      KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
+
+  develop-2:
+    if: github.ref == 'refs/heads/oracle_automation'
+    uses: ./.github/workflows/build-and-deploy.yml
+    with:
+      APPS: '["indexer", "relayer", "db-backup"]'
+      STAGE: develop-2
+      APP_NAMESPACE: ton-teleport-dev-2
+    secrets:
+      KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
+
+  sandbox:
+    if: github.ref == 'refs/heads/sandbox'
+    uses: ./.github/workflows/build-and-deploy.yml
+    with:
+      APPS: '["indexer", "relayer", "db-backup"]'
       STAGE: sandbox
       APP_NAMESPACE: ton-teleport-sand
     secrets:
