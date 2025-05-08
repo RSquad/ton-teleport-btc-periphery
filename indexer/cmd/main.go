@@ -58,7 +58,7 @@ func main() {
 }
 
 func initialize() (*App, error) {
-	if err := logger.Init(""); err != nil {
+	if err := logger.Init("", logger.DebugLevel, 0, 0, 0); err != nil {
 		return nil, fmt.Errorf("failed to initialize logger: %w", err)
 	}
 
@@ -169,7 +169,7 @@ func run(app *App) error {
 	go func() {
 		defer wg.Done()
 		srv := handler.NewDefaultServer(
-			gql.NewSchema(app.Repo, app.BitcoinClient, app.TeleportContract),
+			gql.NewSchema(app.Repo, app.BitcoinClient, app.TeleportContract, app.TonClient),
 		)
 		srv.Use(entgql.Transactioner{TxOpener: app.Repo})
 

@@ -201,6 +201,7 @@ func (s *SignService) execute(ctx context.Context, dkg *coordinator.DKG) {
 	if (unsignedPegout.ExpiredAt != time.Unix(0, 0)) && (unsignedPegout.ExpiredAt.Before(time.Now())) {
 		s.executeResetPegoutSigning(unsignedPegout.ID, validatorIdx)
 		s.cachePegoutClear()
+		return
 	}
 
 	// Try caching the pegout
@@ -275,7 +276,7 @@ func (s *SignService) doCommit(
 		validatorIdx,
 		commitments,
 	); err != nil {
-		s.logError("failed to send commitments", err)
+		s.logSendCommitmentsError(pegout.ID, err)
 	} else {
 		s.logCommitSent(pegout.ID)
 	}
@@ -399,7 +400,7 @@ func (s *SignService) doAggregate(
 		validatorIdx,
 		signatures,
 	); err != nil {
-		s.logSignatureSendError(err)
+		s.logSignatureSendError(pegout.ID, err)
 	} else {
 		s.logSignatureSent(pegout.ID)
 	}
