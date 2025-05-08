@@ -9,7 +9,7 @@ permissions:
 jobs:
   build:
     name: build check for ${{ matrix.app }}
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
@@ -25,6 +25,6 @@ jobs:
   complete:
     name: PR check complete
     needs: build
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
       - run: echo "All Docker images built successfully – ready to merge."
