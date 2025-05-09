@@ -1,54 +1,54 @@
 # Test cases
 
-1. Развертывание и базовые проверки
+1. Deployment and basic checks
 
-|                                                             |Статус| Комментарий |
-|-------------------------------------------------------------|:----:|:-----------:|
-| 1.1. Развернуть не менее трёх оракулов на нодах тестнета.   | ✅ |             |
-| 1.2. Проверить положительный сценарий                       |    |             |
-| - Система успешно генерирует ключи в течение ≥ 3 дней.      | ✅ |             |
-| - Подписывает Peg-out в течение ≥ 3 дней                    | ✅ |             |
-| 1.3. Проверить, что:                                        |    |             |
-| - Ключи корректно хранятся в каждом из оракулов.            | ✅ |             |
-| - Устаревшие ключи прунятся.                                |    |             |
-| - Нонсы и коммитменты удаляются после подписания пегаута    | ⚠️ | Артефакты удаляются только перед началом подписи след пегаута|
-| 1.4. Убедиться, что:                                        |    |             |
-| - Оракул восстанавливается при перезагрузке в середине эпохи.|   |             |
-| - Оракул корректно обновляется.                             | ✅ |             |
+| Description                                                         | Status            | Comment                                                                 |
+| :------------------------------------------------------------------ | :---------------- | :---------------------------------------------------------------------- |
+| 1.1. Deploy at least three oracles on testnet nodes.                | ✅                |                                                                         |
+| 1.2. Check the positive scenario                                    |                   |                                                                         |
+| - The system successfully generates keys for ≥ 3 days.              | ✅                |                                                                         |
+| - Signs Peg-out for ≥ 3 days                                        | ✅                |                                                                         |
+| 1.3. Check that:                                                    |                   |                                                                         |
+| - Keys are stored correctly in each oracle.                         | ✅                |                                                                         |
+| - Outdated keys are pruned.                                         |                   |                                                                         |
+| - Nonces and commitments are deleted after signing peg-out          | ⚠️                | Artifacts are deleted only before the start of the next peg-out signing |
+| 1.4. Ensure that:                                                   |                   |                                                                         |
+| - The oracle recovers upon reboot in the middle of an epoch.        |                   |                                                                         |
+| - The oracle updates correctly.                                     | ✅                |                                                                         |
 
-2. Проверка отказоустойчивости и устойчивости к компрометации
+2. Fault tolerance and compromise resistance testing
 
-|                                                                                         |       Статус       | Комментарий |
-|-----------------------------------------------------------------------------------------|:------------------:|:-----------:|
-| 2.1. Выключить одного или нескольких оракулов после коммита в DKG:                      | :white_check_mark: |             |
-| - Убедиться, что система завершает DKG без них                                          |                    |             |
-| 2.2. Модифицировать один из оракулов для отправки некорректных пакетов в разных раундах:|  |             |
-| - Мусор в раунд 1 пакете                                                                |  |             |
-| - Мусор в раунд 2 пакете                                                                |  |             |
-| - Мусор в раунд 3 пакете                                                                |  |             |
-| Ожидаемый результат: оракулы выбрасывают плохого оракула и процесс DKG рестартует без него |  |
-| 2.3. Повторить пункты 2.1 и 2.2 для процесса подписания.                                |   |             |
-| 2.4. Проверить восстановление из бекапа MTC.                                            |                    |             |
+| Description                                                                                         | Status            | Comment |
+| :-------------------------------------------------------------------------------------------------- | :---------------- | :------ |
+| 2.1. Turn off one or more oracles after committing to DKG:                                          | :white_check_mark: |         |
+| - Ensure the system completes DKG without them                                                      |                   |         |
+| 2.2. Modify one of the oracles to send incorrect packets in different rounds:                       |                   |         |
+| - Garbage in round 1 packet                                                                         |                   |         |
+| - Garbage in round 2 packet                                                                         |                   |         |
+| - Garbage in round 3 packet                                                                         |                   |         |
+| Expected result: oracles eject the bad oracle and the DKG process restarts without it               |                   |         |
+| 2.3. Repeat steps 2.1 and 2.2 for the signing process.                                              |                   |         |
+| 2.4. Check recovery from MTC backup.                                                                |                   |         |
 
-3. Конфигуратор (голосовалка)
+3. Configurator (voting)
 
-|                                                             |       Статус       | Комментарий |
-|-------------------------------------------------------------|:------------------:|:-----------:|
-| 3.1. Добавить голосование за:                               |                    |             |
-| - запуск                                                    |                    |             |
-| - изменение кода (одного или сразу двух контрактов)         |                    |             |
-| - изменение состояния системы                               |                    |             |
-| Примечание: это реализуется через одну голосовалку.         |                    |             |
-| 3.2. Проверить сценарий остановки/запуска системы.          |                    |             |
+| Description                                                                    | Status            | Comment |
+| :----------------------------------------------------------------------------- | :---------------- | :------ |
+| 3.1. Add voting for:                                                           |                   |         |
+| - launch                                                                       |                   |         |
+| - code change (one or two contracts at once)                                   |                   |         |
+| - system state change                                                          |                   |         |
+| Note: this is implemented through a single voting mechanism.                   |                   |         |
+| 3.2. Check the system stop/start scenario.                                     |                   |         |
 
-4. Тестирование на масштабе
+4. Scalability testing
 
-|                                                             |       Статус       | Комментарий |
-|-------------------------------------------------------------|:------------------:|:-----------:|
-| 4.1. Запустить систему на максимальном количестве оракулов. |                    |             |
-| 4.2. Повторить все вышеуказанные тесты.                     |                    |             |
-| 4.3. Перевести оракулов на публичный sandbox.               |                    |             |
-| 4.4. Включить governance-контракт.                          |                    |             |
+| Description                                                                    | Status            | Comment |
+| :----------------------------------------------------------------------------- | :---------------- | :------ |
+| 4.1. Launch the system with the maximum number of oracles.                     |                   |         |
+| 4.2. Repeat all the above tests.                                               |                   |         |
+| 4.3. Move oracles to public sandbox.                                           |                   |         |
+| 4.4. Enable the governance contract.                                           |                   |         |
 
-5. Слешинг
-  •  Требуется дополнительная детализация.
+5. Slashing
+  •  Requires further detailing.
