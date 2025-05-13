@@ -30,3 +30,7 @@ func (m *Metrics) formatGetConfirmationsNeededError() error {
 func (m *Metrics) formatGetLastConfirmedBlockHeightError() error {
 	return fmt.Errorf("can not get last confirmed block hash")
 }
+
+func (m *Metrics) formatGetBlockChainInfoError() error {
+	return fmt.Errorf("can not get blockchain info")
+}
