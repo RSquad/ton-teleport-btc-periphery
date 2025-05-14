@@ -20,6 +20,14 @@ func errorEvent() *zerolog.Event {
 	return logger.Log.Error().Str("component", component)
 }
 
+func debugEvent() *zerolog.Event {
+	return logger.Log.Debug().Str("component", component)
+}
+
+func (e *Executor) logDebug(msg string) {
+	debugEvent().Msg(msg)
+}
+
 func infoEventWithDkg(dkg *coordinator.DKG, validatorIdx uint16) *zerolog.Event {
 	validatorIdxStr := "unknown"
 	if validatorIdx < 255 {

@@ -21,4 +21,8 @@ type Cfg struct {
 	LogMaxBackups              string `env:"LOG_FILE_MAX_BACKUPS"`
 	LogMaxBackupAge            string `env:"LOG_FILE_MAX_BACKUP_AGE"`
 	LogDKG                     string `env:"LOG_DKG"`
+	TestBadR1Pkg               bool   `env:"TEST_BAD_R1_PKG"`
+	TestBadR2Pkg               bool   `env:"TEST_BAD_R2_PKG"`
+	TestBadR3Pkg               bool   `env:"TEST_BAD_R3_PKG"`
+	TestInvalidSigners         bool   `env:"TEST_INVALID_SIGNERS"`
 }

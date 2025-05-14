@@ -11,6 +11,7 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
 	helpers "github.com/rsquad/ton-teleport-btc-periphery/oracle/internal"
+	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/cfg"
 	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/keystore"
 	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/validator"
 	"golang.org/x/crypto/nacl/box"
@@ -73,6 +74,7 @@ type Executor struct {
 	validator           *validator.Validator
 	sessionPublicKey    []byte
 	validatorIdx        uint16
+	cfg                 *cfg.Cfg
 }
 
 func NewExecutor(
@@ -80,6 +82,7 @@ func NewExecutor(
 	coordinatorContract coordinator.Coordinator,
 	keystore keystore.Keystore,
 	validator *validator.Validator,
+	cfg *cfg.Cfg,
 ) *Executor {
 	return &Executor{
 		inChan:              inChan,
@@ -89,6 +92,7 @@ func NewExecutor(
 		keystore:            keystore,
 		validator:           validator,
 		validatorIdx:        255,
+		cfg:                 cfg,
 	}
 }
 
@@ -203,6 +207,11 @@ func (e *Executor) executeR1(dkg *coordinator.DKG) bool {
 			return false
 		}
 
+		if e.cfg.TestInvalidSigners {
+			e.logDebug("Set minSigners = maxSigners")
+			minSigners = dkg.MaxSigners
+		}
+
 		r1Package, r1SecretPtr, err := frost.DkgPart1(
 			helpers.ValidatorIdxToFrost(e.validatorIdx),
 			minSigners,
@@ -211,6 +220,17 @@ func (e *Executor) executeR1(dkg *coordinator.DKG) bool {
 		if err != nil {
 			e.logDKGPart1Failed(dkg, err)
 			return false
+		}
+
+		if e.cfg.TestBadR1Pkg {
+			e.logDebug("Generate random R1 package")
+			randomBytes := make([]byte, len(r1Package))
+			_, err := rand.Read(randomBytes)
+			if err != nil {
+				return false
+			}
+			r1Package = randomBytes
+			r1Package[0] = 0
 		}
 
 		// Generate key pair for Round2 encryption
@@ -282,6 +302,20 @@ func (e *Executor) executeR2(dkg *coordinator.DKG) bool {
 				e.logError(dkg, "R2 failed", err)
 			}
 			return false
+		}
+
+		if e.cfg.TestBadR2Pkg {
+			e.logDebug("Generate random R2 package")
+			newR2Packages := make(map[frost.Identifier]frost.Package)
+			for id, pkg := range r2Packages {
+				randomBytes := make([]byte, len(pkg.ToBytes()))
+				_, err := rand.Read(randomBytes)
+				if err != nil {
+					return false
+				}
+				newR2Packages[id] = frost.NewPackage(randomBytes)
+			}
+			r2Packages = newR2Packages
 		}
 
 		// Encrypt R2 packages
@@ -403,6 +437,17 @@ func (e *Executor) executeR3(dkg *coordinator.DKG) bool {
 			e.logError(dkg, "failed to extract public key from package", err)
 			return false
 		}
+
+		if e.cfg.TestBadR3Pkg {
+			e.logDebug("Generate random R3 package")
+			randomBytes := make([]byte, len(publicKeyPackage))
+			_, err := rand.Read(randomBytes)
+			if err != nil {
+				return false
+			}
+			publicKeyPackage = randomBytes
+		}
+
 		e.artifacts.r3 = &Round3Result{
 			secretPackage:    keyPackage,
 			publicKeyPackage: publicKeyPackage,

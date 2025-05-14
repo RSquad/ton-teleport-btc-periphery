@@ -98,7 +98,7 @@ func startAndWaitForStop() error {
 	signService := signing.NewService(keystore, coordinatorContract, tonClient, executeSignPeriod)
 
 	wg.Add(1)
-	go dkgService.Work(ctx, &wg, keystore)
+	go dkgService.Work(ctx, &wg, keystore, &cfg)
 
 	wg.Add(1)
 	go signService.Work(ctx, &wg)
