@@ -1,0 +1,809 @@
+{
+    "annotations": {
+        "list": [
+            {
+                "builtIn": 1,
+                "datasource": {
+                    "type": "grafana",
+                    "uid": "-- Grafana --"
+                },
+                "enable": true,
+                "hide": true,
+                "iconColor": "rgba(0, 211, 255, 1)",
+                "name": "Annotations & Alerts",
+                "type": "dashboard"
+            }
+        ]
+    },
+    "editable": true,
+    "fiscalYearStartMonth": 0,
+    "graphTooltip": 0,
+    "id": 7,
+    "links": [],
+    "panels": [
+        {
+            "datasource": {
+                "type": "grafana-postgresql-datasource",
+                "uid": "PCC52D03280B7034C"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            }
+                        ]
+                    }
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 4,
+                "w": 5,
+                "x": 2,
+                "y": 0
+            },
+            "id": 1,
+            "options": {
+                "colorMode": "value",
+                "graphMode": "area",
+                "justifyMode": "auto",
+                "orientation": "auto",
+                "percentChangeColorMode": "standard",
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "showPercentChange": false,
+                "textMode": "auto",
+                "wideLayout": true
+            },
+            "pluginVersion": "11.5.2",
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "grafana-postgresql-datasource",
+                        "uid": "PCC52D03280B7034C"
+                    },
+                    "editorMode": "code",
+                    "format": "table",
+                    "rawQuery": true,
+                    "rawSql": "SELECT count(*) as row_count FROM mints;",
+                    "refId": "A",
+                    "sql": {
+                        "columns": [
+                            {
+                                "parameters": [],
+                                "type": "function"
+                            }
+                        ],
+                        "groupBy": [
+                            {
+                                "property": {
+                                    "type": "string"
+                                },
+                                "type": "groupBy"
+                            }
+                        ],
+                        "limit": 50
+                    }
+                }
+            ],
+            "title": "Total Mints",
+            "transparent": true,
+            "type": "stat"
+        },
+        {
+            "datasource": {
+                "type": "grafana-postgresql-datasource",
+                "uid": "PCC52D03280B7034C"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            }
+                        ]
+                    }
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 4,
+                "w": 5,
+                "x": 8,
+                "y": 0
+            },
+            "id": 2,
+            "options": {
+                "colorMode": "value",
+                "graphMode": "area",
+                "justifyMode": "auto",
+                "orientation": "auto",
+                "percentChangeColorMode": "standard",
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "showPercentChange": false,
+                "textMode": "auto",
+                "wideLayout": true
+            },
+            "pluginVersion": "11.5.2",
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "grafana-postgresql-datasource",
+                        "uid": "PCC52D03280B7034C"
+                    },
+                    "editorMode": "code",
+                    "format": "table",
+                    "rawQuery": true,
+                    "rawSql": "SELECT count(*) as row_count FROM burns;",
+                    "refId": "A",
+                    "sql": {
+                        "columns": [
+                            {
+                                "parameters": [],
+                                "type": "function"
+                            }
+                        ],
+                        "groupBy": [
+                            {
+                                "property": {
+                                    "type": "string"
+                                },
+                                "type": "groupBy"
+                            }
+                        ],
+                        "limit": 50
+                    }
+                }
+            ],
+            "title": "Total Burns",
+            "transparent": true,
+            "type": "stat"
+        },
+        {
+            "datasource": {
+                "type": "datasource",
+                "uid": "-- Mixed --"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "decimals": 8,
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            }
+                        ]
+                    }
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 4,
+                "w": 5,
+                "x": 0,
+                "y": 4
+            },
+            "id": 5,
+            "options": {
+                "colorMode": "value",
+                "graphMode": "none",
+                "justifyMode": "auto",
+                "orientation": "auto",
+                "percentChangeColorMode": "standard",
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "showPercentChange": false,
+                "textMode": "auto",
+                "wideLayout": true
+            },
+            "pluginVersion": "11.5.2",
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "datasource",
+                        "uid": "-- Dashboard --"
+                    },
+                    "panelId": 3,
+                    "queryType": "randomWalk",
+                    "refId": "A"
+                },
+                {
+                    "datasource": {
+                        "type": "datasource",
+                        "uid": "-- Dashboard --"
+                    },
+                    "hide": false,
+                    "panelId": 4,
+                    "refId": "B"
+                }
+            ],
+            "title": "tgBTC Current Supply",
+            "transformations": [
+                {
+                    "id": "calculateField",
+                    "options": {
+                        "alias": "",
+                        "binary": {
+                            "left": {
+                                "matcher": {
+                                    "id": "byName",
+                                    "options": "total_minted"
+                                }
+                            },
+                            "operator": "-",
+                            "right": {
+                                "matcher": {
+                                    "id": "byName",
+                                    "options": "$tgBtcBurned"
+                                }
+                            }
+                        },
+                        "mode": "binary",
+                        "reduce": {
+                            "reducer": "sum"
+                        },
+                        "replaceFields": true,
+                        "unary": {
+                            "fieldName": "total_burned",
+                            "operator": "ceil"
+                        }
+                    }
+                }
+            ],
+            "transparent": true,
+            "type": "stat"
+        },
+        {
+            "datasource": {
+                "type": "grafana-postgresql-datasource",
+                "uid": "PCC52D03280B7034C"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "decimals": 8,
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            }
+                        ]
+                    }
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 4,
+                "w": 5,
+                "x": 5,
+                "y": 4
+            },
+            "id": 3,
+            "options": {
+                "colorMode": "value",
+                "graphMode": "none",
+                "justifyMode": "auto",
+                "orientation": "auto",
+                "percentChangeColorMode": "standard",
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "showPercentChange": false,
+                "textMode": "auto",
+                "wideLayout": true
+            },
+            "pluginVersion": "11.5.2",
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "grafana-postgresql-datasource",
+                        "uid": "PCC52D03280B7034C"
+                    },
+                    "editorMode": "code",
+                    "format": "table",
+                    "rawQuery": true,
+                    "rawSql": "select \n  sum((cast(amount as numeric)) / 100000000)::numeric(20,8) as total_minted \nfrom mints where status = 'SUCCESS'",
+                    "refId": "A",
+                    "sql": {
+                        "columns": [
+                            {
+                                "parameters": [],
+                                "type": "function"
+                            }
+                        ],
+                        "groupBy": [
+                            {
+                                "property": {
+                                    "type": "string"
+                                },
+                                "type": "groupBy"
+                            }
+                        ],
+                        "limit": 50
+                    }
+                }
+            ],
+            "title": "tgBTC Minted",
+            "transparent": true,
+            "type": "stat"
+        },
+        {
+            "datasource": {
+                "type": "grafana-postgresql-datasource",
+                "uid": "PCC52D03280B7034C"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "decimals": 8,
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            }
+                        ]
+                    }
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 4,
+                "w": 5,
+                "x": 10,
+                "y": 4
+            },
+            "id": 4,
+            "options": {
+                "colorMode": "value",
+                "graphMode": "none",
+                "justifyMode": "auto",
+                "orientation": "auto",
+                "percentChangeColorMode": "standard",
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "showPercentChange": false,
+                "textMode": "value",
+                "wideLayout": true
+            },
+            "pluginVersion": "11.5.2",
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "grafana-postgresql-datasource",
+                        "uid": "PCC52D03280B7034C"
+                    },
+                    "editorMode": "code",
+                    "format": "table",
+                    "rawQuery": true,
+                    "rawSql": "select \n  sum((cast (b.amount as numeric)) / 100000000)::numeric(20,8) as total_burned\nfrom burns as b\njoin pegouts as p on p.id = b.pegout_burn where p.status = 'CONFIRMED'",
+                    "refId": "A",
+                    "sql": {
+                        "columns": [
+                            {
+                                "parameters": [],
+                                "type": "function"
+                            }
+                        ],
+                        "groupBy": [
+                            {
+                                "property": {
+                                    "type": "string"
+                                },
+                                "type": "groupBy"
+                            }
+                        ],
+                        "limit": 50
+                    }
+                }
+            ],
+            "title": "tgBTC Burned",
+            "transparent": true,
+            "type": "stat"
+        },
+        {
+            "datasource": {
+                "type": "grafana-postgresql-datasource",
+                "uid": "PCC52D03280B7034C"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "palette-classic"
+                    },
+                    "custom": {
+                        "axisBorderShow": false,
+                        "axisCenteredZero": false,
+                        "axisColorMode": "text",
+                        "axisLabel": "",
+                        "axisPlacement": "auto",
+                        "barAlignment": 0,
+                        "barWidthFactor": 0.6,
+                        "drawStyle": "line",
+                        "fillOpacity": 0,
+                        "gradientMode": "none",
+                        "hideFrom": {
+                            "legend": false,
+                            "tooltip": false,
+                            "viz": false
+                        },
+                        "insertNulls": false,
+                        "lineInterpolation": "smooth",
+                        "lineStyle": {
+                            "fill": "solid"
+                        },
+                        "lineWidth": 1,
+                        "pointSize": 5,
+                        "scaleDistribution": {
+                            "type": "linear"
+                        },
+                        "showPoints": "auto",
+                        "spanNulls": true,
+                        "stacking": {
+                            "group": "A",
+                            "mode": "none"
+                        },
+                        "thresholdsStyle": {
+                            "mode": "off"
+                        }
+                    },
+                    "decimals": 8,
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            }
+                        ]
+                    }
+                },
+                "overrides": [
+                    {
+                        "__systemRef": "hideSeriesFrom",
+                        "matcher": {
+                            "id": "byNames",
+                            "options": {
+                                "mode": "exclude",
+                                "names": [
+                                    "minted"
+                                ],
+                                "prefix": "All except:",
+                                "readOnly": true
+                            }
+                        },
+                        "properties": [
+                            {
+                                "id": "custom.hideFrom",
+                                "value": {
+                                    "legend": false,
+                                    "tooltip": false,
+                                    "viz": true
+                                }
+                            }
+                        ]
+                    }
+                ]
+            },
+            "gridPos": {
+                "h": 9,
+                "w": 15,
+                "x": 0,
+                "y": 8
+            },
+            "id": 6,
+            "options": {
+                "legend": {
+                    "calcs": [],
+                    "displayMode": "list",
+                    "placement": "bottom",
+                    "showLegend": true
+                },
+                "tooltip": {
+                    "hideZeros": false,
+                    "mode": "single",
+                    "sort": "none"
+                }
+            },
+            "pluginVersion": "11.5.2",
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "grafana-postgresql-datasource",
+                        "uid": "PCC52D03280B7034C"
+                    },
+                    "editorMode": "code",
+                    "format": "table",
+                    "rawQuery": true,
+                    "rawSql": "select cast(amount as numeric) / 100000000 as minted, created_at from mints\nwhere $__timeFilter(created_at) and status = 'SUCCESS'\norder by created_at",
+                    "refId": "A",
+                    "sql": {
+                        "columns": [
+                            {
+                                "parameters": [],
+                                "type": "function"
+                            }
+                        ],
+                        "groupBy": [
+                            {
+                                "property": {
+                                    "type": "string"
+                                },
+                                "type": "groupBy"
+                            }
+                        ],
+                        "limit": 50
+                    }
+                },
+                {
+                    "datasource": {
+                        "type": "grafana-postgresql-datasource",
+                        "uid": "PCC52D03280B7034C"
+                    },
+                    "editorMode": "code",
+                    "format": "table",
+                    "hide": false,
+                    "rawQuery": true,
+                    "rawSql": "select \n  cast (b.amount as numeric) / 100000000 as burned,\n  tt.created_at\nfrom burns as b\njoin ton_txes as tt on tt.id = b.ton_tx_burn\njoin pegouts as p on p.id = b.pegout_burn where p.status = 'CONFIRMED'",
+                    "refId": "B",
+                    "sql": {
+                        "columns": [
+                            {
+                                "parameters": [],
+                                "type": "function"
+                            }
+                        ],
+                        "groupBy": [
+                            {
+                                "property": {
+                                    "type": "string"
+                                },
+                                "type": "groupBy"
+                            }
+                        ],
+                        "limit": 50
+                    }
+                }
+            ],
+            "title": "tgBTC Flow",
+            "transparent": true,
+            "type": "timeseries"
+        },
+        {
+            "datasource": {
+                "type": "grafana-postgresql-datasource",
+                "uid": "PCC52D03280B7034C"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "palette-classic"
+                    },
+                    "custom": {
+                        "axisBorderShow": false,
+                        "axisCenteredZero": false,
+                        "axisColorMode": "text",
+                        "axisLabel": "",
+                        "axisPlacement": "auto",
+                        "barAlignment": 0,
+                        "barWidthFactor": 0.6,
+                        "drawStyle": "line",
+                        "fillOpacity": 0,
+                        "gradientMode": "none",
+                        "hideFrom": {
+                            "legend": false,
+                            "tooltip": false,
+                            "viz": false
+                        },
+                        "insertNulls": false,
+                        "lineInterpolation": "smooth",
+                        "lineWidth": 1,
+                        "pointSize": 5,
+                        "scaleDistribution": {
+                            "type": "linear"
+                        },
+                        "showPoints": "auto",
+                        "spanNulls": false,
+                        "stacking": {
+                            "group": "A",
+                            "mode": "none"
+                        },
+                        "thresholdsStyle": {
+                            "mode": "off"
+                        }
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            },
+                            {
+                                "color": "red",
+                                "value": 80
+                            }
+                        ]
+                    }
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 9,
+                "w": 15,
+                "x": 0,
+                "y": 17
+            },
+            "id": 7,
+            "options": {
+                "legend": {
+                    "calcs": [],
+                    "displayMode": "list",
+                    "placement": "bottom",
+                    "showLegend": true
+                },
+                "tooltip": {
+                    "hideZeros": false,
+                    "mode": "single",
+                    "sort": "none"
+                }
+            },
+            "pluginVersion": "11.5.2",
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "grafana-postgresql-datasource",
+                        "uid": "PCC52D03280B7034C"
+                    },
+                    "editorMode": "code",
+                    "format": "table",
+                    "rawQuery": true,
+                    "rawSql": "WITH date_series AS (\n  SELECT generate_series(\n    DATE_TRUNC('day', $__timeFrom()::timestamp),\n    DATE_TRUNC('day', $__timeTo()::timestamp),\n    '1 day'::interval\n  ) AS day\n),\ndaily_counts AS (\n  SELECT\n    DATE_TRUNC('day', created_at) AS day,\n    COUNT(*) AS count\n  FROM mints\n  WHERE $__timeFilter(created_at) AND status = 'SUCCESS'\n  GROUP BY 1\n)\nSELECT\n  ds.day AS time,\n  COALESCE(dc.count, 0) AS \"Mints\"\nFROM date_series ds\nLEFT JOIN daily_counts dc ON ds.day = dc.day\nORDER BY 1;",
+                    "refId": "A",
+                    "sql": {
+                        "columns": [
+                            {
+                                "parameters": [],
+                                "type": "function"
+                            }
+                        ],
+                        "groupBy": [
+                            {
+                                "property": {
+                                    "type": "string"
+                                },
+                                "type": "groupBy"
+                            }
+                        ],
+                        "limit": 50
+                    }
+                },
+                {
+                    "datasource": {
+                        "type": "grafana-postgresql-datasource",
+                        "uid": "PCC52D03280B7034C"
+                    },
+                    "editorMode": "code",
+                    "format": "table",
+                    "hide": false,
+                    "rawQuery": true,
+                    "rawSql": "WITH date_series AS (\n  SELECT generate_series(\n    DATE_TRUNC('day', $__timeFrom()::timestamp),\n    DATE_TRUNC('day', $__timeTo()::timestamp),\n    '1 day'::interval\n  ) AS day\n),\ndaily_counts AS (\n  SELECT\n    DATE_TRUNC('day', created_at) AS day,\n    COUNT(*) AS count\n  FROM burns as b\n  join ton_txes as tt on tt.id = ton_tx_burn\n  join pegouts as p on p.id = b.pegout_burn\n  WHERE $__timeFilter(created_at) and p.status = 'CONFIRMED'\n  GROUP BY 1\n)\nSELECT\n  ds.day AS time,\n  COALESCE(dc.count, 0) AS \"Burns\"\nFROM date_series ds\nLEFT JOIN daily_counts dc ON ds.day = dc.day\nORDER BY 1;",
+                    "refId": "B",
+                    "sql": {
+                        "columns": [
+                            {
+                                "parameters": [],
+                                "type": "function"
+                            }
+                        ],
+                        "groupBy": [
+                            {
+                                "property": {
+                                    "type": "string"
+                                },
+                                "type": "groupBy"
+                            }
+                        ],
+                        "limit": 50
+                    }
+                }
+            ],
+            "title": "Operations",
+            "transparent": true,
+            "type": "timeseries"
+        }
+    ],
+    "preload": false,
+    "refresh": "10s",
+    "schemaVersion": 40,
+    "tags": [],
+    "templating": {
+        "list": [
+            {
+                "current": {
+                    "text": "2637.98686027",
+                    "value": "2637.98686027"
+                },
+                "datasource": {
+                    "type": "grafana-postgresql-datasource",
+                    "uid": "PCC52D03280B7034C"
+                },
+                "definition": "select \n  sum((cast (b.amount as numeric)) / 100000000)::numeric(20,8) as total_burned\nfrom burns as b\njoin pegouts as p on p.id = b.pegout_burn where p.status = 'CONFIRMED'",
+                "hide": 2,
+                "name": "tgBtcBurned",
+                "options": [],
+                "query": "select \n  sum((cast (b.amount as numeric)) / 100000000)::numeric(20,8) as total_burned\nfrom burns as b\njoin pegouts as p on p.id = b.pegout_burn where p.status = 'CONFIRMED'",
+                "refresh": 2,
+                "regex": "",
+                "type": "query"
+            }
+        ]
+    },
+    "time": {
+        "from": "now-6h",
+        "to": "now"
+    },
+    "timepicker": {},
+    "timezone": "browser",
+    "title": "Statistics",
+    "uid": "belv5pokjhszke",
+    "version": 4,
+    "weekStart": ""
+}
