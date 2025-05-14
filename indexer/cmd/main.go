@@ -20,11 +20,12 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated/migrate"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/events"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/gql"
-	metrics "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/metrics"
+	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/metrics"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/mintservice"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/pegoutmanager"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/bitcoinclientcontract"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/teleportcontract"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
@@ -33,15 +34,16 @@ import (
 )
 
 type App struct {
-	Repo                *ent.Client
-	TonClient           *tonclient.TonClient
-	BitcoinClient       *bitcoin.Client
-	EventService        *events.EventService
-	TeleportContract    *teleportcontract.TeleportContract
-	CoordinatorContract *coordinator.CoordinatorContract
-	PegoutManager       *pegoutmanager.PegoutManager
-	MintService         *mintservice.MintService
-	Metrics             *metrics.Metrics
+	Repo                  *ent.Client
+	TonClient             *tonclient.TonClient
+	BitcoinClient         *bitcoin.Client
+	EventService          *events.EventService
+	TeleportContract      *teleportcontract.TeleportContract
+	CoordinatorContract   *coordinator.CoordinatorContract
+	BitcoinClientContract *bitcoinclientcontract.BitcoinClientContract
+	PegoutManager         *pegoutmanager.PegoutManager
+	MintService           *mintservice.MintService
+	MetricsService        *metrics.MetricsService
 }
 
 func main() {
@@ -102,6 +104,14 @@ func initialize() (*App, error) {
 		30,
 	)
 
+	bitcoinClientContractAddr := address.MustParseAddr(indexerConfig.BitcoinClientContractAddr)
+	bitcoinClientContract := bitcoinclientcontract.NewBitcoinClientContract(
+		bitcoinClientContractAddr,
+		tonClient,
+		nil,
+		context.Background(),
+	)
+
 	repo, err := ent.Open(dialect.Postgres, indexerConfig.DatabaseURL)
 	if err != nil {
 		log.Fatalf("failed to create repo: %v", err)
@@ -141,7 +151,16 @@ func initialize() (*App, error) {
 		coordinatorContract,
 	)
 
-	metrics := metrics.New(tonClient, indexerConfig)
+	metricsService, err := metrics.NewService(
+		coordinatorContract,
+		bitcoinClientContract,
+		bitcoinClient,
+		tonClient,
+		indexerConfig,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create matrics manager: %w", err)
+	}
 
 	logger.Log.Info().
 		Str("component", "main").
@@ -156,7 +175,7 @@ func initialize() (*App, error) {
 		PegoutManager:       pegoutManager,
 		MintService:         mintService,
 		EventService:        eventService,
-		Metrics:             metrics,
+		MetricsService:      metricsService,
 	}, nil
 }
 
@@ -198,28 +217,30 @@ func run(app *App) error {
 		}
 	}()
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		app.EventService.Work(context.Background())
-	}()
+	/*
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			app.EventService.Work(context.Background())
+		}()
+
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			app.PegoutManager.Run()
+		}()
+
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			app.MintService.Work(context.Background())
+		}()
+	*/
 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		app.PegoutManager.Run()
-	}()
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		app.MintService.Work(context.Background())
-	}()
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		app.Metrics.Work(context.Background())
+		app.MetricsService.Work(context.Background())
 	}()
 
 	wg.Wait()
