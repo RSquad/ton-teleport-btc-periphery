@@ -42,10 +42,10 @@ func NewFetcherContractBitcoinClient(
 }
 
 func (fetcher *FetcherContractBitcoinClient) Work(ctx context.Context, wg *sync.WaitGroup) {
+	defer wg.Done()
+
 	defer logger.Log.Info().Msg("FetcherContractBitcoinClient: stopped")
 	logger.DefaultLogStartWork("FetcherContractBitcoinClient: starting...")
-
-	defer wg.Done()
 
 	ticker := time.NewTicker(time.Duration(fetcher.period) * time.Second)
 	defer ticker.Stop()
@@ -107,7 +107,6 @@ func (fetcher *FetcherContractBitcoinClient) Fetch() {
 			Msg("failed to serialize ContractBitcoinClientData->json")
 	}
 
-	logger.Log.Info().Msg(string(jsonData))
 	fetcher.chDB <- PayloadDB{
 		timestamp: time.Now(),
 		typeId:    PayloadTypeContractBitcoinClient,
