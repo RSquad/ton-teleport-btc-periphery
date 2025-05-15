@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/xssnick/tonutils-go/tvm/cell"
 )
 
@@ -13,6 +14,19 @@ func ParseKeyStr(s *cell.Slice, keySize uint) string {
 
 func ParseKeyUI16(s *cell.Slice, keySize uint) uint16 {
 	return uint16(s.MustLoadBigUInt(keySize).Int64())
+}
+
+func ParseKeyUI64(s *cell.Slice, keySize uint) uint64 {
+	return uint64(s.MustLoadBigUInt(keySize).Int64())
+}
+
+func ParseKeyBitcoinHashAsStr(s *cell.Slice, keySize uint) string {
+	hash, err := chainhash.NewHash(s.MustLoadSlice(256))
+	if err != nil {
+		panic(err)
+	}
+
+	return hash.String()
 }
 
 func New[V any](

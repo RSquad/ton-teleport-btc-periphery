@@ -39,6 +39,14 @@ func (c *Client) GetBlockHeightByHash(hash *chainhash.Hash) (int64, error) {
 	return blockVerbose.Height, nil
 }
 
+func (c *Client) GetBlockChainInfo() (*btcjson.GetBlockChainInfoResult, error) {
+	blockChainInfo, err := c.RPCClient.GetBlockChainInfo()
+	if err != nil {
+		return nil, err
+	}
+	return blockChainInfo, nil
+}
+
 func (c *Client) GetBlockHashesByStartHeight(startHeight int64, count int64) ([]*chainhash.Hash, error) {
 	var loopErr error
 	blockHashes := make([]*chainhash.Hash, 0, count)

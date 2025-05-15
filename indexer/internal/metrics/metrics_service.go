@@ -9,6 +9,7 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/bitcoinclientcontract"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/teleportcontract"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
 )
 
@@ -17,11 +18,14 @@ type MetricsService struct {
 	fetcherDKG                   *FetcherDKG
 	fetcherContractBalances      *FetcherContractBalances
 	fetcherContractBitcoinClient *FetcherContractBitcoinClient
+	fetcherBitcoinNetwork        *FetcherBitcoinNetwork
+	fetcherContractTeleport      *FetcherContractTeleport
 }
 
 func NewService(
 	coordinatorContract *coordinator.CoordinatorContract,
 	bitcoinClientContract *bitcoinclientcontract.BitcoinClientContract,
+	teleportContract *teleportcontract.TeleportContract,
 	bitcoinClient *bitcoin.Client,
 	tonClient *tonclient.TonClient,
 	config config.IndexerConfig,
@@ -40,14 +44,22 @@ func NewService(
 	// Fetcher: Contract balances
 	fetcherContractBalances := NewFetcherContractBalances(tonClient, config)
 
-	// Fetch: Contract Bitcoin client
+	// Fetcher: Contract Bitcoin client
 	fetcherContractBitcoinClient := NewFetcherContractBitcoinClient(writerDbChan, bitcoinClient, bitcoinClientContract, 60) // TODO: move 60 to config
+
+	// Fetcher: BitcoinNetwork
+	fetcherBitcoinNetwork := NewFetcherBitcoinNetwork(writerDbChan, bitcoinClient, 59) // TODO: move 60 to config
+
+	// Fetcher: ContractTeleport
+	fetcherContractTeleport := NewFetcherContractTeleport(writerDbChan, teleportContract, 5) // TODO: move 5 to config
 
 	return &MetricsService{
 		writerDB:                     writerDB,
 		fetcherDKG:                   fetcherDKG,
 		fetcherContractBalances:      fetcherContractBalances,
 		fetcherContractBitcoinClient: fetcherContractBitcoinClient,
+		fetcherBitcoinNetwork:        fetcherBitcoinNetwork,
+		fetcherContractTeleport:      fetcherContractTeleport,
 	}, nil
 }
 
@@ -79,6 +91,18 @@ func (s *MetricsService) Work(ctx context.Context) {
 	wg.Add(1)
 	go func() {
 		s.fetcherContractBitcoinClient.Work(ctx, &wg)
+	}()
+
+	// Fetcher BitcoinNetwork
+	wg.Add(1)
+	go func() {
+		s.fetcherBitcoinNetwork.Work(ctx, &wg)
+	}()
+
+	// Fetcher ContractTeleport
+	wg.Add(1)
+	go func() {
+		s.fetcherContractTeleport.Work(ctx, &wg)
 	}()
 
 	wg.Wait()
