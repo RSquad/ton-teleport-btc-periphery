@@ -276,7 +276,7 @@ func (s *SignService) doCommit(
 		validatorIdx,
 		commitments,
 	); err != nil {
-		s.logError("failed to send commitments", err)
+		s.logSendCommitmentsError(pegout.ID, err)
 	} else {
 		s.logCommitSent(pegout.ID)
 	}
@@ -400,7 +400,7 @@ func (s *SignService) doAggregate(
 		validatorIdx,
 		signatures,
 	); err != nil {
-		s.logSignatureSendError(err)
+		s.logSignatureSendError(pegout.ID, err)
 	} else {
 		s.logSignatureSent(pegout.ID)
 	}
