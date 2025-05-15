@@ -1,0 +1,52 @@
+name: Build and Push
+on:
+  workflow_call:
+    inputs:
+      STAGE:
+        description: 'Deployment stage (e.g., develop, production)'
+        required: true
+        type: string
+      APPS:
+        description: 'JSON array of app names to build and deploy'
+        required: true
+        type: string
+      DOCKER_REGISTRY_URL:
+        required: true
+        type: string
+    secrets:
+      DOCKER_REGISTRY_USERNAME:
+        required: true
+      DOCKER_REGISTRY_PASSWORD:
+        required: true
+jobs:
+  build:
+    name: Build and Push Images
+    runs-on: self-hosted
+    environment: ${{ inputs.STAGE }}
+    strategy:
+      matrix:
+        app: ${{ fromJson(inputs.APPS) }}
+    env:
+      STAGE: ${{ inputs.STAGE }}
+      DOCKER_REGISTRY_URL: ${{ inputs.DOCKER_REGISTRY_URL }}
+      DOCKER_REGISTRY_USERNAME: ${{ secrets.DOCKER_REGISTRY_USERNAME }}
+      DOCKER_REGISTRY_PASSWORD: ${{ secrets.DOCKER_REGISTRY_PASSWORD }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+      - name: Docker Login
+        shell: bash
+        run: |
+          docker login "$DOCKER_REGISTRY_URL" \
+            --username "$DOCKER_REGISTRY_USERNAME" \
+            --password "$DOCKER_REGISTRY_PASSWORD"
+      - name: Build and Push Image for ${{ matrix.app }}
+        run: |
+          BUILD_NUM=${{ github.run_number }}
+          IMAGE_NAME="$DOCKER_REGISTRY_URL/${{ matrix.app }}-${STAGE}"
+          docker build -f ${{ matrix.app }}/Dockerfile \
+            --platform linux/amd64 \
+            -t $IMAGE_NAME:latest \
+            -t $IMAGE_NAME:$BUILD_NUM .
+          docker push $IMAGE_NAME:latest
+          docker push $IMAGE_NAME:$BUILD_NUM
