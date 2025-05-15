@@ -18,7 +18,7 @@
     "editable": true,
     "fiscalYearStartMonth": 0,
     "graphTooltip": 0,
-    "id": 6,
+    "id": 4,
     "links": [],
     "panels": [
         {
@@ -65,6 +65,9 @@
                     "values": false
                 },
                 "showPercentChange": false,
+                "text": {
+                    "valueSize": 40
+                },
                 "textMode": "value_and_name",
                 "wideLayout": true
             },
@@ -123,8 +126,8 @@
         },
         {
             "datasource": {
-                "type": "prometheus",
-                "uid": "PBFA97CFB590B2093"
+                "type": "grafana-postgresql-datasource",
+                "uid": "PCC52D03280B7034C"
             },
             "fieldConfig": {
                 "defaults": {
@@ -138,10 +141,6 @@
                             {
                                 "color": "green",
                                 "value": null
-                            },
-                            {
-                                "color": "red",
-                                "value": 80
                             }
                         ]
                     }
@@ -165,28 +164,64 @@
                     "calcs": [
                         "lastNotNull"
                     ],
-                    "fields": "",
+                    "fields": "/.*/",
                     "values": false
                 },
                 "showPercentChange": false,
-                "textMode": "name",
+                "text": {
+                    "valueSize": 40
+                },
+                "textMode": "value",
                 "wideLayout": true
             },
             "pluginVersion": "11.5.2",
             "targets": [
                 {
-                    "disableTextWrap": false,
-                    "editorMode": "builder",
-                    "expr": "chain_name",
-                    "fullMetaSearch": false,
-                    "includeNullMetadata": true,
-                    "legendFormat": "Chain: {{chain_name}}",
-                    "range": true,
+                    "datasource": {
+                        "type": "grafana-postgresql-datasource",
+                        "uid": "PCC52D03280B7034C"
+                    },
+                    "editorMode": "code",
+                    "format": "table",
+                    "rawQuery": true,
+                    "rawSql": "SELECT payload FROM metrics.data WHERE type_id = 3 ORDER BY id DESC LIMIT 1;",
                     "refId": "A",
-                    "useBackend": false
+                    "sql": {
+                        "columns": [
+                            {
+                                "parameters": [],
+                                "type": "function"
+                            }
+                        ],
+                        "groupBy": [
+                            {
+                                "property": {
+                                    "type": "string"
+                                },
+                                "type": "groupBy"
+                            }
+                        ],
+                        "limit": 50
+                    }
                 }
             ],
-            "title": "",
+            "title": "Chain",
+            "transformations": [
+                {
+                    "id": "extractFields",
+                    "options": {
+                        "delimiter": ",",
+                        "format": "json",
+                        "jsonPaths": [
+                            {
+                                "path": "chain"
+                            }
+                        ],
+                        "replace": true,
+                        "source": "payload"
+                    }
+                }
+            ],
             "transparent": true,
             "type": "stat"
         },
@@ -241,6 +276,7 @@
                     "values": false
                 },
                 "showPercentChange": false,
+                "text": {},
                 "textMode": "value",
                 "wideLayout": true
             },
@@ -298,8 +334,8 @@
         },
         {
             "datasource": {
-                "type": "prometheus",
-                "uid": "PBFA97CFB590B2093"
+                "type": "grafana-postgresql-datasource",
+                "uid": "PCC52D03280B7034C"
             },
             "fieldConfig": {
                 "defaults": {
@@ -310,7 +346,7 @@
                         {
                             "targetBlank": true,
                             "title": "",
-                            "url": "https://mempool.space/signet/block/${__field.labels.hash}"
+                            "url": "https://mempool.space/signet/block/${__value.text}"
                         }
                     ],
                     "mappings": [],
@@ -332,7 +368,7 @@
             },
             "gridPos": {
                 "h": 3,
-                "w": 11,
+                "w": 12,
                 "x": 12,
                 "y": 3
             },
@@ -347,28 +383,61 @@
                     "calcs": [
                         "firstNotNull"
                     ],
-                    "fields": "",
+                    "fields": "/.*/",
                     "values": false
                 },
                 "showPercentChange": false,
-                "textMode": "name",
+                "textMode": "value",
                 "wideLayout": true
             },
             "pluginVersion": "11.5.2",
             "targets": [
                 {
-                    "disableTextWrap": false,
+                    "datasource": {
+                        "type": "grafana-postgresql-datasource",
+                        "uid": "PCC52D03280B7034C"
+                    },
                     "editorMode": "code",
-                    "expr": "topk(1, chain_best_block_hash offset 1m)",
-                    "fullMetaSearch": false,
-                    "includeNullMetadata": true,
-                    "legendFormat": "{{hash}}",
-                    "range": true,
+                    "format": "table",
+                    "rawQuery": true,
+                    "rawSql": "SELECT payload FROM metrics.data WHERE type_id = 3 ORDER BY id DESC LIMIT 1;",
                     "refId": "A",
-                    "useBackend": false
+                    "sql": {
+                        "columns": [
+                            {
+                                "parameters": [],
+                                "type": "function"
+                            }
+                        ],
+                        "groupBy": [
+                            {
+                                "property": {
+                                    "type": "string"
+                                },
+                                "type": "groupBy"
+                            }
+                        ],
+                        "limit": 50
+                    }
                 }
             ],
             "title": "Chain Best Block Hash",
+            "transformations": [
+                {
+                    "id": "extractFields",
+                    "options": {
+                        "delimiter": ",",
+                        "format": "json",
+                        "jsonPaths": [
+                            {
+                                "path": "bestblockhash"
+                            }
+                        ],
+                        "replace": true,
+                        "source": "payload"
+                    }
+                }
+            ],
             "transparent": true,
             "type": "stat"
         },
@@ -396,8 +465,8 @@
                 "overrides": []
             },
             "gridPos": {
-                "h": 2,
-                "w": 6,
+                "h": 3,
+                "w": 4,
                 "x": 0,
                 "y": 6
             },
@@ -416,7 +485,10 @@
                     "values": false
                 },
                 "showPercentChange": false,
-                "textMode": "auto",
+                "text": {
+                    "valueSize": 40
+                },
+                "textMode": "value",
                 "wideLayout": true
             },
             "pluginVersion": "11.5.2",
@@ -450,7 +522,7 @@
                     }
                 }
             ],
-            "title": "",
+            "title": "Last Confirmed Block Height",
             "transformations": [
                 {
                     "id": "extractFields",
@@ -472,8 +544,8 @@
         },
         {
             "datasource": {
-                "type": "prometheus",
-                "uid": "PBFA97CFB590B2093"
+                "type": "grafana-postgresql-datasource",
+                "uid": "PCC52D03280B7034C"
             },
             "fieldConfig": {
                 "defaults": {
@@ -494,8 +566,8 @@
                 "overrides": []
             },
             "gridPos": {
-                "h": 2,
-                "w": 7,
+                "h": 3,
+                "w": 4,
                 "x": 12,
                 "y": 6
             },
@@ -510,28 +582,64 @@
                     "calcs": [
                         "lastNotNull"
                     ],
-                    "fields": "",
+                    "fields": "/.*/",
                     "values": false
                 },
                 "showPercentChange": false,
-                "textMode": "auto",
+                "text": {
+                    "valueSize": 40
+                },
+                "textMode": "value",
                 "wideLayout": true
             },
             "pluginVersion": "11.5.2",
             "targets": [
                 {
-                    "disableTextWrap": false,
-                    "editorMode": "builder",
-                    "expr": "chain_height",
-                    "fullMetaSearch": false,
-                    "includeNullMetadata": true,
-                    "legendFormat": "Chain Height",
-                    "range": true,
+                    "datasource": {
+                        "type": "grafana-postgresql-datasource",
+                        "uid": "PCC52D03280B7034C"
+                    },
+                    "editorMode": "code",
+                    "format": "table",
+                    "rawQuery": true,
+                    "rawSql": "SELECT payload FROM metrics.data WHERE type_id = 3 ORDER BY id DESC LIMIT 1;",
                     "refId": "A",
-                    "useBackend": false
+                    "sql": {
+                        "columns": [
+                            {
+                                "parameters": [],
+                                "type": "function"
+                            }
+                        ],
+                        "groupBy": [
+                            {
+                                "property": {
+                                    "type": "string"
+                                },
+                                "type": "groupBy"
+                            }
+                        ],
+                        "limit": 50
+                    }
                 }
             ],
-            "title": "",
+            "title": "Height",
+            "transformations": [
+                {
+                    "id": "extractFields",
+                    "options": {
+                        "delimiter": ",",
+                        "format": "json",
+                        "jsonPaths": [
+                            {
+                                "path": "blocks"
+                            }
+                        ],
+                        "replace": true,
+                        "source": "payload"
+                    }
+                }
+            ],
             "transparent": true,
             "type": "stat"
         },
@@ -569,7 +677,7 @@
                 "h": 4,
                 "w": 12,
                 "x": 0,
-                "y": 8
+                "y": 9
             },
             "id": 4,
             "options": {
@@ -649,8 +757,8 @@
         },
         {
             "datasource": {
-                "type": "prometheus",
-                "uid": "PBFA97CFB590B2093"
+                "type": "grafana-postgresql-datasource",
+                "uid": "PCC52D03280B7034C"
             },
             "fieldConfig": {
                 "defaults": {
@@ -672,10 +780,10 @@
                 "overrides": []
             },
             "gridPos": {
-                "h": 3,
-                "w": 8,
+                "h": 4,
+                "w": 7,
                 "x": 12,
-                "y": 8
+                "y": 9
             },
             "id": 8,
             "options": {
@@ -692,24 +800,81 @@
                     "values": false
                 },
                 "showPercentChange": false,
+                "text": {
+                    "valueSize": 40
+                },
                 "textMode": "auto",
                 "wideLayout": true
             },
             "pluginVersion": "11.5.2",
             "targets": [
                 {
-                    "disableTextWrap": false,
-                    "editorMode": "builder",
-                    "expr": "chain_median_time",
-                    "fullMetaSearch": false,
-                    "includeNullMetadata": true,
-                    "legendFormat": "__auto",
-                    "range": true,
+                    "datasource": {
+                        "type": "grafana-postgresql-datasource",
+                        "uid": "PCC52D03280B7034C"
+                    },
+                    "editorMode": "code",
+                    "format": "table",
+                    "rawQuery": true,
+                    "rawSql": "SELECT payload FROM metrics.data WHERE type_id = 3 ORDER BY id DESC LIMIT 1;",
                     "refId": "A",
-                    "useBackend": false
+                    "sql": {
+                        "columns": [
+                            {
+                                "parameters": [],
+                                "type": "function"
+                            }
+                        ],
+                        "groupBy": [
+                            {
+                                "property": {
+                                    "type": "string"
+                                },
+                                "type": "groupBy"
+                            }
+                        ],
+                        "limit": 50
+                    }
                 }
             ],
             "title": "Median Time",
+            "transformations": [
+                {
+                    "id": "extractFields",
+                    "options": {
+                        "delimiter": ",",
+                        "format": "json",
+                        "jsonPaths": [
+                            {
+                                "path": "mediantime"
+                            }
+                        ],
+                        "source": "payload"
+                    }
+                },
+                {
+                    "id": "calculateField",
+                    "options": {
+                        "binary": {
+                            "left": {
+                                "matcher": {
+                                    "id": "byName",
+                                    "options": "mediantime"
+                                }
+                            },
+                            "operator": "*",
+                            "right": {
+                                "fixed": "1000"
+                            }
+                        },
+                        "mode": "binary",
+                        "reduce": {
+                            "reducer": "sum"
+                        },
+                        "replaceFields": true
+                    }
+                }
+            ],
             "transparent": true,
             "type": "stat"
         }
@@ -727,8 +892,8 @@
     },
     "timepicker": {},
     "timezone": "browser",
-    "title": "Bitcoin Client State",
+    "title": "Bitcoin",
     "uid": "cel6a4pvm2g3ka",
-    "version": 1,
+    "version": 2,
     "weekStart": ""
 }
