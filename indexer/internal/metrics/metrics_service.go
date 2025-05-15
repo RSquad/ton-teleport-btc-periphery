@@ -51,7 +51,7 @@ func NewService(
 	fetcherBitcoinNetwork := NewFetcherBitcoinNetwork(writerDbChan, bitcoinClient, 59) // TODO: move 60 to config
 
 	// Fetcher: ContractTeleport
-	fetcherContractTeleport := NewFetcherContractTeleport(writerDbChan, teleportContract, 5) // TODO: move 5 to config
+	fetcherContractTeleport := NewFetcherContractTeleport(writerDbChan, teleportContract, 27) // TODO: move 5 to config
 
 	return &MetricsService{
 		writerDB:                     writerDB,
