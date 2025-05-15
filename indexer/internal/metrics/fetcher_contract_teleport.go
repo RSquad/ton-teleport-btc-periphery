@@ -32,7 +32,7 @@ type ContractTeleportUTXO struct {
 	Amount        *big.Int
 	Index         uint8
 	TapMerkleRoot *chainhash.Hash
-	MintAddress   *address.Address
+	MintAddress   string
 	Script        string
 }
 
@@ -170,7 +170,7 @@ func ConvertUTXOSet(utxoSet map[string]teleportcontract.UTXOData) *[]ContractTel
 			Amount:        utxo.Amount,
 			Index:         utxo.Index,
 			TapMerkleRoot: utxo.TapMerkleRoot,
-			MintAddress:   utxo.MintAddress,
+			MintAddress:   utils.AddrToRawString(utxo.MintAddress),
 			Script:        utxo.Script,
 		}
 
