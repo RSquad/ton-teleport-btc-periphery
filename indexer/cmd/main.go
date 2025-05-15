@@ -154,6 +154,7 @@ func initialize() (*App, error) {
 	metricsService, err := metrics.NewService(
 		coordinatorContract,
 		bitcoinClientContract,
+		teleportContract,
 		bitcoinClient,
 		tonClient,
 		indexerConfig,

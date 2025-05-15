@@ -75,7 +75,6 @@ func (fetcher *FetcherDKG) FetchDKG() {
 		return
 	}
 
-	logger.Log.Info().Msg(string(jsonData))
 	fetcher.chDB <- PayloadDB{
 		timestamp: time.Now(),
 		typeId:    PayloadTypeDKG,

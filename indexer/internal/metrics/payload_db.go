@@ -8,6 +8,8 @@ const (
 	PayloadTypeDKG PayloadTypeDB = iota
 	PayloadTypePrevDKG
 	PayloadTypeContractBitcoinClient
+	PayloadTypeBlockChainInfo
+	PayloadTypeContractTeleport
 )
 
 type PayloadDB struct {
