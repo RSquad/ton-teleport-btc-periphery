@@ -18,7 +18,7 @@
     "editable": true,
     "fiscalYearStartMonth": 0,
     "graphTooltip": 0,
-    "id": 8,
+    "id": 4,
     "links": [],
     "panels": [
         {
@@ -335,10 +335,36 @@
                 "overrides": []
             },
             "gridPos": {
-                "h": 2,
+                "h": 1,
                 "w": 12,
                 "x": 12,
                 "y": 4
+            },
+            "id": 23,
+            "options": {
+                "code": {
+                    "language": "plaintext",
+                    "showLineNumbers": false,
+                    "showMiniMap": false
+                },
+                "content": "",
+                "mode": "markdown"
+            },
+            "pluginVersion": "11.5.2",
+            "title": "",
+            "transparent": true,
+            "type": "text"
+        },
+        {
+            "fieldConfig": {
+                "defaults": {},
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 2,
+                "w": 6,
+                "x": 12,
+                "y": 5
             },
             "id": 16,
             "options": {
@@ -356,32 +382,6 @@
             "type": "text"
         },
         {
-            "fieldConfig": {
-                "defaults": {},
-                "overrides": []
-            },
-            "gridPos": {
-                "h": 2,
-                "w": 12,
-                "x": 0,
-                "y": 5
-            },
-            "id": 6,
-            "options": {
-                "code": {
-                    "language": "plaintext",
-                    "showLineNumbers": false,
-                    "showMiniMap": false
-                },
-                "content": "# Contract Addresses",
-                "mode": "markdown"
-            },
-            "pluginVersion": "11.5.2",
-            "title": "",
-            "transparent": true,
-            "type": "text"
-        },
-        {
             "datasource": {
                 "type": "grafana-postgresql-datasource",
                 "uid": "PCC52D03280B7034C"
@@ -389,40 +389,7 @@
             "fieldConfig": {
                 "defaults": {
                     "color": {
-                        "mode": "palette-classic"
-                    },
-                    "custom": {
-                        "axisBorderShow": false,
-                        "axisCenteredZero": false,
-                        "axisColorMode": "text",
-                        "axisLabel": "",
-                        "axisPlacement": "auto",
-                        "barAlignment": 0,
-                        "barWidthFactor": 0.6,
-                        "drawStyle": "line",
-                        "fillOpacity": 0,
-                        "gradientMode": "none",
-                        "hideFrom": {
-                            "legend": false,
-                            "tooltip": false,
-                            "viz": false
-                        },
-                        "insertNulls": false,
-                        "lineInterpolation": "linear",
-                        "lineWidth": 1,
-                        "pointSize": 5,
-                        "scaleDistribution": {
-                            "type": "linear"
-                        },
-                        "showPoints": "auto",
-                        "spanNulls": false,
-                        "stacking": {
-                            "group": "A",
-                            "mode": "none"
-                        },
-                        "thresholdsStyle": {
-                            "mode": "off"
-                        }
+                        "mode": "thresholds"
                     },
                     "mappings": [],
                     "thresholds": {
@@ -431,35 +398,52 @@
                             {
                                 "color": "green",
                                 "value": null
-                            },
-                            {
-                                "color": "red",
-                                "value": 80
                             }
                         ]
                     }
                 },
-                "overrides": []
+                "overrides": [
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "deposit_count"
+                        },
+                        "properties": [
+                            {
+                                "id": "displayName",
+                                "value": "Processing Pegins Count"
+                            }
+                        ]
+                    }
+                ]
             },
             "gridPos": {
-                "h": 2,
-                "w": 12,
+                "h": 1,
+                "w": 6,
                 "x": 12,
-                "y": 6
+                "y": 7
             },
             "id": 15,
             "options": {
-                "legend": {
-                    "calcs": [],
-                    "displayMode": "list",
-                    "placement": "bottom",
-                    "showLegend": true
+                "colorMode": "value",
+                "graphMode": "area",
+                "justifyMode": "auto",
+                "orientation": "auto",
+                "percentChangeColorMode": "standard",
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "/.*/",
+                    "values": false
                 },
-                "tooltip": {
-                    "hideZeros": false,
-                    "mode": "single",
-                    "sort": "none"
-                }
+                "showPercentChange": false,
+                "text": {
+                    "titleSize": 15,
+                    "valueSize": 15
+                },
+                "textMode": "value_and_name",
+                "wideLayout": true
             },
             "pluginVersion": "11.5.2",
             "targets": [
@@ -471,7 +455,7 @@
                     "editorMode": "code",
                     "format": "table",
                     "rawQuery": true,
-                    "rawSql": "SELECT payload FROM metrics.data WHERE type_id = 4 ORDER BY id DESC LIMIT 1;",
+                    "rawSql": "SELECT \n  jsonb_array_length(payload::jsonb->'Deposits') AS deposit_count\nFROM metrics.data\nWHERE type_id = 4 ORDER BY id DESC LIMIT 1",
                     "refId": "A",
                     "sql": {
                         "columns": [
@@ -493,33 +477,138 @@
                 }
             ],
             "title": "",
-            "transformations": [
-                {
-                    "id": "extractFields",
-                    "options": {
-                        "delimiter": ",",
-                        "format": "json",
-                        "jsonPaths": [
-                            {
-                                "path": "Deposits"
-                            }
-                        ],
-                        "keepTime": false,
-                        "replace": true,
-                        "source": "payload"
-                    }
-                },
-                {
-                    "id": "extractFields",
-                    "options": {
-                        "delimiter": ",",
-                        "format": "json",
-                        "source": "Deposits"
-                    }
-                }
-            ],
             "transparent": true,
-            "type": "timeseries"
+            "type": "stat"
+        },
+        {
+            "fieldConfig": {
+                "defaults": {},
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 1,
+                "w": 24,
+                "x": 0,
+                "y": 8
+            },
+            "id": 24,
+            "options": {
+                "code": {
+                    "language": "plaintext",
+                    "showLineNumbers": false,
+                    "showMiniMap": false
+                },
+                "content": "",
+                "mode": "markdown"
+            },
+            "pluginVersion": "11.5.2",
+            "title": "",
+            "transparent": true,
+            "type": "text"
+        },
+        {
+            "fieldConfig": {
+                "defaults": {},
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 2,
+                "w": 12,
+                "x": 0,
+                "y": 9
+            },
+            "id": 6,
+            "options": {
+                "code": {
+                    "language": "plaintext",
+                    "showLineNumbers": false,
+                    "showMiniMap": false
+                },
+                "content": "# Contract Addresses",
+                "mode": "markdown"
+            },
+            "pluginVersion": "11.5.2",
+            "title": "",
+            "transparent": true,
+            "type": "text"
+        },
+        {
+            "fieldConfig": {
+                "defaults": {},
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 1,
+                "w": 12,
+                "x": 12,
+                "y": 9
+            },
+            "id": 20,
+            "options": {
+                "code": {
+                    "language": "plaintext",
+                    "showLineNumbers": false,
+                    "showMiniMap": false
+                },
+                "content": "",
+                "mode": "markdown"
+            },
+            "pluginVersion": "11.5.2",
+            "title": "",
+            "transparent": true,
+            "type": "text"
+        },
+        {
+            "fieldConfig": {
+                "defaults": {},
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 2,
+                "w": 6,
+                "x": 12,
+                "y": 10
+            },
+            "id": 14,
+            "options": {
+                "code": {
+                    "language": "plaintext",
+                    "showLineNumbers": false,
+                    "showMiniMap": false
+                },
+                "content": "# Limits",
+                "mode": "markdown"
+            },
+            "pluginVersion": "11.5.2",
+            "title": "",
+            "transparent": true,
+            "type": "text"
+        },
+        {
+            "fieldConfig": {
+                "defaults": {},
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 2,
+                "w": 6,
+                "x": 18,
+                "y": 10
+            },
+            "id": 17,
+            "options": {
+                "code": {
+                    "language": "plaintext",
+                    "showLineNumbers": false,
+                    "showMiniMap": false
+                },
+                "content": "# Fees",
+                "mode": "markdown"
+            },
+            "pluginVersion": "11.5.2",
+            "title": "",
+            "transparent": true,
+            "type": "text"
         },
         {
             "datasource": {
@@ -555,7 +644,7 @@
                 "h": 4,
                 "w": 12,
                 "x": 0,
-                "y": 7
+                "y": 11
             },
             "id": 5,
             "options": {
@@ -645,58 +734,6 @@
             "type": "stat"
         },
         {
-            "fieldConfig": {
-                "defaults": {},
-                "overrides": []
-            },
-            "gridPos": {
-                "h": 2,
-                "w": 6,
-                "x": 12,
-                "y": 8
-            },
-            "id": 14,
-            "options": {
-                "code": {
-                    "language": "plaintext",
-                    "showLineNumbers": false,
-                    "showMiniMap": false
-                },
-                "content": "# Limits",
-                "mode": "markdown"
-            },
-            "pluginVersion": "11.5.2",
-            "title": "",
-            "transparent": true,
-            "type": "text"
-        },
-        {
-            "fieldConfig": {
-                "defaults": {},
-                "overrides": []
-            },
-            "gridPos": {
-                "h": 2,
-                "w": 6,
-                "x": 18,
-                "y": 8
-            },
-            "id": 17,
-            "options": {
-                "code": {
-                    "language": "plaintext",
-                    "showLineNumbers": false,
-                    "showMiniMap": false
-                },
-                "content": "# Fees",
-                "mode": "markdown"
-            },
-            "pluginVersion": "11.5.2",
-            "title": "",
-            "transparent": true,
-            "type": "text"
-        },
-        {
             "datasource": {
                 "type": "grafana-postgresql-datasource",
                 "uid": "PCC52D03280B7034C"
@@ -715,7 +752,8 @@
                                 "value": null
                             }
                         ]
-                    }
+                    },
+                    "unit": "BTC"
                 },
                 "overrides": []
             },
@@ -723,7 +761,7 @@
                 "h": 2,
                 "w": 6,
                 "x": 12,
-                "y": 10
+                "y": 12
             },
             "id": 13,
             "options": {
@@ -914,7 +952,7 @@
                 "h": 3,
                 "w": 6,
                 "x": 18,
-                "y": 10
+                "y": 12
             },
             "id": 18,
             "options": {
@@ -1037,10 +1075,36 @@
                 "overrides": []
             },
             "gridPos": {
+                "h": 1,
+                "w": 24,
+                "x": 0,
+                "y": 15
+            },
+            "id": 21,
+            "options": {
+                "code": {
+                    "language": "plaintext",
+                    "showLineNumbers": false,
+                    "showMiniMap": false
+                },
+                "content": "",
+                "mode": "markdown"
+            },
+            "pluginVersion": "11.5.2",
+            "title": "",
+            "transparent": true,
+            "type": "text"
+        },
+        {
+            "fieldConfig": {
+                "defaults": {},
+                "overrides": []
+            },
+            "gridPos": {
                 "h": 2,
                 "w": 12,
                 "x": 0,
-                "y": 11
+                "y": 16
             },
             "id": 10,
             "options": {
@@ -1056,6 +1120,239 @@
             "title": "",
             "transparent": true,
             "type": "text"
+        },
+        {
+            "datasource": {
+                "type": "grafana-postgresql-datasource",
+                "uid": "PCC52D03280B7034C"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "mappings": [
+                        {
+                            "options": {
+                                "0000000000000000000000000000000000000000000000000000000000000000": {
+                                    "index": 0,
+                                    "text": "None"
+                                }
+                            },
+                            "type": "value"
+                        }
+                    ],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            }
+                        ]
+                    }
+                },
+                "overrides": [
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "addr"
+                        },
+                        "properties": [
+                            {
+                                "id": "displayName",
+                                "value": "Tx ID"
+                            },
+                            {
+                                "id": "links",
+                                "value": [
+                                    {
+                                        "targetBlank": true,
+                                        "title": "",
+                                        "url": "https://mempool.space/signet/tx/${__value.text}"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Amount"
+                        },
+                        "properties": [
+                            {
+                                "id": "decimals",
+                                "value": 8
+                            },
+                            {
+                                "id": "unit",
+                                "value": "BTC"
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "index"
+                        },
+                        "properties": [
+                            {
+                                "id": "displayName",
+                                "value": "Index"
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "tap_merkle_root"
+                        },
+                        "properties": [
+                            {
+                                "id": "displayName",
+                                "value": "Merkle Root"
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "mint_address"
+                        },
+                        "properties": [
+                            {
+                                "id": "displayName",
+                                "value": "Receiver Address"
+                            },
+                            {
+                                "id": "links",
+                                "value": [
+                                    {
+                                        "targetBlank": true,
+                                        "title": "",
+                                        "url": "https://testnet.tonviewer.com/${__value.text}"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "script"
+                        },
+                        "properties": [
+                            {
+                                "id": "displayName",
+                                "value": "Bitcoin Script"
+                            }
+                        ]
+                    }
+                ]
+            },
+            "gridPos": {
+                "h": 6,
+                "w": 12,
+                "x": 0,
+                "y": 18
+            },
+            "id": 22,
+            "options": {
+                "colorMode": "value",
+                "graphMode": "none",
+                "justifyMode": "auto",
+                "orientation": "horizontal",
+                "percentChangeColorMode": "standard",
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "/.*/",
+                    "values": false
+                },
+                "showPercentChange": false,
+                "text": {
+                    "titleSize": 15,
+                    "valueSize": 15
+                },
+                "textMode": "auto",
+                "wideLayout": true
+            },
+            "pluginVersion": "11.5.2",
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "grafana-postgresql-datasource",
+                        "uid": "PCC52D03280B7034C"
+                    },
+                    "editorMode": "code",
+                    "format": "table",
+                    "rawQuery": true,
+                    "rawSql": "SELECT\n  UTXO->>'Address' AS addr,\n  UTXO->>'Amount' AS amount,\n  UTXO->>'Index' AS index,\n  UTXO->>'TapMerkleRoot' AS tap_merkle_root,\n  UTXO->>'MintAddress' AS mint_address,\n  UTXO->>'Script' AS script\nFROM metrics.data,\nLATERAL jsonb_array_elements(payload::jsonb->'UTXOset') AS UTXO\nWHERE type_id = 4 ORDER BY id DESC LIMIT 1",
+                    "refId": "A",
+                    "sql": {
+                        "columns": [
+                            {
+                                "parameters": [],
+                                "type": "function"
+                            }
+                        ],
+                        "groupBy": [
+                            {
+                                "property": {
+                                    "type": "string"
+                                },
+                                "type": "groupBy"
+                            }
+                        ],
+                        "limit": 50
+                    }
+                }
+            ],
+            "title": "",
+            "transformations": [
+                {
+                    "id": "calculateField",
+                    "options": {
+                        "alias": "Amount",
+                        "binary": {
+                            "left": {
+                                "matcher": {
+                                    "id": "byName",
+                                    "options": "amount"
+                                }
+                            },
+                            "operator": "/",
+                            "right": {
+                                "fixed": "100000000"
+                            }
+                        },
+                        "mode": "binary",
+                        "reduce": {
+                            "reducer": "sum"
+                        }
+                    }
+                },
+                {
+                    "id": "filterFieldsByName",
+                    "options": {
+                        "byVariable": false,
+                        "include": {
+                            "names": [
+                                "addr",
+                                "index",
+                                "tap_merkle_root",
+                                "mint_address",
+                                "script",
+                                "Amount"
+                            ]
+                        }
+                    }
+                }
+            ],
+            "transparent": true,
+            "type": "stat"
         }
     ],
     "preload": false,
@@ -1073,6 +1370,6 @@
     "timezone": "browser",
     "title": "Advanced",
     "uid": "bely7mcsbdwcge",
-    "version": 12,
+    "version": 2,
     "weekStart": ""
 }
