@@ -1,4 +1,4 @@
-name: Build and Deploy
+name: Build and Push
 
 on:
   push:
@@ -11,30 +11,21 @@ on:
 jobs:
   develop:
     if: github.ref == 'refs/heads/develop'
-    uses: ./.github/workflows/build-and-deploy.yml
+    uses: ./.github/workflows/build-and-push.yml
     with:
-      APPS: '["indexer", "relayer"]'
+      APPS: '["indexer", "relayer", "oracle", "db-backup"]'
       STAGE: develop
-      APP_NAMESPACE: ton-teleport-dev
+      DOCKER_REGISTRY_URL: registry.digitalocean.com/rsquad-dev
     secrets:
-      KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
-
-  develop-2:
-    if: github.ref == 'refs/heads/develop'
-    uses: ./.github/workflows/build-and-deploy.yml
-    with:
-      APPS: '["indexer", "relayer"]'
-      STAGE: develop-2
-      APP_NAMESPACE: ton-teleport-dev-2
-    secrets:
-      KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
-
+      DOCKER_REGISTRY_USERNAME: ${{ secrets.DOCR_USERNAME }}
+      DOCKER_REGISTRY_PASSWORD: ${{ secrets.DOCR_PASSWORD }}
   sandbox:
     if: github.ref == 'refs/heads/sandbox'
-    uses: ./.github/workflows/build-and-deploy.yml
+    uses: ./.github/workflows/build-and-push.yml
     with:
-      APPS: '["indexer", "relayer"]'
+      APPS: '["indexer", "relayer", "db-backup"]'
       STAGE: sandbox
-      APP_NAMESPACE: ton-teleport-sand
+      DOCKER_REGISTRY_URL: registry.digitalocean.com/rsquad-dev
     secrets:
-      KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
+      DOCKER_REGISTRY_USERNAME: ${{ secrets.DOCR_USERNAME }}
+      DOCKER_REGISTRY_PASSWORD: ${{ secrets.DOCR_PASSWORD }}
