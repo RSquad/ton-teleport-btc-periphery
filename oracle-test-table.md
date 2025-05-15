@@ -20,13 +20,15 @@
 
 | Description                                                                           | Status | Comment |
 |---------------------------------------------------------------------------------------|--------|---------|
-| 2.1. Turn off one or more oracles after committing to DKG:                            | ✅      |         |
-| - Ensure the system completes DKG without them                                        |        |         |
+| 2.1. Turn off one or more oracles:                                                    |        |         |
+| - DKG completes if only a subset of main validators runs oracles                      | ✅     |         |
+| - DKG completes if some oracles are shutdown during DKG process                       | ✅     |DKG restarts after a timeout but without non-active oracles|
 | 2.2. Modify one of the oracles to send incorrect packets in different rounds:         |        |         |
-| - Garbage in round 1 packet                                                           |        |         |
-| - Garbage in round 2 packet                                                           |        |         |
-| - Garbage in round 3 packet                                                           |        |         |
-| Expected result: oracles eject the bad oracle and the DKG process restarts without it |        |         |
+| - minSigners = maxSigners in part1                                                    | ❌     |Oracles do not claim a culprit and cannot complete DKG|
+| - Garbage in round 1 packet                                                           | ✅     |         |
+| - Garbage in round 2 packet                                                           | ✅     |         |
+| - Garbage in round 3 packet                                                           | ✅     |         |
+| Expected result: oracles evict the bad oracle and the DKG process restarts without it |        |         |
 | 2.3. Repeat steps 2.1 and 2.2 for the signing process.                                |        |         |
 | 2.4. Check recovery from MTC backup.                                                  |        |         |
 
