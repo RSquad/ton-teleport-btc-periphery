@@ -230,7 +230,10 @@ func (e *Executor) executeR1(dkg *coordinator.DKG) bool {
 				return false
 			}
 			r1Package = randomBytes
-			r1Package[0] = 0
+			if !e.cfg.TestBadR1PkgRandomVersion {
+				e.logDebug("R1 package version is 0")
+				r1Package[0] = 0
+			}
 		}
 
 		// Generate key pair for Round2 encryption
@@ -327,6 +330,15 @@ func (e *Executor) executeR2(dkg *coordinator.DKG) bool {
 
 		// Convert R2 packages to bytes
 		r2packagesSerialized := helpers.SerializeR2Packages(r2EncryptedPackages)
+
+		if e.cfg.TestBadR2Serialized {
+			e.logDebug("Damage serialized r2 packages")
+			r2packagesSerialized = make([]byte, len(r2packagesSerialized))
+			_, err := rand.Read(r2packagesSerialized)
+			if err != nil {
+				return false
+			}
+		}
 
 		// Save the result into the artifacts
 		e.artifacts.r2 = &Round2Result{
