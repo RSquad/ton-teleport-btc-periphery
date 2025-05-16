@@ -18,7 +18,7 @@
     "editable": true,
     "fiscalYearStartMonth": 0,
     "graphTooltip": 0,
-    "id": 7,
+    "id": 1,
     "links": [],
     "panels": [
         {
@@ -78,7 +78,7 @@
                     "editorMode": "code",
                     "format": "table",
                     "rawQuery": true,
-                    "rawSql": "SELECT count(*) as row_count FROM mints;",
+                    "rawSql": "SELECT count(*) as row_count FROM mints where status = 'SUCCESS'",
                     "refId": "A",
                     "sql": {
                         "columns": [
@@ -160,7 +160,7 @@
                     "editorMode": "code",
                     "format": "table",
                     "rawQuery": true,
-                    "rawSql": "SELECT count(*) as row_count FROM burns;",
+                    "rawSql": "SELECT COUNT(*) AS row_count FROM burns AS b\nJOIN pegouts AS p ON p.id = b.pegout_burn WHERE p.status = 'CONFIRMED'",
                     "refId": "A",
                     "sql": {
                         "columns": [
@@ -771,7 +771,7 @@
         }
     ],
     "preload": false,
-    "refresh": "10s",
+    "refresh": "1m",
     "schemaVersion": 40,
     "tags": [],
     "templating": {
@@ -797,13 +797,13 @@
         ]
     },
     "time": {
-        "from": "now-6h",
+        "from": "now-30d",
         "to": "now"
     },
     "timepicker": {},
     "timezone": "browser",
     "title": "Statistics",
     "uid": "belv5pokjhszke",
-    "version": 4,
+    "version": 1,
     "weekStart": ""
 }

@@ -18,7 +18,7 @@
     "editable": true,
     "fiscalYearStartMonth": 0,
     "graphTooltip": 0,
-    "id": 5,
+    "id": 4,
     "links": [],
     "panels": [
         {
@@ -38,17 +38,31 @@
                         },
                         "inspect": false
                     },
-                    "mappings": [],
+                    "mappings": [
+                        {
+                            "options": {
+                                "CONFIRMED": {
+                                    "color": "green",
+                                    "index": 0
+                                },
+                                "SIGNED": {
+                                    "color": "blue",
+                                    "index": 1
+                                },
+                                "SIGNING": {
+                                    "color": "yellow",
+                                    "index": 2
+                                }
+                            },
+                            "type": "value"
+                        }
+                    ],
                     "thresholds": {
                         "mode": "absolute",
                         "steps": [
                             {
                                 "color": "green",
                                 "value": null
-                            },
-                            {
-                                "color": "red",
-                                "value": 80
                             }
                         ]
                     }
@@ -163,6 +177,12 @@
                             {
                                 "id": "displayName",
                                 "value": "Pegout Status"
+                            },
+                            {
+                                "id": "custom.cellOptions",
+                                "value": {
+                                    "type": "color-text"
+                                }
                             }
                         ]
                     },
@@ -175,13 +195,21 @@
                             {
                                 "id": "displayName",
                                 "value": "Amount"
+                            },
+                            {
+                                "id": "decimals",
+                                "value": 8
+                            },
+                            {
+                                "id": "unit",
+                                "value": "BTC"
                             }
                         ]
                     }
                 ]
             },
             "gridPos": {
-                "h": 13,
+                "h": 50,
                 "w": 24,
                 "x": 0,
                 "y": 0
@@ -209,7 +237,7 @@
                     "editorMode": "code",
                     "format": "table",
                     "rawQuery": true,
-                    "rawSql": "SELECT\n   COALESCE(CAST(tt.created_at AS TEXT), '_') AS created_at,\n   TO_CHAR(CAST(b.amount AS real) / 100000000.0, 'FM999999999.00000000') || ' BTC' AS amount,\n   COALESCE(p.addr, '_') AS pegout_addr,\n   b.sender_addr,\n   COALESCE(p.bitcoin_tx_id, '_') AS bitcoin_tx_id,\n   COALESCE(tt.hash, '_') AS ton_tx,\n   COALESCE(p.status, '_') AS pegout_status\nFROM burns AS b\nLEFT JOIN ton_txes AS tt ON tt.id = b.ton_tx_burn\nLEFT JOIN pegouts AS p ON p.id = b.pegout_burn\nORDER BY b.id DESC\nLIMIT ${page_size}\nOFFSET ${page_size}*${page_id};\n",
+                    "rawSql": "SELECT\n   created_at,\n   CAST(b.amount AS real) / 100000000.0 AS amount,\n   COALESCE(p.addr, '_') AS pegout_addr,\n   b.sender_addr,\n   COALESCE(p.bitcoin_tx_id, '_') AS bitcoin_tx_id,\n   COALESCE(tt.hash, '_') AS ton_tx,\n   COALESCE(p.status, '_') AS pegout_status\nFROM burns AS b\nLEFT JOIN ton_txes AS tt ON tt.id = b.ton_tx_burn\nLEFT JOIN pegouts AS p ON p.id = b.pegout_burn\nORDER BY b.id DESC\nLIMIT ${page_size}\nOFFSET ${page_size}*${page_id};\n",
                     "refId": "A",
                     "sql": {
                         "columns": [
@@ -264,6 +292,7 @@
                 }
             ],
             "title": "Burns",
+            "transparent": true,
             "type": "table"
         },
         {
@@ -282,8 +311,7 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green",
-                                "value": null
+                                "color": "green"
                             },
                             {
                                 "color": "red",
@@ -298,7 +326,7 @@
                 "h": 2,
                 "w": 10,
                 "x": 5,
-                "y": 13
+                "y": 50
             },
             "id": 2,
             "options": {
@@ -359,7 +387,7 @@
         }
     ],
     "preload": false,
-    "refresh": "10s",
+    "refresh": "1m",
     "schemaVersion": 40,
     "tags": [],
     "templating": {
@@ -373,13 +401,13 @@
                     "type": "grafana-postgresql-datasource",
                     "uid": "PCC52D03280B7034C"
                 },
-                "definition": "SELECT COUNT(*)/${page_size} + (CASE WHEN COUNT(*)%${page_size} > 0 THEN 1 ELSE 0 END) FROM mints as m join ton_txes as tt on m.ton_tx_mint = tt.id\njoin pegins as p on m.id = p.mint_pegin",
+                "definition": "SELECT COUNT(*)/${page_size} + (CASE WHEN COUNT(*)%${page_size} > 0 THEN 1 ELSE 0 END) FROM burns as b\nLEFT JOIN ton_txes AS tt ON tt.id = b.ton_tx_burn\nLEFT JOIN pegouts AS p ON p.id = b.pegout_burn",
                 "description": "",
                 "hide": 2,
                 "name": "total_pages",
                 "options": [],
-                "query": "SELECT COUNT(*)/${page_size} + (CASE WHEN COUNT(*)%${page_size} > 0 THEN 1 ELSE 0 END) FROM mints as m join ton_txes as tt on m.ton_tx_mint = tt.id\njoin pegins as p on m.id = p.mint_pegin",
-                "refresh": 1,
+                "query": "SELECT COUNT(*)/${page_size} + (CASE WHEN COUNT(*)%${page_size} > 0 THEN 1 ELSE 0 END) FROM burns as b\nLEFT JOIN ton_txes AS tt ON tt.id = b.ton_tx_burn\nLEFT JOIN pegouts AS p ON p.id = b.pegout_burn",
+                "refresh": 2,
                 "regex": "",
                 "type": "query"
             },
@@ -391,6 +419,7 @@
                     "text": "50",
                     "value": "50"
                 },
+                "hide": 2,
                 "name": "page_size",
                 "options": [
                     {
@@ -450,6 +479,6 @@
     "timezone": "browser",
     "title": "Burns",
     "uid": "aejhaitesp340a",
-    "version": 2,
+    "version": 5,
     "weekStart": ""
 }

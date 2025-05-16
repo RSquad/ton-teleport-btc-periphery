@@ -18,7 +18,7 @@
     "editable": true,
     "fiscalYearStartMonth": 0,
     "graphTooltip": 0,
-    "id": 4,
+    "id": 2,
     "links": [],
     "panels": [
         {
@@ -1218,7 +1218,7 @@
                     {
                         "matcher": {
                             "id": "byName",
-                            "options": "mint_address"
+                            "options": "shortened_mint_address"
                         },
                         "properties": [
                             {
@@ -1231,7 +1231,7 @@
                                     {
                                         "targetBlank": true,
                                         "title": "",
-                                        "url": "https://testnet.tonviewer.com/${__value.text}"
+                                        "url": "https://testnet.tonviewer.com/"
                                     }
                                 ]
                             }
@@ -1248,12 +1248,19 @@
                                 "value": "Bitcoin Script"
                             }
                         ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "mint_address"
+                        },
+                        "properties": []
                     }
                 ]
             },
             "gridPos": {
                 "h": 6,
-                "w": 12,
+                "w": 14,
                 "x": 0,
                 "y": 18
             },
@@ -1289,7 +1296,7 @@
                     "editorMode": "code",
                     "format": "table",
                     "rawQuery": true,
-                    "rawSql": "SELECT\n  UTXO->>'Address' AS addr,\n  UTXO->>'Amount' AS amount,\n  UTXO->>'Index' AS index,\n  UTXO->>'TapMerkleRoot' AS tap_merkle_root,\n  UTXO->>'MintAddress' AS mint_address,\n  UTXO->>'Script' AS script\nFROM metrics.data,\nLATERAL jsonb_array_elements(payload::jsonb->'UTXOset') AS UTXO\nWHERE type_id = 4 ORDER BY id DESC LIMIT 1",
+                    "rawSql": "SELECT\n  UTXO->>'Address' AS addr,\n  UTXO->>'Amount' AS amount,\n  UTXO->>'Index' AS index,\n  UTXO->>'TapMerkleRoot' AS tap_merkle_root,\n  UTXO->>'MintAddress' AS mint_address,\n  SUBSTRING(UTXO->>'MintAddress', 1, 10) || '...' || SUBSTRING(UTXO->>'MintAddress', LENGTH(UTXO->>'MintAddress') - 10) AS shortened_mint_address,\n  UTXO->>'Script' AS script\nFROM metrics.data,\nLATERAL jsonb_array_elements(payload::jsonb->'UTXOset') AS UTXO\nWHERE type_id = 4 ORDER BY id DESC LIMIT 1",
                     "refId": "A",
                     "sql": {
                         "columns": [
@@ -1335,18 +1342,28 @@
                     }
                 },
                 {
-                    "id": "filterFieldsByName",
+                    "id": "organize",
                     "options": {
-                        "byVariable": false,
-                        "include": {
-                            "names": [
-                                "addr",
-                                "index",
-                                "tap_merkle_root",
-                                "mint_address",
-                                "script",
-                                "Amount"
-                            ]
+                        "excludeByName": {
+                            "amount": true,
+                            "mint_address": false,
+                            "shortened_mint_address": true
+                        },
+                        "includeByName": {},
+                        "indexByName": {
+                            "Amount": 1,
+                            "addr": 0,
+                            "amount": 7,
+                            "index": 2,
+                            "mint_address": 5,
+                            "script": 6,
+                            "shortened_mint_address": 4,
+                            "tap_merkle_root": 3
+                        },
+                        "renameByName": {
+                            "mint_address": "Receiver Address",
+                            "short_mint_address": "Receiver Address",
+                            "shortened_mint_address": ""
                         }
                     }
                 }
@@ -1356,7 +1373,7 @@
         }
     ],
     "preload": false,
-    "refresh": "10s",
+    "refresh": "1m",
     "schemaVersion": 40,
     "tags": [],
     "templating": {
