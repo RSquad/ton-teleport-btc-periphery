@@ -189,10 +189,6 @@ func (c *TeleportContract) GetStorage(block *tonutils.BlockIDExt) (Storage, erro
 
 	tweakedPubkey := hex.EncodeToString(utils.BytesPadTo(storage.MustInt(storageIndexTweakedPubkey).Bytes(), 32))
 	internalKey := hex.EncodeToString(utils.BytesPadTo(storage.MustInt(storageIndexInternalKey).Bytes(), 32))
-	deposits, err := loadDepositsMap(storage.MustCell(storageIndexDeposits))
-	if err != nil {
-		return Storage{}, err
-	}
 
 	nextSVB := uint16(storage.MustInt(storageIndexNextSVB).Uint64())
 	baseSVB := uint16(storage.MustInt(storageIndexBaseSVB).Uint64())
@@ -212,9 +208,24 @@ func (c *TeleportContract) GetStorage(block *tonutils.BlockIDExt) (Storage, erro
 	totalServiceFee := int32(storage.MustInt(storageIndexTotalServiceFee).Int64())
 	enabled := storage.MustInt(storageIndexEnabled).Bit(0) > 0
 
-	utxoSet, err := loadUTXOset(storage.MustCell(storageIndexUTXOset))
-	if err != nil {
-		return Storage{}, err
+	// Deposits
+	depositsCell, _ := storage.Cell(storageIndexDeposits)
+	var deposits = map[uint64]DepositData{}
+	if depositsCell != nil {
+		deposits, err = loadDepositsMap(depositsCell)
+		if err != nil {
+			return Storage{}, err
+		}
+	}
+
+	// UTXO set
+	utxoSetCell, _ := storage.Cell(storageIndexUTXOset)
+	var utxoSet = map[string]UTXOData{}
+	if utxoSetCell != nil {
+		utxoSet, err = loadUTXOset(utxoSetCell)
+		if err != nil {
+			return Storage{}, err
+		}
 	}
 
 	return Storage{

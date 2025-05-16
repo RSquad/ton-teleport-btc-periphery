@@ -24,7 +24,7 @@
         {
             "datasource": {
                 "type": "grafana-postgresql-datasource",
-                "uid": "PCC52D03280B7034C"
+                "uid": "fejyj243rfxtsd"
             },
             "fieldConfig": {
                 "defaults": {
@@ -93,7 +93,7 @@
                 {
                     "datasource": {
                         "type": "grafana-postgresql-datasource",
-                        "uid": "PCC52D03280B7034C"
+                        "uid": "fejyj243rfxtsd"
                     },
                     "editorMode": "code",
                     "format": "table",
@@ -227,7 +227,7 @@
                 },
                 "datasource": {
                     "type": "grafana-postgresql-datasource",
-                    "uid": "PCC52D03280B7034C"
+                    "uid": "fejyj243rfxtsd"
                 },
                 "definition": "SELECT COUNT(*)/${page_size} + (CASE WHEN COUNT(*)%${page_size} > 0 THEN 1 ELSE 0 END) FROM internal_keys",
                 "description": "Total pages count",
