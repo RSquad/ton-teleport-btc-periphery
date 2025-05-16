@@ -76,7 +76,7 @@
         {
             "datasource": {
                 "type": "grafana-postgresql-datasource",
-                "uid": "PCC52D03280B7034C"
+                "uid": "fejyj243rfxtsd"
             },
             "fieldConfig": {
                 "defaults": {
@@ -144,12 +144,12 @@
                 {
                     "datasource": {
                         "type": "grafana-postgresql-datasource",
-                        "uid": "PCC52D03280B7034C"
+                        "uid": "fejyj243rfxtsd"
                     },
                     "editorMode": "code",
                     "format": "table",
                     "rawQuery": true,
-                    "rawSql": "SELECT payload FROM metrics.data WHERE type_id = 4 ORDER BY id DESC LIMIT 1;",
+                    "rawSql": "SELECT payload FROM metrics_data WHERE type_id = 4 ORDER BY id DESC LIMIT 1;",
                     "refId": "A",
                     "sql": {
                         "columns": [
@@ -202,7 +202,7 @@
         {
             "datasource": {
                 "type": "grafana-postgresql-datasource",
-                "uid": "PCC52D03280B7034C"
+                "uid": "fejyj243rfxtsd"
             },
             "fieldConfig": {
                 "defaults": {
@@ -278,12 +278,12 @@
                 {
                     "datasource": {
                         "type": "grafana-postgresql-datasource",
-                        "uid": "PCC52D03280B7034C"
+                        "uid": "fejyj243rfxtsd"
                     },
                     "editorMode": "code",
                     "format": "table",
                     "rawQuery": true,
-                    "rawSql": "SELECT payload FROM metrics.data WHERE type_id = 4 ORDER BY id DESC LIMIT 1;",
+                    "rawSql": "SELECT payload FROM metrics_data WHERE type_id = 4 ORDER BY id DESC LIMIT 1;",
                     "refId": "A",
                     "sql": {
                         "columns": [
@@ -384,7 +384,7 @@
         {
             "datasource": {
                 "type": "grafana-postgresql-datasource",
-                "uid": "PCC52D03280B7034C"
+                "uid": "fejyj243rfxtsd"
             },
             "fieldConfig": {
                 "defaults": {
@@ -450,12 +450,12 @@
                 {
                     "datasource": {
                         "type": "grafana-postgresql-datasource",
-                        "uid": "PCC52D03280B7034C"
+                        "uid": "fejyj243rfxtsd"
                     },
                     "editorMode": "code",
                     "format": "table",
                     "rawQuery": true,
-                    "rawSql": "SELECT \n  jsonb_array_length(payload::jsonb->'Deposits') AS deposit_count\nFROM metrics.data\nWHERE type_id = 4 ORDER BY id DESC LIMIT 1",
+                    "rawSql": "SELECT jsonb_array_length(CASE WHEN jsonb_typeof(payload::jsonb->'Deposits') = 'array' THEN payload::jsonb->'Deposits' ELSE '[]'::jsonb END) AS deposit_count FROM metrics_data WHERE type_id = 4 ORDER BY id DESC LIMIT 1",
                     "refId": "A",
                     "sql": {
                         "columns": [
@@ -613,7 +613,7 @@
         {
             "datasource": {
                 "type": "grafana-postgresql-datasource",
-                "uid": "PCC52D03280B7034C"
+                "uid": "fejyj243rfxtsd"
             },
             "fieldConfig": {
                 "defaults": {
@@ -673,12 +673,12 @@
                 {
                     "datasource": {
                         "type": "grafana-postgresql-datasource",
-                        "uid": "PCC52D03280B7034C"
+                        "uid": "fejyj243rfxtsd"
                     },
                     "editorMode": "code",
                     "format": "table",
                     "rawQuery": true,
-                    "rawSql": "SELECT payload FROM metrics.data WHERE type_id = 4 ORDER BY id DESC LIMIT 1;",
+                    "rawSql": "SELECT payload FROM metrics_data WHERE type_id = 4 ORDER BY id DESC LIMIT 1;",
                     "refId": "A",
                     "sql": {
                         "columns": [
@@ -736,7 +736,7 @@
         {
             "datasource": {
                 "type": "grafana-postgresql-datasource",
-                "uid": "PCC52D03280B7034C"
+                "uid": "fejyj243rfxtsd"
             },
             "fieldConfig": {
                 "defaults": {
@@ -790,12 +790,12 @@
                 {
                     "datasource": {
                         "type": "grafana-postgresql-datasource",
-                        "uid": "PCC52D03280B7034C"
+                        "uid": "fejyj243rfxtsd"
                     },
                     "editorMode": "code",
                     "format": "table",
                     "rawQuery": true,
-                    "rawSql": "SELECT payload FROM metrics.data WHERE type_id = 4 ORDER BY id DESC LIMIT 1;",
+                    "rawSql": "SELECT payload FROM metrics_data WHERE type_id = 4 ORDER BY id DESC LIMIT 1;",
                     "refId": "A",
                     "sql": {
                         "columns": [
@@ -910,7 +910,7 @@
         {
             "datasource": {
                 "type": "grafana-postgresql-datasource",
-                "uid": "PCC52D03280B7034C"
+                "uid": "fejyj243rfxtsd"
             },
             "fieldConfig": {
                 "defaults": {
@@ -981,12 +981,12 @@
                 {
                     "datasource": {
                         "type": "grafana-postgresql-datasource",
-                        "uid": "PCC52D03280B7034C"
+                        "uid": "fejyj243rfxtsd"
                     },
                     "editorMode": "code",
                     "format": "table",
                     "rawQuery": true,
-                    "rawSql": "SELECT payload FROM metrics.data WHERE type_id = 4 ORDER BY id DESC LIMIT 1;",
+                    "rawSql": "SELECT payload FROM metrics_data WHERE type_id = 4 ORDER BY id DESC LIMIT 1;",
                     "refId": "A",
                     "sql": {
                         "columns": [
@@ -1124,7 +1124,7 @@
         {
             "datasource": {
                 "type": "grafana-postgresql-datasource",
-                "uid": "PCC52D03280B7034C"
+                "uid": "fejyj243rfxtsd"
             },
             "fieldConfig": {
                 "defaults": {
@@ -1291,12 +1291,12 @@
                 {
                     "datasource": {
                         "type": "grafana-postgresql-datasource",
-                        "uid": "PCC52D03280B7034C"
+                        "uid": "fejyj243rfxtsd"
                     },
                     "editorMode": "code",
                     "format": "table",
                     "rawQuery": true,
-                    "rawSql": "SELECT\n  UTXO->>'Address' AS addr,\n  UTXO->>'Amount' AS amount,\n  UTXO->>'Index' AS index,\n  UTXO->>'TapMerkleRoot' AS tap_merkle_root,\n  UTXO->>'MintAddress' AS mint_address,\n  SUBSTRING(UTXO->>'MintAddress', 1, 10) || '...' || SUBSTRING(UTXO->>'MintAddress', LENGTH(UTXO->>'MintAddress') - 10) AS shortened_mint_address,\n  UTXO->>'Script' AS script\nFROM metrics.data,\nLATERAL jsonb_array_elements(payload::jsonb->'UTXOset') AS UTXO\nWHERE type_id = 4 ORDER BY id DESC LIMIT 1",
+                    "rawSql": "SELECT UTXO->>'Address' AS addr, UTXO->>'Amount' AS amount, UTXO->>'Index' AS index, UTXO->>'TapMerkleRoot' AS tap_merkle_root, UTXO->>'MintAddress' AS mint_address, UTXO->>'Script' AS script FROM metrics_data, LATERAL jsonb_array_elements(CASE WHEN jsonb_typeof(payload::jsonb->'UTXOset') = 'array' THEN payload::jsonb->'UTXOset' ELSE '[]'::jsonb END) AS UTXO\nWHERE type_id = 4 ORDER BY id DESC LIMIT 1",
                     "refId": "A",
                     "sql": {
                         "columns": [

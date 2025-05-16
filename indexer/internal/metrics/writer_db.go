@@ -47,14 +47,8 @@ func NewWriterDB(
 }
 
 func (writer *WriterDB) PrepareDB() error {
-	// Check if the schema `metrics` exists
-	_, err := writer.db.Exec(`CREATE SCHEMA IF NOT EXISTS "metrics";`)
-	if err != nil {
-		return err
-	}
-
-	// Check if the table `data` exists
-	_, err = writer.db.Exec(`CREATE TABLE IF NOT EXISTS "metrics"."data" (
+	// Check if the table `metrics_data` exists
+	_, err := writer.db.Exec(`CREATE TABLE IF NOT EXISTS metrics_data (
     	id BIGSERIAL PRIMARY KEY,
     	create_at TIMESTAMPTZ NOT NULL,
 			update_at TIMESTAMPTZ NOT NULL,
@@ -98,13 +92,13 @@ func (writer *WriterDB) Work(ctx context.Context, wg *sync.WaitGroup) {
 
 func (writer *WriterDB) Write(payload PayloadDB) error {
 	_, err := writer.db.Exec(
-		`INSERT INTO "metrics"."data" (create_at, update_at, type_id, payload) VALUES 
+		`INSERT INTO metrics_data (create_at, update_at, type_id, payload) VALUES 
 		(
 			TO_TIMESTAMP($1) AT TIME ZONE 'UTC',
 			TO_TIMESTAMP($1) AT TIME ZONE 'UTC',
 			$2,
 			$3
-		) ON CONFLICT ON CONSTRAINT "data_type_id_payload_hash_key" DO UPDATE SET update_at = NOW()`,
+		) ON CONFLICT ON CONSTRAINT "metrics_data_type_id_payload_hash_key" DO UPDATE SET update_at = NOW()`,
 		payload.timestamp.Unix(),
 		payload.typeId,
 		payload.payload,

@@ -50,7 +50,7 @@
         {
             "datasource": {
                 "type": "grafana-postgresql-datasource",
-                "uid": "PCC52D03280B7034C"
+                "uid": "fejyj243rfxtsd"
             },
             "fieldConfig": {
                 "defaults": {
@@ -103,12 +103,12 @@
                 {
                     "datasource": {
                         "type": "grafana-postgresql-datasource",
-                        "uid": "PCC52D03280B7034C"
+                        "uid": "fejyj243rfxtsd"
                     },
                     "editorMode": "code",
                     "format": "table",
                     "rawQuery": true,
-                    "rawSql": "SELECT payload FROM metrics.data WHERE type_id = 2 ORDER BY id DESC LIMIT 1;",
+                    "rawSql": "SELECT payload FROM metrics_data WHERE type_id = 2 ORDER BY id DESC LIMIT 1;",
                     "refId": "A",
                     "sql": {
                         "columns": [
@@ -154,7 +154,7 @@
         {
             "datasource": {
                 "type": "grafana-postgresql-datasource",
-                "uid": "PCC52D03280B7034C"
+                "uid": "fejyj243rfxtsd"
             },
             "fieldConfig": {
                 "defaults": {
@@ -227,12 +227,12 @@
                 {
                     "datasource": {
                         "type": "grafana-postgresql-datasource",
-                        "uid": "PCC52D03280B7034C"
+                        "uid": "fejyj243rfxtsd"
                     },
                     "editorMode": "code",
                     "format": "table",
                     "rawQuery": true,
-                    "rawSql": "SELECT payload FROM metrics.data WHERE type_id = 2 ORDER BY id DESC LIMIT 1;",
+                    "rawSql": "SELECT payload FROM metrics_data WHERE type_id = 2 ORDER BY id DESC LIMIT 1;",
                     "refId": "A",
                     "sql": {
                         "columns": [
@@ -278,7 +278,7 @@
         {
             "datasource": {
                 "type": "grafana-postgresql-datasource",
-                "uid": "PCC52D03280B7034C"
+                "uid": "fejyj243rfxtsd"
             },
             "fieldConfig": {
                 "defaults": {
@@ -331,12 +331,12 @@
                 {
                     "datasource": {
                         "type": "grafana-postgresql-datasource",
-                        "uid": "PCC52D03280B7034C"
+                        "uid": "fejyj243rfxtsd"
                     },
                     "editorMode": "code",
                     "format": "table",
                     "rawQuery": true,
-                    "rawSql": "SELECT payload FROM metrics.data WHERE type_id = 2 ORDER BY id DESC LIMIT 1;",
+                    "rawSql": "SELECT payload FROM metrics_data WHERE type_id = 2 ORDER BY id DESC LIMIT 1;",
                     "refId": "A",
                     "sql": {
                         "columns": [
@@ -381,7 +381,7 @@
         {
             "datasource": {
                 "type": "grafana-postgresql-datasource",
-                "uid": "PCC52D03280B7034C"
+                "uid": "fejyj243rfxtsd"
             },
             "fieldConfig": {
                 "defaults": {
@@ -441,12 +441,12 @@
                 {
                     "datasource": {
                         "type": "grafana-postgresql-datasource",
-                        "uid": "PCC52D03280B7034C"
+                        "uid": "fejyj243rfxtsd"
                     },
                     "editorMode": "code",
                     "format": "table",
                     "rawQuery": true,
-                    "rawSql": "SELECT payload FROM metrics.data WHERE type_id = 2 ORDER BY id DESC LIMIT 1;",
+                    "rawSql": "SELECT payload FROM metrics_data WHERE type_id = 2 ORDER BY id DESC LIMIT 1;",
                     "refId": "A",
                     "sql": {
                         "columns": [
@@ -525,7 +525,7 @@
         {
             "datasource": {
                 "type": "grafana-postgresql-datasource",
-                "uid": "PCC52D03280B7034C"
+                "uid": "fejyj243rfxtsd"
             },
             "fieldConfig": {
                 "defaults": {
@@ -578,12 +578,12 @@
                 {
                     "datasource": {
                         "type": "grafana-postgresql-datasource",
-                        "uid": "PCC52D03280B7034C"
+                        "uid": "fejyj243rfxtsd"
                     },
                     "editorMode": "code",
                     "format": "table",
                     "rawQuery": true,
-                    "rawSql": "SELECT payload FROM metrics.data WHERE type_id = 3 ORDER BY id DESC LIMIT 1;",
+                    "rawSql": "SELECT payload FROM metrics_data WHERE type_id = 3 ORDER BY id DESC LIMIT 1;",
                     "refId": "A",
                     "sql": {
                         "columns": [
@@ -628,7 +628,7 @@
         {
             "datasource": {
                 "type": "grafana-postgresql-datasource",
-                "uid": "PCC52D03280B7034C"
+                "uid": "fejyj243rfxtsd"
             },
             "fieldConfig": {
                 "defaults": {
@@ -688,12 +688,12 @@
                 {
                     "datasource": {
                         "type": "grafana-postgresql-datasource",
-                        "uid": "PCC52D03280B7034C"
+                        "uid": "fejyj243rfxtsd"
                     },
                     "editorMode": "code",
                     "format": "table",
                     "rawQuery": true,
-                    "rawSql": "SELECT payload FROM metrics.data WHERE type_id = 3 ORDER BY id DESC LIMIT 1;",
+                    "rawSql": "SELECT payload FROM metrics_data WHERE type_id = 3 ORDER BY id DESC LIMIT 1;",
                     "refId": "A",
                     "sql": {
                         "columns": [
@@ -738,7 +738,7 @@
         {
             "datasource": {
                 "type": "grafana-postgresql-datasource",
-                "uid": "PCC52D03280B7034C"
+                "uid": "fejyj243rfxtsd"
             },
             "fieldConfig": {
                 "defaults": {
@@ -791,12 +791,12 @@
                 {
                     "datasource": {
                         "type": "grafana-postgresql-datasource",
-                        "uid": "PCC52D03280B7034C"
+                        "uid": "fejyj243rfxtsd"
                     },
                     "editorMode": "code",
                     "format": "table",
                     "rawQuery": true,
-                    "rawSql": "SELECT payload FROM metrics.data WHERE type_id = 3 ORDER BY id DESC LIMIT 1;",
+                    "rawSql": "SELECT payload FROM metrics_data WHERE type_id = 3 ORDER BY id DESC LIMIT 1;",
                     "refId": "A",
                     "sql": {
                         "columns": [
@@ -841,7 +841,7 @@
         {
             "datasource": {
                 "type": "grafana-postgresql-datasource",
-                "uid": "PCC52D03280B7034C"
+                "uid": "fejyj243rfxtsd"
             },
             "fieldConfig": {
                 "defaults": {
@@ -895,12 +895,12 @@
                 {
                     "datasource": {
                         "type": "grafana-postgresql-datasource",
-                        "uid": "PCC52D03280B7034C"
+                        "uid": "fejyj243rfxtsd"
                     },
                     "editorMode": "code",
                     "format": "table",
                     "rawQuery": true,
-                    "rawSql": "SELECT payload FROM metrics.data WHERE type_id = 3 ORDER BY id DESC LIMIT 1;",
+                    "rawSql": "SELECT payload FROM metrics_data WHERE type_id = 3 ORDER BY id DESC LIMIT 1;",
                     "refId": "A",
                     "sql": {
                         "columns": [
