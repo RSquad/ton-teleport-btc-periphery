@@ -18,13 +18,13 @@
     "editable": true,
     "fiscalYearStartMonth": 0,
     "graphTooltip": 0,
-    "id": 7,
+    "id": 1,
     "links": [],
     "panels": [
         {
             "datasource": {
                 "type": "grafana-postgresql-datasource",
-                "uid": "fejyj243rfxtsd"
+                "uid": "PCC52D03280B7034C"
             },
             "fieldConfig": {
                 "defaults": {
@@ -73,12 +73,12 @@
                 {
                     "datasource": {
                         "type": "grafana-postgresql-datasource",
-                        "uid": "fejyj243rfxtsd"
+                        "uid": "PCC52D03280B7034C"
                     },
                     "editorMode": "code",
                     "format": "table",
                     "rawQuery": true,
-                    "rawSql": "SELECT count(*) as row_count FROM mints;",
+                    "rawSql": "SELECT count(*) as row_count FROM mints where status = 'SUCCESS'",
                     "refId": "A",
                     "sql": {
                         "columns": [
@@ -106,7 +106,7 @@
         {
             "datasource": {
                 "type": "grafana-postgresql-datasource",
-                "uid": "fejyj243rfxtsd"
+                "uid": "PCC52D03280B7034C"
             },
             "fieldConfig": {
                 "defaults": {
@@ -155,12 +155,12 @@
                 {
                     "datasource": {
                         "type": "grafana-postgresql-datasource",
-                        "uid": "fejyj243rfxtsd"
+                        "uid": "PCC52D03280B7034C"
                     },
                     "editorMode": "code",
                     "format": "table",
                     "rawQuery": true,
-                    "rawSql": "SELECT count(*) as row_count FROM burns;",
+                    "rawSql": "SELECT COUNT(*) AS row_count FROM burns AS b\nJOIN pegouts AS p ON p.id = b.pegout_burn WHERE p.status = 'CONFIRMED'",
                     "refId": "A",
                     "sql": {
                         "columns": [
@@ -293,7 +293,7 @@
         {
             "datasource": {
                 "type": "grafana-postgresql-datasource",
-                "uid": "fejyj243rfxtsd"
+                "uid": "PCC52D03280B7034C"
             },
             "fieldConfig": {
                 "defaults": {
@@ -343,7 +343,7 @@
                 {
                     "datasource": {
                         "type": "grafana-postgresql-datasource",
-                        "uid": "fejyj243rfxtsd"
+                        "uid": "PCC52D03280B7034C"
                     },
                     "editorMode": "code",
                     "format": "table",
@@ -376,7 +376,7 @@
         {
             "datasource": {
                 "type": "grafana-postgresql-datasource",
-                "uid": "fejyj243rfxtsd"
+                "uid": "PCC52D03280B7034C"
             },
             "fieldConfig": {
                 "defaults": {
@@ -426,7 +426,7 @@
                 {
                     "datasource": {
                         "type": "grafana-postgresql-datasource",
-                        "uid": "fejyj243rfxtsd"
+                        "uid": "PCC52D03280B7034C"
                     },
                     "editorMode": "code",
                     "format": "table",
@@ -459,7 +459,7 @@
         {
             "datasource": {
                 "type": "grafana-postgresql-datasource",
-                "uid": "fejyj243rfxtsd"
+                "uid": "PCC52D03280B7034C"
             },
             "fieldConfig": {
                 "defaults": {
@@ -566,7 +566,7 @@
                 {
                     "datasource": {
                         "type": "grafana-postgresql-datasource",
-                        "uid": "fejyj243rfxtsd"
+                        "uid": "PCC52D03280B7034C"
                     },
                     "editorMode": "code",
                     "format": "table",
@@ -594,7 +594,7 @@
                 {
                     "datasource": {
                         "type": "grafana-postgresql-datasource",
-                        "uid": "fejyj243rfxtsd"
+                        "uid": "PCC52D03280B7034C"
                     },
                     "editorMode": "code",
                     "format": "table",
@@ -628,7 +628,7 @@
         {
             "datasource": {
                 "type": "grafana-postgresql-datasource",
-                "uid": "fejyj243rfxtsd"
+                "uid": "PCC52D03280B7034C"
             },
             "fieldConfig": {
                 "defaults": {
@@ -710,7 +710,7 @@
                 {
                     "datasource": {
                         "type": "grafana-postgresql-datasource",
-                        "uid": "fejyj243rfxtsd"
+                        "uid": "PCC52D03280B7034C"
                     },
                     "editorMode": "code",
                     "format": "table",
@@ -738,7 +738,7 @@
                 {
                     "datasource": {
                         "type": "grafana-postgresql-datasource",
-                        "uid": "fejyj243rfxtsd"
+                        "uid": "PCC52D03280B7034C"
                     },
                     "editorMode": "code",
                     "format": "table",
@@ -771,7 +771,7 @@
         }
     ],
     "preload": false,
-    "refresh": "10s",
+    "refresh": "1m",
     "schemaVersion": 40,
     "tags": [],
     "templating": {
@@ -783,7 +783,7 @@
                 },
                 "datasource": {
                     "type": "grafana-postgresql-datasource",
-                    "uid": "fejyj243rfxtsd"
+                    "uid": "PCC52D03280B7034C"
                 },
                 "definition": "select \n  sum((cast (b.amount as numeric)) / 100000000)::numeric(20,8) as total_burned\nfrom burns as b\njoin pegouts as p on p.id = b.pegout_burn where p.status = 'CONFIRMED'",
                 "hide": 2,
@@ -797,13 +797,13 @@
         ]
     },
     "time": {
-        "from": "now-6h",
+        "from": "now-30d",
         "to": "now"
     },
     "timepicker": {},
     "timezone": "browser",
     "title": "Statistics",
     "uid": "belv5pokjhszke",
-    "version": 4,
+    "version": 1,
     "weekStart": ""
 }

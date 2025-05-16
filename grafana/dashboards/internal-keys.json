@@ -18,13 +18,13 @@
     "editable": true,
     "fiscalYearStartMonth": 0,
     "graphTooltip": 0,
-    "id": 3,
+    "id": 6,
     "links": [],
     "panels": [
         {
             "datasource": {
                 "type": "grafana-postgresql-datasource",
-                "uid": "fejyj243rfxtsd"
+                "uid": "PCC52D03280B7034C"
             },
             "fieldConfig": {
                 "defaults": {
@@ -69,8 +69,8 @@
                 ]
             },
             "gridPos": {
-                "h": 12,
-                "w": 21,
+                "h": 50,
+                "w": 24,
                 "x": 0,
                 "y": 0
             },
@@ -93,7 +93,7 @@
                 {
                     "datasource": {
                         "type": "grafana-postgresql-datasource",
-                        "uid": "fejyj243rfxtsd"
+                        "uid": "PCC52D03280B7034C"
                     },
                     "editorMode": "code",
                     "format": "table",
@@ -120,6 +120,7 @@
                 }
             ],
             "title": "Iternal keys",
+            "transparent": true,
             "type": "table"
         },
         {
@@ -138,8 +139,7 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green",
-                                "value": null
+                                "color": "green"
                             },
                             {
                                 "color": "red",
@@ -154,7 +154,7 @@
                 "h": 2,
                 "w": 10,
                 "x": 5,
-                "y": 12
+                "y": 50
             },
             "id": 2,
             "options": {
@@ -215,6 +215,7 @@
         }
     ],
     "preload": false,
+    "refresh": "1m",
     "schemaVersion": 40,
     "tags": [],
     "templating": {
@@ -227,7 +228,7 @@
                 },
                 "datasource": {
                     "type": "grafana-postgresql-datasource",
-                    "uid": "fejyj243rfxtsd"
+                    "uid": "PCC52D03280B7034C"
                 },
                 "definition": "SELECT COUNT(*)/${page_size} + (CASE WHEN COUNT(*)%${page_size} > 0 THEN 1 ELSE 0 END) FROM internal_keys",
                 "description": "Total pages count",
@@ -309,6 +310,6 @@
     "timezone": "browser",
     "title": "Internal keys",
     "uid": "dek9ok5qj4buoc1",
-    "version": 1,
+    "version": 2,
     "weekStart": ""
 }
