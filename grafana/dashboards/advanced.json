@@ -76,7 +76,7 @@
         {
             "datasource": {
                 "type": "grafana-postgresql-datasource",
-                "uid": "fejyj243rfxtsd"
+                "uid": "PCC52D03280B7034C"
             },
             "fieldConfig": {
                 "defaults": {
@@ -144,7 +144,7 @@
                 {
                     "datasource": {
                         "type": "grafana-postgresql-datasource",
-                        "uid": "fejyj243rfxtsd"
+                        "uid": "PCC52D03280B7034C"
                     },
                     "editorMode": "code",
                     "format": "table",
@@ -202,7 +202,7 @@
         {
             "datasource": {
                 "type": "grafana-postgresql-datasource",
-                "uid": "fejyj243rfxtsd"
+                "uid": "PCC52D03280B7034C"
             },
             "fieldConfig": {
                 "defaults": {
@@ -278,7 +278,7 @@
                 {
                     "datasource": {
                         "type": "grafana-postgresql-datasource",
-                        "uid": "fejyj243rfxtsd"
+                        "uid": "PCC52D03280B7034C"
                     },
                     "editorMode": "code",
                     "format": "table",
@@ -384,7 +384,7 @@
         {
             "datasource": {
                 "type": "grafana-postgresql-datasource",
-                "uid": "fejyj243rfxtsd"
+                "uid": "PCC52D03280B7034C"
             },
             "fieldConfig": {
                 "defaults": {
@@ -450,7 +450,7 @@
                 {
                     "datasource": {
                         "type": "grafana-postgresql-datasource",
-                        "uid": "fejyj243rfxtsd"
+                        "uid": "PCC52D03280B7034C"
                     },
                     "editorMode": "code",
                     "format": "table",
@@ -613,7 +613,7 @@
         {
             "datasource": {
                 "type": "grafana-postgresql-datasource",
-                "uid": "fejyj243rfxtsd"
+                "uid": "PCC52D03280B7034C"
             },
             "fieldConfig": {
                 "defaults": {
@@ -673,7 +673,7 @@
                 {
                     "datasource": {
                         "type": "grafana-postgresql-datasource",
-                        "uid": "fejyj243rfxtsd"
+                        "uid": "PCC52D03280B7034C"
                     },
                     "editorMode": "code",
                     "format": "table",
@@ -736,7 +736,7 @@
         {
             "datasource": {
                 "type": "grafana-postgresql-datasource",
-                "uid": "fejyj243rfxtsd"
+                "uid": "PCC52D03280B7034C"
             },
             "fieldConfig": {
                 "defaults": {
@@ -790,7 +790,7 @@
                 {
                     "datasource": {
                         "type": "grafana-postgresql-datasource",
-                        "uid": "fejyj243rfxtsd"
+                        "uid": "PCC52D03280B7034C"
                     },
                     "editorMode": "code",
                     "format": "table",
@@ -910,7 +910,7 @@
         {
             "datasource": {
                 "type": "grafana-postgresql-datasource",
-                "uid": "fejyj243rfxtsd"
+                "uid": "PCC52D03280B7034C"
             },
             "fieldConfig": {
                 "defaults": {
@@ -981,7 +981,7 @@
                 {
                     "datasource": {
                         "type": "grafana-postgresql-datasource",
-                        "uid": "fejyj243rfxtsd"
+                        "uid": "PCC52D03280B7034C"
                     },
                     "editorMode": "code",
                     "format": "table",
@@ -1124,7 +1124,7 @@
         {
             "datasource": {
                 "type": "grafana-postgresql-datasource",
-                "uid": "fejyj243rfxtsd"
+                "uid": "PCC52D03280B7034C"
             },
             "fieldConfig": {
                 "defaults": {
@@ -1291,7 +1291,7 @@
                 {
                     "datasource": {
                         "type": "grafana-postgresql-datasource",
-                        "uid": "fejyj243rfxtsd"
+                        "uid": "PCC52D03280B7034C"
                     },
                     "editorMode": "code",
                     "format": "table",

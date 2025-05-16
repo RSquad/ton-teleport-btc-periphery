@@ -24,7 +24,7 @@
         {
             "datasource": {
                 "type": "grafana-postgresql-datasource",
-                "uid": "fejyj243rfxtsd"
+                "uid": "PCC52D03280B7034C"
             },
             "fieldConfig": {
                 "defaults": {
@@ -73,7 +73,7 @@
                 {
                     "datasource": {
                         "type": "grafana-postgresql-datasource",
-                        "uid": "fejyj243rfxtsd"
+                        "uid": "PCC52D03280B7034C"
                     },
                     "editorMode": "code",
                     "format": "table",
@@ -106,7 +106,7 @@
         {
             "datasource": {
                 "type": "grafana-postgresql-datasource",
-                "uid": "fejyj243rfxtsd"
+                "uid": "PCC52D03280B7034C"
             },
             "fieldConfig": {
                 "defaults": {
@@ -155,7 +155,7 @@
                 {
                     "datasource": {
                         "type": "grafana-postgresql-datasource",
-                        "uid": "fejyj243rfxtsd"
+                        "uid": "PCC52D03280B7034C"
                     },
                     "editorMode": "code",
                     "format": "table",
@@ -293,7 +293,7 @@
         {
             "datasource": {
                 "type": "grafana-postgresql-datasource",
-                "uid": "fejyj243rfxtsd"
+                "uid": "PCC52D03280B7034C"
             },
             "fieldConfig": {
                 "defaults": {
@@ -343,7 +343,7 @@
                 {
                     "datasource": {
                         "type": "grafana-postgresql-datasource",
-                        "uid": "fejyj243rfxtsd"
+                        "uid": "PCC52D03280B7034C"
                     },
                     "editorMode": "code",
                     "format": "table",
@@ -376,7 +376,7 @@
         {
             "datasource": {
                 "type": "grafana-postgresql-datasource",
-                "uid": "fejyj243rfxtsd"
+                "uid": "PCC52D03280B7034C"
             },
             "fieldConfig": {
                 "defaults": {
@@ -426,7 +426,7 @@
                 {
                     "datasource": {
                         "type": "grafana-postgresql-datasource",
-                        "uid": "fejyj243rfxtsd"
+                        "uid": "PCC52D03280B7034C"
                     },
                     "editorMode": "code",
                     "format": "table",
@@ -459,7 +459,7 @@
         {
             "datasource": {
                 "type": "grafana-postgresql-datasource",
-                "uid": "fejyj243rfxtsd"
+                "uid": "PCC52D03280B7034C"
             },
             "fieldConfig": {
                 "defaults": {
@@ -566,7 +566,7 @@
                 {
                     "datasource": {
                         "type": "grafana-postgresql-datasource",
-                        "uid": "fejyj243rfxtsd"
+                        "uid": "PCC52D03280B7034C"
                     },
                     "editorMode": "code",
                     "format": "table",
@@ -594,7 +594,7 @@
                 {
                     "datasource": {
                         "type": "grafana-postgresql-datasource",
-                        "uid": "fejyj243rfxtsd"
+                        "uid": "PCC52D03280B7034C"
                     },
                     "editorMode": "code",
                     "format": "table",
@@ -628,7 +628,7 @@
         {
             "datasource": {
                 "type": "grafana-postgresql-datasource",
-                "uid": "fejyj243rfxtsd"
+                "uid": "PCC52D03280B7034C"
             },
             "fieldConfig": {
                 "defaults": {
@@ -710,7 +710,7 @@
                 {
                     "datasource": {
                         "type": "grafana-postgresql-datasource",
-                        "uid": "fejyj243rfxtsd"
+                        "uid": "PCC52D03280B7034C"
                     },
                     "editorMode": "code",
                     "format": "table",
@@ -738,7 +738,7 @@
                 {
                     "datasource": {
                         "type": "grafana-postgresql-datasource",
-                        "uid": "fejyj243rfxtsd"
+                        "uid": "PCC52D03280B7034C"
                     },
                     "editorMode": "code",
                     "format": "table",
@@ -783,7 +783,7 @@
                 },
                 "datasource": {
                     "type": "grafana-postgresql-datasource",
-                    "uid": "fejyj243rfxtsd"
+                    "uid": "PCC52D03280B7034C"
                 },
                 "definition": "select \n  sum((cast (b.amount as numeric)) / 100000000)::numeric(20,8) as total_burned\nfrom burns as b\njoin pegouts as p on p.id = b.pegout_burn where p.status = 'CONFIRMED'",
                 "hide": 2,

@@ -24,7 +24,7 @@
         {
             "datasource": {
                 "type": "grafana-postgresql-datasource",
-                "uid": "fejyj243rfxtsd"
+                "uid": "PCC52D03280B7034C"
             },
             "fieldConfig": {
                 "defaults": {
@@ -253,7 +253,7 @@
                 {
                     "datasource": {
                         "type": "grafana-postgresql-datasource",
-                        "uid": "fejyj243rfxtsd"
+                        "uid": "PCC52D03280B7034C"
                     },
                     "editorMode": "code",
                     "format": "table",
@@ -421,7 +421,7 @@
                 },
                 "datasource": {
                     "type": "grafana-postgresql-datasource",
-                    "uid": "fejyj243rfxtsd"
+                    "uid": "PCC52D03280B7034C"
                 },
                 "definition": "SELECT COUNT(*)/${page_size} + (CASE WHEN COUNT(*)%${page_size} > 0 THEN 1 ELSE 0 END) FROM mints as m join ton_txes as tt on m.ton_tx_mint = tt.id\njoin pegins as p on m.id = p.mint_pegin",
                 "description": "",
