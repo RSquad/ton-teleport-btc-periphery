@@ -18,7 +18,7 @@
     "editable": true,
     "fiscalYearStartMonth": 0,
     "graphTooltip": 0,
-    "id": 62,
+    "id": 5,
     "links": [],
     "panels": [
         {
@@ -45,7 +45,8 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green"
+                                "color": "green",
+                                "value": null
                             }
                         ]
                     }
@@ -59,99 +60,7 @@
                         "properties": [
                             {
                                 "id": "custom.width",
-                                "value": 155
-                            }
-                        ]
-                    },
-                    {
-                        "matcher": {
-                            "id": "byName",
-                            "options": "Status"
-                        },
-                        "properties": [
-                            {
-                                "id": "custom.width",
-                                "value": 110
-                            },
-                            {
-                                "id": "custom.cellOptions",
-                                "value": {
-                                    "type": "color-text"
-                                }
-                            },
-                            {
-                                "id": "mappings",
-                                "value": [
-                                    {
-                                        "options": {
-                                            "PENDING": {
-                                                "color": "semi-dark-blue",
-                                                "index": 0,
-                                                "text": "PENDING"
-                                            },
-                                            "REFUND": {
-                                                "color": "semi-dark-yellow",
-                                                "index": 1,
-                                                "text": "REFUND"
-                                            },
-                                            "REFUNDED": {
-                                                "color": "semi-dark-orange",
-                                                "index": 2,
-                                                "text": "REFUNDED"
-                                            },
-                                            "SUCCESS": {
-                                                "color": "semi-dark-green",
-                                                "index": 3,
-                                                "text": "SUCCESS"
-                                            }
-                                        },
-                                        "type": "value"
-                                    }
-                                ]
-                            }
-                        ]
-                    },
-                    {
-                        "matcher": {
-                            "id": "byName",
-                            "options": "Receiver Address"
-                        },
-                        "properties": [
-                            {
-                                "id": "custom.width",
-                                "value": 170
-                            },
-                            {
-                                "id": "links",
-                                "value": [
-                                    {
-                                        "targetBlank": true,
-                                        "title": "tonviewer",
-                                        "url": "https://testnet.tonviewer.com/${__value.text}"
-                                    }
-                                ]
-                            }
-                        ]
-                    },
-                    {
-                        "matcher": {
-                            "id": "byName",
-                            "options": "Bitcoin Tx"
-                        },
-                        "properties": [
-                            {
-                                "id": "custom.width",
-                                "value": 170
-                            },
-                            {
-                                "id": "links",
-                                "value": [
-                                    {
-                                        "targetBlank": true,
-                                        "title": "mempool",
-                                        "url": "https://mempool.space/signet/tx/${__value.text}"
-                                    }
-                                ]
+                                "value": 175
                             }
                         ]
                     },
@@ -162,8 +71,7 @@
                         },
                         "properties": [
                             {
-                                "id": "custom.width",
-                                "value": 610
+                                "id": "custom.width"
                             },
                             {
                                 "id": "links",
@@ -180,32 +88,19 @@
                     {
                         "matcher": {
                             "id": "byName",
-                            "options": "Amount"
-                        },
-                        "properties": [
-                            {
-                                "id": "custom.width",
-                                "value": 130
-                            }
-                        ]
-                    },
-                    {
-                        "matcher": {
-                            "id": "byName",
                             "options": "Internal Key"
                         },
                         "properties": [
                             {
-                                "id": "custom.width",
-                                "value": 670
+                                "id": "custom.width"
                             }
                         ]
                     }
                 ]
             },
             "gridPos": {
-                "h": 12,
-                "w": 14,
+                "h": 11,
+                "w": 24,
                 "x": 0,
                 "y": 0
             },
@@ -224,7 +119,7 @@
                 "showHeader": true,
                 "sortBy": []
             },
-            "pluginVersion": "12.0.0",
+            "pluginVersion": "11.5.2",
             "targets": [
                 {
                     "columns": [
@@ -258,7 +153,7 @@
                     "root_selector": "",
                     "source": "url",
                     "type": "json",
-                    "url": "http://65.21.162.174:8080/api/metrics?source=internal_keys",
+                    "url": "http://host.docker.internal:3000/api/metrics?source=internal_keys",
                     "url_options": {
                         "data": "",
                         "method": "GET"
@@ -288,7 +183,7 @@
     ],
     "preload": false,
     "refresh": "1m",
-    "schemaVersion": 41,
+    "schemaVersion": 40,
     "tags": [],
     "templating": {
         "list": []
@@ -301,5 +196,6 @@
     "timezone": "browser",
     "title": "Internal keys",
     "uid": "efef1812-648d-4e83-a21a-9af219bc392f",
-    "version": 3
+    "version": 1,
+    "weekStart": ""
 }
