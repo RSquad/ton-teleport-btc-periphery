@@ -18,7 +18,7 @@
     "editable": true,
     "fiscalYearStartMonth": 0,
     "graphTooltip": 0,
-    "id": 61,
+    "id": 1,
     "links": [],
     "panels": [
         {
@@ -45,7 +45,8 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green"
+                                "color": "green",
+                                "value": null
                             }
                         ]
                     }
@@ -59,7 +60,7 @@
                         "properties": [
                             {
                                 "id": "custom.width",
-                                "value": 155
+                                "value": 175
                             }
                         ]
                     },
@@ -118,8 +119,7 @@
                         },
                         "properties": [
                             {
-                                "id": "custom.width",
-                                "value": 170
+                                "id": "custom.width"
                             },
                             {
                                 "id": "links",
@@ -140,8 +140,7 @@
                         },
                         "properties": [
                             {
-                                "id": "custom.width",
-                                "value": 170
+                                "id": "custom.width"
                             },
                             {
                                 "id": "links",
@@ -162,8 +161,7 @@
                         },
                         "properties": [
                             {
-                                "id": "custom.width",
-                                "value": 170
+                                "id": "custom.width"
                             },
                             {
                                 "id": "links",
@@ -185,15 +183,15 @@
                         "properties": [
                             {
                                 "id": "custom.width",
-                                "value": 130
+                                "value": 175
                             }
                         ]
                     }
                 ]
             },
             "gridPos": {
-                "h": 12,
-                "w": 14,
+                "h": 11,
+                "w": 24,
                 "x": 0,
                 "y": 0
             },
@@ -212,7 +210,7 @@
                 "showHeader": true,
                 "sortBy": []
             },
-            "pluginVersion": "12.0.0",
+            "pluginVersion": "11.5.2",
             "targets": [
                 {
                     "columns": [
@@ -261,7 +259,7 @@
                     "root_selector": "",
                     "source": "url",
                     "type": "json",
-                    "url": "http://65.21.162.174:8080/api/metrics?source=mints",
+                    "url": "http://host.docker.internal:3000/api/metrics?source=mints",
                     "url_options": {
                         "data": "",
                         "method": "GET"
@@ -315,7 +313,8 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green"
+                                "color": "green",
+                                "value": null
                             }
                         ]
                     }
@@ -329,7 +328,7 @@
                         "properties": [
                             {
                                 "id": "custom.width",
-                                "value": 130
+                                "value": 175
                             }
                         ]
                     },
@@ -384,7 +383,7 @@
                         "properties": [
                             {
                                 "id": "custom.width",
-                                "value": 155
+                                "value": 175
                             }
                         ]
                     },
@@ -405,8 +404,7 @@
                                 ]
                             },
                             {
-                                "id": "custom.width",
-                                "value": 170
+                                "id": "custom.width"
                             }
                         ]
                     },
@@ -427,8 +425,7 @@
                                 ]
                             },
                             {
-                                "id": "custom.width",
-                                "value": 170
+                                "id": "custom.width"
                             }
                         ]
                     },
@@ -439,8 +436,7 @@
                         },
                         "properties": [
                             {
-                                "id": "custom.width",
-                                "value": 170
+                                "id": "custom.width"
                             },
                             {
                                 "id": "links",
@@ -461,8 +457,7 @@
                         },
                         "properties": [
                             {
-                                "id": "custom.width",
-                                "value": 170
+                                "id": "custom.width"
                             },
                             {
                                 "id": "links",
@@ -479,10 +474,10 @@
                 ]
             },
             "gridPos": {
-                "h": 10,
-                "w": 14,
+                "h": 11,
+                "w": 24,
                 "x": 0,
-                "y": 12
+                "y": 11
             },
             "id": 2,
             "options": {
@@ -499,7 +494,7 @@
                 "showHeader": true,
                 "sortBy": []
             },
-            "pluginVersion": "12.0.0",
+            "pluginVersion": "11.5.2",
             "targets": [
                 {
                     "columns": [
@@ -553,7 +548,7 @@
                     "root_selector": "",
                     "source": "url",
                     "type": "json",
-                    "url": "http://65.21.162.174:8080/api/metrics?source=burns",
+                    "url": "http://host.docker.internal:3000/api/metrics?source=burns",
                     "url_options": {
                         "data": "",
                         "method": "GET"
@@ -608,7 +603,8 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green"
+                                "color": "green",
+                                "value": null
                             }
                         ]
                     }
@@ -622,7 +618,7 @@
                         "properties": [
                             {
                                 "id": "custom.width",
-                                "value": 130
+                                "value": 175
                             }
                         ]
                     },
@@ -634,7 +630,7 @@
                         "properties": [
                             {
                                 "id": "custom.width",
-                                "value": 155
+                                "value": 175
                             }
                         ]
                     },
@@ -655,8 +651,7 @@
                                 ]
                             },
                             {
-                                "id": "custom.width",
-                                "value": 170
+                                "id": "custom.width"
                             }
                         ]
                     },
@@ -667,8 +662,7 @@
                         },
                         "properties": [
                             {
-                                "id": "custom.width",
-                                "value": 170
+                                "id": "custom.width"
                             },
                             {
                                 "id": "links",
@@ -689,8 +683,7 @@
                         },
                         "properties": [
                             {
-                                "id": "custom.width",
-                                "value": 170
+                                "id": "custom.width"
                             },
                             {
                                 "id": "links",
@@ -750,8 +743,8 @@
                 ]
             },
             "gridPos": {
-                "h": 10,
-                "w": 14,
+                "h": 11,
+                "w": 24,
                 "x": 0,
                 "y": 22
             },
@@ -770,7 +763,7 @@
                 "showHeader": true,
                 "sortBy": []
             },
-            "pluginVersion": "12.0.0",
+            "pluginVersion": "11.5.2",
             "targets": [
                 {
                     "columns": [
@@ -819,7 +812,7 @@
                     "root_selector": "",
                     "source": "url",
                     "type": "json",
-                    "url": "http://65.21.162.174:8080/api/metrics?source=reinits",
+                    "url": "http://host.docker.internal:3000/api/metrics?source=reinits",
                     "url_options": {
                         "data": "",
                         "method": "GET"
@@ -853,7 +846,7 @@
     ],
     "preload": false,
     "refresh": "1m",
-    "schemaVersion": 41,
+    "schemaVersion": 40,
     "tags": [],
     "templating": {
         "list": []
@@ -864,7 +857,8 @@
     },
     "timepicker": {},
     "timezone": "browser",
-    "title": "New dashboard",
+    "title": "Operations",
     "uid": "9ad8a6c4-79c3-40c6-8275-606c61b5e637",
-    "version": 29
+    "version": 3,
+    "weekStart": ""
 }
