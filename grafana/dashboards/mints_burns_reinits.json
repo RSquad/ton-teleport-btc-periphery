@@ -629,49 +629,6 @@
                     {
                         "matcher": {
                             "id": "byName",
-                            "options": "Status"
-                        },
-                        "properties": [
-                            {
-                                "id": "custom.width",
-                                "value": 110
-                            },
-                            {
-                                "id": "mappings",
-                                "value": [
-                                    {
-                                        "options": {
-                                            "CONFIRMED": {
-                                                "color": "semi-dark-green",
-                                                "index": 2,
-                                                "text": "CONFIRMED"
-                                            },
-                                            "SIGNED": {
-                                                "color": "semi-dark-yellow",
-                                                "index": 1,
-                                                "text": "SIGNED"
-                                            },
-                                            "SIGNING": {
-                                                "color": "semi-dark-orange",
-                                                "index": 0,
-                                                "text": "SIGNING"
-                                            }
-                                        },
-                                        "type": "value"
-                                    }
-                                ]
-                            },
-                            {
-                                "id": "custom.cellOptions",
-                                "value": {
-                                    "type": "color-text"
-                                }
-                            }
-                        ]
-                    },
-                    {
-                        "matcher": {
-                            "id": "byName",
                             "options": "Created At"
                         },
                         "properties": [
@@ -685,28 +642,6 @@
                         "matcher": {
                             "id": "byName",
                             "options": "Pegout Address"
-                        },
-                        "properties": [
-                            {
-                                "id": "links",
-                                "value": [
-                                    {
-                                        "targetBlank": true,
-                                        "title": "tonviewer tx",
-                                        "url": "https://testnet.tonviewer.com/${__value.text}"
-                                    }
-                                ]
-                            },
-                            {
-                                "id": "custom.width",
-                                "value": 170
-                            }
-                        ]
-                    },
-                    {
-                        "matcher": {
-                            "id": "byName",
-                            "options": "Sender Address"
                         },
                         "properties": [
                             {
@@ -768,6 +703,49 @@
                                 ]
                             }
                         ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Status"
+                        },
+                        "properties": [
+                            {
+                                "id": "custom.width",
+                                "value": 110
+                            },
+                            {
+                                "id": "custom.cellOptions",
+                                "value": {
+                                    "type": "color-text"
+                                }
+                            },
+                            {
+                                "id": "mappings",
+                                "value": [
+                                    {
+                                        "options": {
+                                            "CONFIRMED": {
+                                                "color": "semi-dark-green",
+                                                "index": 2,
+                                                "text": "CONFIRMED"
+                                            },
+                                            "SIGNED": {
+                                                "color": "semi-dark-yellow",
+                                                "index": 1,
+                                                "text": "SIGNED"
+                                            },
+                                            "SIGNING": {
+                                                "color": "semi-dark-orange",
+                                                "index": 0,
+                                                "text": "SIGNING"
+                                            }
+                                        },
+                                        "type": "value"
+                                    }
+                                ]
+                            }
+                        ]
                     }
                 ]
             },
@@ -810,11 +788,6 @@
                         {
                             "selector": "pegout_addr",
                             "text": "Pegout Address",
-                            "type": "string"
-                        },
-                        {
-                            "selector": "sender_addr",
-                            "text": "Sender Address",
                             "type": "string"
                         },
                         {
@@ -893,5 +866,5 @@
     "timezone": "browser",
     "title": "New dashboard",
     "uid": "9ad8a6c4-79c3-40c6-8275-606c61b5e637",
-    "version": 26
+    "version": 29
 }

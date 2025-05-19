@@ -180,43 +180,47 @@ func (apiHandler JsonApiHandler) GetReinits() (string, error) {
 }
 
 func (apiHandler JsonApiHandler) GetInfo() (string, error) {
-	// SELECT payload FROM metrics_data WHERE type_id = 2 ORDER BY id DESC LIMIT 1;
-	// {"CandidateBlockHashes":["0000000ddcbcd1b600cb8d21ca8a4c53441b966e691fa1bfa8c3effd09de464c","00000005fe81d7938574732c03da649a76f00a2d19e1aeacf67b38ad45430666"],"LastConfirmedBlockHash":"000000117f800c3982612967561b8a08174082c27a81dc2e89d2387b6afe8311","ConfirmationsNeeded":2,"LastConfirmedBlockHeight":252284}
+	/*
+		// SELECT payload FROM metrics_data WHERE type_id = 2 ORDER BY id DESC LIMIT 1;
+		// {"CandidateBlockHashes":["0000000ddcbcd1b600cb8d21ca8a4c53441b966e691fa1bfa8c3effd09de464c","00000005fe81d7938574732c03da649a76f00a2d19e1aeacf67b38ad45430666"],"LastConfirmedBlockHash":"000000117f800c3982612967561b8a08174082c27a81dc2e89d2387b6afe8311","ConfirmationsNeeded":2,"LastConfirmedBlockHeight":252284}
 
-	// SELECT payload FROM metrics_data WHERE type_id = 3 ORDER BY id DESC LIMIT 1;
-	// {"chain":"signet","blocks":252286,"bestblockhash":"0000000ddcbcd1b600cb8d21ca8a4c53441b966e691fa1bfa8c3effd09de464c","mediantime":1747383525}
+		// SELECT payload FROM metrics_data WHERE type_id = 3 ORDER BY id DESC LIMIT 1;
+		// {"chain":"signet","blocks":252286,"bestblockhash":"0000000ddcbcd1b600cb8d21ca8a4c53441b966e691fa1bfa8c3effd09de464c","mediantime":1747383525}
 
-	rows, err := apiHandler.db.Query(
-		`SELECT AS data FROM (
-		  SELECT
-		    tt.created_at AS created_at,
-				tt.hash AS ton_tx,
-		    TO_CHAR(CAST(r.amount AS real) / 100000000.0, 'FM999999990.00000000') || ' BTC' AS amount,
-		    COALESCE(p.addr, '_') AS pegout_addr,
-		    COALESCE(p.bitcoin_tx_id, '_') AS bitcoin_tx_id,		    
-		    COALESCE(p.status, '_') AS pegout_status
-		  FROM ton_txes AS tt
-			INNER JOIN reinits AS r ON tt.id = r.ton_tx_reinit
-		  LEFT JOIN pegouts AS p ON p.id = r.pegout_reinit
-		  ORDER BY r.id DESC
-		  LIMIT $1
-		) AS result;`,
-		limit,
-	)
+		rows, err := apiHandler.db.Query(
+			`SELECT AS data FROM (
+			  SELECT
+			    tt.created_at AS created_at,
+					tt.hash AS ton_tx,
+			    TO_CHAR(CAST(r.amount AS real) / 100000000.0, 'FM999999990.00000000') || ' BTC' AS amount,
+			    COALESCE(p.addr, '_') AS pegout_addr,
+			    COALESCE(p.bitcoin_tx_id, '_') AS bitcoin_tx_id,
+			    COALESCE(p.status, '_') AS pegout_status
+			  FROM ton_txes AS tt
+				INNER JOIN reinits AS r ON tt.id = r.ton_tx_reinit
+			  LEFT JOIN pegouts AS p ON p.id = r.pegout_reinit
+			  ORDER BY r.id DESC
+			  LIMIT $1
+			) AS result;`,
+			limit,
+		)
 
-	if err != nil {
-		return "", err
-	}
-
-	defer rows.Close()
-
-	var data string
-	if rows.Next() {
-		err = rows.Scan(&data)
 		if err != nil {
 			return "", err
 		}
-	}
 
-	return data, nil
+		defer rows.Close()
+
+		var data string
+		if rows.Next() {
+			err = rows.Scan(&data)
+			if err != nil {
+				return "", err
+			}
+		}
+
+		return data, nil
+	*/
+
+	return "", nil
 }
