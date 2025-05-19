@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"log"
 	"net/http"
@@ -44,6 +45,7 @@ type App struct {
 	PegoutManager         *pegoutmanager.PegoutManager
 	MintService           *mintservice.MintService
 	MetricsService        *metrics.MetricsService
+	Db                    *sql.DB
 }
 
 func main() {
@@ -151,6 +153,21 @@ func initialize() (*App, error) {
 		coordinatorContract,
 	)
 
+	// Open DB connection
+	var db *sql.DB = nil
+	{
+		db, err = sql.Open("postgres", indexerConfig.DatabaseURL)
+		if err != nil {
+			return nil, err
+		}
+
+		// Setup DB pooling
+		db.SetMaxOpenConns(2)
+		db.SetMaxIdleConns(2)
+		db.SetConnMaxLifetime(-1)
+		db.SetConnMaxIdleTime(-1)
+	}
+
 	metricsService, err := metrics.NewService(
 		coordinatorContract,
 		bitcoinClientContract,
@@ -158,6 +175,7 @@ func initialize() (*App, error) {
 		bitcoinClient,
 		tonClient,
 		indexerConfig,
+		db,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create matrics manager: %w", err)
@@ -177,6 +195,7 @@ func initialize() (*App, error) {
 		MintService:         mintService,
 		EventService:        eventService,
 		MetricsService:      metricsService,
+		Db:                  db,
 	}, nil
 }
 
@@ -197,6 +216,7 @@ func run(app *App) error {
 		mux.Handle("/indexer/graphql", srv)
 		mux.Handle("/", playground.ApolloSandboxHandler("Indexer", "/indexer/graphql"))
 		mux.Handle("/metrics", promhttp.Handler())
+		mux.Handle("/api/metrics", metrics.NewJsonApiHandler(app.Db))
 
 		c := cors.New(cors.Options{
 			AllowedOrigins:   []string{"*"},

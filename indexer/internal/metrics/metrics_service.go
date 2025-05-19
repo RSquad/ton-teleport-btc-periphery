@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"context"
+	"database/sql"
 	"sync"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/config"
@@ -29,13 +30,17 @@ func NewService(
 	bitcoinClient *bitcoin.Client,
 	tonClient *tonclient.TonClient,
 	config config.IndexerConfig,
+	db *sql.DB,
 ) (*MetricsService, error) {
 	// Writer DB
 	writerDbChan := make(chan PayloadDB, 5) // TODO: move 5 to config
-	writerDB, err := NewWriterDB(writerDbChan, config.DatabaseURL)
+	writerDB, err := NewWriterDB(writerDbChan, db)
 	if err != nil {
 		return nil, err
 	}
+
+	// CREATE INDEX IF NOT EXISTS mints_status_idx ON mints (status);
+	// CREATE INDEX IF NOT EXISTS pegouts_status_idx ON pegouts (status);
 
 	// TODO: reimplement FetcherDKG with all Coordinator data
 	// Fetcher: Contract ??? DKG

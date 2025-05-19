@@ -16,19 +16,8 @@ type WriterDB struct {
 
 func NewWriterDB(
 	ch chan PayloadDB,
-	dbUrl string,
+	db *sql.DB,
 ) (*WriterDB, error) {
-	// Open DB connection
-	db, err := sql.Open("postgres", dbUrl)
-	if err != nil {
-		return nil, err
-	}
-
-	// Setup pooling
-	db.SetMaxOpenConns(2)
-	db.SetMaxIdleConns(2)
-	db.SetConnMaxLifetime(-1)
-	db.SetConnMaxIdleTime(-1)
 
 	// Create writer
 	writer := WriterDB{
@@ -37,7 +26,7 @@ func NewWriterDB(
 	}
 
 	// Prepare DB
-	err = writer.PrepareDB()
+	err := writer.PrepareDB()
 	if err != nil {
 		return nil, err
 	}
