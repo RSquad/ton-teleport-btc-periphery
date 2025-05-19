@@ -43,9 +43,11 @@ func (apiHandler JsonApiHandler) ServeHTTP(w http.ResponseWriter, r *http.Reques
 			payload, err = apiHandler.GetReinits()
 		case "info":
 			payload, err = apiHandler.GetInfo()
+		case "internal_keys":
+			payload, err = apiHandler.GetInternalKeys()
 		default:
 			w.WriteHeader(http.StatusNotFound)
-			w.Write([]byte("Please select one of the next values: mints, burns, reinits, info"))
+			w.Write([]byte("Please select one of the next values: mints, burns, reinits, info, internal_keys"))
 			return
 		}
 
@@ -158,6 +160,40 @@ func (apiHandler JsonApiHandler) GetReinits() (string, error) {
 		  LEFT JOIN pegouts AS p ON p.id = r.pegout_reinit
 		  ORDER BY r.id DESC
 		  LIMIT $1
+		) AS result;`,
+		limit,
+	)
+
+	if err != nil {
+		return "", err
+	}
+
+	defer rows.Close()
+
+	var data string
+	if rows.Next() {
+		err = rows.Scan(&data)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	return data, nil
+}
+
+func (apiHandler JsonApiHandler) GetInternalKeys() (string, error) {
+	const limit = 5000 // Yes, we will select only last 5000 internal keys
+
+	rows, err := apiHandler.db.Query(
+		`SELECT json_agg(result) AS data FROM (
+		  SELECT 
+			  ik.completed_at,
+				ik.key AS internal_key,
+				tt.hash AS ton_tx
+			FROM internal_keys AS ik
+			JOIN ton_txes AS tt ON tt.id = ik.ton_tx_internal_key
+			ORDER BY ik.id DESC
+			LIMIT $1
 		) AS result;`,
 		limit,
 	)
