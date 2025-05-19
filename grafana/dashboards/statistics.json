@@ -78,7 +78,7 @@
                     "editorMode": "code",
                     "format": "table",
                     "rawQuery": true,
-                    "rawSql": "SELECT count(*) as row_count FROM mints;",
+                    "rawSql": "SELECT COUNT(1) AS row_count FROM mints WHERE status = 'SUCCESS';",
                     "refId": "A",
                     "sql": {
                         "columns": [
@@ -160,7 +160,7 @@
                     "editorMode": "code",
                     "format": "table",
                     "rawQuery": true,
-                    "rawSql": "SELECT count(*) as row_count FROM burns;",
+                    "rawSql": "SELECT COUNT(1) AS row_count FROM burns AS b INNER JOIN pegouts AS p ON b.pegout_burn = p.id AND p.status = 'CONFIRMED';",
                     "refId": "A",
                     "sql": {
                         "columns": [
@@ -348,7 +348,7 @@
                     "editorMode": "code",
                     "format": "table",
                     "rawQuery": true,
-                    "rawSql": "select \n  sum((cast(amount as numeric)) / 100000000)::numeric(20,8) as total_minted \nfrom mints where status = 'SUCCESS'",
+                    "rawSql": "SELECT SUM((CAST(amount AS numeric)) / 100000000)::numeric(20,8) AS total_minted FROM mints WHERE status = 'SUCCESS'",
                     "refId": "A",
                     "sql": {
                         "columns": [
@@ -431,7 +431,7 @@
                     "editorMode": "code",
                     "format": "table",
                     "rawQuery": true,
-                    "rawSql": "select \n  sum((cast (b.amount as numeric)) / 100000000)::numeric(20,8) as total_burned\nfrom burns as b\njoin pegouts as p on p.id = b.pegout_burn where p.status = 'CONFIRMED'",
+                    "rawSql": "SELECT SUM((CAST (b.amount AS numeric)) / 100000000)::numeric(20,8) AS total_burned FROM burns AS b JOIN pegouts AS p ON p.id = b.pegout_burn WHERE p.status = 'CONFIRMED'",
                     "refId": "A",
                     "sql": {
                         "columns": [
@@ -571,7 +571,7 @@
                     "editorMode": "code",
                     "format": "table",
                     "rawQuery": true,
-                    "rawSql": "select cast(amount as numeric) / 100000000 as minted, created_at from mints\nwhere $__timeFilter(created_at) and status = 'SUCCESS'\norder by created_at",
+                    "rawSql": "SELECT CAST(amount AS numeric) / 100000000 AS minted, created_at FROM mints WHERE $__timeFilter(created_at) AND status = 'SUCCESS' ORDER BY created_at",
                     "refId": "A",
                     "sql": {
                         "columns": [
