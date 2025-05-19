@@ -219,21 +219,21 @@ func (apiHandler JsonApiHandler) GetInfo() (string, error) {
 	rows, err := apiHandler.db.Query(
 		`SELECT jsonb_build_object(
 				'contractBitcoinClient', (
-						SELECT payload
+						SELECT payload::json
 						FROM metrics_data
 						WHERE type_id = 2
 						ORDER BY id DESC
 						LIMIT 1
 				),
 				'blockChainInfo', (
-						SELECT payload
+						SELECT payload::json
 						FROM metrics_data
 						WHERE type_id = 3
 						ORDER BY id DESC
 						LIMIT 1
 				),
 				'contractTeleport', (
-						SELECT payload
+						SELECT payload::json
 						FROM metrics_data
 						WHERE type_id = 4
 						ORDER BY id DESC
