@@ -45,9 +45,15 @@ func (apiHandler JsonApiHandler) ServeHTTP(w http.ResponseWriter, r *http.Reques
 			payload, err = apiHandler.GetInfo()
 		case "internal_keys":
 			payload, err = apiHandler.GetInternalKeys()
+		case "plot_minted":
+			payload, err = apiHandler.PlotMinted()
+		case "plot_burned":
+			payload, err = apiHandler.PlotBurned()
+		case "plot_total_supply":
+			payload, err = apiHandler.PlotTotalSupply()
 		default:
 			w.WriteHeader(http.StatusNotFound)
-			w.Write([]byte("Please select one of the next values: mints, burns, reinits, info, internal_keys"))
+			w.Write([]byte("Please select one of the next values: mints, burns, reinits, info, internal_keys, plot_minted, plot_burned, plot_total_supply"))
 			return
 		}
 
@@ -239,6 +245,126 @@ func (apiHandler JsonApiHandler) GetInfo() (string, error) {
 						ORDER BY id DESC
 						LIMIT 1
 				)
+		) AS result;`,
+	)
+
+	if err != nil {
+		return "", err
+	}
+
+	defer rows.Close()
+
+	var data string
+	if rows.Next() {
+		err = rows.Scan(&data)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	return data, nil
+}
+
+func (apiHandler JsonApiHandler) PlotMinted() (string, error) {
+	rows, err := apiHandler.db.Query(
+		`SELECT json_agg(result) AS data FROM (
+			WITH data_by_days AS (
+				SELECT
+					DATE_TRUNC('day', created_at)::date AS day,
+					SUM(CAST(amount AS int8)) AS minted,
+					COUNT(1) AS count
+				FROM mints
+				WHERE status = 'SUCCESS'
+				GROUP BY DATE_TRUNC('day', created_at)
+			) SELECT day, minted/100000000 AS minted, count FROM data_by_days ORDER BY day ASC
+		) AS result;`,
+	)
+
+	if err != nil {
+		return "", err
+	}
+
+	defer rows.Close()
+
+	var data string
+	if rows.Next() {
+		err = rows.Scan(&data)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	return data, nil
+}
+
+func (apiHandler JsonApiHandler) PlotBurned() (string, error) {
+	rows, err := apiHandler.db.Query(
+		`SELECT json_agg(result) AS data FROM (
+			WITH data_by_days AS (
+				SELECT
+					DATE_TRUNC('day', tt.created_at)::date AS day,
+					SUM(CAST(b.amount AS int8)) AS burned,
+					COUNT(1) AS count
+				FROM burns AS b 
+				JOIN ton_txes AS tt ON tt.id = b.ton_tx_burn
+				JOIN pegouts AS p ON p.id = b.pegout_burn 
+				WHERE p.status = 'CONFIRMED'
+				GROUP BY DATE_TRUNC('day', tt.created_at)
+  		) SELECT day, burned/100000000 AS burned, count FROM data_by_days ORDER BY day ASC
+		) AS result;`,
+	)
+
+	if err != nil {
+		return "", err
+	}
+
+	defer rows.Close()
+
+	var data string
+	if rows.Next() {
+		err = rows.Scan(&data)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	return data, nil
+}
+
+func (apiHandler JsonApiHandler) PlotTotalSupply() (string, error) {
+	rows, err := apiHandler.db.Query(
+		`SELECT json_agg(result) AS data FROM (
+			WITH unified_events AS (
+				SELECT
+					DATE_TRUNC('day', created_at)::date AS day,
+					CAST(amount AS int8) AS value
+				FROM mints
+				WHERE status = 'SUCCESS'
+
+				UNION ALL
+
+				SELECT
+					DATE_TRUNC('day', tt.created_at)::date AS day,
+					-CAST(b.amount AS int8) AS value
+				FROM burns AS b
+				JOIN ton_txes AS tt ON tt.id = b.ton_tx_burn
+				JOIN pegouts AS p ON p.id = b.pegout_burn
+				WHERE p.status = 'CONFIRMED'
+			),
+
+			daily_totals AS (
+				SELECT
+					day,
+					SUM(value) AS daily_sum
+				FROM unified_events
+				GROUP BY day
+			)
+
+			SELECT
+				day,
+				SUM(daily_sum/100000000) OVER (ORDER BY day) AS cumulative_total
+			FROM daily_totals
+			ORDER BY day
 		) AS result;`,
 	)
 
