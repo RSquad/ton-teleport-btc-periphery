@@ -12,20 +12,7 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/teleportcontract"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
-	"github.com/xssnick/tonutils-go/address"
 )
-
-type ContractTeleportDeposit struct {
-	Id              uint64
-	BlockHash       *chainhash.Hash
-	TxID            *chainhash.Hash
-	DestAddress     *address.Address
-	ResponseAddress *address.Address
-	Amount          *big.Int
-	TapMerkleRoot   *chainhash.Hash
-	TxProof         []byte
-	Tx              []byte
-}
 
 type ContractTeleportUTXO struct {
 	Address       string
@@ -54,7 +41,7 @@ type ContractTeleportData struct {
 	Limits               teleportcontract.Limits
 	TotalServiceFee      int32
 	Enabled              bool
-	Deposits             *[]ContractTeleportDeposit
+	PeginsCount          int32
 	UTXOset              *[]ContractTeleportUTXO
 }
 
@@ -121,7 +108,7 @@ func (fetcher *FetcherContractTeleport) Fetch() {
 		Limits:               storage.Limits,
 		TotalServiceFee:      storage.TotalServiceFee,
 		Enabled:              storage.Enabled,
-		Deposits:             ConvertDeposits(storage.Deposits),
+		PeginsCount:          ConvertDeposits(storage.Deposits),
 		UTXOset:              ConvertUTXOSet(storage.UTXOset),
 	}
 
@@ -139,30 +126,12 @@ func (fetcher *FetcherContractTeleport) Fetch() {
 	}
 }
 
-func ConvertDeposits(data map[uint64]teleportcontract.DepositData) *[]ContractTeleportDeposit {
-	var contractTeleportDeposit []ContractTeleportDeposit
-
-	for id, d := range data {
-		cd := ContractTeleportDeposit{
-			Id:              id,
-			BlockHash:       d.BlockHash,
-			TxID:            d.TxID,
-			DestAddress:     d.DestAddress,
-			ResponseAddress: d.ResponseAddress,
-			Amount:          d.Amount,
-			TapMerkleRoot:   d.TapMerkleRoot,
-			TxProof:         d.TxProof,
-			Tx:              d.Tx,
-		}
-
-		contractTeleportDeposit = append(contractTeleportDeposit, cd)
-	}
-
-	return &contractTeleportDeposit
+func ConvertDeposits(data map[uint64]teleportcontract.DepositData) int32 {
+	return int32(len(data))
 }
 
 func ConvertUTXOSet(utxoSet map[string]teleportcontract.UTXOData) *[]ContractTeleportUTXO {
-	var contractTeleportUTXOData []ContractTeleportUTXO
+	contractTeleportUTXOData := []ContractTeleportUTXO{}
 
 	for address, utxo := range utxoSet {
 		cutxo := ContractTeleportUTXO{
