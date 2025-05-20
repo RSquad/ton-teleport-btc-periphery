@@ -18,7 +18,7 @@
     "editable": true,
     "fiscalYearStartMonth": 0,
     "graphTooltip": 0,
-    "id": 2,
+    "id": 67,
     "links": [],
     "panels": [
         {
@@ -37,8 +37,7 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green",
-                                "value": null
+                                "color": "green"
                             }
                         ]
                     }
@@ -47,7 +46,7 @@
             },
             "gridPos": {
                 "h": 3,
-                "w": 11,
+                "w": 8,
                 "x": 0,
                 "y": 0
             },
@@ -75,7 +74,7 @@
                 "textMode": "value_and_name",
                 "wideLayout": true
             },
-            "pluginVersion": "11.5.2",
+            "pluginVersion": "12.0.0",
             "targets": [
                 {
                     "columns": [
@@ -107,7 +106,7 @@
                     "root_selector": "",
                     "source": "url",
                     "type": "json",
-                    "url": "http://host.docker.internal:3000/api/metrics?source=info",
+                    "url": "http://65.21.162.174:3000/api/metrics?source=info",
                     "url_options": {
                         "data": "",
                         "method": "GET"
@@ -143,240 +142,6 @@
                     "color": {
                         "mode": "thresholds"
                     },
-                    "mappings": [],
-                    "thresholds": {
-                        "mode": "absolute",
-                        "steps": [
-                            {
-                                "color": "green",
-                                "value": null
-                            }
-                        ]
-                    }
-                },
-                "overrides": [
-                    {
-                        "matcher": {
-                            "id": "byName",
-                            "options": "Last Pegout Tx ID"
-                        },
-                        "properties": [
-                            {
-                                "id": "links",
-                                "value": [
-                                    {
-                                        "targetBlank": true,
-                                        "title": "",
-                                        "url": "https://mempool.space/signet/tx/${__value.text}"
-                                    }
-                                ]
-                            }
-                        ]
-                    }
-                ]
-            },
-            "gridPos": {
-                "h": 3,
-                "w": 9,
-                "x": 11,
-                "y": 0
-            },
-            "id": 11,
-            "options": {
-                "colorMode": "value",
-                "graphMode": "none",
-                "justifyMode": "auto",
-                "orientation": "horizontal",
-                "percentChangeColorMode": "standard",
-                "reduceOptions": {
-                    "calcs": [
-                        "lastNotNull"
-                    ],
-                    "fields": "/.*/",
-                    "values": false
-                },
-                "showPercentChange": false,
-                "text": {
-                    "titleSize": 11,
-                    "valueSize": 11
-                },
-                "textMode": "value_and_name",
-                "wideLayout": true
-            },
-            "pluginVersion": "11.5.2",
-            "targets": [
-                {
-                    "columns": [
-                        {
-                            "selector": "contractTeleport.PegoutChainCounter",
-                            "text": "Unconfirmed Pegout Count",
-                            "type": "string"
-                        },
-                        {
-                            "selector": "contractTeleport.LastPegoutTxID",
-                            "text": "Last Pegout Tx ID",
-                            "type": "string"
-                        }
-                    ],
-                    "datasource": {
-                        "type": "yesoreyeram-infinity-datasource",
-                        "uid": "dem2k81ld0veoe"
-                    },
-                    "filters": [],
-                    "format": "table",
-                    "global_query_id": "",
-                    "parser": "backend",
-                    "refId": "A",
-                    "root_selector": "",
-                    "source": "url",
-                    "type": "json",
-                    "url": "http://host.docker.internal:3000/api/metrics?source=info",
-                    "url_options": {
-                        "data": "",
-                        "method": "GET"
-                    }
-                }
-            ],
-            "title": "Pegouts",
-            "transformations": [
-                {
-                    "id": "extractFields",
-                    "options": {
-                        "delimiter": ",",
-                        "format": "json",
-                        "jsonPaths": [
-                            {
-                                "alias": "Unconfirmed Pegouts Count",
-                                "path": "PegoutChainCounter"
-                            },
-                            {
-                                "path": "LastPegoutTxID"
-                            }
-                        ],
-                        "keepTime": false,
-                        "replace": true,
-                        "source": "payload"
-                    }
-                }
-            ],
-            "transparent": true,
-            "type": "stat"
-        },
-        {
-            "datasource": {
-                "type": "yesoreyeram-infinity-datasource",
-                "uid": "dem2k81ld0veoe"
-            },
-            "fieldConfig": {
-                "defaults": {
-                    "color": {
-                        "mode": "thresholds"
-                    },
-                    "mappings": [],
-                    "thresholds": {
-                        "mode": "absolute",
-                        "steps": [
-                            {
-                                "color": "green",
-                                "value": null
-                            }
-                        ]
-                    }
-                },
-                "overrides": []
-            },
-            "gridPos": {
-                "h": 3,
-                "w": 4,
-                "x": 20,
-                "y": 0
-            },
-            "id": 15,
-            "options": {
-                "colorMode": "value",
-                "graphMode": "none",
-                "justifyMode": "auto",
-                "orientation": "horizontal",
-                "percentChangeColorMode": "standard",
-                "reduceOptions": {
-                    "calcs": [
-                        "lastNotNull"
-                    ],
-                    "fields": "",
-                    "values": false
-                },
-                "showPercentChange": false,
-                "text": {
-                    "titleSize": 11,
-                    "valueSize": 11
-                },
-                "textMode": "value_and_name",
-                "wideLayout": true
-            },
-            "pluginVersion": "11.5.2",
-            "targets": [
-                {
-                    "columns": [],
-                    "computed_columns": [],
-                    "datasource": {
-                        "type": "yesoreyeram-infinity-datasource",
-                        "uid": "dem2k81ld0veoe"
-                    },
-                    "filters": [],
-                    "format": "table",
-                    "global_query_id": "",
-                    "pagination_mode": "none",
-                    "parser": "backend",
-                    "refId": "A",
-                    "root_selector": "$.contractTeleport.Deposits[*]",
-                    "source": "url",
-                    "type": "json",
-                    "uql": "parse-json",
-                    "url": "http://host.docker.internal:3000/api/metrics?source=info",
-                    "url_options": {
-                        "data": "",
-                        "method": "GET"
-                    }
-                }
-            ],
-            "title": "Pegins",
-            "transformations": [
-                {
-                    "id": "reduce",
-                    "options": {
-                        "labelsToFields": false,
-                        "reducers": [
-                            "count"
-                        ]
-                    }
-                },
-                {
-                    "id": "organize",
-                    "options": {
-                        "excludeByName": {
-                            "Field": true
-                        },
-                        "includeByName": {},
-                        "indexByName": {},
-                        "renameByName": {
-                            "Count": "Processing Pegins Count "
-                        }
-                    }
-                }
-            ],
-            "transparent": true,
-            "type": "stat"
-        },
-        {
-            "datasource": {
-                "type": "yesoreyeram-infinity-datasource",
-                "uid": "dem2k81ld0veoe"
-            },
-            "fieldConfig": {
-                "defaults": {
-                    "color": {
-                        "mode": "thresholds"
-                    },
                     "links": [
                         {
                             "targetBlank": true,
@@ -389,8 +154,7 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green",
-                                "value": null
+                                "color": "green"
                             }
                         ]
                     }
@@ -399,7 +163,7 @@
             },
             "gridPos": {
                 "h": 4,
-                "w": 11,
+                "w": 8,
                 "x": 0,
                 "y": 3
             },
@@ -425,7 +189,7 @@
                 "textMode": "value_and_name",
                 "wideLayout": true
             },
-            "pluginVersion": "11.5.2",
+            "pluginVersion": "12.0.0",
             "targets": [
                 {
                     "columns": [
@@ -462,7 +226,7 @@
                     "root_selector": "",
                     "source": "url",
                     "type": "json",
-                    "url": "http://host.docker.internal:3000/api/metrics?source=info",
+                    "url": "http://65.21.162.174:3000/api/metrics?source=info",
                     "url_options": {
                         "data": "",
                         "method": "GET"
@@ -483,472 +247,6 @@
                             "tgBTC": 0
                         },
                         "renameByName": {}
-                    }
-                }
-            ],
-            "transparent": true,
-            "type": "stat"
-        },
-        {
-            "datasource": {
-                "type": "yesoreyeram-infinity-datasource",
-                "uid": "dem2k81ld0veoe"
-            },
-            "fieldConfig": {
-                "defaults": {
-                    "color": {
-                        "mode": "thresholds"
-                    },
-                    "mappings": [],
-                    "thresholds": {
-                        "mode": "absolute",
-                        "steps": [
-                            {
-                                "color": "green",
-                                "value": null
-                            }
-                        ]
-                    },
-                    "unit": "BTC"
-                },
-                "overrides": []
-            },
-            "gridPos": {
-                "h": 3,
-                "w": 6,
-                "x": 11,
-                "y": 3
-            },
-            "id": 13,
-            "options": {
-                "colorMode": "value",
-                "graphMode": "none",
-                "justifyMode": "auto",
-                "orientation": "horizontal",
-                "percentChangeColorMode": "standard",
-                "reduceOptions": {
-                    "calcs": [
-                        "lastNotNull"
-                    ],
-                    "fields": "/.*/",
-                    "values": false
-                },
-                "showPercentChange": false,
-                "text": {
-                    "titleSize": 11,
-                    "valueSize": 11
-                },
-                "textMode": "value_and_name",
-                "wideLayout": true
-            },
-            "pluginVersion": "11.5.2",
-            "targets": [
-                {
-                    "columns": [],
-                    "datasource": {
-                        "type": "yesoreyeram-infinity-datasource",
-                        "uid": "dem2k81ld0veoe"
-                    },
-                    "filters": [],
-                    "format": "table",
-                    "global_query_id": "",
-                    "parser": "backend",
-                    "refId": "A",
-                    "root_selector": "contractTeleport.Limits",
-                    "source": "url",
-                    "type": "json",
-                    "url": "http://host.docker.internal:3000/api/metrics?source=info",
-                    "url_options": {
-                        "data": "",
-                        "method": "GET"
-                    }
-                }
-            ],
-            "title": "Limits",
-            "transformations": [
-                {
-                    "id": "extractFields",
-                    "options": {
-                        "delimiter": ",",
-                        "format": "json",
-                        "jsonPaths": [
-                            {
-                                "path": "Limits"
-                            }
-                        ],
-                        "replace": true,
-                        "source": "payload"
-                    }
-                },
-                {
-                    "id": "extractFields",
-                    "options": {
-                        "delimiter": ",",
-                        "format": "json",
-                        "jsonPaths": [
-                            {
-                                "path": ""
-                            }
-                        ],
-                        "replace": true,
-                        "source": "Limits"
-                    }
-                },
-                {
-                    "id": "calculateField",
-                    "options": {
-                        "alias": "Min Pegin Value",
-                        "binary": {
-                            "left": {
-                                "matcher": {
-                                    "id": "byName",
-                                    "options": "MinPeginAmount"
-                                }
-                            },
-                            "operator": "/",
-                            "right": {
-                                "fixed": "100000000"
-                            }
-                        },
-                        "mode": "binary",
-                        "reduce": {
-                            "reducer": "sum"
-                        },
-                        "replaceFields": false
-                    }
-                },
-                {
-                    "id": "calculateField",
-                    "options": {
-                        "alias": "Min Pegout Value",
-                        "binary": {
-                            "left": {
-                                "matcher": {
-                                    "id": "byName",
-                                    "options": "MinPegoutAmount"
-                                }
-                            },
-                            "operator": "/",
-                            "right": {
-                                "fixed": "100000000"
-                            }
-                        },
-                        "mode": "binary",
-                        "reduce": {
-                            "reducer": "sum"
-                        },
-                        "replaceFields": false
-                    }
-                },
-                {
-                    "id": "filterFieldsByName",
-                    "options": {
-                        "include": {
-                            "names": [
-                                "Min Pegin Value",
-                                "Min Pegout Value"
-                            ]
-                        }
-                    }
-                }
-            ],
-            "transparent": true,
-            "type": "stat"
-        },
-        {
-            "datasource": {
-                "type": "yesoreyeram-infinity-datasource",
-                "uid": "dem2k81ld0veoe"
-            },
-            "fieldConfig": {
-                "defaults": {
-                    "color": {
-                        "mode": "thresholds"
-                    },
-                    "mappings": [],
-                    "thresholds": {
-                        "mode": "absolute",
-                        "steps": [
-                            {
-                                "color": "green",
-                                "value": null
-                            },
-                            {
-                                "color": "red",
-                                "value": 80
-                            }
-                        ]
-                    },
-                    "unit": "sat/vByte"
-                },
-                "overrides": [
-                    {
-                        "matcher": {
-                            "id": "byName",
-                            "options": "Total Service Fee / 100000000"
-                        },
-                        "properties": [
-                            {
-                                "id": "decimals",
-                                "value": 8
-                            },
-                            {
-                                "id": "unit",
-                                "value": "BTC"
-                            }
-                        ]
-                    }
-                ]
-            },
-            "gridPos": {
-                "h": 3,
-                "w": 6,
-                "x": 18,
-                "y": 3
-            },
-            "id": 18,
-            "options": {
-                "colorMode": "value",
-                "graphMode": "none",
-                "justifyMode": "auto",
-                "orientation": "horizontal",
-                "percentChangeColorMode": "standard",
-                "reduceOptions": {
-                    "calcs": [
-                        "lastNotNull"
-                    ],
-                    "fields": "/.*/",
-                    "values": false
-                },
-                "showPercentChange": false,
-                "text": {
-                    "titleSize": 11,
-                    "valueSize": 11
-                },
-                "textMode": "value_and_name",
-                "wideLayout": true
-            },
-            "pluginVersion": "11.5.2",
-            "targets": [
-                {
-                    "columns": [
-                        {
-                            "selector": "BaseSVB",
-                            "text": "Base",
-                            "type": "string"
-                        },
-                        {
-                            "selector": "NextSVB",
-                            "text": "Next Pegout Fee",
-                            "type": "string"
-                        },
-                        {
-                            "selector": "TotalServiceFee",
-                            "text": "",
-                            "type": "string"
-                        }
-                    ],
-                    "datasource": {
-                        "type": "yesoreyeram-infinity-datasource",
-                        "uid": "dem2k81ld0veoe"
-                    },
-                    "filters": [],
-                    "format": "table",
-                    "global_query_id": "",
-                    "parser": "backend",
-                    "refId": "A",
-                    "root_selector": "contractTeleport",
-                    "source": "url",
-                    "type": "json",
-                    "url": "http://host.docker.internal:3000/api/metrics?source=info",
-                    "url_options": {
-                        "data": "",
-                        "method": "GET"
-                    }
-                }
-            ],
-            "title": "Fees",
-            "transformations": [
-                {
-                    "id": "calculateField",
-                    "options": {
-                        "alias": "Total Service Fee",
-                        "binary": {
-                            "left": {
-                                "matcher": {
-                                    "id": "byName",
-                                    "options": "TotalServiceFee"
-                                }
-                            },
-                            "operator": "/",
-                            "right": {
-                                "fixed": "100000000"
-                            }
-                        },
-                        "mode": "binary",
-                        "reduce": {
-                            "include": [
-                                "Total Service Fee"
-                            ],
-                            "reducer": "sum"
-                        }
-                    }
-                },
-                {
-                    "id": "organize",
-                    "options": {
-                        "excludeByName": {
-                            "TotalServiceFee": true
-                        },
-                        "includeByName": {},
-                        "indexByName": {
-                            "Base": 1,
-                            "Next Pegout Fee": 2,
-                            "Total Service Fee": 0,
-                            "TotalServiceFee": 3
-                        },
-                        "renameByName": {}
-                    }
-                }
-            ],
-            "transparent": true,
-            "type": "stat"
-        },
-        {
-            "datasource": {
-                "type": "yesoreyeram-infinity-datasource",
-                "uid": "dem2k81ld0veoe"
-            },
-            "fieldConfig": {
-                "defaults": {
-                    "color": {
-                        "mode": "thresholds"
-                    },
-                    "mappings": [],
-                    "thresholds": {
-                        "mode": "absolute",
-                        "steps": [
-                            {
-                                "color": "green",
-                                "value": null
-                            }
-                        ]
-                    }
-                },
-                "overrides": [
-                    {
-                        "matcher": {
-                            "id": "byName",
-                            "options": "Last Confirmed Block Hash"
-                        },
-                        "properties": [
-                            {
-                                "id": "links",
-                                "value": [
-                                    {
-                                        "targetBlank": true,
-                                        "title": "",
-                                        "url": "https://mempool.space/signet/block/${__value.text}"
-                                    }
-                                ]
-                            }
-                        ]
-                    },
-                    {
-                        "matcher": {
-                            "id": "byName",
-                            "options": "Candidates Tree"
-                        },
-                        "properties": []
-                    }
-                ]
-            },
-            "gridPos": {
-                "h": 3,
-                "w": 13,
-                "x": 11,
-                "y": 6
-            },
-            "id": 25,
-            "options": {
-                "colorMode": "value",
-                "graphMode": "none",
-                "justifyMode": "auto",
-                "orientation": "horizontal",
-                "percentChangeColorMode": "standard",
-                "reduceOptions": {
-                    "calcs": [
-                        "lastNotNull"
-                    ],
-                    "fields": "/.*/",
-                    "values": false
-                },
-                "showPercentChange": false,
-                "text": {
-                    "titleSize": 11,
-                    "valueSize": 11
-                },
-                "textMode": "value_and_name",
-                "wideLayout": true
-            },
-            "pluginVersion": "11.5.2",
-            "targets": [
-                {
-                    "columns": [],
-                    "computed_columns": [
-                        {
-                            "selector": "",
-                            "text": "",
-                            "type": "string"
-                        }
-                    ],
-                    "datasource": {
-                        "type": "yesoreyeram-infinity-datasource",
-                        "uid": "dem2k81ld0veoe"
-                    },
-                    "filterExpression": "",
-                    "filters": [],
-                    "format": "table",
-                    "global_query_id": "",
-                    "parser": "backend",
-                    "refId": "A",
-                    "root_selector": "contractBitcoinClient",
-                    "source": "url",
-                    "type": "json",
-                    "url": "http://host.docker.internal:3000/api/metrics?source=info",
-                    "url_options": {
-                        "data": "",
-                        "method": "GET"
-                    }
-                }
-            ],
-            "title": "Bitcoin Client State",
-            "transformations": [
-                {
-                    "id": "organize",
-                    "options": {
-                        "excludeByName": {
-                            "CandidateBlockHashes": true
-                        },
-                        "includeByName": {},
-                        "indexByName": {
-                            "CandidateBlockHashes": 3,
-                            "ConfirmationsNeeded": 0,
-                            "LastConfirmedBlockHash": 1,
-                            "LastConfirmedBlockHeight": 2
-                        },
-                        "renameByName": {
-                            "0": "Candidates Tree",
-                            "1": "  ",
-                            "CandidateBlockHashes": "",
-                            "ConfirmationsNeeded": "Confirmations Needed",
-                            "LastConfirmedBlockHash": "Last Confirmed Block Hash",
-                            "LastConfirmedBlockHeight": "Last Confirmed Block Height",
-                            "bestblockhash": "Chain Best Block Hash",
-                            "blocks": "Height",
-                            "chain": "Chain",
-                            "mediantime": "Median Time"
-                        }
                     }
                 }
             ],
@@ -988,8 +286,7 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green",
-                                "value": null
+                                "color": "green"
                             }
                         ]
                     }
@@ -1069,7 +366,7 @@
                 ]
             },
             "gridPos": {
-                "h": 8,
+                "h": 5,
                 "w": 11,
                 "x": 0,
                 "y": 7
@@ -1087,7 +384,7 @@
                 },
                 "showHeader": true
             },
-            "pluginVersion": "11.5.2",
+            "pluginVersion": "12.0.0",
             "targets": [
                 {
                     "columns": [],
@@ -1105,7 +402,7 @@
                     "source": "url",
                     "type": "json",
                     "uql": "parse-json\n  project UTXOset=\"contractTeleport.UTXOset\"\n          -- mv-expand UTXO=UTXOset\n          -- project\n          --   Address=UTXO.Address,\n          --   Amount=UTXO.Amount,\n          --   Index=UTXO.Index,\n          --   Script=UTXO.Script,\n          --   MintAddress=UTXO.MintAddress,\n          --   TapMerkleRoot=UTXO.TapMerkleRoot\n          -- order by Amount desc",
-                    "url": "http://host.docker.internal:3000/api/metrics?source=info",
+                    "url": "http://65.21.162.174:3000/api/metrics?source=info",
                     "url_options": {
                         "data": "",
                         "method": "GET"
@@ -1182,33 +479,172 @@
                     "color": {
                         "mode": "thresholds"
                     },
-                    "links": [
-                        {
-                            "targetBlank": true,
-                            "title": "",
-                            "url": "https://mempool.space/signet/block/${__value.text}"
-                        }
-                    ],
                     "mappings": [],
                     "thresholds": {
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green",
-                                "value": null
+                                "color": "green"
                             }
                         ]
                     }
                 },
-                "overrides": []
+                "overrides": [
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Last Pegout Tx ID"
+                        },
+                        "properties": [
+                            {
+                                "id": "links",
+                                "value": [
+                                    {
+                                        "targetBlank": true,
+                                        "title": "",
+                                        "url": "https://mempool.space/signet/tx/${__value.text}"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
             },
             "gridPos": {
                 "h": 2,
-                "w": 13,
-                "x": 11,
-                "y": 9
+                "w": 7,
+                "x": 0,
+                "y": 12
             },
-            "id": 26,
+            "id": 11,
+            "options": {
+                "colorMode": "value",
+                "graphMode": "none",
+                "justifyMode": "auto",
+                "orientation": "horizontal",
+                "percentChangeColorMode": "standard",
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "showPercentChange": false,
+                "text": {
+                    "titleSize": 11,
+                    "valueSize": 11
+                },
+                "textMode": "value_and_name",
+                "wideLayout": true
+            },
+            "pluginVersion": "12.0.0",
+            "targets": [
+                {
+                    "columns": [
+                        {
+                            "selector": "contractTeleport.PegoutChainCounter",
+                            "text": "Unconfirmed Pegout Count",
+                            "type": "string"
+                        },
+                        {
+                            "selector": "contractTeleport.LastPegoutTxID",
+                            "text": "Last Pegout Tx ID",
+                            "type": "string"
+                        }
+                    ],
+                    "datasource": {
+                        "type": "yesoreyeram-infinity-datasource",
+                        "uid": "dem2k81ld0veoe"
+                    },
+                    "filters": [],
+                    "format": "table",
+                    "global_query_id": "",
+                    "parser": "backend",
+                    "refId": "A",
+                    "root_selector": "",
+                    "source": "url",
+                    "type": "json",
+                    "url": "http://65.21.162.174:3000/api/metrics?source=info",
+                    "url_options": {
+                        "data": "",
+                        "method": "GET"
+                    }
+                }
+            ],
+            "title": "Pegouts",
+            "transformations": [
+                {
+                    "id": "extractFields",
+                    "options": {
+                        "delimiter": ",",
+                        "format": "json",
+                        "jsonPaths": [
+                            {
+                                "alias": "Unconfirmed Pegouts Count",
+                                "path": "PegoutChainCounter"
+                            },
+                            {
+                                "path": "LastPegoutTxID"
+                            }
+                        ],
+                        "keepTime": false,
+                        "replace": true,
+                        "source": "payload"
+                    }
+                }
+            ],
+            "transparent": true,
+            "type": "stat"
+        },
+        {
+            "datasource": {
+                "type": "yesoreyeram-infinity-datasource",
+                "uid": "dem2k81ld0veoe"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green"
+                            }
+                        ]
+                    }
+                },
+                "overrides": [
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Last Pegout Tx ID"
+                        },
+                        "properties": [
+                            {
+                                "id": "links",
+                                "value": [
+                                    {
+                                        "targetBlank": true,
+                                        "title": "",
+                                        "url": "https://mempool.space/signet/tx/${__value.text}"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            },
+            "gridPos": {
+                "h": 2,
+                "w": 4,
+                "x": 7,
+                "y": 12
+            },
+            "id": 28,
             "options": {
                 "colorMode": "value",
                 "graphMode": "none",
@@ -1230,7 +666,270 @@
                 "textMode": "value_and_name",
                 "wideLayout": true
             },
-            "pluginVersion": "11.5.2",
+            "pluginVersion": "12.0.0",
+            "targets": [
+                {
+                    "columns": [
+                        {
+                            "selector": "contractTeleport.PeginsCount",
+                            "text": "Processing Pegins Count",
+                            "type": "string"
+                        }
+                    ],
+                    "datasource": {
+                        "type": "yesoreyeram-infinity-datasource",
+                        "uid": "dem2k81ld0veoe"
+                    },
+                    "filters": [],
+                    "format": "table",
+                    "global_query_id": "",
+                    "parser": "backend",
+                    "refId": "A",
+                    "root_selector": "",
+                    "source": "url",
+                    "type": "json",
+                    "url": "http://65.21.162.174:3000/api/metrics?source=info",
+                    "url_options": {
+                        "data": "",
+                        "method": "GET"
+                    }
+                }
+            ],
+            "title": "Pegins",
+            "transformations": [
+                {
+                    "id": "organize",
+                    "options": {
+                        "delimiter": ",",
+                        "format": "json",
+                        "jsonPaths": [
+                            {
+                                "alias": "Unconfirmed Pegouts Count",
+                                "path": "PegoutChainCounter"
+                            },
+                            {
+                                "path": "LastPegoutTxID"
+                            }
+                        ],
+                        "keepTime": false,
+                        "replace": true,
+                        "source": "payload"
+                    }
+                }
+            ],
+            "transparent": true,
+            "type": "stat"
+        },
+        {
+            "datasource": {
+                "type": "yesoreyeram-infinity-datasource",
+                "uid": "dem2k81ld0veoe"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green"
+                            },
+                            {
+                                "color": "red",
+                                "value": 80
+                            }
+                        ]
+                    },
+                    "unit": "sat/vByte"
+                },
+                "overrides": [
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Total Service Fee / 100000000"
+                        },
+                        "properties": [
+                            {
+                                "id": "decimals",
+                                "value": 8
+                            },
+                            {
+                                "id": "unit",
+                                "value": "BTC"
+                            }
+                        ]
+                    }
+                ]
+            },
+            "gridPos": {
+                "h": 3,
+                "w": 3,
+                "x": 0,
+                "y": 14
+            },
+            "id": 18,
+            "options": {
+                "colorMode": "value",
+                "graphMode": "none",
+                "justifyMode": "auto",
+                "orientation": "horizontal",
+                "percentChangeColorMode": "standard",
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "/.*/",
+                    "values": false
+                },
+                "showPercentChange": false,
+                "text": {
+                    "titleSize": 11,
+                    "valueSize": 11
+                },
+                "textMode": "value_and_name",
+                "wideLayout": true
+            },
+            "pluginVersion": "12.0.0",
+            "targets": [
+                {
+                    "columns": [
+                        {
+                            "selector": "BaseSVB",
+                            "text": "Base",
+                            "type": "string"
+                        },
+                        {
+                            "selector": "NextSVB",
+                            "text": "Next Pegout Fee",
+                            "type": "string"
+                        },
+                        {
+                            "selector": "TotalServiceFee",
+                            "text": "",
+                            "type": "string"
+                        }
+                    ],
+                    "datasource": {
+                        "type": "yesoreyeram-infinity-datasource",
+                        "uid": "dem2k81ld0veoe"
+                    },
+                    "filters": [],
+                    "format": "table",
+                    "global_query_id": "",
+                    "parser": "backend",
+                    "refId": "A",
+                    "root_selector": "contractTeleport",
+                    "source": "url",
+                    "type": "json",
+                    "url": "http://65.21.162.174:3000/api/metrics?source=info",
+                    "url_options": {
+                        "data": "",
+                        "method": "GET"
+                    }
+                }
+            ],
+            "title": "Fees",
+            "transformations": [
+                {
+                    "id": "calculateField",
+                    "options": {
+                        "alias": "Total Service Fee",
+                        "binary": {
+                            "left": {
+                                "matcher": {
+                                    "id": "byName",
+                                    "options": "TotalServiceFee"
+                                }
+                            },
+                            "operator": "/",
+                            "right": {
+                                "fixed": "100000000"
+                            }
+                        },
+                        "mode": "binary",
+                        "reduce": {
+                            "include": [
+                                "Total Service Fee"
+                            ],
+                            "reducer": "sum"
+                        }
+                    }
+                },
+                {
+                    "id": "organize",
+                    "options": {
+                        "excludeByName": {
+                            "TotalServiceFee": true
+                        },
+                        "includeByName": {},
+                        "indexByName": {
+                            "Base": 1,
+                            "Next Pegout Fee": 2,
+                            "Total Service Fee": 0,
+                            "TotalServiceFee": 3
+                        },
+                        "renameByName": {}
+                    }
+                }
+            ],
+            "transparent": true,
+            "type": "stat"
+        },
+        {
+            "datasource": {
+                "type": "yesoreyeram-infinity-datasource",
+                "uid": "dem2k81ld0veoe"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green"
+                            }
+                        ]
+                    },
+                    "unit": "BTC"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 3,
+                "w": 3,
+                "x": 5,
+                "y": 14
+            },
+            "id": 13,
+            "options": {
+                "colorMode": "value",
+                "graphMode": "none",
+                "justifyMode": "auto",
+                "orientation": "horizontal",
+                "percentChangeColorMode": "standard",
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "/.*/",
+                    "values": false
+                },
+                "showPercentChange": false,
+                "text": {
+                    "titleSize": 11,
+                    "valueSize": 11
+                },
+                "textMode": "value_and_name",
+                "wideLayout": true
+            },
+            "pluginVersion": "12.0.0",
             "targets": [
                 {
                     "columns": [],
@@ -1243,18 +942,32 @@
                     "global_query_id": "",
                     "parser": "backend",
                     "refId": "A",
-                    "root_selector": "contractBitcoinClient",
+                    "root_selector": "contractTeleport.Limits",
                     "source": "url",
                     "type": "json",
-                    "url": "http://host.docker.internal:3000/api/metrics?source=info",
+                    "url": "http://65.21.162.174:3000/api/metrics?source=info",
                     "url_options": {
                         "data": "",
                         "method": "GET"
                     }
                 }
             ],
-            "title": "",
+            "title": "Limits",
             "transformations": [
+                {
+                    "id": "extractFields",
+                    "options": {
+                        "delimiter": ",",
+                        "format": "json",
+                        "jsonPaths": [
+                            {
+                                "path": "Limits"
+                            }
+                        ],
+                        "replace": true,
+                        "source": "payload"
+                    }
+                },
                 {
                     "id": "extractFields",
                     "options": {
@@ -1265,33 +978,67 @@
                                 "path": ""
                             }
                         ],
-                        "keepTime": false,
-                        "replace": false,
-                        "source": "CandidateBlockHashes"
+                        "replace": true,
+                        "source": "Limits"
                     }
                 },
                 {
-                    "id": "organize",
+                    "id": "calculateField",
                     "options": {
-                        "excludeByName": {
-                            "CandidateBlockHashes": true,
-                            "ConfirmationsNeeded": true,
-                            "LastConfirmedBlockHash": false,
-                            "LastConfirmedBlockHeight": true
+                        "alias": "Min Pegin Value",
+                        "binary": {
+                            "left": {
+                                "matcher": {
+                                    "id": "byName",
+                                    "options": "MinPeginAmount"
+                                }
+                            },
+                            "operator": "/",
+                            "right": {
+                                "fixed": "100000000"
+                            }
                         },
-                        "includeByName": {},
-                        "indexByName": {
-                            "0": 0,
-                            "1": 1,
-                            "CandidateBlockHashes": 2,
-                            "ConfirmationsNeeded": 3,
-                            "LastConfirmedBlockHash": 5,
-                            "LastConfirmedBlockHeight": 4
+                        "mode": "binary",
+                        "reduce": {
+                            "include": [
+                                "Total Service Fee"
+                            ],
+                            "reducer": "sum"
                         },
-                        "renameByName": {
-                            "0": "Candidates Tree",
-                            "1": "  ",
-                            "LastConfirmedBlockHash": " "
+                        "replaceFields": false
+                    }
+                },
+                {
+                    "id": "calculateField",
+                    "options": {
+                        "alias": "Min Pegout Value",
+                        "binary": {
+                            "left": {
+                                "matcher": {
+                                    "id": "byName",
+                                    "options": "MinPegoutAmount"
+                                }
+                            },
+                            "operator": "/",
+                            "right": {
+                                "fixed": "100000000"
+                            }
+                        },
+                        "mode": "binary",
+                        "reduce": {
+                            "reducer": "sum"
+                        },
+                        "replaceFields": false
+                    }
+                },
+                {
+                    "id": "filterFieldsByName",
+                    "options": {
+                        "include": {
+                            "names": [
+                                "Min Pegin Value",
+                                "Min Pegout Value"
+                            ]
                         }
                     }
                 }
@@ -1314,8 +1061,147 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green",
-                                "value": null
+                                "color": "green"
+                            }
+                        ]
+                    }
+                },
+                "overrides": [
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Last Confirmed Block Hash"
+                        },
+                        "properties": [
+                            {
+                                "id": "links",
+                                "value": [
+                                    {
+                                        "targetBlank": true,
+                                        "title": "",
+                                        "url": "https://mempool.space/signet/block/${__value.text}"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Candidates Tree"
+                        },
+                        "properties": []
+                    }
+                ]
+            },
+            "gridPos": {
+                "h": 3,
+                "w": 8,
+                "x": 0,
+                "y": 17
+            },
+            "id": 25,
+            "options": {
+                "colorMode": "value",
+                "graphMode": "none",
+                "justifyMode": "auto",
+                "orientation": "horizontal",
+                "percentChangeColorMode": "standard",
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "/.*/",
+                    "values": false
+                },
+                "showPercentChange": false,
+                "text": {
+                    "titleSize": 11,
+                    "valueSize": 11
+                },
+                "textMode": "value_and_name",
+                "wideLayout": true
+            },
+            "pluginVersion": "12.0.0",
+            "targets": [
+                {
+                    "columns": [],
+                    "computed_columns": [
+                        {
+                            "selector": "",
+                            "text": "",
+                            "type": "string"
+                        }
+                    ],
+                    "datasource": {
+                        "type": "yesoreyeram-infinity-datasource",
+                        "uid": "dem2k81ld0veoe"
+                    },
+                    "filterExpression": "",
+                    "filters": [],
+                    "format": "table",
+                    "global_query_id": "",
+                    "parser": "backend",
+                    "refId": "A",
+                    "root_selector": "contractBitcoinClient",
+                    "source": "url",
+                    "type": "json",
+                    "url": "http://65.21.162.174:3000/api/metrics?source=info",
+                    "url_options": {
+                        "data": "",
+                        "method": "GET"
+                    }
+                }
+            ],
+            "title": "Bitcoin Client State",
+            "transformations": [
+                {
+                    "id": "organize",
+                    "options": {
+                        "excludeByName": {
+                            "CandidateBlockHashes": true
+                        },
+                        "includeByName": {},
+                        "indexByName": {
+                            "CandidateBlockHashes": 3,
+                            "ConfirmationsNeeded": 0,
+                            "LastConfirmedBlockHash": 1,
+                            "LastConfirmedBlockHeight": 2
+                        },
+                        "renameByName": {
+                            "0": "Candidates Tree",
+                            "1": "  ",
+                            "CandidateBlockHashes": "",
+                            "ConfirmationsNeeded": "Confirmations Needed",
+                            "LastConfirmedBlockHash": "Last Confirmed Block Hash",
+                            "LastConfirmedBlockHeight": "Last Confirmed Block Height",
+                            "bestblockhash": "Chain Best Block Hash",
+                            "blocks": "Height",
+                            "chain": "Chain",
+                            "mediantime": "Median Time"
+                        }
+                    }
+                }
+            ],
+            "transparent": true,
+            "type": "stat"
+        },
+        {
+            "datasource": {
+                "type": "yesoreyeram-infinity-datasource",
+                "uid": "dem2k81ld0veoe"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green"
                             }
                         ]
                     }
@@ -1355,33 +1241,25 @@
             },
             "gridPos": {
                 "h": 4,
-                "w": 13,
-                "x": 11,
-                "y": 11
+                "w": 8,
+                "x": 0,
+                "y": 20
             },
             "id": 27,
             "options": {
-                "colorMode": "value",
-                "graphMode": "none",
-                "justifyMode": "auto",
-                "orientation": "horizontal",
-                "percentChangeColorMode": "standard",
-                "reduceOptions": {
-                    "calcs": [
-                        "lastNotNull"
+                "cellHeight": "sm",
+                "footer": {
+                    "countRows": false,
+                    "fields": "",
+                    "reducer": [
+                        "sum"
                     ],
-                    "fields": "/.*/",
-                    "values": false
-                },
-                "showPercentChange": false,
-                "text": {
-                    "titleSize": 11,
-                    "valueSize": 11
+                    "show": false
                 },
                 "textMode": "value_and_name",
                 "wideLayout": true
             },
-            "pluginVersion": "11.5.2",
+            "pluginVersion": "12.0.0",
             "targets": [
                 {
                     "columns": [],
@@ -1397,7 +1275,7 @@
                     "root_selector": "blockChainInfo",
                     "source": "url",
                     "type": "json",
-                    "url": "http://host.docker.internal:3000/api/metrics?source=info",
+                    "url": "http://65.21.162.174:3000/api/metrics?source=info",
                     "url_options": {
                         "data": "",
                         "method": "GET"
@@ -1453,12 +1331,138 @@
                 }
             ],
             "transparent": true,
+            "type": "table"
+        },
+        {
+            "datasource": {
+                "type": "yesoreyeram-infinity-datasource",
+                "uid": "dem2k81ld0veoe"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "links": [
+                        {
+                            "targetBlank": true,
+                            "title": "",
+                            "url": "https://mempool.space/signet/block/${__value.text}"
+                        }
+                    ],
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green"
+                            }
+                        ]
+                    }
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 2,
+                "w": 8,
+                "x": 0,
+                "y": 24
+            },
+            "id": 26,
+            "options": {
+                "colorMode": "value",
+                "graphMode": "none",
+                "justifyMode": "auto",
+                "orientation": "horizontal",
+                "percentChangeColorMode": "standard",
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "/.*/",
+                    "values": false
+                },
+                "showPercentChange": false,
+                "text": {
+                    "titleSize": 11,
+                    "valueSize": 11
+                },
+                "textMode": "value_and_name",
+                "wideLayout": true
+            },
+            "pluginVersion": "12.0.0",
+            "targets": [
+                {
+                    "columns": [],
+                    "datasource": {
+                        "type": "yesoreyeram-infinity-datasource",
+                        "uid": "dem2k81ld0veoe"
+                    },
+                    "filters": [],
+                    "format": "table",
+                    "global_query_id": "",
+                    "parser": "backend",
+                    "refId": "A",
+                    "root_selector": "contractBitcoinClient",
+                    "source": "url",
+                    "type": "json",
+                    "url": "http://65.21.162.174:3000/api/metrics?source=info",
+                    "url_options": {
+                        "data": "",
+                        "method": "GET"
+                    }
+                }
+            ],
+            "title": "",
+            "transformations": [
+                {
+                    "id": "extractFields",
+                    "options": {
+                        "delimiter": ",",
+                        "format": "json",
+                        "jsonPaths": [
+                            {
+                                "path": ""
+                            }
+                        ],
+                        "keepTime": false,
+                        "replace": false,
+                        "source": "CandidateBlockHashes"
+                    }
+                },
+                {
+                    "id": "organize",
+                    "options": {
+                        "excludeByName": {
+                            "CandidateBlockHashes": true,
+                            "ConfirmationsNeeded": true,
+                            "LastConfirmedBlockHash": false,
+                            "LastConfirmedBlockHeight": true
+                        },
+                        "includeByName": {},
+                        "indexByName": {
+                            "0": 0,
+                            "1": 1,
+                            "CandidateBlockHashes": 2,
+                            "ConfirmationsNeeded": 3,
+                            "LastConfirmedBlockHash": 5,
+                            "LastConfirmedBlockHeight": 4
+                        },
+                        "renameByName": {
+                            "0": "Candidates Tree",
+                            "1": "  ",
+                            "LastConfirmedBlockHash": " "
+                        }
+                    }
+                }
+            ],
+            "transparent": true,
             "type": "stat"
         }
     ],
     "preload": false,
     "refresh": "1m",
-    "schemaVersion": 40,
+    "schemaVersion": 41,
     "tags": [],
     "templating": {
         "list": []
@@ -1471,6 +1475,5 @@
     "timezone": "browser",
     "title": "",
     "uid": "bely7mcsbdwcge",
-    "version": 3,
-    "weekStart": ""
+    "version": 13
 }

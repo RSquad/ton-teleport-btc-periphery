@@ -51,9 +51,11 @@ func (apiHandler JsonApiHandler) ServeHTTP(w http.ResponseWriter, r *http.Reques
 			payload, err = apiHandler.PlotBurned()
 		case "plot_total_supply":
 			payload, err = apiHandler.PlotTotalSupply()
+		case "plots_summary":
+			payload, err = apiHandler.GetPlotsSummary()
 		default:
 			w.WriteHeader(http.StatusNotFound)
-			w.Write([]byte("Please select one of the next values: mints, burns, reinits, info, internal_keys, plot_minted, plot_burned, plot_total_supply"))
+			w.Write([]byte("Please select one of the next values: mints, burns, reinits, info, internal_keys, plot_minted, plot_burned, plot_total_supply, plots_summary"))
 			return
 		}
 
@@ -365,6 +367,41 @@ func (apiHandler JsonApiHandler) PlotTotalSupply() (string, error) {
 				SUM(daily_sum/100000000) OVER (ORDER BY day) AS cumulative_total
 			FROM daily_totals
 			ORDER BY day
+		) AS result;`,
+	)
+
+	if err != nil {
+		return "", err
+	}
+
+	defer rows.Close()
+
+	var data string
+	if rows.Next() {
+		err = rows.Scan(&data)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	return data, nil
+}
+
+func (apiHandler JsonApiHandler) GetPlotsSummary() (string, error) {
+	rows, err := apiHandler.db.Query(
+		`SELECT jsonb_build_object(
+				'mints_count', (
+						SELECT COUNT(1) AS row_count FROM mints WHERE status = 'SUCCESS'
+				),
+				'burns_count', (
+						SELECT COUNT(1) AS row_count FROM burns AS b INNER JOIN pegouts AS p ON b.pegout_burn = p.id AND p.status = 'CONFIRMED'
+				),
+				'total_minted', (
+						SELECT SUM((CAST(amount AS numeric)) / 100000000)::numeric(20,8) AS total_minted FROM mints WHERE status = 'SUCCESS'
+				),
+				'total_burned', (
+						SELECT SUM((CAST (b.amount AS numeric)) / 100000000)::numeric(20,8) AS total_burned FROM burns AS b JOIN pegouts AS p ON p.id = b.pegout_burn WHERE p.status = 'CONFIRMED'
+				)
 		) AS result;`,
 	)
 
