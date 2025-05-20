@@ -345,9 +345,8 @@ func (c *Client) GetTxOut(txid *chainhash.Hash, vout uint32, includeMempool bool
 		return nil, fmt.Errorf("failed to call gettxout for tx %s, vout %d: %w", txid.String(), vout, err)
 	}
 
-	// If the UTXO is spent or not found, Bitcoin Core returns null here. sendRequest would return nil, nil if it got a null result with no RPC error object.
-	// We need to handle this case. If rawResult is nil and err is also nil from sendRequest, it means the UTXO is spent.
-	if rawResult == nil {
+	// We need to handle this case. If rawResult is nil OR if it represents the JSON value 'null', it means the UTXO is spent.
+	if rawResult == nil || string(rawResult) == "null" {
 		return nil, nil // Indicates UTXO is spent or not found
 	}
 
