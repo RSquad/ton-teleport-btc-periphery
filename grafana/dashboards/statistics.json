@@ -18,7 +18,7 @@
     "editable": true,
     "fiscalYearStartMonth": 0,
     "graphTooltip": 0,
-    "id": 59,
+    "id": 1,
     "links": [],
     "panels": [
         {
@@ -36,7 +36,8 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green"
+                                "color": "green",
+                                "value": null
                             }
                         ]
                     }
@@ -67,7 +68,7 @@
                 "textMode": "auto",
                 "wideLayout": true
             },
-            "pluginVersion": "12.0.0",
+            "pluginVersion": "11.5.2",
             "targets": [
                 {
                     "datasource": {
@@ -117,7 +118,8 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green"
+                                "color": "green",
+                                "value": null
                             }
                         ]
                     }
@@ -148,7 +150,7 @@
                 "textMode": "auto",
                 "wideLayout": true
             },
-            "pluginVersion": "12.0.0",
+            "pluginVersion": "11.5.2",
             "targets": [
                 {
                     "datasource": {
@@ -199,7 +201,8 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green"
+                                "color": "green",
+                                "value": null
                             }
                         ]
                     }
@@ -230,7 +233,7 @@
                 "textMode": "auto",
                 "wideLayout": true
             },
-            "pluginVersion": "12.0.0",
+            "pluginVersion": "11.5.2",
             "targets": [
                 {
                     "datasource": {
@@ -303,7 +306,8 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green"
+                                "color": "green",
+                                "value": null
                             }
                         ]
                     }
@@ -334,7 +338,7 @@
                 "textMode": "auto",
                 "wideLayout": true
             },
-            "pluginVersion": "12.0.0",
+            "pluginVersion": "11.5.2",
             "targets": [
                 {
                     "datasource": {
@@ -385,7 +389,8 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green"
+                                "color": "green",
+                                "value": null
                             }
                         ]
                     }
@@ -416,7 +421,7 @@
                 "textMode": "value",
                 "wideLayout": true
             },
-            "pluginVersion": "12.0.0",
+            "pluginVersion": "11.5.2",
             "targets": [
                 {
                     "datasource": {
@@ -506,7 +511,8 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green"
+                                "color": "green",
+                                "value": null
                             }
                         ]
                     }
@@ -524,7 +530,7 @@
                 "legend": {
                     "calcs": [],
                     "displayMode": "list",
-                    "placement": "right",
+                    "placement": "bottom",
                     "showLegend": true
                 },
                 "timezone": [
@@ -536,7 +542,7 @@
                     "sort": "none"
                 }
             },
-            "pluginVersion": "12.0.0",
+            "pluginVersion": "11.5.2",
             "targets": [
                 {
                     "columns": [
@@ -631,7 +637,8 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green"
+                                "color": "green",
+                                "value": null
                             }
                         ]
                     }
@@ -649,7 +656,7 @@
                 "legend": {
                     "calcs": [],
                     "displayMode": "list",
-                    "placement": "right",
+                    "placement": "bottom",
                     "showLegend": true
                 },
                 "timezone": [
@@ -661,7 +668,7 @@
                     "sort": "none"
                 }
             },
-            "pluginVersion": "12.0.0",
+            "pluginVersion": "11.5.2",
             "targets": [
                 {
                     "columns": [
@@ -789,7 +796,8 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green"
+                                "color": "green",
+                                "value": null
                             }
                         ]
                     }
@@ -807,7 +815,7 @@
                 "legend": {
                     "calcs": [],
                     "displayMode": "list",
-                    "placement": "right",
+                    "placement": "bottom",
                     "showLegend": true
                 },
                 "timezone": [
@@ -819,7 +827,7 @@
                     "sort": "none"
                 }
             },
-            "pluginVersion": "12.0.0",
+            "pluginVersion": "11.5.2",
             "targets": [
                 {
                     "columns": [
@@ -894,7 +902,7 @@
     ],
     "preload": false,
     "refresh": "1m",
-    "schemaVersion": 41,
+    "schemaVersion": 40,
     "tags": [],
     "templating": {
         "list": [
@@ -926,5 +934,6 @@
     "timezone": "browser",
     "title": "Statistics",
     "uid": "belv5pokjhszke",
-    "version": 8
+    "version": 1,
+    "weekStart": ""
 }

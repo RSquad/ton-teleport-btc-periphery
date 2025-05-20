@@ -18,13 +18,13 @@
     "editable": true,
     "fiscalYearStartMonth": 0,
     "graphTooltip": 0,
-    "id": 4,
+    "id": 2,
     "links": [],
     "panels": [
         {
             "datasource": {
-                "type": "grafana-postgresql-datasource",
-                "uid": "PCC52D03280B7034C"
+                "type": "yesoreyeram-infinity-datasource",
+                "uid": "dem2k81ld0veoe"
             },
             "fieldConfig": {
                 "defaults": {
@@ -39,23 +39,11 @@
                             {
                                 "color": "green",
                                 "value": null
-                            },
-                            {
-                                "color": "red",
-                                "value": 80
                             }
                         ]
                     }
                 },
-                "overrides": [
-                    {
-                        "matcher": {
-                            "id": "byName",
-                            "options": "InternalKey"
-                        },
-                        "properties": []
-                    }
-                ]
+                "overrides": []
             },
             "gridPos": {
                 "h": 3,
@@ -90,57 +78,55 @@
             "pluginVersion": "11.5.2",
             "targets": [
                 {
+                    "columns": [
+                        {
+                            "selector": "contractTeleport.InternalKey",
+                            "text": "Current Internal Key",
+                            "type": "string"
+                        },
+                        {
+                            "selector": "contractTeleport.TweakedPubkey",
+                            "text": "Tweaked Key",
+                            "type": "string"
+                        },
+                        {
+                            "selector": "contractTeleport.CsvLock",
+                            "text": "Sequence Locktime",
+                            "type": "string"
+                        }
+                    ],
                     "datasource": {
-                        "type": "grafana-postgresql-datasource",
-                        "uid": "PCC52D03280B7034C"
+                        "type": "yesoreyeram-infinity-datasource",
+                        "uid": "dem2k81ld0veoe"
                     },
-                    "editorMode": "code",
+                    "filters": [],
                     "format": "table",
-                    "rawQuery": true,
-                    "rawSql": "SELECT payload FROM metrics_data WHERE type_id = 4 ORDER BY id DESC LIMIT 1;",
+                    "global_query_id": "",
+                    "parser": "backend",
                     "refId": "A",
-                    "sql": {
-                        "columns": [
-                            {
-                                "parameters": [],
-                                "type": "function"
-                            }
-                        ],
-                        "groupBy": [
-                            {
-                                "property": {
-                                    "type": "string"
-                                },
-                                "type": "groupBy"
-                            }
-                        ],
-                        "limit": 50
+                    "root_selector": "",
+                    "source": "url",
+                    "type": "json",
+                    "url": "http://host.docker.internal:3000/api/metrics?source=info",
+                    "url_options": {
+                        "data": "",
+                        "method": "GET"
                     }
                 }
             ],
             "title": "System",
             "transformations": [
                 {
-                    "id": "extractFields",
+                    "id": "organize",
                     "options": {
-                        "delimiter": ",",
-                        "format": "json",
-                        "jsonPaths": [
-                            {
-                                "alias": "Internal Key",
-                                "path": "InternalKey"
-                            },
-                            {
-                                "alias": "Tweaked Key",
-                                "path": "TweakedPubkey"
-                            },
-                            {
-                                "alias": "Sequence Locktime",
-                                "path": "CsvLock"
-                            }
-                        ],
-                        "replace": true,
-                        "source": "payload"
+                        "excludeByName": {},
+                        "includeByName": {},
+                        "indexByName": {
+                            "Current Internal Key": 0,
+                            "Sequence Locktime": 2,
+                            "Tweaked Key": 1
+                        },
+                        "renameByName": {}
                     }
                 }
             ],
@@ -149,8 +135,8 @@
         },
         {
             "datasource": {
-                "type": "grafana-postgresql-datasource",
-                "uid": "PCC52D03280B7034C"
+                "type": "yesoreyeram-infinity-datasource",
+                "uid": "dem2k81ld0veoe"
             },
             "fieldConfig": {
                 "defaults": {
@@ -164,10 +150,6 @@
                             {
                                 "color": "green",
                                 "value": null
-                            },
-                            {
-                                "color": "red",
-                                "value": 20
                             }
                         ]
                     }
@@ -176,7 +158,7 @@
                     {
                         "matcher": {
                             "id": "byName",
-                            "options": "LastPegoutTxID"
+                            "options": "Last Pegout Tx ID"
                         },
                         "properties": [
                             {
@@ -218,37 +200,40 @@
                     "titleSize": 11,
                     "valueSize": 11
                 },
-                "textMode": "auto",
+                "textMode": "value_and_name",
                 "wideLayout": true
             },
             "pluginVersion": "11.5.2",
             "targets": [
                 {
+                    "columns": [
+                        {
+                            "selector": "contractTeleport.PegoutChainCounter",
+                            "text": "Unconfirmed Pegout Count",
+                            "type": "string"
+                        },
+                        {
+                            "selector": "contractTeleport.LastPegoutTxID",
+                            "text": "Last Pegout Tx ID",
+                            "type": "string"
+                        }
+                    ],
                     "datasource": {
-                        "type": "grafana-postgresql-datasource",
-                        "uid": "PCC52D03280B7034C"
+                        "type": "yesoreyeram-infinity-datasource",
+                        "uid": "dem2k81ld0veoe"
                     },
-                    "editorMode": "code",
+                    "filters": [],
                     "format": "table",
-                    "rawQuery": true,
-                    "rawSql": "SELECT payload FROM metrics_data WHERE type_id = 4 ORDER BY id DESC LIMIT 1;",
+                    "global_query_id": "",
+                    "parser": "backend",
                     "refId": "A",
-                    "sql": {
-                        "columns": [
-                            {
-                                "parameters": [],
-                                "type": "function"
-                            }
-                        ],
-                        "groupBy": [
-                            {
-                                "property": {
-                                    "type": "string"
-                                },
-                                "type": "groupBy"
-                            }
-                        ],
-                        "limit": 50
+                    "root_selector": "",
+                    "source": "url",
+                    "type": "json",
+                    "url": "http://host.docker.internal:3000/api/metrics?source=info",
+                    "url_options": {
+                        "data": "",
+                        "method": "GET"
                     }
                 }
             ],
@@ -279,8 +264,8 @@
         },
         {
             "datasource": {
-                "type": "grafana-postgresql-datasource",
-                "uid": "PCC52D03280B7034C"
+                "type": "yesoreyeram-infinity-datasource",
+                "uid": "dem2k81ld0veoe"
             },
             "fieldConfig": {
                 "defaults": {
@@ -298,20 +283,7 @@
                         ]
                     }
                 },
-                "overrides": [
-                    {
-                        "matcher": {
-                            "id": "byName",
-                            "options": "deposit_count"
-                        },
-                        "properties": [
-                            {
-                                "id": "displayName",
-                                "value": "Processing Pegins Count"
-                            }
-                        ]
-                    }
-                ]
+                "overrides": []
             },
             "gridPos": {
                 "h": 3,
@@ -322,15 +294,15 @@
             "id": 15,
             "options": {
                 "colorMode": "value",
-                "graphMode": "area",
+                "graphMode": "none",
                 "justifyMode": "auto",
-                "orientation": "auto",
+                "orientation": "horizontal",
                 "percentChangeColorMode": "standard",
                 "reduceOptions": {
                     "calcs": [
                         "lastNotNull"
                     ],
-                    "fields": "/.*/",
+                    "fields": "",
                     "values": false
                 },
                 "showPercentChange": false,
@@ -344,42 +316,61 @@
             "pluginVersion": "11.5.2",
             "targets": [
                 {
+                    "columns": [],
+                    "computed_columns": [],
                     "datasource": {
-                        "type": "grafana-postgresql-datasource",
-                        "uid": "PCC52D03280B7034C"
+                        "type": "yesoreyeram-infinity-datasource",
+                        "uid": "dem2k81ld0veoe"
                     },
-                    "editorMode": "code",
+                    "filters": [],
                     "format": "table",
-                    "rawQuery": true,
-                    "rawSql": "SELECT jsonb_array_length(CASE WHEN jsonb_typeof(payload::jsonb->'Deposits') = 'array' THEN payload::jsonb->'Deposits' ELSE '[]'::jsonb END) AS deposit_count FROM metrics_data WHERE type_id = 4 ORDER BY id DESC LIMIT 1",
+                    "global_query_id": "",
+                    "pagination_mode": "none",
+                    "parser": "backend",
                     "refId": "A",
-                    "sql": {
-                        "columns": [
-                            {
-                                "parameters": [],
-                                "type": "function"
-                            }
-                        ],
-                        "groupBy": [
-                            {
-                                "property": {
-                                    "type": "string"
-                                },
-                                "type": "groupBy"
-                            }
-                        ],
-                        "limit": 50
+                    "root_selector": "$.contractTeleport.Deposits[*]",
+                    "source": "url",
+                    "type": "json",
+                    "uql": "parse-json",
+                    "url": "http://host.docker.internal:3000/api/metrics?source=info",
+                    "url_options": {
+                        "data": "",
+                        "method": "GET"
                     }
                 }
             ],
             "title": "Pegins",
+            "transformations": [
+                {
+                    "id": "reduce",
+                    "options": {
+                        "labelsToFields": false,
+                        "reducers": [
+                            "count"
+                        ]
+                    }
+                },
+                {
+                    "id": "organize",
+                    "options": {
+                        "excludeByName": {
+                            "Field": true
+                        },
+                        "includeByName": {},
+                        "indexByName": {},
+                        "renameByName": {
+                            "Count": "Processing Pegins Count "
+                        }
+                    }
+                }
+            ],
             "transparent": true,
             "type": "stat"
         },
         {
             "datasource": {
-                "type": "grafana-postgresql-datasource",
-                "uid": "PCC52D03280B7034C"
+                "type": "yesoreyeram-infinity-datasource",
+                "uid": "dem2k81ld0veoe"
             },
             "fieldConfig": {
                 "defaults": {
@@ -437,62 +428,61 @@
             "pluginVersion": "11.5.2",
             "targets": [
                 {
+                    "columns": [
+                        {
+                            "selector": "contractTeleport.MinterAddress",
+                            "text": "tgBTC",
+                            "type": "string"
+                        },
+                        {
+                            "selector": "contractTeleport.TeleportAddress",
+                            "text": "Teleport",
+                            "type": "string"
+                        },
+                        {
+                            "selector": "contractTeleport.CoordinatorAddress",
+                            "text": "Coordinator",
+                            "type": "string"
+                        },
+                        {
+                            "selector": "contractTeleport.BitcoinClientAddress",
+                            "text": "Bitcoin Client",
+                            "type": "string"
+                        }
+                    ],
                     "datasource": {
-                        "type": "grafana-postgresql-datasource",
-                        "uid": "PCC52D03280B7034C"
+                        "type": "yesoreyeram-infinity-datasource",
+                        "uid": "dem2k81ld0veoe"
                     },
-                    "editorMode": "code",
+                    "filters": [],
                     "format": "table",
-                    "rawQuery": true,
-                    "rawSql": "SELECT payload FROM metrics_data WHERE type_id = 4 ORDER BY id DESC LIMIT 1;",
+                    "global_query_id": "",
+                    "parser": "backend",
                     "refId": "A",
-                    "sql": {
-                        "columns": [
-                            {
-                                "parameters": [],
-                                "type": "function"
-                            }
-                        ],
-                        "groupBy": [
-                            {
-                                "property": {
-                                    "type": "string"
-                                },
-                                "type": "groupBy"
-                            }
-                        ],
-                        "limit": 50
+                    "root_selector": "",
+                    "source": "url",
+                    "type": "json",
+                    "url": "http://host.docker.internal:3000/api/metrics?source=info",
+                    "url_options": {
+                        "data": "",
+                        "method": "GET"
                     }
                 }
             ],
             "title": "Contract Addresses",
             "transformations": [
                 {
-                    "id": "extractFields",
+                    "id": "organize",
                     "options": {
-                        "delimiter": ",",
-                        "format": "json",
-                        "jsonPaths": [
-                            {
-                                "alias": "tgBTC",
-                                "path": "MinterAddress"
-                            },
-                            {
-                                "alias": "Teleport",
-                                "path": "TeleportAddress"
-                            },
-                            {
-                                "alias": "Coordinator",
-                                "path": "CoordinatorAddress"
-                            },
-                            {
-                                "alias": "Bitcoin Client",
-                                "path": "BitcoinClientAddress"
-                            }
-                        ],
-                        "keepTime": false,
-                        "replace": true,
-                        "source": "payload"
+                        "excludeByName": {},
+                        "includeByName": {},
+                        "indexByName": {
+                            "Bitcoin Client": 3,
+                            "Coordinator": 2,
+                            "Teleport": 1,
+                            "tgBTC": 0
+                        },
+                        "renameByName": {}
                     }
                 }
             ],
@@ -501,8 +491,8 @@
         },
         {
             "datasource": {
-                "type": "grafana-postgresql-datasource",
-                "uid": "PCC52D03280B7034C"
+                "type": "yesoreyeram-infinity-datasource",
+                "uid": "dem2k81ld0veoe"
             },
             "fieldConfig": {
                 "defaults": {
@@ -554,31 +544,23 @@
             "pluginVersion": "11.5.2",
             "targets": [
                 {
+                    "columns": [],
                     "datasource": {
-                        "type": "grafana-postgresql-datasource",
-                        "uid": "PCC52D03280B7034C"
+                        "type": "yesoreyeram-infinity-datasource",
+                        "uid": "dem2k81ld0veoe"
                     },
-                    "editorMode": "code",
+                    "filters": [],
                     "format": "table",
-                    "rawQuery": true,
-                    "rawSql": "SELECT payload FROM metrics_data WHERE type_id = 4 ORDER BY id DESC LIMIT 1;",
+                    "global_query_id": "",
+                    "parser": "backend",
                     "refId": "A",
-                    "sql": {
-                        "columns": [
-                            {
-                                "parameters": [],
-                                "type": "function"
-                            }
-                        ],
-                        "groupBy": [
-                            {
-                                "property": {
-                                    "type": "string"
-                                },
-                                "type": "groupBy"
-                            }
-                        ],
-                        "limit": 50
+                    "root_selector": "contractTeleport.Limits",
+                    "source": "url",
+                    "type": "json",
+                    "url": "http://host.docker.internal:3000/api/metrics?source=info",
+                    "url_options": {
+                        "data": "",
+                        "method": "GET"
                     }
                 }
             ],
@@ -675,8 +657,8 @@
         },
         {
             "datasource": {
-                "type": "grafana-postgresql-datasource",
-                "uid": "PCC52D03280B7034C"
+                "type": "yesoreyeram-infinity-datasource",
+                "uid": "dem2k81ld0veoe"
             },
             "fieldConfig": {
                 "defaults": {
@@ -703,12 +685,16 @@
                     {
                         "matcher": {
                             "id": "byName",
-                            "options": "Total Service Fee"
+                            "options": "Total Service Fee / 100000000"
                         },
                         "properties": [
                             {
                                 "id": "decimals",
                                 "value": 8
+                            },
+                            {
+                                "id": "unit",
+                                "value": "BTC"
                             }
                         ]
                     }
@@ -745,58 +731,44 @@
             "pluginVersion": "11.5.2",
             "targets": [
                 {
+                    "columns": [
+                        {
+                            "selector": "BaseSVB",
+                            "text": "Base",
+                            "type": "string"
+                        },
+                        {
+                            "selector": "NextSVB",
+                            "text": "Next Pegout Fee",
+                            "type": "string"
+                        },
+                        {
+                            "selector": "TotalServiceFee",
+                            "text": "",
+                            "type": "string"
+                        }
+                    ],
                     "datasource": {
-                        "type": "grafana-postgresql-datasource",
-                        "uid": "PCC52D03280B7034C"
+                        "type": "yesoreyeram-infinity-datasource",
+                        "uid": "dem2k81ld0veoe"
                     },
-                    "editorMode": "code",
+                    "filters": [],
                     "format": "table",
-                    "rawQuery": true,
-                    "rawSql": "SELECT payload FROM metrics_data WHERE type_id = 4 ORDER BY id DESC LIMIT 1;",
+                    "global_query_id": "",
+                    "parser": "backend",
                     "refId": "A",
-                    "sql": {
-                        "columns": [
-                            {
-                                "parameters": [],
-                                "type": "function"
-                            }
-                        ],
-                        "groupBy": [
-                            {
-                                "property": {
-                                    "type": "string"
-                                },
-                                "type": "groupBy"
-                            }
-                        ],
-                        "limit": 50
+                    "root_selector": "contractTeleport",
+                    "source": "url",
+                    "type": "json",
+                    "url": "http://host.docker.internal:3000/api/metrics?source=info",
+                    "url_options": {
+                        "data": "",
+                        "method": "GET"
                     }
                 }
             ],
             "title": "Fees",
             "transformations": [
-                {
-                    "id": "extractFields",
-                    "options": {
-                        "delimiter": ",",
-                        "format": "json",
-                        "jsonPaths": [
-                            {
-                                "alias": "Base",
-                                "path": "BaseSVB"
-                            },
-                            {
-                                "alias": "Next Pegout Fee",
-                                "path": "NextSVB"
-                            },
-                            {
-                                "path": "TotalServiceFee"
-                            }
-                        ],
-                        "replace": true,
-                        "source": "payload"
-                    }
-                },
                 {
                     "id": "calculateField",
                     "options": {
@@ -815,20 +787,27 @@
                         },
                         "mode": "binary",
                         "reduce": {
+                            "include": [
+                                "Total Service Fee"
+                            ],
                             "reducer": "sum"
                         }
                     }
                 },
                 {
-                    "id": "filterFieldsByName",
+                    "id": "organize",
                     "options": {
-                        "include": {
-                            "names": [
-                                "Base",
-                                "Next Pegout Fee",
-                                "Total Service Fee"
-                            ]
-                        }
+                        "excludeByName": {
+                            "TotalServiceFee": true
+                        },
+                        "includeByName": {},
+                        "indexByName": {
+                            "Base": 1,
+                            "Next Pegout Fee": 2,
+                            "Total Service Fee": 0,
+                            "TotalServiceFee": 3
+                        },
+                        "renameByName": {}
                     }
                 }
             ],
@@ -837,8 +816,8 @@
         },
         {
             "datasource": {
-                "type": "grafana-postgresql-datasource",
-                "uid": "PCC52D03280B7034C"
+                "type": "yesoreyeram-infinity-datasource",
+                "uid": "dem2k81ld0veoe"
             },
             "fieldConfig": {
                 "defaults": {
@@ -915,58 +894,61 @@
             "pluginVersion": "11.5.2",
             "targets": [
                 {
+                    "columns": [],
+                    "computed_columns": [
+                        {
+                            "selector": "",
+                            "text": "",
+                            "type": "string"
+                        }
+                    ],
                     "datasource": {
-                        "type": "grafana-postgresql-datasource",
-                        "uid": "PCC52D03280B7034C"
+                        "type": "yesoreyeram-infinity-datasource",
+                        "uid": "dem2k81ld0veoe"
                     },
-                    "editorMode": "code",
+                    "filterExpression": "",
+                    "filters": [],
                     "format": "table",
-                    "rawQuery": true,
-                    "rawSql": "SELECT \npayload\nFROM metrics_data\nWHERE type_id = 2 ORDER BY id DESC LIMIT 1;",
+                    "global_query_id": "",
+                    "parser": "backend",
                     "refId": "A",
-                    "sql": {
-                        "columns": [
-                            {
-                                "parameters": [],
-                                "type": "function"
-                            }
-                        ],
-                        "groupBy": [
-                            {
-                                "property": {
-                                    "type": "string"
-                                },
-                                "type": "groupBy"
-                            }
-                        ],
-                        "limit": 50
+                    "root_selector": "contractBitcoinClient",
+                    "source": "url",
+                    "type": "json",
+                    "url": "http://host.docker.internal:3000/api/metrics?source=info",
+                    "url_options": {
+                        "data": "",
+                        "method": "GET"
                     }
                 }
             ],
             "title": "Bitcoin Client State",
             "transformations": [
                 {
-                    "id": "extractFields",
+                    "id": "organize",
                     "options": {
-                        "delimiter": ",",
-                        "format": "json",
-                        "jsonPaths": [
-                            {
-                                "alias": "Confirmations Needed",
-                                "path": "ConfirmationsNeeded"
-                            },
-                            {
-                                "alias": "Last Confirmed Block Hash",
-                                "path": "LastConfirmedBlockHash"
-                            },
-                            {
-                                "alias": "Last Confirmed Block Height",
-                                "path": "LastConfirmedBlockHeight"
-                            }
-                        ],
-                        "keepTime": false,
-                        "replace": true,
-                        "source": "payload"
+                        "excludeByName": {
+                            "CandidateBlockHashes": true
+                        },
+                        "includeByName": {},
+                        "indexByName": {
+                            "CandidateBlockHashes": 3,
+                            "ConfirmationsNeeded": 0,
+                            "LastConfirmedBlockHash": 1,
+                            "LastConfirmedBlockHeight": 2
+                        },
+                        "renameByName": {
+                            "0": "Candidates Tree",
+                            "1": "  ",
+                            "CandidateBlockHashes": "",
+                            "ConfirmationsNeeded": "Confirmations Needed",
+                            "LastConfirmedBlockHash": "Last Confirmed Block Hash",
+                            "LastConfirmedBlockHeight": "Last Confirmed Block Height",
+                            "bestblockhash": "Chain Best Block Hash",
+                            "blocks": "Height",
+                            "chain": "Chain",
+                            "mediantime": "Median Time"
+                        }
                     }
                 }
             ],
@@ -975,13 +957,21 @@
         },
         {
             "datasource": {
-                "type": "grafana-postgresql-datasource",
-                "uid": "PCC52D03280B7034C"
+                "type": "yesoreyeram-infinity-datasource",
+                "uid": "dem2k81ld0veoe"
             },
             "fieldConfig": {
                 "defaults": {
                     "color": {
                         "mode": "thresholds"
+                    },
+                    "custom": {
+                        "align": "left",
+                        "cellOptions": {
+                            "type": "auto",
+                            "wrapText": false
+                        },
+                        "inspect": false
                     },
                     "mappings": [
                         {
@@ -1008,7 +998,7 @@
                     {
                         "matcher": {
                             "id": "byName",
-                            "options": "addr"
+                            "options": "Address"
                         },
                         "properties": [
                             {
@@ -1040,50 +1030,25 @@
                             {
                                 "id": "unit",
                                 "value": "BTC"
-                            }
-                        ]
-                    },
-                    {
-                        "matcher": {
-                            "id": "byName",
-                            "options": "index"
-                        },
-                        "properties": [
-                            {
-                                "id": "displayName",
-                                "value": "Index"
-                            }
-                        ]
-                    },
-                    {
-                        "matcher": {
-                            "id": "byName",
-                            "options": "tap_merkle_root"
-                        },
-                        "properties": [
-                            {
-                                "id": "displayName",
-                                "value": "Merkle Root"
-                            }
-                        ]
-                    },
-                    {
-                        "matcher": {
-                            "id": "byName",
-                            "options": "shortened_mint_address"
-                        },
-                        "properties": [
-                            {
-                                "id": "displayName",
-                                "value": "Receiver Address"
                             },
+                            {
+                                "id": "custom.width",
+                                "value": 175
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Receiver Address"
+                        },
+                        "properties": [
                             {
                                 "id": "links",
                                 "value": [
                                     {
-                                        "targetBlank": true,
                                         "title": "",
-                                        "url": "https://testnet.tonviewer.com/"
+                                        "url": "https://testnet.tonviewer.com/${__value.text}"
                                     }
                                 ]
                             }
@@ -1092,80 +1057,58 @@
                     {
                         "matcher": {
                             "id": "byName",
-                            "options": "script"
+                            "options": "Index"
                         },
                         "properties": [
                             {
-                                "id": "displayName",
-                                "value": "Bitcoin Script"
+                                "id": "custom.width",
+                                "value": 75
                             }
                         ]
-                    },
-                    {
-                        "matcher": {
-                            "id": "byName",
-                            "options": "mint_address"
-                        },
-                        "properties": []
                     }
                 ]
             },
             "gridPos": {
-                "h": 5,
+                "h": 8,
                 "w": 11,
                 "x": 0,
                 "y": 7
             },
             "id": 22,
             "options": {
-                "colorMode": "value",
-                "graphMode": "none",
-                "justifyMode": "auto",
-                "orientation": "horizontal",
-                "percentChangeColorMode": "standard",
-                "reduceOptions": {
-                    "calcs": [
-                        "lastNotNull"
+                "cellHeight": "sm",
+                "footer": {
+                    "countRows": false,
+                    "fields": "",
+                    "reducer": [
+                        "sum"
                     ],
-                    "fields": "/.*/",
-                    "values": false
+                    "show": false
                 },
-                "showPercentChange": false,
-                "text": {
-                    "titleSize": 11,
-                    "valueSize": 11
-                },
-                "textMode": "auto",
-                "wideLayout": true
+                "showHeader": true
             },
             "pluginVersion": "11.5.2",
             "targets": [
                 {
+                    "columns": [],
+                    "data": "",
                     "datasource": {
-                        "type": "grafana-postgresql-datasource",
-                        "uid": "PCC52D03280B7034C"
+                        "type": "yesoreyeram-infinity-datasource",
+                        "uid": "dem2k81ld0veoe"
                     },
-                    "editorMode": "code",
+                    "filters": [],
                     "format": "table",
-                    "rawQuery": true,
-                    "rawSql": "SELECT UTXO->>'Address' AS addr, UTXO->>'Amount' AS amount, UTXO->>'Index' AS index, UTXO->>'TapMerkleRoot' AS tap_merkle_root, UTXO->>'MintAddress' AS mint_address, UTXO->>'Script' AS script FROM metrics_data, LATERAL jsonb_array_elements(CASE WHEN jsonb_typeof(payload::jsonb->'UTXOset') = 'array' THEN payload::jsonb->'UTXOset' ELSE '[]'::jsonb END) AS UTXO\nWHERE type_id = 4 ORDER BY id DESC LIMIT 1",
+                    "global_query_id": "",
+                    "parser": "backend",
                     "refId": "A",
-                    "sql": {
-                        "columns": [
-                            {
-                                "parameters": [],
-                                "type": "function"
-                            }
-                        ],
-                        "groupBy": [
-                            {
-                                "property": {
-                                    "type": "string"
-                                },
-                                "type": "groupBy"
-                            }
-                        ],
-                        "limit": 50
+                    "root_selector": "contractTeleport.UTXOset",
+                    "source": "url",
+                    "type": "json",
+                    "uql": "parse-json\n  project UTXOset=\"contractTeleport.UTXOset\"\n          -- mv-expand UTXO=UTXOset\n          -- project\n          --   Address=UTXO.Address,\n          --   Amount=UTXO.Amount,\n          --   Index=UTXO.Index,\n          --   Script=UTXO.Script,\n          --   MintAddress=UTXO.MintAddress,\n          --   TapMerkleRoot=UTXO.TapMerkleRoot\n          -- order by Amount desc",
+                    "url": "http://host.docker.internal:3000/api/metrics?source=info",
+                    "url_options": {
+                        "data": "",
+                        "method": "GET"
                     }
                 }
             ],
@@ -1174,12 +1117,12 @@
                 {
                     "id": "calculateField",
                     "options": {
-                        "alias": "Amount",
+                        "alias": "",
                         "binary": {
                             "left": {
                                 "matcher": {
                                     "id": "byName",
-                                    "options": "amount"
+                                    "options": "Amount"
                                 }
                             },
                             "operator": "/",
@@ -1197,22 +1140,28 @@
                     "id": "organize",
                     "options": {
                         "excludeByName": {
+                            "Amount": true,
                             "amount": true,
                             "mint_address": false,
                             "shortened_mint_address": true
                         },
                         "includeByName": {},
                         "indexByName": {
-                            "Amount": 1,
-                            "addr": 0,
-                            "amount": 7,
-                            "index": 2,
-                            "mint_address": 5,
-                            "script": 6,
-                            "shortened_mint_address": 4,
-                            "tap_merkle_root": 3
+                            "Address": 1,
+                            "Amount": 0,
+                            "Amount / 100000000": 2,
+                            "Index": 3,
+                            "MintAddress": 4,
+                            "Script": 5,
+                            "TapMerkleRoot": 6
                         },
                         "renameByName": {
+                            "Address": "",
+                            "Amount": "",
+                            "Amount / 100000000": "Amount",
+                            "MintAddress": "Receiver Address",
+                            "Script": "Bitcoin Script",
+                            "TapMerkleRoot": "Merkle Root",
                             "mint_address": "Receiver Address",
                             "short_mint_address": "Receiver Address",
                             "shortened_mint_address": ""
@@ -1221,12 +1170,12 @@
                 }
             ],
             "transparent": true,
-            "type": "stat"
+            "type": "table"
         },
         {
             "datasource": {
-                "type": "grafana-postgresql-datasource",
-                "uid": "PCC52D03280B7034C"
+                "type": "yesoreyeram-infinity-datasource",
+                "uid": "dem2k81ld0veoe"
             },
             "fieldConfig": {
                 "defaults": {
@@ -1254,7 +1203,7 @@
                 "overrides": []
             },
             "gridPos": {
-                "h": 3,
+                "h": 2,
                 "w": 13,
                 "x": 11,
                 "y": 9
@@ -1284,35 +1233,27 @@
             "pluginVersion": "11.5.2",
             "targets": [
                 {
+                    "columns": [],
                     "datasource": {
-                        "type": "grafana-postgresql-datasource",
-                        "uid": "PCC52D03280B7034C"
+                        "type": "yesoreyeram-infinity-datasource",
+                        "uid": "dem2k81ld0veoe"
                     },
-                    "editorMode": "code",
+                    "filters": [],
                     "format": "table",
-                    "rawQuery": true,
-                    "rawSql": "SELECT payload FROM metrics_data WHERE type_id = 2 ORDER BY id DESC LIMIT 1;",
+                    "global_query_id": "",
+                    "parser": "backend",
                     "refId": "A",
-                    "sql": {
-                        "columns": [
-                            {
-                                "parameters": [],
-                                "type": "function"
-                            }
-                        ],
-                        "groupBy": [
-                            {
-                                "property": {
-                                    "type": "string"
-                                },
-                                "type": "groupBy"
-                            }
-                        ],
-                        "limit": 50
+                    "root_selector": "contractBitcoinClient",
+                    "source": "url",
+                    "type": "json",
+                    "url": "http://host.docker.internal:3000/api/metrics?source=info",
+                    "url_options": {
+                        "data": "",
+                        "method": "GET"
                     }
                 }
             ],
-            "title": "Candidates Tree",
+            "title": "",
             "transformations": [
                 {
                     "id": "extractFields",
@@ -1321,20 +1262,37 @@
                         "format": "json",
                         "jsonPaths": [
                             {
-                                "alias": " ",
-                                "path": "CandidateBlockHashes[0]"
-                            },
-                            {
-                                "alias": "  ",
-                                "path": "CandidateBlockHashes[1]"
-                            },
-                            {
-                                "alias": "    ",
-                                "path": "LastConfirmedBlockHash"
+                                "path": ""
                             }
                         ],
-                        "replace": true,
-                        "source": "payload"
+                        "keepTime": false,
+                        "replace": false,
+                        "source": "CandidateBlockHashes"
+                    }
+                },
+                {
+                    "id": "organize",
+                    "options": {
+                        "excludeByName": {
+                            "CandidateBlockHashes": true,
+                            "ConfirmationsNeeded": true,
+                            "LastConfirmedBlockHash": false,
+                            "LastConfirmedBlockHeight": true
+                        },
+                        "includeByName": {},
+                        "indexByName": {
+                            "0": 0,
+                            "1": 1,
+                            "CandidateBlockHashes": 2,
+                            "ConfirmationsNeeded": 3,
+                            "LastConfirmedBlockHash": 5,
+                            "LastConfirmedBlockHeight": 4
+                        },
+                        "renameByName": {
+                            "0": "Candidates Tree",
+                            "1": "  ",
+                            "LastConfirmedBlockHash": " "
+                        }
                     }
                 }
             ],
@@ -1343,8 +1301,8 @@
         },
         {
             "datasource": {
-                "type": "grafana-postgresql-datasource",
-                "uid": "PCC52D03280B7034C"
+                "type": "yesoreyeram-infinity-datasource",
+                "uid": "dem2k81ld0veoe"
             },
             "fieldConfig": {
                 "defaults": {
@@ -1399,7 +1357,7 @@
                 "h": 4,
                 "w": 13,
                 "x": 11,
-                "y": 12
+                "y": 11
             },
             "id": 27,
             "options": {
@@ -1426,63 +1384,28 @@
             "pluginVersion": "11.5.2",
             "targets": [
                 {
+                    "columns": [],
                     "datasource": {
-                        "type": "grafana-postgresql-datasource",
-                        "uid": "PCC52D03280B7034C"
+                        "type": "yesoreyeram-infinity-datasource",
+                        "uid": "dem2k81ld0veoe"
                     },
-                    "editorMode": "code",
+                    "filters": [],
                     "format": "table",
-                    "rawQuery": true,
-                    "rawSql": "SELECT payload FROM metrics_data WHERE type_id = 3 ORDER BY id DESC LIMIT 1;",
+                    "global_query_id": "",
+                    "parser": "backend",
                     "refId": "A",
-                    "sql": {
-                        "columns": [
-                            {
-                                "parameters": [],
-                                "type": "function"
-                            }
-                        ],
-                        "groupBy": [
-                            {
-                                "property": {
-                                    "type": "string"
-                                },
-                                "type": "groupBy"
-                            }
-                        ],
-                        "limit": 50
+                    "root_selector": "blockChainInfo",
+                    "source": "url",
+                    "type": "json",
+                    "url": "http://host.docker.internal:3000/api/metrics?source=info",
+                    "url_options": {
+                        "data": "",
+                        "method": "GET"
                     }
                 }
             ],
             "title": "Bitcoin Network State",
             "transformations": [
-                {
-                    "id": "extractFields",
-                    "options": {
-                        "delimiter": ",",
-                        "format": "json",
-                        "jsonPaths": [
-                            {
-                                "alias": "Chain",
-                                "path": "chain"
-                            },
-                            {
-                                "alias": "Chain Best Block Hash",
-                                "path": "bestblockhash"
-                            },
-                            {
-                                "alias": "Height",
-                                "path": "blocks"
-                            },
-                            {
-                                "alias": "",
-                                "path": "mediantime"
-                            }
-                        ],
-                        "replace": true,
-                        "source": "payload"
-                    }
-                },
                 {
                     "id": "calculateField",
                     "options": {
@@ -1507,15 +1430,24 @@
                     }
                 },
                 {
-                    "id": "filterFieldsByName",
+                    "id": "organize",
                     "options": {
-                        "include": {
-                            "names": [
-                                "Chain",
-                                "Chain Best Block Hash",
-                                "Height",
-                                "Median Time"
-                            ]
+                        "excludeByName": {
+                            "mediantime": true
+                        },
+                        "includeByName": {},
+                        "indexByName": {
+                            "Median Time": 4,
+                            "bestblockhash": 2,
+                            "blocks": 1,
+                            "chain": 0,
+                            "mediantime": 3
+                        },
+                        "renameByName": {
+                            "bestblockhash": "Chain Best Block Hash",
+                            "blocks": "Chain Height",
+                            "chain": "Chain",
+                            "mediantime": ""
                         }
                     }
                 }
@@ -1537,8 +1469,8 @@
     },
     "timepicker": {},
     "timezone": "browser",
-    "title": "Advanced",
+    "title": "",
     "uid": "bely7mcsbdwcge",
-    "version": 7,
+    "version": 3,
     "weekStart": ""
 }
