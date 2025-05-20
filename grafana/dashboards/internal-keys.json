@@ -18,7 +18,7 @@
     "editable": true,
     "fiscalYearStartMonth": 0,
     "graphTooltip": 0,
-    "id": 5,
+    "id": 4,
     "links": [],
     "panels": [
         {
@@ -194,7 +194,7 @@
     },
     "timepicker": {},
     "timezone": "browser",
-    "title": "Internal keys",
+    "title": "",
     "uid": "efef1812-648d-4e83-a21a-9af219bc392f",
     "version": 1,
     "weekStart": ""
