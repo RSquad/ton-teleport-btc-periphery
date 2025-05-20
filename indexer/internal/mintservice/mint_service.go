@@ -21,7 +21,7 @@ import (
 
 const (
 	defaultLoopInterval = 3 * time.Second
-	semaphoreLimit      = 256
+	semaphoreLimit      = 32
 )
 
 type MintService struct {
@@ -284,7 +284,7 @@ func (ms *MintService) handleRefundMint(ctx context.Context, mint *ent.Mint) err
 		return err
 	}
 
-	out, err := ms.bitcoinClient.RPCClient.GetTxOut(bitcoinTxID, uint32(mint.Edges.Pegin.VoutIndex), true)
+	out, err := ms.bitcoinClient.GetTxOut(bitcoinTxID, uint32(mint.Edges.Pegin.VoutIndex), true)
 	if err != nil {
 		logRefundMintFailedGetTxOut(err, mint.ID)
 		return err
