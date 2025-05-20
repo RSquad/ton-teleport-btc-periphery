@@ -527,7 +527,7 @@
                     "calcs": [
                         "lastNotNull"
                     ],
-                    "fields": "",
+                    "fields": "/.*/",
                     "values": false
                 },
                 "showPercentChange": false,
@@ -698,7 +698,7 @@
             "title": "Pegins",
             "transformations": [
                 {
-                    "id": "organize",
+                    "id": "extractFields",
                     "options": {
                         "delimiter": ",",
                         "format": "json",
@@ -1000,9 +1000,6 @@
                         },
                         "mode": "binary",
                         "reduce": {
-                            "include": [
-                                "Total Service Fee"
-                            ],
                             "reducer": "sum"
                         },
                         "replaceFields": false
@@ -1247,14 +1244,22 @@
             },
             "id": 27,
             "options": {
-                "cellHeight": "sm",
-                "footer": {
-                    "countRows": false,
-                    "fields": "",
-                    "reducer": [
-                        "sum"
+                "colorMode": "value",
+                "graphMode": "none",
+                "justifyMode": "auto",
+                "orientation": "horizontal",
+                "percentChangeColorMode": "standard",
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
                     ],
-                    "show": false
+                    "fields": "/.*/",
+                    "values": false
+                },
+                "showPercentChange": false,
+                "text": {
+                    "titleSize": 11,
+                    "valueSize": 11
                 },
                 "textMode": "value_and_name",
                 "wideLayout": true
@@ -1331,7 +1336,7 @@
                 }
             ],
             "transparent": true,
-            "type": "table"
+            "type": "stat"
         },
         {
             "datasource": {
@@ -1473,7 +1478,7 @@
     },
     "timepicker": {},
     "timezone": "browser",
-    "title": "",
+    "title": "Advanced",
     "uid": "bely7mcsbdwcge",
     "version": 13
 }

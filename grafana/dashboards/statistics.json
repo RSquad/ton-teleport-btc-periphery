@@ -18,13 +18,13 @@
     "editable": true,
     "fiscalYearStartMonth": 0,
     "graphTooltip": 0,
-    "id": 1,
+    "id": 2,
     "links": [],
     "panels": [
         {
             "datasource": {
-                "type": "grafana-postgresql-datasource",
-                "uid": "fejyj243rfxtsd"
+                "type": "yesoreyeram-infinity-datasource",
+                "uid": "dem2k81ld0veoe"
             },
             "fieldConfig": {
                 "defaults": {
@@ -71,42 +71,49 @@
             "pluginVersion": "11.5.2",
             "targets": [
                 {
+                    "columns": [],
                     "datasource": {
-                        "type": "grafana-postgresql-datasource",
-                        "uid": "fejyj243rfxtsd"
+                        "type": "yesoreyeram-infinity-datasource",
+                        "uid": "dem2k81ld0veoe"
                     },
-                    "editorMode": "code",
+                    "filters": [],
                     "format": "table",
-                    "rawQuery": true,
-                    "rawSql": "SELECT COUNT(1) AS row_count FROM mints WHERE status = 'SUCCESS';",
+                    "global_query_id": "",
+                    "parser": "backend",
                     "refId": "A",
-                    "sql": {
-                        "columns": [
-                            {
-                                "parameters": [],
-                                "type": "function"
-                            }
-                        ],
-                        "groupBy": [
-                            {
-                                "property": {
-                                    "type": "string"
-                                },
-                                "type": "groupBy"
-                            }
-                        ],
-                        "limit": 50
+                    "root_selector": "",
+                    "source": "url",
+                    "type": "json",
+                    "url": "http://65.21.162.174:3000/api/metrics?source=plots_summary",
+                    "url_options": {
+                        "data": "",
+                        "method": "GET"
                     }
                 }
             ],
             "title": "Total Mints",
+            "transformations": [
+                {
+                    "id": "organize",
+                    "options": {
+                        "excludeByName": {
+                            "burns_count": true,
+                            "total_burned": true,
+                            "total_minted": true
+                        },
+                        "includeByName": {},
+                        "indexByName": {},
+                        "renameByName": {}
+                    }
+                }
+            ],
             "transparent": true,
             "type": "stat"
         },
         {
             "datasource": {
-                "type": "grafana-postgresql-datasource",
-                "uid": "fejyj243rfxtsd"
+                "type": "yesoreyeram-infinity-datasource",
+                "uid": "dem2k81ld0veoe"
             },
             "fieldConfig": {
                 "defaults": {
@@ -153,42 +160,49 @@
             "pluginVersion": "11.5.2",
             "targets": [
                 {
+                    "columns": [],
                     "datasource": {
-                        "type": "grafana-postgresql-datasource",
-                        "uid": "fejyj243rfxtsd"
+                        "type": "yesoreyeram-infinity-datasource",
+                        "uid": "dem2k81ld0veoe"
                     },
-                    "editorMode": "code",
+                    "filters": [],
                     "format": "table",
-                    "rawQuery": true,
-                    "rawSql": "SELECT COUNT(1) AS row_count FROM burns AS b INNER JOIN pegouts AS p ON b.pegout_burn = p.id AND p.status = 'CONFIRMED';",
+                    "global_query_id": "",
+                    "parser": "backend",
                     "refId": "A",
-                    "sql": {
-                        "columns": [
-                            {
-                                "parameters": [],
-                                "type": "function"
-                            }
-                        ],
-                        "groupBy": [
-                            {
-                                "property": {
-                                    "type": "string"
-                                },
-                                "type": "groupBy"
-                            }
-                        ],
-                        "limit": 50
+                    "root_selector": "",
+                    "source": "url",
+                    "type": "json",
+                    "url": "http://65.21.162.174:3000/api/metrics?source=plots_summary",
+                    "url_options": {
+                        "data": "",
+                        "method": "GET"
                     }
                 }
             ],
             "title": "Total Burns",
+            "transformations": [
+                {
+                    "id": "organize",
+                    "options": {
+                        "excludeByName": {
+                            "mints_count": true,
+                            "total_burned": true,
+                            "total_minted": true
+                        },
+                        "includeByName": {},
+                        "indexByName": {},
+                        "renameByName": {}
+                    }
+                }
+            ],
             "transparent": true,
             "type": "stat"
         },
         {
             "datasource": {
-                "type": "datasource",
-                "uid": "-- Mixed --"
+                "type": "yesoreyeram-infinity-datasource",
+                "uid": "dem2k81ld0veoe"
             },
             "fieldConfig": {
                 "defaults": {
@@ -236,22 +250,24 @@
             "pluginVersion": "11.5.2",
             "targets": [
                 {
+                    "columns": [],
                     "datasource": {
-                        "type": "datasource",
-                        "uid": "-- Dashboard --"
+                        "type": "yesoreyeram-infinity-datasource",
+                        "uid": "dem2k81ld0veoe"
                     },
-                    "panelId": 3,
-                    "queryType": "randomWalk",
-                    "refId": "A"
-                },
-                {
-                    "datasource": {
-                        "type": "datasource",
-                        "uid": "-- Dashboard --"
-                    },
-                    "hide": false,
-                    "panelId": 4,
-                    "refId": "B"
+                    "filters": [],
+                    "format": "table",
+                    "global_query_id": "",
+                    "parser": "backend",
+                    "refId": "A",
+                    "root_selector": "",
+                    "source": "url",
+                    "type": "json",
+                    "url": "http://65.21.162.174:3000/api/metrics?source=plots_summary",
+                    "url_options": {
+                        "data": "",
+                        "method": "GET"
+                    }
                 }
             ],
             "title": "tgBTC Current Supply",
@@ -259,7 +275,6 @@
                 {
                     "id": "calculateField",
                     "options": {
-                        "alias": "",
                         "binary": {
                             "left": {
                                 "matcher": {
@@ -271,7 +286,7 @@
                             "right": {
                                 "matcher": {
                                     "id": "byName",
-                                    "options": "$tgBtcBurned"
+                                    "options": "total_burned"
                                 }
                             }
                         },
@@ -279,11 +294,7 @@
                         "reduce": {
                             "reducer": "sum"
                         },
-                        "replaceFields": true,
-                        "unary": {
-                            "fieldName": "total_burned",
-                            "operator": "ceil"
-                        }
+                        "replaceFields": true
                     }
                 }
             ],
@@ -292,8 +303,8 @@
         },
         {
             "datasource": {
-                "type": "grafana-postgresql-datasource",
-                "uid": "fejyj243rfxtsd"
+                "type": "yesoreyeram-infinity-datasource",
+                "uid": "dem2k81ld0veoe"
             },
             "fieldConfig": {
                 "defaults": {
@@ -341,42 +352,49 @@
             "pluginVersion": "11.5.2",
             "targets": [
                 {
+                    "columns": [],
                     "datasource": {
-                        "type": "grafana-postgresql-datasource",
-                        "uid": "fejyj243rfxtsd"
+                        "type": "yesoreyeram-infinity-datasource",
+                        "uid": "dem2k81ld0veoe"
                     },
-                    "editorMode": "code",
+                    "filters": [],
                     "format": "table",
-                    "rawQuery": true,
-                    "rawSql": "SELECT SUM((CAST(amount AS numeric)) / 100000000)::numeric(20,8) AS total_minted FROM mints WHERE status = 'SUCCESS'",
+                    "global_query_id": "",
+                    "parser": "backend",
                     "refId": "A",
-                    "sql": {
-                        "columns": [
-                            {
-                                "parameters": [],
-                                "type": "function"
-                            }
-                        ],
-                        "groupBy": [
-                            {
-                                "property": {
-                                    "type": "string"
-                                },
-                                "type": "groupBy"
-                            }
-                        ],
-                        "limit": 50
+                    "root_selector": "",
+                    "source": "url",
+                    "type": "json",
+                    "url": "http://65.21.162.174:3000/api/metrics?source=plots_summary",
+                    "url_options": {
+                        "data": "",
+                        "method": "GET"
                     }
                 }
             ],
             "title": "tgBTC Minted",
+            "transformations": [
+                {
+                    "id": "organize",
+                    "options": {
+                        "excludeByName": {
+                            "burns_count": true,
+                            "mints_count": true,
+                            "total_burned": true
+                        },
+                        "includeByName": {},
+                        "indexByName": {},
+                        "renameByName": {}
+                    }
+                }
+            ],
             "transparent": true,
             "type": "stat"
         },
         {
             "datasource": {
-                "type": "grafana-postgresql-datasource",
-                "uid": "fejyj243rfxtsd"
+                "type": "yesoreyeram-infinity-datasource",
+                "uid": "dem2k81ld0veoe"
             },
             "fieldConfig": {
                 "defaults": {
@@ -424,35 +442,43 @@
             "pluginVersion": "11.5.2",
             "targets": [
                 {
+                    "columns": [],
                     "datasource": {
-                        "type": "grafana-postgresql-datasource",
-                        "uid": "fejyj243rfxtsd"
+                        "type": "yesoreyeram-infinity-datasource",
+                        "uid": "dem2k81ld0veoe"
                     },
-                    "editorMode": "code",
+                    "filters": [],
                     "format": "table",
-                    "rawQuery": true,
-                    "rawSql": "SELECT SUM((CAST (b.amount AS numeric)) / 100000000)::numeric(20,8) AS total_burned FROM burns AS b JOIN pegouts AS p ON p.id = b.pegout_burn WHERE p.status = 'CONFIRMED'",
+                    "global_query_id": "",
+                    "parser": "backend",
                     "refId": "A",
-                    "sql": {
-                        "columns": [
-                            {
-                                "parameters": [],
-                                "type": "function"
-                            }
-                        ],
-                        "groupBy": [
-                            {
-                                "property": {
-                                    "type": "string"
-                                },
-                                "type": "groupBy"
-                            }
-                        ],
-                        "limit": 50
+                    "root_selector": "",
+                    "source": "url",
+                    "type": "json",
+                    "url": "http://65.21.162.174:3000/api/metrics?source=plots_summary",
+                    "url_options": {
+                        "data": "",
+                        "method": "GET"
                     }
                 }
             ],
             "title": "tgBTC Burned",
+            "transformations": [
+                {
+                    "id": "organize",
+                    "options": {
+                        "excludeByName": {
+                            "burns_count": true,
+                            "mints_count": true,
+                            "total_burned": false,
+                            "total_minted": true
+                        },
+                        "includeByName": {},
+                        "indexByName": {},
+                        "renameByName": {}
+                    }
+                }
+            ],
             "transparent": true,
             "type": "stat"
         },
