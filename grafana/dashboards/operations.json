@@ -18,7 +18,7 @@
     "editable": true,
     "fiscalYearStartMonth": 0,
     "graphTooltip": 0,
-    "id": 1,
+    "id": 5,
     "links": [],
     "panels": [
         {
@@ -190,7 +190,7 @@
                 ]
             },
             "gridPos": {
-                "h": 11,
+                "h": 28,
                 "w": 24,
                 "x": 0,
                 "y": 0
@@ -202,9 +202,7 @@
                     "countRows": false,
                     "enablePagination": true,
                     "fields": "",
-                    "reducer": [
-                        "sum"
-                    ],
+                    "reducer": [],
                     "show": false
                 },
                 "showHeader": true,
@@ -474,10 +472,10 @@
                 ]
             },
             "gridPos": {
-                "h": 11,
+                "h": 28,
                 "w": 24,
                 "x": 0,
-                "y": 11
+                "y": 28
             },
             "id": 2,
             "options": {
@@ -743,10 +741,10 @@
                 ]
             },
             "gridPos": {
-                "h": 11,
+                "h": 28,
                 "w": 24,
                 "x": 0,
-                "y": 22
+                "y": 56
             },
             "id": 3,
             "options": {
@@ -857,8 +855,8 @@
     },
     "timepicker": {},
     "timezone": "browser",
-    "title": "Operations",
+    "title": "",
     "uid": "9ad8a6c4-79c3-40c6-8275-606c61b5e637",
-    "version": 3,
+    "version": 2,
     "weekStart": ""
 }
