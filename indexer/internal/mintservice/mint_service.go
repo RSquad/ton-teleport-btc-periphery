@@ -19,6 +19,11 @@ import (
 	"github.com/xssnick/tonutils-go/tvm/cell"
 )
 
+const (
+	defaultLoopInterval = 3 * time.Second
+	semaphoreLimit      = 32
+)
+
 type MintService struct {
 	repo             *ent.Client
 	bitcoinClient    *bitcoin.Client
@@ -40,37 +45,70 @@ func New(
 	}
 }
 
-func (ms *MintService) Work(ctx context.Context) (err error) {
-	defer ms.logFinishWork(err)
+func (ms *MintService) Work(ctx context.Context) error {
 	ms.logStartWork()
+
+	var wg sync.WaitGroup
+	wg.Add(2)
+
+	go ms.continuouslyProcessPendingMints(ctx, &wg)
+	go ms.continuouslyProcessRefundMints(ctx, &wg)
+
+	<-ctx.Done()
+	logContextCancelled()
+
+	wg.Wait()
+	ms.logFinishWork(ctx.Err())
+
+	return ctx.Err()
+}
+
+func (ms *MintService) continuouslyProcessPendingMints(ctx context.Context, wg *sync.WaitGroup) {
+	defer wg.Done()
+	ms.logStartPendingWork()
+
+	var err error
+	defer func() { ms.logFinishPendingWork(err) }()
+
+	ticker := time.NewTicker(defaultLoopInterval)
+	defer ticker.Stop()
 
 	for {
 		select {
 		case <-ctx.Done():
-			return ctx.Err()
-		default:
-			ms.processMints(ctx)
-			time.Sleep(3 * time.Second)
+			err = ctx.Err()
+			return
+		case <-ticker.C:
+			cycleErr := ms.executePendingMintsCycle(ctx)
+			if cycleErr != nil {
+				logPendingCycleError(cycleErr)
+			}
 		}
 	}
 }
 
-func (ms *MintService) processMints(ctx context.Context) (err error) {
+func (ms *MintService) executePendingMintsCycle(ctx context.Context) (err error) {
 	start := time.Now()
+	var processedCount int
 	defer func() {
-		logFinishProcessingMints(time.Since(start), err)
+		logFinishProcessingPendingMints(time.Since(start), err, processedCount)
 	}()
-	logStartProcessingMints()
+	logStartProcessingPendingMints()
 
-	mints, err := ms.queryUnprocessedMints(ctx)
+	mints, err := ms.repo.Mint.Query().
+		Where(mintmodel.StatusEQ(mintmodel.StatusPending)).
+		WithPegin().
+		All(ctx)
 	if err != nil {
-		return fmt.Errorf(errQueryUnprocessedMints, err)
+		return fmt.Errorf(errQueryPendingMints, err)
 	}
+
 	if len(mints) == 0 {
-		logNoUnprocessedMints()
+		logNoPendingMints()
 		return nil
 	}
-	logUnprocessedMintsReceived(len(mints))
+	logPendingMintsReceived(len(mints))
+	processedCount = len(mints)
 
 	block, err := ms.tonClient.API.CurrentMasterchainInfo(ctx)
 	if err != nil {
@@ -82,36 +120,102 @@ func (ms *MintService) processMints(ctx context.Context) (err error) {
 		return fmt.Errorf(teleportcontract.ErrGetStorage, err)
 	}
 
+	latestInternalKey, err := ms.repo.InternalKey.Query().
+		Order(ent.Desc(internalkeymodel.FieldCompletedAt)).
+		First(ctx)
+	if err != nil {
+		if !ent.IsNotFound(err) {
+			return fmt.Errorf(errQueryLatestInternalKey, err)
+		}
+		logNoInternalKeysFoundWarning()
+		latestInternalKey = nil
+	}
+
 	var wg sync.WaitGroup
-	sem := make(chan struct{}, 128)
+	sem := make(chan struct{}, semaphoreLimit)
 
 	for i, mint := range mints {
 		wg.Add(1)
 		sem <- struct{}{}
-		go func(mint *ent.Mint) {
+		go func(m *ent.Mint, idx int) {
 			defer wg.Done()
 			defer func() { <-sem }()
-			ms.processMint(ctx, mint, teleportStorage.PeginContractCode, block)
-			logMintsProcessingProgress(i+1, len(mints))
-		}(mint)
+			err := ms.handlePendingMint(ctx, m, teleportStorage.PeginContractCode, block, latestInternalKey)
+			if err != nil {
+				logFailedProcessPendingMint(err, m.ID)
+			}
+			logPendingMintsProcessingProgress(idx+1, len(mints))
+		}(mint, i)
 	}
 
 	wg.Wait()
 	return nil
 }
 
-func (ms *MintService) processMint(
-	ctx context.Context,
-	mint *ent.Mint,
-	peginContractCode *cell.Cell,
-	block *ton.BlockIDExt,
-) (err error) {
-	switch mint.Status {
-	case mintmodel.StatusPending:
-		return ms.handlePendingMint(ctx, mint, peginContractCode, block)
-	case mintmodel.StatusRefund:
-		return ms.handleRefundMint(ctx, mint)
+func (ms *MintService) continuouslyProcessRefundMints(ctx context.Context, wg *sync.WaitGroup) {
+	defer wg.Done()
+	ms.logStartRefundWork()
+	var err error
+	defer func() { ms.logFinishRefundWork(err) }()
+
+	ticker := time.NewTicker(defaultLoopInterval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			err = ctx.Err()
+			return
+		case <-ticker.C:
+			cycleErr := ms.executeRefundMintsCycle(ctx)
+			if cycleErr != nil {
+				logRefundCycleError(cycleErr)
+			}
+		}
 	}
+}
+
+func (ms *MintService) executeRefundMintsCycle(ctx context.Context) (err error) {
+	start := time.Now()
+	var processedCount int
+	defer func() {
+		logFinishProcessingRefundMints(time.Since(start), err, processedCount)
+	}()
+	logStartProcessingRefundMints()
+
+	mints, err := ms.repo.Mint.Query().
+		Where(mintmodel.StatusEQ(mintmodel.StatusRefund)).
+		WithPegin().
+		All(ctx)
+	if err != nil {
+		return fmt.Errorf(errQueryRefundMints, err)
+	}
+
+	if len(mints) == 0 {
+		logNoRefundMints()
+		return nil
+	}
+	logRefundMintsReceived(len(mints))
+	processedCount = len(mints)
+
+	var wg sync.WaitGroup
+	sem := make(chan struct{}, semaphoreLimit)
+
+	for i, mint := range mints {
+		wg.Add(1)
+		sem <- struct{}{}
+		go func(m *ent.Mint, idx int) {
+			defer wg.Done()
+			defer func() { <-sem }()
+			err := ms.handleRefundMint(ctx, m)
+			if err != nil {
+				logFailedProcessRefundMint(err, m.ID)
+			}
+			logRefundMintsProcessingProgress(idx+1, len(mints))
+		}(mint, i)
+	}
+
+	wg.Wait()
 	return nil
 }
 
@@ -120,6 +224,7 @@ func (ms *MintService) handlePendingMint(
 	mint *ent.Mint,
 	peginContractCode *cell.Cell,
 	block *ton.BlockIDExt,
+	latestInternalKey *ent.InternalKey,
 ) error {
 	bitcoinTxID, err := chainhash.NewHash(utils.MustHexToBytes(mint.Edges.Pegin.BitcoinTxID, 32))
 	if err != nil {
@@ -150,18 +255,19 @@ func (ms *MintService) handlePendingMint(
 		return ms.updateMintStatus(ctx, mint.ID, mintmodel.StatusSuccess)
 	}
 
+	if latestInternalKey == nil {
+		return ms.updateMintStatus(ctx, mint.ID, mintmodel.StatusRefund)
+	}
+
 	internalKey, err := ms.repo.InternalKey.Query().
 		Where(internalkeymodel.KeyEQ(mint.Edges.Pegin.InternalKey)).
 		Only(ctx)
 	if err != nil {
+		if ent.IsNotFound(err) {
+			logPendingMintPeginInternalKeyNotFound(err, mint.ID, mint.Edges.Pegin.InternalKey)
+			return ms.updateMintStatus(ctx, mint.ID, mintmodel.StatusRefund)
+		}
 		return fmt.Errorf(errQueryInternalKey, err)
-	}
-
-	latestInternalKey, err := ms.repo.InternalKey.Query().
-		Order(ent.Desc(internalkeymodel.FieldCompletedAt)).
-		First(ctx)
-	if err != nil {
-		return fmt.Errorf(errQueryLatestInternalKey, err)
 	}
 
 	if !internalKey.CompletedAt.Equal(latestInternalKey.CompletedAt) {
@@ -174,11 +280,13 @@ func (ms *MintService) handlePendingMint(
 func (ms *MintService) handleRefundMint(ctx context.Context, mint *ent.Mint) error {
 	bitcoinTxID, err := chainhash.NewHashFromStr(mint.Edges.Pegin.BitcoinTxID)
 	if err != nil {
+		logRefundMintFailedParseBitcoinTxID(err, mint.ID, mint.Edges.Pegin.BitcoinTxID)
 		return err
 	}
 
-	out, err := ms.bitcoinClient.RPCClient.GetTxOut(bitcoinTxID, uint32(mint.Edges.Pegin.VoutIndex), true)
+	out, err := ms.bitcoinClient.GetTxOut(bitcoinTxID, uint32(mint.Edges.Pegin.VoutIndex), true)
 	if err != nil {
+		logRefundMintFailedGetTxOut(err, mint.ID)
 		return err
 	}
 
@@ -190,18 +298,14 @@ func (ms *MintService) handleRefundMint(ctx context.Context, mint *ent.Mint) err
 }
 
 func (ms *MintService) updateMintStatus(ctx context.Context, mintID int, status mintmodel.Status) error {
-	return ms.repo.Mint.Update().
+	err := ms.repo.Mint.Update().
 		SetStatus(status).
 		Where(mintmodel.ID(mintID)).
 		Exec(ctx)
-}
-
-func (ms *MintService) queryUnprocessedMints(ctx context.Context) ([]*ent.Mint, error) {
-	return ms.repo.Mint.Query().
-		Where(mintmodel.StatusNotIn(
-			mintmodel.StatusSuccess,
-			mintmodel.StatusRefunded,
-		)).
-		WithPegin().
-		All(ctx)
+	if err != nil {
+		logFailedUpdateMintStatus(err, mintID, status)
+		return err
+	}
+	logMintStatusUpdated(mintID, status)
+	return nil
 }
