@@ -18,7 +18,7 @@
     "editable": true,
     "fiscalYearStartMonth": 0,
     "graphTooltip": 0,
-    "id": 3,
+    "id": 74,
     "links": [],
     "panels": [
         {
@@ -45,8 +45,7 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green",
-                                "value": null
+                                "color": "green"
                             }
                         ]
                     }
@@ -208,7 +207,7 @@
                 "showHeader": true,
                 "sortBy": []
             },
-            "pluginVersion": "11.5.2",
+            "pluginVersion": "12.0.0",
             "targets": [
                 {
                     "columns": [
@@ -311,8 +310,7 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green",
-                                "value": null
+                                "color": "green"
                             }
                         ]
                     }
@@ -492,7 +490,7 @@
                 "showHeader": true,
                 "sortBy": []
             },
-            "pluginVersion": "11.5.2",
+            "pluginVersion": "12.0.0",
             "targets": [
                 {
                     "columns": [
@@ -546,7 +544,7 @@
                     "root_selector": "",
                     "source": "url",
                     "type": "json",
-                    "url": "http://host.docker.internal:3000/api/metrics?source=burns",
+                    "url": "http://65.21.162.174:3000/api/metrics?source=burns",
                     "url_options": {
                         "data": "",
                         "method": "GET"
@@ -601,8 +599,7 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green",
-                                "value": null
+                                "color": "green"
                             }
                         ]
                     }
@@ -761,7 +758,7 @@
                 "showHeader": true,
                 "sortBy": []
             },
-            "pluginVersion": "11.5.2",
+            "pluginVersion": "12.0.0",
             "targets": [
                 {
                     "columns": [
@@ -810,7 +807,7 @@
                     "root_selector": "",
                     "source": "url",
                     "type": "json",
-                    "url": "http://host.docker.internal:3000/api/metrics?source=reinits",
+                    "url": "http://65.21.162.174:3000/api/metrics?source=reinits",
                     "url_options": {
                         "data": "",
                         "method": "GET"
@@ -844,7 +841,7 @@
     ],
     "preload": false,
     "refresh": "1m",
-    "schemaVersion": 40,
+    "schemaVersion": 41,
     "tags": [],
     "templating": {
         "list": []
@@ -857,6 +854,5 @@
     "timezone": "browser",
     "title": "Operations",
     "uid": "9ad8a6c4-79c3-40c6-8275-606c61b5e637",
-    "version": 1,
-    "weekStart": ""
+    "version": 3
 }

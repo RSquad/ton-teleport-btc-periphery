@@ -18,7 +18,7 @@
     "editable": true,
     "fiscalYearStartMonth": 0,
     "graphTooltip": 0,
-    "id": 2,
+    "id": 75,
     "links": [],
     "panels": [
         {
@@ -36,8 +36,7 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green",
-                                "value": null
+                                "color": "green"
                             }
                         ]
                     }
@@ -68,7 +67,7 @@
                 "textMode": "auto",
                 "wideLayout": true
             },
-            "pluginVersion": "11.5.2",
+            "pluginVersion": "12.0.0",
             "targets": [
                 {
                     "columns": [],
@@ -125,8 +124,7 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green",
-                                "value": null
+                                "color": "green"
                             }
                         ]
                     }
@@ -157,7 +155,7 @@
                 "textMode": "auto",
                 "wideLayout": true
             },
-            "pluginVersion": "11.5.2",
+            "pluginVersion": "12.0.0",
             "targets": [
                 {
                     "columns": [],
@@ -215,8 +213,7 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green",
-                                "value": null
+                                "color": "green"
                             }
                         ]
                     }
@@ -247,7 +244,7 @@
                 "textMode": "auto",
                 "wideLayout": true
             },
-            "pluginVersion": "11.5.2",
+            "pluginVersion": "12.0.0",
             "targets": [
                 {
                     "columns": [],
@@ -317,8 +314,7 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green",
-                                "value": null
+                                "color": "green"
                             }
                         ]
                     }
@@ -349,7 +345,7 @@
                 "textMode": "auto",
                 "wideLayout": true
             },
-            "pluginVersion": "11.5.2",
+            "pluginVersion": "12.0.0",
             "targets": [
                 {
                     "columns": [],
@@ -407,8 +403,7 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green",
-                                "value": null
+                                "color": "green"
                             }
                         ]
                     }
@@ -439,7 +434,7 @@
                 "textMode": "value",
                 "wideLayout": true
             },
-            "pluginVersion": "11.5.2",
+            "pluginVersion": "12.0.0",
             "targets": [
                 {
                     "columns": [],
@@ -537,8 +532,7 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green",
-                                "value": null
+                                "color": "green"
                             }
                         ]
                     }
@@ -568,7 +562,7 @@
                     "sort": "none"
                 }
             },
-            "pluginVersion": "11.5.2",
+            "pluginVersion": "12.0.0",
             "targets": [
                 {
                     "columns": [
@@ -663,8 +657,7 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green",
-                                "value": null
+                                "color": "green"
                             }
                         ]
                     }
@@ -694,7 +687,7 @@
                     "sort": "none"
                 }
             },
-            "pluginVersion": "11.5.2",
+            "pluginVersion": "12.0.0",
             "targets": [
                 {
                     "columns": [
@@ -822,8 +815,7 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green",
-                                "value": null
+                                "color": "green"
                             }
                         ]
                     }
@@ -878,7 +870,7 @@
                     "sort": "none"
                 }
             },
-            "pluginVersion": "11.5.2",
+            "pluginVersion": "12.0.0",
             "targets": [
                 {
                     "columns": [
@@ -902,7 +894,7 @@
                     "format": "timeseries",
                     "global_query_id": "",
                     "parser": "backend",
-                    "refId": "Minted",
+                    "refId": "Mints",
                     "root_selector": "",
                     "source": "url",
                     "type": "json",
@@ -935,7 +927,7 @@
                     "global_query_id": "",
                     "hide": false,
                     "parser": "backend",
-                    "refId": "Burned",
+                    "refId": "Burns",
                     "root_selector": "",
                     "source": "url",
                     "type": "json",
@@ -953,14 +945,14 @@
     ],
     "preload": false,
     "refresh": "1m",
-    "schemaVersion": 40,
+    "schemaVersion": 41,
     "tags": [],
     "templating": {
         "list": [
             {
                 "current": {
-                    "text": "0.11490213",
-                    "value": "0.11490213"
+                    "text": "0.11510283",
+                    "value": "0.11510283"
                 },
                 "datasource": {
                     "type": "grafana-postgresql-datasource",
@@ -985,6 +977,5 @@
     "timezone": "browser",
     "title": "Statistics",
     "uid": "belv5pokjhszke",
-    "version": 2,
-    "weekStart": ""
+    "version": 3
 }
