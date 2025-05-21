@@ -22,13 +22,21 @@ datasources:
         url: http://prometheus-server
         access: proxy
         isDefault: true
+        editable: true
       - name: VictoriaLogs
         type: victoriametrics-logs-datasource
         url: http://vmlogs-victoria-logs-single-server:9428
         access: proxy
         isDefault: false
+        editable: true
+      - name: Infinity
+        type: yesoreyeram-infinity-datasource
+        access: proxy
+        isDefault: false
+        editable: true
 plugins:
   - "victoriametrics-logs-datasource"
+  - "yesoreyeram-infinity-datasource"
 sidecar:
   dashboards:
     enabled: true
@@ -46,3 +54,11 @@ grafana.ini:
     enabled: true
     client_id: ${GF_AUTH_GOOGLE_CLIENT_ID}
     client_secret: ${GF_AUTH_GOOGLE_CLIENT_SECRET}
+    enabled: true
+  unified_alerting:
+    enabled: true
+  users:
+    auto_assign_org_role: Editor
+    viewers_can_edit: false
+  security:
+    allow_embedding: true
