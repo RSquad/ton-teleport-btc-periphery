@@ -216,7 +216,7 @@ func run(app *App) error {
 		mux.Handle("/indexer/graphql", srv)
 		mux.Handle("/", playground.ApolloSandboxHandler("Indexer", "/indexer/graphql"))
 		mux.Handle("/metrics", promhttp.Handler())
-		mux.Handle("/api/metrics", metrics.NewJsonApiHandler(app.Db))
+		mux.Handle("/indexer/api/metrics", metrics.NewJsonApiHandler(app.Db))
 
 		c := cors.New(cors.Options{
 			AllowedOrigins:   []string{"*"},
