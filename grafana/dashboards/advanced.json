@@ -18,7 +18,7 @@
     "editable": true,
     "fiscalYearStartMonth": 0,
     "graphTooltip": 0,
-    "id": 67,
+    "id": 5,
     "links": [],
     "panels": [
         {
@@ -37,7 +37,8 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green"
+                                "color": "green",
+                                "value": null
                             }
                         ]
                     }
@@ -45,8 +46,8 @@
                 "overrides": []
             },
             "gridPos": {
-                "h": 3,
-                "w": 8,
+                "h": 4,
+                "w": 18,
                 "x": 0,
                 "y": 0
             },
@@ -68,13 +69,13 @@
                 "showPercentChange": false,
                 "text": {
                     "align": "left",
-                    "titleSize": 11,
-                    "valueSize": 11
+                    "titleSize": 15,
+                    "valueSize": 15
                 },
                 "textMode": "value_and_name",
                 "wideLayout": true
             },
-            "pluginVersion": "12.0.0",
+            "pluginVersion": "11.5.2",
             "targets": [
                 {
                     "columns": [
@@ -154,7 +155,8 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green"
+                                "color": "green",
+                                "value": null
                             }
                         ]
                     }
@@ -162,10 +164,10 @@
                 "overrides": []
             },
             "gridPos": {
-                "h": 4,
-                "w": 8,
+                "h": 5,
+                "w": 18,
                 "x": 0,
-                "y": 3
+                "y": 4
             },
             "id": 5,
             "options": {
@@ -183,13 +185,13 @@
                 },
                 "showPercentChange": false,
                 "text": {
-                    "titleSize": 11,
-                    "valueSize": 11
+                    "titleSize": 15,
+                    "valueSize": 15
                 },
                 "textMode": "value_and_name",
                 "wideLayout": true
             },
-            "pluginVersion": "12.0.0",
+            "pluginVersion": "11.5.2",
             "targets": [
                 {
                     "columns": [
@@ -286,7 +288,8 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green"
+                                "color": "green",
+                                "value": null
                             }
                         ]
                     }
@@ -367,9 +370,9 @@
             },
             "gridPos": {
                 "h": 5,
-                "w": 11,
+                "w": 18,
                 "x": 0,
-                "y": 7
+                "y": 9
             },
             "id": 22,
             "options": {
@@ -384,7 +387,7 @@
                 },
                 "showHeader": true
             },
-            "pluginVersion": "12.0.0",
+            "pluginVersion": "11.5.2",
             "targets": [
                 {
                     "columns": [],
@@ -484,7 +487,8 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green"
+                                "color": "green",
+                                "value": null
                             }
                         ]
                     }
@@ -511,10 +515,10 @@
                 ]
             },
             "gridPos": {
-                "h": 2,
-                "w": 7,
+                "h": 4,
+                "w": 12,
                 "x": 0,
-                "y": 12
+                "y": 14
             },
             "id": 11,
             "options": {
@@ -532,13 +536,13 @@
                 },
                 "showPercentChange": false,
                 "text": {
-                    "titleSize": 11,
-                    "valueSize": 11
+                    "titleSize": 15,
+                    "valueSize": 15
                 },
                 "textMode": "value_and_name",
                 "wideLayout": true
             },
-            "pluginVersion": "12.0.0",
+            "pluginVersion": "11.5.2",
             "targets": [
                 {
                     "columns": [
@@ -612,7 +616,8 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green"
+                                "color": "green",
+                                "value": null
                             }
                         ]
                     }
@@ -639,10 +644,10 @@
                 ]
             },
             "gridPos": {
-                "h": 2,
-                "w": 4,
-                "x": 7,
-                "y": 12
+                "h": 4,
+                "w": 6,
+                "x": 12,
+                "y": 14
             },
             "id": 28,
             "options": {
@@ -660,13 +665,13 @@
                 },
                 "showPercentChange": false,
                 "text": {
-                    "titleSize": 11,
-                    "valueSize": 11
+                    "titleSize": 15,
+                    "valueSize": 15
                 },
                 "textMode": "value_and_name",
                 "wideLayout": true
             },
-            "pluginVersion": "12.0.0",
+            "pluginVersion": "11.5.2",
             "targets": [
                 {
                     "columns": [
@@ -735,7 +740,8 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green"
+                                "color": "green",
+                                "value": null
                             },
                             {
                                 "color": "red",
@@ -765,10 +771,10 @@
                 ]
             },
             "gridPos": {
-                "h": 3,
-                "w": 3,
+                "h": 4,
+                "w": 8,
                 "x": 0,
-                "y": 14
+                "y": 18
             },
             "id": 18,
             "options": {
@@ -786,13 +792,13 @@
                 },
                 "showPercentChange": false,
                 "text": {
-                    "titleSize": 11,
-                    "valueSize": 11
+                    "titleSize": 15,
+                    "valueSize": 15
                 },
                 "textMode": "value_and_name",
                 "wideLayout": true
             },
-            "pluginVersion": "12.0.0",
+            "pluginVersion": "11.5.2",
             "targets": [
                 {
                     "columns": [
@@ -893,7 +899,8 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green"
+                                "color": "green",
+                                "value": null
                             }
                         ]
                     },
@@ -902,10 +909,10 @@
                 "overrides": []
             },
             "gridPos": {
-                "h": 3,
-                "w": 3,
-                "x": 5,
-                "y": 14
+                "h": 4,
+                "w": 8,
+                "x": 10,
+                "y": 18
             },
             "id": 13,
             "options": {
@@ -923,13 +930,13 @@
                 },
                 "showPercentChange": false,
                 "text": {
-                    "titleSize": 11,
-                    "valueSize": 11
+                    "titleSize": 15,
+                    "valueSize": 15
                 },
                 "textMode": "value_and_name",
                 "wideLayout": true
             },
-            "pluginVersion": "12.0.0",
+            "pluginVersion": "11.5.2",
             "targets": [
                 {
                     "columns": [],
@@ -1058,147 +1065,8 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green"
-                            }
-                        ]
-                    }
-                },
-                "overrides": [
-                    {
-                        "matcher": {
-                            "id": "byName",
-                            "options": "Last Confirmed Block Hash"
-                        },
-                        "properties": [
-                            {
-                                "id": "links",
-                                "value": [
-                                    {
-                                        "targetBlank": true,
-                                        "title": "",
-                                        "url": "https://mempool.space/signet/block/${__value.text}"
-                                    }
-                                ]
-                            }
-                        ]
-                    },
-                    {
-                        "matcher": {
-                            "id": "byName",
-                            "options": "Candidates Tree"
-                        },
-                        "properties": []
-                    }
-                ]
-            },
-            "gridPos": {
-                "h": 3,
-                "w": 8,
-                "x": 0,
-                "y": 17
-            },
-            "id": 25,
-            "options": {
-                "colorMode": "value",
-                "graphMode": "none",
-                "justifyMode": "auto",
-                "orientation": "horizontal",
-                "percentChangeColorMode": "standard",
-                "reduceOptions": {
-                    "calcs": [
-                        "lastNotNull"
-                    ],
-                    "fields": "/.*/",
-                    "values": false
-                },
-                "showPercentChange": false,
-                "text": {
-                    "titleSize": 11,
-                    "valueSize": 11
-                },
-                "textMode": "value_and_name",
-                "wideLayout": true
-            },
-            "pluginVersion": "12.0.0",
-            "targets": [
-                {
-                    "columns": [],
-                    "computed_columns": [
-                        {
-                            "selector": "",
-                            "text": "",
-                            "type": "string"
-                        }
-                    ],
-                    "datasource": {
-                        "type": "yesoreyeram-infinity-datasource",
-                        "uid": "dem2k81ld0veoe"
-                    },
-                    "filterExpression": "",
-                    "filters": [],
-                    "format": "table",
-                    "global_query_id": "",
-                    "parser": "backend",
-                    "refId": "A",
-                    "root_selector": "contractBitcoinClient",
-                    "source": "url",
-                    "type": "json",
-                    "url": "http://65.21.162.174:3000/api/metrics?source=info",
-                    "url_options": {
-                        "data": "",
-                        "method": "GET"
-                    }
-                }
-            ],
-            "title": "Bitcoin Client State",
-            "transformations": [
-                {
-                    "id": "organize",
-                    "options": {
-                        "excludeByName": {
-                            "CandidateBlockHashes": true
-                        },
-                        "includeByName": {},
-                        "indexByName": {
-                            "CandidateBlockHashes": 3,
-                            "ConfirmationsNeeded": 0,
-                            "LastConfirmedBlockHash": 1,
-                            "LastConfirmedBlockHeight": 2
-                        },
-                        "renameByName": {
-                            "0": "Candidates Tree",
-                            "1": "  ",
-                            "CandidateBlockHashes": "",
-                            "ConfirmationsNeeded": "Confirmations Needed",
-                            "LastConfirmedBlockHash": "Last Confirmed Block Hash",
-                            "LastConfirmedBlockHeight": "Last Confirmed Block Height",
-                            "bestblockhash": "Chain Best Block Hash",
-                            "blocks": "Height",
-                            "chain": "Chain",
-                            "mediantime": "Median Time"
-                        }
-                    }
-                }
-            ],
-            "transparent": true,
-            "type": "stat"
-        },
-        {
-            "datasource": {
-                "type": "yesoreyeram-infinity-datasource",
-                "uid": "dem2k81ld0veoe"
-            },
-            "fieldConfig": {
-                "defaults": {
-                    "color": {
-                        "mode": "thresholds"
-                    },
-                    "mappings": [],
-                    "thresholds": {
-                        "mode": "absolute",
-                        "steps": [
-                            {
-                                "color": "green"
+                                "color": "green",
+                                "value": null
                             }
                         ]
                     }
@@ -1237,10 +1105,10 @@
                 ]
             },
             "gridPos": {
-                "h": 4,
-                "w": 8,
+                "h": 5,
+                "w": 18,
                 "x": 0,
-                "y": 20
+                "y": 22
             },
             "id": 27,
             "options": {
@@ -1258,13 +1126,13 @@
                 },
                 "showPercentChange": false,
                 "text": {
-                    "titleSize": 11,
-                    "valueSize": 11
+                    "titleSize": 15,
+                    "valueSize": 15
                 },
                 "textMode": "value_and_name",
                 "wideLayout": true
             },
-            "pluginVersion": "12.0.0",
+            "pluginVersion": "11.5.2",
             "targets": [
                 {
                     "columns": [],
@@ -1348,6 +1216,147 @@
                     "color": {
                         "mode": "thresholds"
                     },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            }
+                        ]
+                    }
+                },
+                "overrides": [
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Last Confirmed Block Hash"
+                        },
+                        "properties": [
+                            {
+                                "id": "links",
+                                "value": [
+                                    {
+                                        "targetBlank": true,
+                                        "title": "",
+                                        "url": "https://mempool.space/signet/block/${__value.text}"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Candidates Tree"
+                        },
+                        "properties": []
+                    }
+                ]
+            },
+            "gridPos": {
+                "h": 5,
+                "w": 18,
+                "x": 0,
+                "y": 27
+            },
+            "id": 25,
+            "options": {
+                "colorMode": "value",
+                "graphMode": "none",
+                "justifyMode": "auto",
+                "orientation": "horizontal",
+                "percentChangeColorMode": "standard",
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "/.*/",
+                    "values": false
+                },
+                "showPercentChange": false,
+                "text": {
+                    "titleSize": 15,
+                    "valueSize": 15
+                },
+                "textMode": "value_and_name",
+                "wideLayout": true
+            },
+            "pluginVersion": "11.5.2",
+            "targets": [
+                {
+                    "columns": [],
+                    "computed_columns": [
+                        {
+                            "selector": "",
+                            "text": "",
+                            "type": "string"
+                        }
+                    ],
+                    "datasource": {
+                        "type": "yesoreyeram-infinity-datasource",
+                        "uid": "dem2k81ld0veoe"
+                    },
+                    "filterExpression": "",
+                    "filters": [],
+                    "format": "table",
+                    "global_query_id": "",
+                    "parser": "backend",
+                    "refId": "A",
+                    "root_selector": "contractBitcoinClient",
+                    "source": "url",
+                    "type": "json",
+                    "url": "http://65.21.162.174:3000/api/metrics?source=info",
+                    "url_options": {
+                        "data": "",
+                        "method": "GET"
+                    }
+                }
+            ],
+            "title": "Bitcoin Client State",
+            "transformations": [
+                {
+                    "id": "organize",
+                    "options": {
+                        "excludeByName": {
+                            "CandidateBlockHashes": true
+                        },
+                        "includeByName": {},
+                        "indexByName": {
+                            "CandidateBlockHashes": 3,
+                            "ConfirmationsNeeded": 0,
+                            "LastConfirmedBlockHash": 1,
+                            "LastConfirmedBlockHeight": 2
+                        },
+                        "renameByName": {
+                            "0": "Candidates Tree",
+                            "1": "  ",
+                            "CandidateBlockHashes": "",
+                            "ConfirmationsNeeded": "Confirmations Needed",
+                            "LastConfirmedBlockHash": "Last Confirmed Block Hash",
+                            "LastConfirmedBlockHeight": "Last Confirmed Block Height",
+                            "bestblockhash": "Chain Best Block Hash",
+                            "blocks": "Height",
+                            "chain": "Chain",
+                            "mediantime": "Median Time"
+                        }
+                    }
+                }
+            ],
+            "transparent": true,
+            "type": "stat"
+        },
+        {
+            "datasource": {
+                "type": "yesoreyeram-infinity-datasource",
+                "uid": "dem2k81ld0veoe"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
                     "links": [
                         {
                             "targetBlank": true,
@@ -1360,7 +1369,8 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green"
+                                "color": "green",
+                                "value": null
                             }
                         ]
                     }
@@ -1368,10 +1378,10 @@
                 "overrides": []
             },
             "gridPos": {
-                "h": 2,
-                "w": 8,
+                "h": 5,
+                "w": 18,
                 "x": 0,
-                "y": 24
+                "y": 32
             },
             "id": 26,
             "options": {
@@ -1389,13 +1399,13 @@
                 },
                 "showPercentChange": false,
                 "text": {
-                    "titleSize": 11,
-                    "valueSize": 11
+                    "titleSize": 15,
+                    "valueSize": 15
                 },
                 "textMode": "value_and_name",
                 "wideLayout": true
             },
-            "pluginVersion": "12.0.0",
+            "pluginVersion": "11.5.2",
             "targets": [
                 {
                     "columns": [],
@@ -1467,7 +1477,7 @@
     ],
     "preload": false,
     "refresh": "1m",
-    "schemaVersion": 41,
+    "schemaVersion": 40,
     "tags": [],
     "templating": {
         "list": []
@@ -1480,5 +1490,6 @@
     "timezone": "browser",
     "title": "Advanced",
     "uid": "bely7mcsbdwcge",
-    "version": 13
+    "version": 5,
+    "weekStart": ""
 }
