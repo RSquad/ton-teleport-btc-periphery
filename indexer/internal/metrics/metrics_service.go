@@ -39,11 +39,7 @@ func NewService(
 		return nil, err
 	}
 
-	// CREATE INDEX IF NOT EXISTS mints_status_idx ON mints (status);
-	// CREATE INDEX IF NOT EXISTS pegouts_status_idx ON pegouts (status);
-
-	// TODO: reimplement FetcherDKG with all Coordinator data
-	// Fetcher: Contract ??? DKG
+	// Fetcher: Contract DKG
 	fetcherDKG := NewFetcherDKG(writerDbChan, coordinatorContract, 10) // TODO: move 10 to config
 
 	// Fetcher: Contract balances
