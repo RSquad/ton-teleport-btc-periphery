@@ -828,7 +828,32 @@
                         ]
                     }
                 },
-                "overrides": []
+                "overrides": [
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Minted count"
+                        },
+                        "properties": [
+                            {
+                                "id": "displayName",
+                                "value": "Minted"
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Burned count"
+                        },
+                        "properties": [
+                            {
+                                "id": "displayName",
+                                "value": "Burned"
+                            }
+                        ]
+                    }
+                ]
             },
             "gridPos": {
                 "h": 9,
@@ -921,7 +946,7 @@
                     }
                 }
             ],
-            "title": "Count of Operations",
+            "title": "Operations Count",
             "transparent": true,
             "type": "timeseries"
         }
@@ -960,6 +985,6 @@
     "timezone": "browser",
     "title": "Statistics",
     "uid": "belv5pokjhszke",
-    "version": 1,
+    "version": 2,
     "weekStart": ""
 }
