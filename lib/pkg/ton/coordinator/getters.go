@@ -198,7 +198,7 @@ func (c *CoordinatorContract) GetUnsignedPegouts() ([]PegoutRecord, error) {
 	pegouts := make([]PegoutRecord, 0, len(entries))
 	for _, kv := range entries {
 
-		ID := kv.Key.MustLoadUInt(64) // TODO:
+		ID := kv.Key.MustLoadUInt(64)
 		value := kv.Value.MustLoadRef()
 
 		MaxSigners := uint16(value.MustLoadUInt(16))
@@ -234,9 +234,9 @@ func (c *CoordinatorContract) GetUnsignedPegouts() ([]PegoutRecord, error) {
 
 		sigSlice := value.MustLoadRef()
 		Signatures := PegoutSignatures{
-			mask:  sigSlice.MustLoadBigUInt(256),
-			count: uint16(sigSlice.MustLoadUInt(16)),
-			hash:  sigSlice.MustLoadSlice(256),
+			Mask:  sigSlice.MustLoadBigUInt(256),
+			Count: uint16(sigSlice.MustLoadUInt(16)),
+			Hash:  sigSlice.MustLoadSlice(256),
 		}
 
 		refSlice := value.MustLoadRef()

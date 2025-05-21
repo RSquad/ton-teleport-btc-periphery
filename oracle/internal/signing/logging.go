@@ -117,6 +117,10 @@ func (s *SignService) logSignatureSent(pegoutID uint64) {
 	infoEventWithPegoutID(pegoutID).Msg("Signature sent")
 }
 
+func (s *SignService) logAggregateSignSharesSent(pegoutID uint64, sentSignsCount uint16, totalCount uint16) {
+	infoEventWithPegoutID(pegoutID).Msgf("The signature has already been sent. Waiting for other oracles (ready %d of %d)", sentSignsCount, totalCount)
+}
+
 func (s *SignService) logSignatureSendError(pegoutID uint64, err error) {
 	msg := helpers.HandleTvmError(err)
 	errorEventWithPegoutID(pegoutID).Err(err).Msg("failed to send signatures: " + msg)

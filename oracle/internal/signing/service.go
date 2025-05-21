@@ -14,10 +14,12 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/pegoutcontract"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
 	helpers "github.com/rsquad/ton-teleport-btc-periphery/oracle/internal"
 	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/keystore"
 	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/validator"
 	"github.com/xssnick/tonutils-go/ton"
+	"github.com/xssnick/tonutils-go/tvm/cell"
 )
 
 type CachedPegout struct {
@@ -368,6 +370,17 @@ func (s *SignService) doAggregate(
 ) bool {
 	s.logAggregateSignShares(pegout.ID)
 
+	// Check if the signatures have already been sent
+	if pegout.artifacts.Signatures.Mask.Bit(int(validatorIdx)) == 1 {
+		isDone := true
+		if pegout.artifacts.Signatures.Count < pegout.artifacts.MaxSigners {
+			s.logAggregateSignSharesSent(pegout.ID, pegout.artifacts.Signatures.Count, pegout.artifacts.MaxSigners)
+			isDone = false
+		}
+
+		return isDone
+	}
+
 	commitmentsPackages := helpers.ConvertMapToFrostPackages(pegout.artifacts.Commitments)
 	signatures := make([][]byte, 0, len(pegout.signingHashes))
 
@@ -395,11 +408,31 @@ func (s *SignService) doAggregate(
 		signatures = append(signatures, signature)
 	}
 
-	if _, err := s.coordinator.SendSignatures(
+	// Verify existing signatures
+	{
+		dict := cell.NewDict(16)
+		for i, signature := range signatures {
+			dict.Set(cell.BeginCell().MustStoreUInt(uint64(i), 16).EndCell(),
+				utils.SplitBytesToCells(signature),
+			)
+		}
+
+		if !bytes.Equal(pegout.artifacts.Signatures.Hash, dict.AsCell().Hash()) {
+			// Sent claim. Culprit Oracle id = index of the first non zero bit in pegout.artifacts.Signatures.Mask
+			culpritIdx := pegout.artifacts.Signatures.Mask.BitLen() - 1
+			s.logError(fmt.Sprintf("Signature sending failed. Culprit validator identified: %d. The signature sent by the culprit validator differs from the calculated signature", culpritIdx), nil)
+			s.executeClaim(pegout, validatorIdx, uint16(culpritIdx))
+		}
+	} /**/
+
+	// Send signatures
+	_, err := s.coordinator.SendSignatures(
 		pegout.ID,
 		validatorIdx,
 		signatures,
-	); err != nil {
+	)
+
+	if err != nil {
 		s.logSignatureSendError(pegout.ID, err)
 	} else {
 		s.logSignatureSent(pegout.ID)
