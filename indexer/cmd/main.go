@@ -238,25 +238,23 @@ func run(app *App) error {
 		}
 	}()
 
-	/*
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			app.EventService.Work(context.Background())
-		}()
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		app.EventService.Work(context.Background())
+	}()
 
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			app.PegoutManager.Run()
-		}()
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		app.PegoutManager.Run()
+	}()
 
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			app.MintService.Work(context.Background())
-		}()
-	*/
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		app.MintService.Work(context.Background())
+	}()
 
 	wg.Add(1)
 	go func() {

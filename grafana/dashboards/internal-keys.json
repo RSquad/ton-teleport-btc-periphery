@@ -18,7 +18,7 @@
     "editable": true,
     "fiscalYearStartMonth": 0,
     "graphTooltip": 0,
-    "id": 4,
+    "id": 73,
     "links": [],
     "panels": [
         {
@@ -45,8 +45,7 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green",
-                                "value": null
+                                "color": "green"
                             }
                         ]
                     }
@@ -119,7 +118,7 @@
                 "showHeader": true,
                 "sortBy": []
             },
-            "pluginVersion": "11.5.2",
+            "pluginVersion": "12.0.0",
             "targets": [
                 {
                     "columns": [
@@ -153,7 +152,7 @@
                     "root_selector": "",
                     "source": "url",
                     "type": "json",
-                    "url": "http://host.docker.internal:3000/api/metrics?source=internal_keys",
+                    "url": "http://65.21.162.174:3000/api/metrics?source=internal_keys",
                     "url_options": {
                         "data": "",
                         "method": "GET"
@@ -183,7 +182,7 @@
     ],
     "preload": false,
     "refresh": "1m",
-    "schemaVersion": 40,
+    "schemaVersion": 41,
     "tags": [],
     "templating": {
         "list": []
@@ -196,6 +195,5 @@
     "timezone": "browser",
     "title": "Internal Keys",
     "uid": "efef1812-648d-4e83-a21a-9af219bc392f",
-    "version": 1,
-    "weekStart": ""
+    "version": 2
 }

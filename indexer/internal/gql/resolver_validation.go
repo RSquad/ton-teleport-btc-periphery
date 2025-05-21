@@ -27,7 +27,7 @@ func (c *Resolver) bitcoinTxExists(
 	if err != nil {
 		return false, nil, fmt.Errorf("invalid bitcoin tx id: %w", err)
 	}
-	bitcoinTx, err := c.bitcoinClient.RPCClient.GetRawTransactionVerbose(bitcoinTxID)
+	bitcoinTx, err := c.bitcoinClient.GetRawTransactionVerbose(bitcoinTxID)
 	if err != nil {
 		return false, nil, fmt.Errorf("bitcoin tx not found: %w", err)
 	}
