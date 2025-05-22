@@ -18,7 +18,7 @@
     "editable": true,
     "fiscalYearStartMonth": 0,
     "graphTooltip": 0,
-    "id": 75,
+    "id": 7,
     "links": [],
     "panels": [
         {
@@ -36,7 +36,8 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green"
+                                "color": "green",
+                                "value": null
                             }
                         ]
                     }
@@ -46,7 +47,7 @@
             "gridPos": {
                 "h": 4,
                 "w": 5,
-                "x": 2,
+                "x": 6,
                 "y": 0
             },
             "id": 1,
@@ -124,7 +125,8 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green"
+                                "color": "green",
+                                "value": null
                             }
                         ]
                     }
@@ -134,7 +136,7 @@
             "gridPos": {
                 "h": 4,
                 "w": 5,
-                "x": 8,
+                "x": 12,
                 "y": 0
             },
             "id": 2,
@@ -213,7 +215,8 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green"
+                                "color": "green",
+                                "value": null
                             }
                         ]
                     }
@@ -223,7 +226,7 @@
             "gridPos": {
                 "h": 4,
                 "w": 5,
-                "x": 0,
+                "x": 4,
                 "y": 4
             },
             "id": 5,
@@ -314,7 +317,8 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green"
+                                "color": "green",
+                                "value": null
                             }
                         ]
                     }
@@ -324,7 +328,7 @@
             "gridPos": {
                 "h": 4,
                 "w": 5,
-                "x": 5,
+                "x": 9,
                 "y": 4
             },
             "id": 3,
@@ -403,7 +407,8 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green"
+                                "color": "green",
+                                "value": null
                             }
                         ]
                     }
@@ -413,7 +418,7 @@
             "gridPos": {
                 "h": 4,
                 "w": 5,
-                "x": 10,
+                "x": 14,
                 "y": 4
             },
             "id": 4,
@@ -532,7 +537,8 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green"
+                                "color": "green",
+                                "value": null
                             }
                         ]
                     }
@@ -657,7 +663,8 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green"
+                                "color": "green",
+                                "value": null
                             }
                         ]
                     }
@@ -815,7 +822,8 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green"
+                                "color": "green",
+                                "value": null
                             }
                         ]
                     }
@@ -945,8 +953,11 @@
     ],
     "preload": false,
     "refresh": "1m",
-    "schemaVersion": 41,
+    "schemaVersion": 40,
     "tags": [],
+    "templating": {
+        "list": []
+    },
     "time": {
         "from": "now-6M",
         "to": "now"
@@ -955,5 +966,6 @@
     "timezone": "browser",
     "title": "Statistics",
     "uid": "4cfe25e6-9ad6-4744-875e-777c15490f6c",
-    "version": 3
+    "version": 1,
+    "weekStart": ""
 }
