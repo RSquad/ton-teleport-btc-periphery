@@ -18,21 +18,22 @@
     "editable": true,
     "fiscalYearStartMonth": 0,
     "graphTooltip": 0,
-    "id": 4,
+    "id": 3,
     "links": [],
     "panels": [
         {
             "datasource": {
-                "type": "grafana-postgresql-datasource",
-                "uid": "PCC52D03280B7034C"
+                "type": "yesoreyeram-infinity-datasource",
+                "uid": "dem2k81ld0veoe"
             },
             "fieldConfig": {
                 "defaults": {
                     "color": {
-                        "mode": "thresholds"
+                        "fixedColor": "transparent",
+                        "mode": "fixed"
                     },
                     "custom": {
-                        "align": "auto",
+                        "align": "left",
                         "cellOptions": {
                             "type": "auto",
                             "wrapText": false
@@ -46,10 +47,6 @@
                             {
                                 "color": "green",
                                 "value": null
-                            },
-                            {
-                                "color": "red",
-                                "value": 80
                             }
                         ]
                     }
@@ -58,145 +55,142 @@
                     {
                         "matcher": {
                             "id": "byName",
-                            "options": "status"
+                            "options": "Created At"
                         },
                         "properties": [
                             {
                                 "id": "custom.width",
-                                "value": 100
+                                "value": 175
                             }
                         ]
                     },
                     {
                         "matcher": {
                             "id": "byName",
-                            "options": "amount"
+                            "options": "Status"
                         },
                         "properties": [
                             {
                                 "id": "custom.width",
-                                "value": 138
+                                "value": 110
+                            },
+                            {
+                                "id": "custom.cellOptions",
+                                "value": {
+                                    "type": "color-text"
+                                }
+                            },
+                            {
+                                "id": "mappings",
+                                "value": [
+                                    {
+                                        "options": {
+                                            "PENDING": {
+                                                "color": "semi-dark-blue",
+                                                "index": 0,
+                                                "text": "PENDING"
+                                            },
+                                            "REFUND": {
+                                                "color": "semi-dark-yellow",
+                                                "index": 1,
+                                                "text": "REFUND"
+                                            },
+                                            "REFUNDED": {
+                                                "color": "semi-dark-green",
+                                                "index": 2,
+                                                "text": "REFUNDED"
+                                            },
+                                            "SUCCESS": {
+                                                "color": "semi-dark-green",
+                                                "index": 3,
+                                                "text": "SUCCESS"
+                                            }
+                                        },
+                                        "type": "value"
+                                    }
+                                ]
                             }
                         ]
                     },
                     {
                         "matcher": {
                             "id": "byName",
-                            "options": "created_at"
+                            "options": "Receiver Address"
                         },
                         "properties": [
                             {
-                                "id": "custom.width",
-                                "value": 200
-                            }
-                        ]
-                    },
-                    {
-                        "matcher": {
-                            "id": "byName",
-                            "options": "receiver_addr"
-                        },
-                        "properties": [
+                                "id": "custom.width"
+                            },
                             {
                                 "id": "links",
                                 "value": [
                                     {
                                         "targetBlank": true,
-                                        "title": "",
+                                        "title": "tonviewer",
                                         "url": "https://testnet.tonviewer.com/${__value.text}"
                                     }
                                 ]
-                            },
-                            {
-                                "id": "displayName",
-                                "value": "Receiver Address"
                             }
                         ]
                     },
                     {
                         "matcher": {
                             "id": "byName",
-                            "options": "ton_tx"
+                            "options": "Bitcoin Tx"
                         },
                         "properties": [
+                            {
+                                "id": "custom.width"
+                            },
                             {
                                 "id": "links",
                                 "value": [
                                     {
                                         "targetBlank": true,
-                                        "title": "",
+                                        "title": "mempool",
+                                        "url": "https://mempool.space/signet/tx/${__value.text}"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "TON Tx"
+                        },
+                        "properties": [
+                            {
+                                "id": "custom.width"
+                            },
+                            {
+                                "id": "links",
+                                "value": [
+                                    {
+                                        "targetBlank": true,
+                                        "title": "tonviewer",
                                         "url": "https://testnet.tonviewer.com/transaction/${__value.text}"
                                     }
                                 ]
-                            },
-                            {
-                                "id": "displayName",
-                                "value": "Ton Tx"
                             }
                         ]
                     },
                     {
                         "matcher": {
                             "id": "byName",
-                            "options": "bitcoin_tx_id"
+                            "options": "Amount"
                         },
                         "properties": [
                             {
-                                "id": "links",
-                                "value": [
-                                    {
-                                        "targetBlank": true,
-                                        "title": "",
-                                        "url": "https://mempool.space/ru/signet/tx/${__value.text}"
-                                    }
-                                ]
-                            },
-                            {
-                                "id": "displayName",
-                                "value": "Bitcoin Tx Id"
-                            }
-                        ]
-                    },
-                    {
-                        "matcher": {
-                            "id": "byName",
-                            "options": "created_at"
-                        },
-                        "properties": [
-                            {
-                                "id": "displayName",
-                                "value": "Created At"
-                            }
-                        ]
-                    },
-                    {
-                        "matcher": {
-                            "id": "byName",
-                            "options": "status"
-                        },
-                        "properties": [
-                            {
-                                "id": "displayName",
-                                "value": "Status"
-                            }
-                        ]
-                    },
-                    {
-                        "matcher": {
-                            "id": "byName",
-                            "options": "amount"
-                        },
-                        "properties": [
-                            {
-                                "id": "displayName",
-                                "value": "Amount"
+                                "id": "custom.width",
+                                "value": 175
                             }
                         ]
                     }
                 ]
             },
             "gridPos": {
-                "h": 12,
+                "h": 27,
                 "w": 24,
                 "x": 0,
                 "y": 0
@@ -206,262 +200,100 @@
                 "cellHeight": "sm",
                 "footer": {
                     "countRows": false,
+                    "enablePagination": true,
                     "fields": "",
-                    "reducer": [
-                        "sum"
-                    ],
+                    "reducer": [],
                     "show": false
                 },
                 "showHeader": true,
-                "sortBy": [
-                    {
-                        "desc": true,
-                        "displayName": "created_at"
-                    }
-                ]
+                "sortBy": []
             },
             "pluginVersion": "11.5.2",
             "targets": [
                 {
+                    "columns": [
+                        {
+                            "selector": "created_at",
+                            "text": "Created At",
+                            "timestampFormat": "2006/01/02 15:04:05",
+                            "type": "timestamp"
+                        },
+                        {
+                            "selector": "status",
+                            "text": "Status",
+                            "type": "string"
+                        },
+                        {
+                            "selector": "amount",
+                            "text": "Amount",
+                            "type": "string"
+                        },
+                        {
+                            "selector": "receiver_addr",
+                            "text": "Receiver Address",
+                            "type": "string"
+                        },
+                        {
+                            "selector": "bitcoin_tx_id",
+                            "text": "Bitcoin Tx",
+                            "type": "string"
+                        },
+                        {
+                            "selector": "ton_tx",
+                            "text": "TON Tx",
+                            "type": "string"
+                        }
+                    ],
                     "datasource": {
-                        "type": "grafana-postgresql-datasource",
-                        "uid": "PCC52D03280B7034C"
+                        "type": "yesoreyeram-infinity-datasource",
+                        "uid": "dem2k81ld0veoe"
                     },
-                    "editorMode": "code",
+                    "filters": [],
                     "format": "table",
-                    "rawQuery": true,
-                    "rawSql": "SELECT\nM.CREATED_AT,\nM.STATUS,\nTO_CHAR(CAST(M.AMOUNT AS REAL) / 100000000.0, 'FM999999999.00000000') || ' BTC' AS AMOUNT,\nCOALESCE(TT.HASH, '_') AS TON_TX,\nP.RECEIVER_ADDR,\nP.BITCOIN_TX_ID\nFROM MINTS AS M\nLEFT JOIN TON_TXES AS TT ON M.TON_TX_MINT = TT.ID\nLEFT JOIN PEGINS AS P ON M.ID = P.MINT_PEGIN\nORDER BY M.ID DESC\nLIMIT ${page_size}\nOFFSET ${page_size}*${page_id};\n",
-                    "refId": "A",
-                    "sql": {
-                        "columns": [
-                            {
-                                "parameters": [
-                                    {
-                                        "name": "created_at",
-                                        "type": "functionParameter"
-                                    }
-                                ],
-                                "type": "function"
-                            },
-                            {
-                                "parameters": [
-                                    {
-                                        "name": "status",
-                                        "type": "functionParameter"
-                                    }
-                                ],
-                                "type": "function"
-                            },
-                            {
-                                "parameters": [
-                                    {
-                                        "name": "amount",
-                                        "type": "functionParameter"
-                                    }
-                                ],
-                                "type": "function"
-                            },
-                            {
-                                "parameters": [
-                                    {
-                                        "name": "ton_tx_mint",
-                                        "type": "functionParameter"
-                                    }
-                                ],
-                                "type": "function"
-                            }
-                        ],
-                        "groupBy": [
-                            {
-                                "property": {
-                                    "type": "string"
-                                },
-                                "type": "groupBy"
-                            }
-                        ],
-                        "limit": 50
-                    },
-                    "table": "mints"
-                }
-            ],
-            "title": "Mints",
-            "type": "table"
-        },
-        {
-            "datasource": {
-                "type": "prometheus",
-                "uid": "PBFA97CFB590B2093"
-            },
-            "fieldConfig": {
-                "defaults": {
-                    "color": {
-                        "mode": "thresholds"
-                    },
-                    "fieldMinMax": false,
-                    "mappings": [],
-                    "thresholds": {
-                        "mode": "absolute",
-                        "steps": [
-                            {
-                                "color": "green",
-                                "value": null
-                            },
-                            {
-                                "color": "red",
-                                "value": 80
-                            }
-                        ]
+                    "global_query_id": "",
+                    "pagination_mode": "none",
+                    "parser": "backend",
+                    "refId": "DemoAPI",
+                    "root_selector": "",
+                    "source": "url",
+                    "type": "json",
+                    "url": "http://indexer/api/metrics?source=mints",
+                    "url_options": {
+                        "data": "",
+                        "method": "GET"
                     }
-                },
-                "overrides": []
-            },
-            "gridPos": {
-                "h": 2,
-                "w": 11,
-                "x": 6,
-                "y": 12
-            },
-            "id": 2,
-            "options": {
-                "SVGBaseFix": true,
-                "add100Percentage": false,
-                "calcsMutation": "standard",
-                "centerAlignContent": true,
-                "codeData": "{\n  \"total_pages\": \"${total_pages}\",\n  \"page_size\": \"${page_size}\",\n  \"page_id\": \"${page_id}\"  \n}",
-                "css": "",
-                "dynamicData": true,
-                "dynamicFieldDisplayValues": true,
-                "dynamicHtmlGraphics": true,
-                "dynamicProps": true,
-                "html": "<button id=\"first_btn\">First</button>\n<button id=\"prev_btn\">Previous</button>\n<button id=\"current_btn\"></button>\n<button id=\"next_btn\">Next</button>\n<button id=\"last_btn\">Last</button>\n",
-                "onInit": "const { total_pages, page_size, page_id } = customProperties;\nconst firstPageBtn = htmlNode.getElementById('first_btn');\nconst prevPageBtn = htmlNode.getElementById('prev_btn');\nconst currentPageBtn = htmlNode.getElementById('current_btn');\nconst nextPageBtn = htmlNode.getElementById('next_btn');\nconst lastPageBtn = htmlNode.getElementById('last_btn');\n\nfunction updateGrafanaVariable(variableName, value) {\n  var maxValue = getGrafanaVariableValue(total_pages);\n  if (value < 0) {\n    value = 0;\n  } else if (value >= maxValue) {\n    value = maxValue - 1;\n  }\n  getLocationSrv().update({\n    query: {\n      [`var-${variableName}`]: value,\n    },\n    partial: true,\n    replace: true,\n  });\n}\n\nfunction getGrafanaVariableValue(variable) {\n  return getTemplateSrv().replace(variable);\n}\n\nfunction updateCurrentButtonText() {\n  var val = getGrafanaVariableValue(page_id)\n  currentPageBtn.textContent = `${Number(val) + 1}`;\n}\n\nprevPageBtn.onclick = function () {\n  var val = `${getGrafanaVariableValue(page_id)}`;\n  updateGrafanaVariable(\"page_id\", Number(val) - 1);\n};\n\nnextPageBtn.onclick = function () {\n  var val = `${getGrafanaVariableValue(page_id)}`;\n  updateGrafanaVariable(\"page_id\", Number(val) + 1);\n};\n\nfirstPageBtn.onclick = function () {\n  updateGrafanaVariable(\"page_id\", 0);\n};\n\nlastPageBtn.onclick = function () {\n  var val = `${getGrafanaVariableValue(total_pages)}`;\n  updateGrafanaVariable(\"page_id\", Number(val) - 1);\n};\n\nhtmlNode.addEventListener('panelupdate', () => {\n  updateCurrentButtonText();\n});\n",
-                "onInitOnResize": true,
-                "onRender": "",
-                "overflow": "visible",
-                "panelupdateOnMount": true,
-                "reduceOptions": {
-                    "calcs": [
-                        "lastNotNull",
-                        "last",
-                        "first",
-                        "firstNotNull",
-                        "min",
-                        "max",
-                        "mean",
-                        "sum",
-                        "count",
-                        "range",
-                        "delta",
-                        "step",
-                        "diff",
-                        "logmin",
-                        "allIsZero",
-                        "allIsNull",
-                        "diffperc"
-                    ]
-                },
-                "renderOnMount": true,
-                "rootCSS": "",
-                "useGrafanaScrollbar": true
-            },
-            "pluginVersion": "2.1.1",
-            "targets": [
-                {
-                    "editorMode": "builder",
-                    "expr": "",
-                    "legendFormat": "__auto",
-                    "range": true,
-                    "refId": "A"
                 }
             ],
             "title": "",
-            "transparent": true,
-            "type": "gapit-htmlgraphics-panel"
+            "transformations": [
+                {
+                    "id": "organize",
+                    "options": {
+                        "excludeByName": {
+                            "Status": false
+                        },
+                        "includeByName": {},
+                        "indexByName": {
+                            "Amount": 2,
+                            "Bitcoin Tx": 4,
+                            "Created At": 0,
+                            "Receiver Address": 3,
+                            "Status": 1,
+                            "TON Tx": 5
+                        },
+                        "renameByName": {}
+                    }
+                }
+            ],
+            "type": "table"
         }
     ],
     "preload": false,
-    "refresh": "10s",
+    "refresh": "1m",
     "schemaVersion": 40,
     "tags": [],
     "templating": {
-        "list": [
-            {
-                "current": {
-                    "text": "94",
-                    "value": "94"
-                },
-                "datasource": {
-                    "type": "grafana-postgresql-datasource",
-                    "uid": "PCC52D03280B7034C"
-                },
-                "definition": "SELECT COUNT(*)/${page_size} + (CASE WHEN COUNT(*)%${page_size} > 0 THEN 1 ELSE 0 END) FROM mints as m join ton_txes as tt on m.ton_tx_mint = tt.id\njoin pegins as p on m.id = p.mint_pegin",
-                "description": "",
-                "hide": 2,
-                "name": "total_pages",
-                "options": [],
-                "query": "SELECT COUNT(*)/${page_size} + (CASE WHEN COUNT(*)%${page_size} > 0 THEN 1 ELSE 0 END) FROM mints as m join ton_txes as tt on m.ton_tx_mint = tt.id\njoin pegins as p on m.id = p.mint_pegin",
-                "refresh": 1,
-                "regex": "",
-                "type": "query"
-            },
-            {
-                "auto": false,
-                "auto_count": 30,
-                "auto_min": "10s",
-                "current": {
-                    "text": "50",
-                    "value": "50"
-                },
-                "name": "page_size",
-                "options": [
-                    {
-                        "selected": false,
-                        "text": "10",
-                        "value": "10"
-                    },
-                    {
-                        "selected": false,
-                        "text": "20",
-                        "value": "20"
-                    },
-                    {
-                        "selected": false,
-                        "text": "30",
-                        "value": "30"
-                    },
-                    {
-                        "selected": false,
-                        "text": "40",
-                        "value": "40"
-                    },
-                    {
-                        "selected": true,
-                        "text": "50",
-                        "value": "50"
-                    }
-                ],
-                "query": "10,20,30,40,50",
-                "refresh": 2,
-                "type": "interval"
-            },
-            {
-                "current": {
-                    "text": "0",
-                    "value": "0"
-                },
-                "hide": 2,
-                "name": "page_id",
-                "options": [
-                    {
-                        "selected": true,
-                        "text": "0",
-                        "value": "0"
-                    }
-                ],
-                "query": "0",
-                "type": "custom"
-            }
-        ]
+        "list": []
     },
     "time": {
         "from": "now-6h",
@@ -470,7 +302,7 @@
     "timepicker": {},
     "timezone": "browser",
     "title": "Mints",
-    "uid": "bejh9uzw12ps0a",
+    "uid": "9ad8a6c4-79c3-40c6-8275-606c61b5e637",
     "version": 3,
     "weekStart": ""
 }
