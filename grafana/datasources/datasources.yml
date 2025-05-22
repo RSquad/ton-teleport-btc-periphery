@@ -9,18 +9,16 @@ datasources:
     version: 1
     editable: false
 
-  - name: PostgreSQL
-    type: postgres
-    url: host.docker.internal:5432
-    database: main
-    user: admin
-    secureJsonData:
-      password: "admin"
+  - id: 6
+    uid: "dem2k81ld0veoe"
+    orgId: 1
+    name: "yesoreyeram-infinity-datasource"
+    type: "yesoreyeram-infinity-datasource"
+    url: ""
+    basicAuth: false
+    basicAuthUser: ""
+    isDefault: false
     jsonData:
-      sslmode: "disable"      # Options: disable, require, verify-ca, verify-full
-      maxOpenConns: 10        # Maximum open connections
-      maxIdleConns: 10         # Maximum idle connections
-      connMaxLifetime: 14400  # Connection lifetime in seconds
-      postgresVersion: 1500     # Your PostgreSQL version (903=9.3, 904=9.4, etc.)
-      timescaledb: false      # Set to true if using TimescaleDB
-    editable: true
+      global_queries: []
+    readOnly: false
+    apiVersion: ""
