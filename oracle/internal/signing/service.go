@@ -14,12 +14,10 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/pegoutcontract"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
 	helpers "github.com/rsquad/ton-teleport-btc-periphery/oracle/internal"
 	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/keystore"
 	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/validator"
 	"github.com/xssnick/tonutils-go/ton"
-	"github.com/xssnick/tonutils-go/tvm/cell"
 )
 
 type CachedPegout struct {
@@ -227,9 +225,7 @@ func (s *SignService) execute(ctx context.Context, dkg *coordinator.DKG) {
 	// Execute signing steps
 	if s.doCommit(validatorIdx, cachedPegout, minSigners) {
 		if s.doSign(validatorIdx, cachedPegout, minSigners) {
-			if s.doAggregate(validatorIdx, cachedPegout, pubkeyPackage) {
-				s.logPegoutSigned(cachedPegout.ID)
-			}
+			s.doAggregate(validatorIdx, cachedPegout, pubkeyPackage)
 		}
 	}
 }
@@ -367,18 +363,13 @@ func (s *SignService) doAggregate(
 	validatorIdx uint16,
 	pegout *CachedPegout,
 	pubkeyPackage []byte,
-) bool {
+) {
 	s.logAggregateSignShares(pegout.ID)
 
 	// Check if the signatures have already been sent
-	if pegout.artifacts.Signatures.Mask.Bit(int(validatorIdx)) == 1 {
-		isDone := true
-		if pegout.artifacts.Signatures.Count < pegout.artifacts.MaxSigners {
-			s.logAggregateSignSharesSent(pegout.ID, pegout.artifacts.Signatures.Count, pegout.artifacts.MaxSigners)
-			isDone = false
-		}
-
-		return isDone
+	if checkSignaturesMask(pegout, validatorIdx) {
+		s.logSignaturesSent(pegout.ID, pegout.artifacts.Signatures.Count, pegout.artifacts.MaxSigners)
+		return
 	}
 
 	commitmentsPackages := helpers.ConvertMapToFrostPackages(pegout.artifacts.Commitments)
@@ -402,28 +393,11 @@ func (s *SignService) doAggregate(
 			} else {
 				s.logAggregateSignSharesError(err)
 			}
-			return false
+			return
 		}
 
 		signatures = append(signatures, signature)
 	}
-
-	// Verify existing signatures
-	{
-		dict := cell.NewDict(16)
-		for i, signature := range signatures {
-			dict.Set(cell.BeginCell().MustStoreUInt(uint64(i), 16).EndCell(),
-				utils.SplitBytesToCells(signature),
-			)
-		}
-
-		if !bytes.Equal(pegout.artifacts.Signatures.Hash, dict.AsCell().Hash()) {
-			// Sent claim. Culprit Oracle id = index of the first non zero bit in pegout.artifacts.Signatures.Mask
-			culpritIdx := pegout.artifacts.Signatures.Mask.BitLen() - 1
-			s.logError(fmt.Sprintf("Signature sending failed. Culprit validator identified: %d. The signature sent by the culprit validator differs from the calculated signature", culpritIdx), nil)
-			s.executeClaim(pegout, validatorIdx, uint16(culpritIdx))
-		}
-	} /**/
 
 	// Send signatures
 	_, err := s.coordinator.SendSignatures(
@@ -433,12 +407,17 @@ func (s *SignService) doAggregate(
 	)
 
 	if err != nil {
-		s.logSignatureSendError(pegout.ID, err)
+		exitCode, _ := helpers.ExtractExitCode(err.Error())
+		if exitCode == helpers.DifferentPegoutSignatures {
+			s.sendClaimBySignatureMask(pegout, validatorIdx)
+		} else {
+			s.logSignatureSendError(pegout.ID, err)
+		}
 	} else {
 		s.logSignatureSent(pegout.ID)
 	}
 
-	return false
+	return
 }
 
 func (s *SignService) Sign(
@@ -535,4 +514,17 @@ func (s *SignService) executeResetPegoutSigning(pegoutID uint64, validatorIdx ui
 
 func (s *SignService) ClaimCompleted(pegout *CachedPegout, validatorIdx uint16) bool {
 	return pegout.artifacts.ClaimsMask.Bit(int(validatorIdx)) > 0
+}
+
+func (s *SignService) sendClaimBySignatureMask(pegout *CachedPegout, validatorIdx uint16) {
+	// Culprit Oracle id = index of the first non zero bit in pegout.artifacts.Signatures.Mask
+	culpritIdx := pegout.artifacts.Signatures.Mask.BitLen() - 1
+	s.logError(fmt.Sprintf("Signature sending failed. Culprit validator identified: %d. The signature sent by the culprit validator differs from the calculated signature", culpritIdx), nil)
+
+	// Sent claim
+	s.executeClaim(pegout, validatorIdx, uint16(culpritIdx))
+}
+
+func checkSignaturesMask(pegout *CachedPegout, validatorIdx uint16) bool {
+	return pegout.artifacts.Signatures.Mask.Bit(int(validatorIdx)) == 1
 }
