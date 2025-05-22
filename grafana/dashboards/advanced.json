@@ -18,7 +18,7 @@
     "editable": true,
     "fiscalYearStartMonth": 0,
     "graphTooltip": 0,
-    "id": 5,
+    "id": 8,
     "links": [],
     "panels": [
         {
@@ -47,7 +47,7 @@
             },
             "gridPos": {
                 "h": 4,
-                "w": 18,
+                "w": 12,
                 "x": 0,
                 "y": 0
             },
@@ -143,6 +143,161 @@
                     "color": {
                         "mode": "thresholds"
                     },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            }
+                        ]
+                    }
+                },
+                "overrides": [
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Last Pegout Tx ID"
+                        },
+                        "properties": [
+                            {
+                                "id": "links",
+                                "value": [
+                                    {
+                                        "targetBlank": true,
+                                        "title": "",
+                                        "url": "https://mempool.space/signet/tx/${__value.text}"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            },
+            "gridPos": {
+                "h": 4,
+                "w": 12,
+                "x": 12,
+                "y": 0
+            },
+            "id": 11,
+            "options": {
+                "colorMode": "value",
+                "graphMode": "none",
+                "justifyMode": "auto",
+                "orientation": "horizontal",
+                "percentChangeColorMode": "standard",
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "/.*/",
+                    "values": false
+                },
+                "showPercentChange": false,
+                "text": {
+                    "titleSize": 15,
+                    "valueSize": 15
+                },
+                "textMode": "value_and_name",
+                "wideLayout": true
+            },
+            "pluginVersion": "11.5.2",
+            "targets": [
+                {
+                    "columns": [
+                        {
+                            "selector": "contractTeleport.PegoutChainCounter",
+                            "text": "Unconfirmed Pegout Count",
+                            "type": "string"
+                        },
+                        {
+                            "selector": "contractTeleport.LastPegoutTxID",
+                            "text": "Last Pegout Tx ID",
+                            "type": "string"
+                        }
+                    ],
+                    "datasource": {
+                        "type": "yesoreyeram-infinity-datasource",
+                        "uid": "dem2k81ld0veoe"
+                    },
+                    "filters": [],
+                    "format": "table",
+                    "global_query_id": "",
+                    "parser": "backend",
+                    "refId": "A",
+                    "root_selector": "",
+                    "source": "url",
+                    "type": "json",
+                    "url": "http://indexer/api/metrics?source=info",
+                    "url_options": {
+                        "data": "",
+                        "method": "GET"
+                    }
+                }
+            ],
+            "title": "Pegouts",
+            "transformations": [
+                {
+                    "id": "extractFields",
+                    "options": {
+                        "delimiter": ",",
+                        "format": "json",
+                        "jsonPaths": [
+                            {
+                                "alias": "Unconfirmed Pegouts Count",
+                                "path": "PegoutChainCounter"
+                            },
+                            {
+                                "path": "LastPegoutTxID"
+                            }
+                        ],
+                        "keepTime": false,
+                        "replace": true,
+                        "source": "payload"
+                    }
+                }
+            ],
+            "transparent": true,
+            "type": "stat"
+        },
+        {
+            "fieldConfig": {
+                "defaults": {},
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 1,
+                "w": 24,
+                "x": 0,
+                "y": 4
+            },
+            "id": 30,
+            "options": {
+                "code": {
+                    "language": "plaintext",
+                    "showLineNumbers": false,
+                    "showMiniMap": false
+                },
+                "content": "",
+                "mode": "markdown"
+            },
+            "pluginVersion": "11.5.2",
+            "title": "",
+            "transparent": true,
+            "type": "text"
+        },
+        {
+            "datasource": {
+                "type": "yesoreyeram-infinity-datasource",
+                "uid": "dem2k81ld0veoe"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
                     "links": [
                         {
                             "targetBlank": true,
@@ -164,10 +319,10 @@
                 "overrides": []
             },
             "gridPos": {
-                "h": 5,
-                "w": 18,
+                "h": 6,
+                "w": 12,
                 "x": 0,
-                "y": 4
+                "y": 5
             },
             "id": 5,
             "options": {
@@ -265,223 +420,6 @@
                     "color": {
                         "mode": "thresholds"
                     },
-                    "custom": {
-                        "align": "left",
-                        "cellOptions": {
-                            "type": "auto",
-                            "wrapText": false
-                        },
-                        "inspect": false
-                    },
-                    "mappings": [
-                        {
-                            "options": {
-                                "0000000000000000000000000000000000000000000000000000000000000000": {
-                                    "index": 0,
-                                    "text": "None"
-                                }
-                            },
-                            "type": "value"
-                        }
-                    ],
-                    "thresholds": {
-                        "mode": "absolute",
-                        "steps": [
-                            {
-                                "color": "green",
-                                "value": null
-                            }
-                        ]
-                    }
-                },
-                "overrides": [
-                    {
-                        "matcher": {
-                            "id": "byName",
-                            "options": "Address"
-                        },
-                        "properties": [
-                            {
-                                "id": "displayName",
-                                "value": "Tx ID"
-                            },
-                            {
-                                "id": "links",
-                                "value": [
-                                    {
-                                        "targetBlank": true,
-                                        "title": "",
-                                        "url": "https://mempool.space/signet/tx/${__value.text}"
-                                    }
-                                ]
-                            }
-                        ]
-                    },
-                    {
-                        "matcher": {
-                            "id": "byName",
-                            "options": "Amount"
-                        },
-                        "properties": [
-                            {
-                                "id": "decimals",
-                                "value": 8
-                            },
-                            {
-                                "id": "unit",
-                                "value": "BTC"
-                            },
-                            {
-                                "id": "custom.width",
-                                "value": 175
-                            }
-                        ]
-                    },
-                    {
-                        "matcher": {
-                            "id": "byName",
-                            "options": "Receiver Address"
-                        },
-                        "properties": [
-                            {
-                                "id": "links",
-                                "value": [
-                                    {
-                                        "title": "",
-                                        "url": "https://testnet.tonviewer.com/${__value.text}"
-                                    }
-                                ]
-                            }
-                        ]
-                    },
-                    {
-                        "matcher": {
-                            "id": "byName",
-                            "options": "Index"
-                        },
-                        "properties": [
-                            {
-                                "id": "custom.width",
-                                "value": 75
-                            }
-                        ]
-                    }
-                ]
-            },
-            "gridPos": {
-                "h": 5,
-                "w": 18,
-                "x": 0,
-                "y": 9
-            },
-            "id": 22,
-            "options": {
-                "cellHeight": "sm",
-                "footer": {
-                    "countRows": false,
-                    "fields": "",
-                    "reducer": [
-                        "sum"
-                    ],
-                    "show": false
-                },
-                "showHeader": true
-            },
-            "pluginVersion": "11.5.2",
-            "targets": [
-                {
-                    "columns": [],
-                    "data": "",
-                    "datasource": {
-                        "type": "yesoreyeram-infinity-datasource",
-                        "uid": "dem2k81ld0veoe"
-                    },
-                    "filters": [],
-                    "format": "table",
-                    "global_query_id": "",
-                    "parser": "backend",
-                    "refId": "A",
-                    "root_selector": "contractTeleport.UTXOset",
-                    "source": "url",
-                    "type": "json",
-                    "uql": "parse-json\n  project UTXOset=\"contractTeleport.UTXOset\"\n          -- mv-expand UTXO=UTXOset\n          -- project\n          --   Address=UTXO.Address,\n          --   Amount=UTXO.Amount,\n          --   Index=UTXO.Index,\n          --   Script=UTXO.Script,\n          --   MintAddress=UTXO.MintAddress,\n          --   TapMerkleRoot=UTXO.TapMerkleRoot\n          -- order by Amount desc",
-                    "url": "http://indexer/api/metrics?source=info",
-                    "url_options": {
-                        "data": "",
-                        "method": "GET"
-                    }
-                }
-            ],
-            "title": "UTXO Set",
-            "transformations": [
-                {
-                    "id": "calculateField",
-                    "options": {
-                        "alias": "",
-                        "binary": {
-                            "left": {
-                                "matcher": {
-                                    "id": "byName",
-                                    "options": "Amount"
-                                }
-                            },
-                            "operator": "/",
-                            "right": {
-                                "fixed": "100000000"
-                            }
-                        },
-                        "mode": "binary",
-                        "reduce": {
-                            "reducer": "sum"
-                        }
-                    }
-                },
-                {
-                    "id": "organize",
-                    "options": {
-                        "excludeByName": {
-                            "Amount": true,
-                            "amount": true,
-                            "mint_address": false,
-                            "shortened_mint_address": true
-                        },
-                        "includeByName": {},
-                        "indexByName": {
-                            "Address": 1,
-                            "Amount": 0,
-                            "Amount / 100000000": 2,
-                            "Index": 3,
-                            "MintAddress": 4,
-                            "Script": 5,
-                            "TapMerkleRoot": 6
-                        },
-                        "renameByName": {
-                            "Address": "",
-                            "Amount": "",
-                            "Amount / 100000000": "Amount",
-                            "MintAddress": "Receiver Address",
-                            "Script": "Bitcoin Script",
-                            "TapMerkleRoot": "Merkle Root",
-                            "mint_address": "Receiver Address",
-                            "short_mint_address": "Receiver Address",
-                            "shortened_mint_address": ""
-                        }
-                    }
-                }
-            ],
-            "transparent": true,
-            "type": "table"
-        },
-        {
-            "datasource": {
-                "type": "yesoreyeram-infinity-datasource",
-                "uid": "dem2k81ld0veoe"
-            },
-            "fieldConfig": {
-                "defaults": {
-                    "color": {
-                        "mode": "thresholds"
-                    },
                     "mappings": [],
                     "thresholds": {
                         "mode": "absolute",
@@ -515,139 +453,10 @@
                 ]
             },
             "gridPos": {
-                "h": 4,
+                "h": 2,
                 "w": 12,
-                "x": 0,
-                "y": 14
-            },
-            "id": 11,
-            "options": {
-                "colorMode": "value",
-                "graphMode": "none",
-                "justifyMode": "auto",
-                "orientation": "horizontal",
-                "percentChangeColorMode": "standard",
-                "reduceOptions": {
-                    "calcs": [
-                        "lastNotNull"
-                    ],
-                    "fields": "/.*/",
-                    "values": false
-                },
-                "showPercentChange": false,
-                "text": {
-                    "titleSize": 15,
-                    "valueSize": 15
-                },
-                "textMode": "value_and_name",
-                "wideLayout": true
-            },
-            "pluginVersion": "11.5.2",
-            "targets": [
-                {
-                    "columns": [
-                        {
-                            "selector": "contractTeleport.PegoutChainCounter",
-                            "text": "Unconfirmed Pegout Count",
-                            "type": "string"
-                        },
-                        {
-                            "selector": "contractTeleport.LastPegoutTxID",
-                            "text": "Last Pegout Tx ID",
-                            "type": "string"
-                        }
-                    ],
-                    "datasource": {
-                        "type": "yesoreyeram-infinity-datasource",
-                        "uid": "dem2k81ld0veoe"
-                    },
-                    "filters": [],
-                    "format": "table",
-                    "global_query_id": "",
-                    "parser": "backend",
-                    "refId": "A",
-                    "root_selector": "",
-                    "source": "url",
-                    "type": "json",
-                    "url": "http://indexer/api/metrics?source=info",
-                    "url_options": {
-                        "data": "",
-                        "method": "GET"
-                    }
-                }
-            ],
-            "title": "Pegouts",
-            "transformations": [
-                {
-                    "id": "extractFields",
-                    "options": {
-                        "delimiter": ",",
-                        "format": "json",
-                        "jsonPaths": [
-                            {
-                                "alias": "Unconfirmed Pegouts Count",
-                                "path": "PegoutChainCounter"
-                            },
-                            {
-                                "path": "LastPegoutTxID"
-                            }
-                        ],
-                        "keepTime": false,
-                        "replace": true,
-                        "source": "payload"
-                    }
-                }
-            ],
-            "transparent": true,
-            "type": "stat"
-        },
-        {
-            "datasource": {
-                "type": "yesoreyeram-infinity-datasource",
-                "uid": "dem2k81ld0veoe"
-            },
-            "fieldConfig": {
-                "defaults": {
-                    "color": {
-                        "mode": "thresholds"
-                    },
-                    "mappings": [],
-                    "thresholds": {
-                        "mode": "absolute",
-                        "steps": [
-                            {
-                                "color": "green",
-                                "value": null
-                            }
-                        ]
-                    }
-                },
-                "overrides": [
-                    {
-                        "matcher": {
-                            "id": "byName",
-                            "options": "Last Pegout Tx ID"
-                        },
-                        "properties": [
-                            {
-                                "id": "links",
-                                "value": [
-                                    {
-                                        "targetBlank": true,
-                                        "title": "",
-                                        "url": "https://mempool.space/signet/tx/${__value.text}"
-                                    }
-                                ]
-                            }
-                        ]
-                    }
-                ]
-            },
-            "gridPos": {
-                "h": 4,
-                "w": 6,
                 "x": 12,
-                "y": 14
+                "y": 5
             },
             "id": 28,
             "options": {
@@ -726,6 +535,32 @@
             "type": "stat"
         },
         {
+            "fieldConfig": {
+                "defaults": {},
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 1,
+                "w": 12,
+                "x": 12,
+                "y": 7
+            },
+            "id": 31,
+            "options": {
+                "code": {
+                    "language": "plaintext",
+                    "showLineNumbers": false,
+                    "showMiniMap": false
+                },
+                "content": "",
+                "mode": "markdown"
+            },
+            "pluginVersion": "11.5.2",
+            "title": "",
+            "transparent": true,
+            "type": "text"
+        },
+        {
             "datasource": {
                 "type": "yesoreyeram-infinity-datasource",
                 "uid": "dem2k81ld0veoe"
@@ -772,9 +607,9 @@
             },
             "gridPos": {
                 "h": 4,
-                "w": 8,
-                "x": 0,
-                "y": 18
+                "w": 6,
+                "x": 12,
+                "y": 8
             },
             "id": 18,
             "options": {
@@ -910,9 +745,9 @@
             },
             "gridPos": {
                 "h": 4,
-                "w": 8,
-                "x": 10,
-                "y": 18
+                "w": 6,
+                "x": 18,
+                "y": 8
             },
             "id": 13,
             "options": {
@@ -1051,6 +886,32 @@
             "type": "stat"
         },
         {
+            "fieldConfig": {
+                "defaults": {},
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 1,
+                "w": 24,
+                "x": 0,
+                "y": 12
+            },
+            "id": 29,
+            "options": {
+                "code": {
+                    "language": "plaintext",
+                    "showLineNumbers": false,
+                    "showMiniMap": false
+                },
+                "content": "",
+                "mode": "markdown"
+            },
+            "pluginVersion": "11.5.2",
+            "title": "",
+            "transparent": true,
+            "type": "text"
+        },
+        {
             "datasource": {
                 "type": "yesoreyeram-infinity-datasource",
                 "uid": "dem2k81ld0veoe"
@@ -1105,10 +966,10 @@
                 ]
             },
             "gridPos": {
-                "h": 5,
-                "w": 18,
+                "h": 6,
+                "w": 12,
                 "x": 0,
-                "y": 22
+                "y": 13
             },
             "id": 27,
             "options": {
@@ -1257,9 +1118,9 @@
             },
             "gridPos": {
                 "h": 5,
-                "w": 18,
-                "x": 0,
-                "y": 27
+                "w": 12,
+                "x": 12,
+                "y": 13
             },
             "id": 25,
             "options": {
@@ -1378,10 +1239,10 @@
                 "overrides": []
             },
             "gridPos": {
-                "h": 5,
-                "w": 18,
-                "x": 0,
-                "y": 32
+                "h": 4,
+                "w": 12,
+                "x": 12,
+                "y": 18
             },
             "id": 26,
             "options": {
@@ -1473,6 +1334,223 @@
             ],
             "transparent": true,
             "type": "stat"
+        },
+        {
+            "datasource": {
+                "type": "yesoreyeram-infinity-datasource",
+                "uid": "dem2k81ld0veoe"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "custom": {
+                        "align": "left",
+                        "cellOptions": {
+                            "type": "auto",
+                            "wrapText": false
+                        },
+                        "inspect": false
+                    },
+                    "mappings": [
+                        {
+                            "options": {
+                                "0000000000000000000000000000000000000000000000000000000000000000": {
+                                    "index": 0,
+                                    "text": "None"
+                                }
+                            },
+                            "type": "value"
+                        }
+                    ],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            }
+                        ]
+                    }
+                },
+                "overrides": [
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Address"
+                        },
+                        "properties": [
+                            {
+                                "id": "displayName",
+                                "value": "Tx ID"
+                            },
+                            {
+                                "id": "links",
+                                "value": [
+                                    {
+                                        "targetBlank": true,
+                                        "title": "",
+                                        "url": "https://mempool.space/signet/tx/${__value.text}"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Amount"
+                        },
+                        "properties": [
+                            {
+                                "id": "decimals",
+                                "value": 8
+                            },
+                            {
+                                "id": "unit",
+                                "value": "BTC"
+                            },
+                            {
+                                "id": "custom.width",
+                                "value": 175
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Receiver Address"
+                        },
+                        "properties": [
+                            {
+                                "id": "links",
+                                "value": [
+                                    {
+                                        "title": "",
+                                        "url": "https://testnet.tonviewer.com/${__value.text}"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Index"
+                        },
+                        "properties": [
+                            {
+                                "id": "custom.width",
+                                "value": 75
+                            }
+                        ]
+                    }
+                ]
+            },
+            "gridPos": {
+                "h": 5,
+                "w": 24,
+                "x": 0,
+                "y": 22
+            },
+            "id": 22,
+            "options": {
+                "cellHeight": "sm",
+                "footer": {
+                    "countRows": false,
+                    "fields": "",
+                    "reducer": [
+                        "sum"
+                    ],
+                    "show": false
+                },
+                "showHeader": true
+            },
+            "pluginVersion": "11.5.2",
+            "targets": [
+                {
+                    "columns": [],
+                    "data": "",
+                    "datasource": {
+                        "type": "yesoreyeram-infinity-datasource",
+                        "uid": "dem2k81ld0veoe"
+                    },
+                    "filters": [],
+                    "format": "table",
+                    "global_query_id": "",
+                    "parser": "backend",
+                    "refId": "A",
+                    "root_selector": "contractTeleport.UTXOset",
+                    "source": "url",
+                    "type": "json",
+                    "uql": "parse-json\n  project UTXOset=\"contractTeleport.UTXOset\"\n          -- mv-expand UTXO=UTXOset\n          -- project\n          --   Address=UTXO.Address,\n          --   Amount=UTXO.Amount,\n          --   Index=UTXO.Index,\n          --   Script=UTXO.Script,\n          --   MintAddress=UTXO.MintAddress,\n          --   TapMerkleRoot=UTXO.TapMerkleRoot\n          -- order by Amount desc",
+                    "url": "http://indexer/api/metrics?source=info",
+                    "url_options": {
+                        "data": "",
+                        "method": "GET"
+                    }
+                }
+            ],
+            "title": "UTXO Set",
+            "transformations": [
+                {
+                    "id": "calculateField",
+                    "options": {
+                        "alias": "",
+                        "binary": {
+                            "left": {
+                                "matcher": {
+                                    "id": "byName",
+                                    "options": "Amount"
+                                }
+                            },
+                            "operator": "/",
+                            "right": {
+                                "fixed": "100000000"
+                            }
+                        },
+                        "mode": "binary",
+                        "reduce": {
+                            "reducer": "sum"
+                        }
+                    }
+                },
+                {
+                    "id": "organize",
+                    "options": {
+                        "excludeByName": {
+                            "Amount": true,
+                            "amount": true,
+                            "mint_address": false,
+                            "shortened_mint_address": true
+                        },
+                        "includeByName": {},
+                        "indexByName": {
+                            "Address": 1,
+                            "Amount": 0,
+                            "Amount / 100000000": 2,
+                            "Index": 3,
+                            "MintAddress": 4,
+                            "Script": 5,
+                            "TapMerkleRoot": 6
+                        },
+                        "renameByName": {
+                            "Address": "",
+                            "Amount": "",
+                            "Amount / 100000000": "Amount",
+                            "MintAddress": "Receiver Address",
+                            "Script": "Bitcoin Script",
+                            "TapMerkleRoot": "Merkle Root",
+                            "mint_address": "Receiver Address",
+                            "short_mint_address": "Receiver Address",
+                            "shortened_mint_address": ""
+                        }
+                    }
+                }
+            ],
+            "transparent": true,
+            "type": "table"
         }
     ],
     "preload": false,
@@ -1490,6 +1568,6 @@
     "timezone": "browser",
     "title": "Advanced",
     "uid": "ad5935b6-fc66-4fbf-b71e-58fe9c068a95",
-    "version": 5,
+    "version": 6,
     "weekStart": ""
 }
