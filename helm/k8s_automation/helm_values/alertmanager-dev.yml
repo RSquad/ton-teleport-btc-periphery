@@ -1,0 +1,10 @@
+config:
+  receivers:
+  - name: telegram_receiver
+    telegram_configs:
+    - api_url: https://api.telegram.org
+      bot_token: $TELEGRAM_BOT_TOKEN
+      chat_id: -1002645622959
+      message_thread_id: 3
+      message: '{{ template "telegram.text" . }}'
+      send_resolved: true

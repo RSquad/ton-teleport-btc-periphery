@@ -7,14 +7,6 @@ command:
 config:
   enabled: true
   global: {}
-  receivers:
-    - name: telegram_receiver
-      telegram_configs:
-        - api_url: https://api.telegram.org
-          bot_token: $TELEGRAM_BOT_TOKEN
-          chat_id: -4785511862
-          message: '{{ template "telegram.text" . }}'
-          send_resolved: true
   route:
     group_interval: 2m
     group_wait: 2m
@@ -32,7 +24,7 @@ config:
       receiver: telegram_receiver
       repeat_interval: 3h
   templates:
-    - /etc/alertmanager/*.tmpl
+  - /etc/alertmanager/*.tmpl
 extraEnv:
   - name: TELEGRAM_BOT_TOKEN
     valueFrom:
