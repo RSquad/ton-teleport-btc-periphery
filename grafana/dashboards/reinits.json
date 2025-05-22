@@ -18,7 +18,7 @@
     "editable": true,
     "fiscalYearStartMonth": 0,
     "graphTooltip": 0,
-    "id": 73,
+    "id": 7,
     "links": [],
     "panels": [
         {
@@ -45,12 +45,25 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green"
+                                "color": "green",
+                                "value": null
                             }
                         ]
                     }
                 },
                 "overrides": [
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Amount"
+                        },
+                        "properties": [
+                            {
+                                "id": "custom.width",
+                                "value": 175
+                            }
+                        ]
+                    },
                     {
                         "matcher": {
                             "id": "byName",
@@ -60,6 +73,48 @@
                             {
                                 "id": "custom.width",
                                 "value": 175
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Pegout Address"
+                        },
+                        "properties": [
+                            {
+                                "id": "links",
+                                "value": [
+                                    {
+                                        "targetBlank": true,
+                                        "title": "tonviewer tx",
+                                        "url": "https://testnet.tonviewer.com/${__value.text}"
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "custom.width"
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Bitcoin Tx"
+                        },
+                        "properties": [
+                            {
+                                "id": "custom.width"
+                            },
+                            {
+                                "id": "links",
+                                "value": [
+                                    {
+                                        "targetBlank": true,
+                                        "title": "mempool",
+                                        "url": "https://mempool.space/signet/tx/${__value.text}"
+                                    }
+                                ]
                             }
                         ]
                     },
@@ -87,11 +142,43 @@
                     {
                         "matcher": {
                             "id": "byName",
-                            "options": "Internal Key"
+                            "options": "Status"
                         },
                         "properties": [
                             {
-                                "id": "custom.width"
+                                "id": "custom.width",
+                                "value": 110
+                            },
+                            {
+                                "id": "custom.cellOptions",
+                                "value": {
+                                    "type": "color-text"
+                                }
+                            },
+                            {
+                                "id": "mappings",
+                                "value": [
+                                    {
+                                        "options": {
+                                            "CONFIRMED": {
+                                                "color": "semi-dark-green",
+                                                "index": 2,
+                                                "text": "CONFIRMED"
+                                            },
+                                            "SIGNED": {
+                                                "color": "semi-dark-yellow",
+                                                "index": 1,
+                                                "text": "SIGNED"
+                                            },
+                                            "SIGNING": {
+                                                "color": "semi-dark-orange",
+                                                "index": 0,
+                                                "text": "SIGNING"
+                                            }
+                                        },
+                                        "type": "value"
+                                    }
+                                ]
                             }
                         ]
                     }
@@ -118,24 +205,39 @@
                 "showHeader": true,
                 "sortBy": []
             },
-            "pluginVersion": "12.0.0",
+            "pluginVersion": "11.5.2",
             "targets": [
                 {
                     "columns": [
                         {
-                            "selector": "completed_at",
+                            "selector": "created_at",
                             "text": "Created At",
                             "timestampFormat": "2006/01/02 15:04:05",
                             "type": "timestamp"
                         },
                         {
-                            "selector": "internal_key",
-                            "text": "Internal Key",
+                            "selector": "amount",
+                            "text": "Amount",
+                            "type": "string"
+                        },
+                        {
+                            "selector": "pegout_addr",
+                            "text": "Pegout Address",
+                            "type": "string"
+                        },
+                        {
+                            "selector": "bitcoin_tx_id",
+                            "text": "Bitcoin Tx",
                             "type": "string"
                         },
                         {
                             "selector": "ton_tx",
                             "text": "TON Tx",
+                            "type": "string"
+                        },
+                        {
+                            "selector": "pegout_status",
+                            "text": "Status",
                             "type": "string"
                         }
                     ],
@@ -152,14 +254,14 @@
                     "root_selector": "",
                     "source": "url",
                     "type": "json",
-                    "url": "http://indexer/api/metrics?source=internal_keys",
+                    "url": "http://indexer/api/metrics?source=reinits",
                     "url_options": {
                         "data": "",
                         "method": "GET"
                     }
                 }
             ],
-            "title": "Internal Keys",
+            "title": "",
             "transformations": [
                 {
                     "id": "organize",
@@ -169,9 +271,13 @@
                         },
                         "includeByName": {},
                         "indexByName": {
+                            "Amount": 2,
+                            "Bitcoin Tx ID": 5,
                             "Created At": 0,
-                            "Internal Key": 1,
-                            "TON Tx": 2
+                            "Pegout Address": 3,
+                            "Sender Address": 4,
+                            "Status": 1,
+                            "TON Tx ID": 6
                         },
                         "renameByName": {}
                     }
@@ -181,8 +287,8 @@
         }
     ],
     "preload": false,
-    "refresh": "1m",
-    "schemaVersion": 41,
+    "refresh": "",
+    "schemaVersion": 40,
     "tags": [],
     "templating": {
         "list": []
@@ -193,7 +299,8 @@
     },
     "timepicker": {},
     "timezone": "browser",
-    "title": "Internal Keys",
-    "uid": "efef1812-648d-4e83-a21a-9af219bc392f",
-    "version": 2
+    "title": "Reinits",
+    "uid": "8a675800-6cfd-4f1c-99e9-376871dcc1ec",
+    "version": 3,
+    "weekStart": ""
 }

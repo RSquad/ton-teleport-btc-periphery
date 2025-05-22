@@ -18,7 +18,7 @@
     "editable": true,
     "fiscalYearStartMonth": 0,
     "graphTooltip": 0,
-    "id": 75,
+    "id": 7,
     "links": [],
     "panels": [
         {
@@ -36,7 +36,8 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green"
+                                "color": "green",
+                                "value": null
                             }
                         ]
                     }
@@ -46,7 +47,7 @@
             "gridPos": {
                 "h": 4,
                 "w": 5,
-                "x": 2,
+                "x": 6,
                 "y": 0
             },
             "id": 1,
@@ -83,7 +84,7 @@
                     "root_selector": "",
                     "source": "url",
                     "type": "json",
-                    "url": "http://65.21.162.174:3000/api/metrics?source=plots_summary",
+                    "url": "http://indexer/api/metrics?source=plots_summary",
                     "url_options": {
                         "data": "",
                         "method": "GET"
@@ -124,7 +125,8 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green"
+                                "color": "green",
+                                "value": null
                             }
                         ]
                     }
@@ -134,7 +136,7 @@
             "gridPos": {
                 "h": 4,
                 "w": 5,
-                "x": 8,
+                "x": 12,
                 "y": 0
             },
             "id": 2,
@@ -171,7 +173,7 @@
                     "root_selector": "",
                     "source": "url",
                     "type": "json",
-                    "url": "http://65.21.162.174:3000/api/metrics?source=plots_summary",
+                    "url": "http://indexer/api/metrics?source=plots_summary",
                     "url_options": {
                         "data": "",
                         "method": "GET"
@@ -213,7 +215,8 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green"
+                                "color": "green",
+                                "value": null
                             }
                         ]
                     }
@@ -223,7 +226,7 @@
             "gridPos": {
                 "h": 4,
                 "w": 5,
-                "x": 0,
+                "x": 4,
                 "y": 4
             },
             "id": 5,
@@ -260,7 +263,7 @@
                     "root_selector": "",
                     "source": "url",
                     "type": "json",
-                    "url": "http://65.21.162.174:3000/api/metrics?source=plots_summary",
+                    "url": "http://indexer/api/metrics?source=plots_summary",
                     "url_options": {
                         "data": "",
                         "method": "GET"
@@ -314,7 +317,8 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green"
+                                "color": "green",
+                                "value": null
                             }
                         ]
                     }
@@ -324,7 +328,7 @@
             "gridPos": {
                 "h": 4,
                 "w": 5,
-                "x": 5,
+                "x": 9,
                 "y": 4
             },
             "id": 3,
@@ -361,7 +365,7 @@
                     "root_selector": "",
                     "source": "url",
                     "type": "json",
-                    "url": "http://65.21.162.174:3000/api/metrics?source=plots_summary",
+                    "url": "http://indexer/api/metrics?source=plots_summary",
                     "url_options": {
                         "data": "",
                         "method": "GET"
@@ -403,7 +407,8 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green"
+                                "color": "green",
+                                "value": null
                             }
                         ]
                     }
@@ -413,7 +418,7 @@
             "gridPos": {
                 "h": 4,
                 "w": 5,
-                "x": 10,
+                "x": 14,
                 "y": 4
             },
             "id": 4,
@@ -450,7 +455,7 @@
                     "root_selector": "",
                     "source": "url",
                     "type": "json",
-                    "url": "http://65.21.162.174:3000/api/metrics?source=plots_summary",
+                    "url": "http://indexer/api/metrics?source=plots_summary",
                     "url_options": {
                         "data": "",
                         "method": "GET"
@@ -532,7 +537,8 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green"
+                                "color": "green",
+                                "value": null
                             }
                         ]
                     }
@@ -541,7 +547,7 @@
             },
             "gridPos": {
                 "h": 9,
-                "w": 15,
+                "w": 24,
                 "x": 0,
                 "y": 8
             },
@@ -590,7 +596,7 @@
                     "root_selector": "",
                     "source": "url",
                     "type": "json",
-                    "url": "http://65.21.162.174:3000/api/metrics?source=plot_total_supply",
+                    "url": "http://indexer/api/metrics?source=plot_total_supply",
                     "url_options": {
                         "data": "",
                         "method": "GET"
@@ -657,7 +663,8 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green"
+                                "color": "green",
+                                "value": null
                             }
                         ]
                     }
@@ -666,7 +673,7 @@
             },
             "gridPos": {
                 "h": 9,
-                "w": 15,
+                "w": 24,
                 "x": 0,
                 "y": 17
             },
@@ -715,7 +722,7 @@
                     "root_selector": "",
                     "source": "url",
                     "type": "json",
-                    "url": "http://65.21.162.174:3000/api/metrics?source=plot_minted",
+                    "url": "http://indexer/api/metrics?source=plot_minted",
                     "url_options": {
                         "data": "",
                         "method": "GET"
@@ -748,7 +755,7 @@
                     "root_selector": "",
                     "source": "url",
                     "type": "json",
-                    "url": "http://65.21.162.174:3000/api/metrics?source=plot_burned",
+                    "url": "http://indexer/api/metrics?source=plot_burned",
                     "url_options": {
                         "data": "",
                         "method": "GET"
@@ -815,7 +822,8 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green"
+                                "color": "green",
+                                "value": null
                             }
                         ]
                     }
@@ -849,7 +857,7 @@
             },
             "gridPos": {
                 "h": 9,
-                "w": 15,
+                "w": 24,
                 "x": 0,
                 "y": 26
             },
@@ -898,7 +906,7 @@
                     "root_selector": "",
                     "source": "url",
                     "type": "json",
-                    "url": "http://65.21.162.174:3000/api/metrics?source=plot_minted",
+                    "url": "http://indexer/api/metrics?source=plot_minted",
                     "url_options": {
                         "data": "",
                         "method": "GET"
@@ -931,7 +939,7 @@
                     "root_selector": "",
                     "source": "url",
                     "type": "json",
-                    "url": "http://65.21.162.174:3000/api/metrics?source=plot_burned",
+                    "url": "http://indexer/api/metrics?source=plot_burned",
                     "url_options": {
                         "data": "",
                         "method": "GET"
@@ -945,29 +953,10 @@
     ],
     "preload": false,
     "refresh": "1m",
-    "schemaVersion": 41,
+    "schemaVersion": 40,
     "tags": [],
     "templating": {
-        "list": [
-            {
-                "current": {
-                    "text": "0.11510283",
-                    "value": "0.11510283"
-                },
-                "datasource": {
-                    "type": "grafana-postgresql-datasource",
-                    "uid": "fejyj243rfxtsd"
-                },
-                "definition": "select \n  sum((cast (b.amount as numeric)) / 100000000)::numeric(20,8) as total_burned\nfrom burns as b\njoin pegouts as p on p.id = b.pegout_burn where p.status = 'CONFIRMED'",
-                "hide": 2,
-                "name": "tgBtcBurned",
-                "options": [],
-                "query": "select \n  sum((cast (b.amount as numeric)) / 100000000)::numeric(20,8) as total_burned\nfrom burns as b\njoin pegouts as p on p.id = b.pegout_burn where p.status = 'CONFIRMED'",
-                "refresh": 2,
-                "regex": "",
-                "type": "query"
-            }
-        ]
+        "list": []
     },
     "time": {
         "from": "now-6M",
@@ -976,6 +965,7 @@
     "timepicker": {},
     "timezone": "browser",
     "title": "Statistics",
-    "uid": "belv5pokjhszke",
-    "version": 3
+    "uid": "4cfe25e6-9ad6-4744-875e-777c15490f6c",
+    "version": 1,
+    "weekStart": ""
 }

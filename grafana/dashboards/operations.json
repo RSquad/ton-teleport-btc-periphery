@@ -189,7 +189,7 @@
                 ]
             },
             "gridPos": {
-                "h": 28,
+                "h": 27,
                 "w": 24,
                 "x": 0,
                 "y": 0
@@ -256,7 +256,7 @@
                     "root_selector": "",
                     "source": "url",
                     "type": "json",
-                    "url": "http://65.21.162.174:3000/api/metrics?source=mints",
+                    "url": "http://indexer/api/metrics?source=mints",
                     "url_options": {
                         "data": "",
                         "method": "GET"
@@ -470,7 +470,7 @@
                 ]
             },
             "gridPos": {
-                "h": 28,
+                "h": 27,
                 "w": 24,
                 "x": 0,
                 "y": 28
@@ -544,7 +544,7 @@
                     "root_selector": "",
                     "source": "url",
                     "type": "json",
-                    "url": "http://65.21.162.174:3000/api/metrics?source=burns",
+                    "url": "http://indexer/api/metrics?source=burns",
                     "url_options": {
                         "data": "",
                         "method": "GET"
@@ -738,7 +738,7 @@
                 ]
             },
             "gridPos": {
-                "h": 28,
+                "h": 27,
                 "w": 24,
                 "x": 0,
                 "y": 56
@@ -807,7 +807,7 @@
                     "root_selector": "",
                     "source": "url",
                     "type": "json",
-                    "url": "http://65.21.162.174:3000/api/metrics?source=reinits",
+                    "url": "http://indexer/api/metrics?source=reinits",
                     "url_options": {
                         "data": "",
                         "method": "GET"
@@ -853,6 +853,6 @@
     "timepicker": {},
     "timezone": "browser",
     "title": "Operations",
-    "uid": "9ad8a6c4-79c3-40c6-8275-606c61b5e637",
+    "uid": "81ed97fd-3b4e-44cd-b8f7-c607013086a4",
     "version": 3
 }
