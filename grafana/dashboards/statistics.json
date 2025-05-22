@@ -947,28 +947,6 @@
     "refresh": "1m",
     "schemaVersion": 41,
     "tags": [],
-    "templating": {
-        "list": [
-            {
-                "current": {
-                    "text": "0.11510283",
-                    "value": "0.11510283"
-                },
-                "datasource": {
-                    "type": "grafana-postgresql-datasource",
-                    "uid": "fejyj243rfxtsd"
-                },
-                "definition": "select \n  sum((cast (b.amount as numeric)) / 100000000)::numeric(20,8) as total_burned\nfrom burns as b\njoin pegouts as p on p.id = b.pegout_burn where p.status = 'CONFIRMED'",
-                "hide": 2,
-                "name": "tgBtcBurned",
-                "options": [],
-                "query": "select \n  sum((cast (b.amount as numeric)) / 100000000)::numeric(20,8) as total_burned\nfrom burns as b\njoin pegouts as p on p.id = b.pegout_burn where p.status = 'CONFIRMED'",
-                "refresh": 2,
-                "regex": "",
-                "type": "query"
-            }
-        ]
-    },
     "time": {
         "from": "now-6M",
         "to": "now"
@@ -976,6 +954,6 @@
     "timepicker": {},
     "timezone": "browser",
     "title": "Statistics",
-    "uid": "belv5pokjhszke",
+    "uid": "4cfe25e6-9ad6-4744-875e-777c15490f6c",
     "version": 3
 }
