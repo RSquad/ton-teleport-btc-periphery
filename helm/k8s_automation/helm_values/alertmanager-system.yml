@@ -1,0 +1,77 @@
+config:
+  receivers:
+  - name: telegram_receiver
+    telegram_configs:
+    - api_url: https://api.telegram.org
+      bot_token: $TELEGRAM_BOT_TOKEN
+      chat_id: -1002645622959
+      message_thread_id: 1213
+      message: '{{ template "telegram.text" . }}'
+      send_resolved: true
+templates:
+  telegram.tmpl: >-
+    {{ define "telegram.text" -}}
+    {{ $first := index .Alerts 0 -}}
+    {{ $severity := $first.Labels.severity -}}
+    {{ if eq .Status "firing" -}}
+    {{ if eq $severity "critical" -}}
+    🔴 <b>FIRING</b>
+    {{ else if eq $severity "warning" -}}
+    ⚠️ <b>FIRING</b>
+    {{ else -}}
+    ℹ️ <b>FIRING</b>
+    {{ end -}}
+    {{ else if eq .Status "resolved" -}}
+    ✅ <b>RESOLVED</b>
+    {{ end -}}
+    <b>{{ .CommonLabels.alertname }}</b>
+    {{ range .Alerts -}}
+    {{ if eq $.Status "firing" -}}
+    <b>⏰Date/Time: </b>{{ .StartsAt.Format "Mon 02 Jan 15:04:05 MST 2006" }}
+    {{ else -}}
+    <b>⏰Date/Time: </b>{{ .EndsAt.Format "Mon 02 Jan 15:04:05 MST 2006" }}
+    {{ end -}}
+    {{ if .Annotations.summary -}}
+    <b>📝Summary: </b>{{ .Annotations.summary }}
+    {{ end -}}
+    {{ if .Annotations.description -}}
+    <b>Description: </b>{{ .Annotations.description }}
+    {{ end -}}
+    {{ if .Labels.namespace -}}
+    <b>📂Namespace: </b>{{ .Labels.namespace }}
+    {{ end -}}
+    {{ if .Labels.pod -}}
+    <b>📦Pod: </b>{{ .Labels.pod }}
+    {{ end -}}
+    {{ if .Labels.container -}}
+    <b>🛠️Container: </b>{{ .Labels.container }}
+    {{ end -}}
+    {{ if .Labels.reason -}}
+    <b>🔖Reason: </b>{{ .Labels.reason }}
+    {{ end -}}
+    {{ if or .Labels.job .Labels.service .Labels.endpoint .Labels.instance .Labels.uid -}}
+    <b>Details:</b>
+    {{ if .Labels.job -}}
+    - <b>Job:</b> {{ .Labels.job }}
+    {{ end -}}
+    {{ if .Labels.service -}}
+    - <b>Service:</b> {{ .Labels.service }}
+    {{ end -}}
+    {{ if .Labels.endpoint -}}
+    - <b>Endpoint:</b> {{ .Labels.endpoint }}
+    {{ end -}}
+    {{ if .Labels.instance -}}
+    - <b>Instance:</b> {{ .Labels.instance }}
+    {{ end -}}
+    {{ end -}}
+    {{ if .Annotations.runbook_url -}}
+    <b>📚Runbook: </b><a href="{{ .Annotations.runbook_url }}">link</a>
+    {{ end -}}
+    {{ if .GeneratorURL -}}
+    <b>🔗Source: </b><a href="{{ .GeneratorURL }}">Prometheus</a>
+    {{ end -}}
+    {{ if gt (len $.Alerts) 1 -}}
+    ---
+    {{ end -}}
+    {{ end -}}
+    {{ end -}}
