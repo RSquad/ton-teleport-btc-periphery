@@ -7,10 +7,12 @@ command:
 config:
   enabled: true
   global: {}
+  receivers:
+  - name: null_receiver
   route:
     group_interval: 2m
     group_wait: 2m
-    receiver: telegram_receiver
+    receiver: null_receiver
     repeat_interval: 3h
     routes:
     - match:
