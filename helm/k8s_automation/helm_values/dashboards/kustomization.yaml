@@ -10,3 +10,4 @@ configMapGenerator:
   - AppLogs.json
   - ContractBalances.json
   - dashboards.json
+  - another.json
