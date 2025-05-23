@@ -324,7 +324,7 @@ func (s *SignService) doSign(
 		signShares = make([][]byte, 0, len(pegout.signingHashes))
 		// generate signing share for each input
 		for i, input := range pegout.inputs {
-			signShare, culpritFrostIdx, err := s.Sign(
+			signShare, culpritInfo, err := s.Sign(
 				publicKey,                    // public key
 				input.Data.BitcoinMerkleRoot, // tap merkle root used as tweak for tweaking signing share
 				pegout.signingHashes[i],      // signing hash for current input
@@ -332,8 +332,8 @@ func (s *SignService) doSign(
 				pegout.addrStr,               // pegout address used as key to load nonce from keystore
 			)
 			if err != nil {
-				if culpritFrostIdx != nil {
-					culpritIdx := helpers.FrostToValidatorIdx(*culpritFrostIdx)
+				if culpritInfo != nil {
+					culpritIdx := helpers.FrostToValidatorIdx(*culpritInfo.Id)
 					s.logError(fmt.Sprintf("Sign failed. Culprit validator found: %d", culpritIdx), err)
 					s.executeClaim(pegout, validatorIdx, culpritIdx)
 				} else {
@@ -374,7 +374,7 @@ func (s *SignService) doAggregate(
 	for i, input := range pegout.inputs {
 		hashOnlyShares := filterSharesByHashIndex(pegout.artifacts.SigningShares, uint16(i))
 		tapTweak := input.Data.BitcoinMerkleRoot
-		signature, culpritFrostIdx, err := frost.AggregateWithTweak(
+		signature, culpritInfo, err := frost.AggregateWithTweak(
 			pegout.signingHashes[i],
 			commitmentsPackages,
 			hashOnlyShares,
@@ -382,8 +382,8 @@ func (s *SignService) doAggregate(
 			tapTweak,
 		)
 		if err != nil {
-			if culpritFrostIdx != nil {
-				culpritIdx := helpers.FrostToValidatorIdx(*culpritFrostIdx)
+			if culpritInfo != nil {
+				culpritIdx := helpers.FrostToValidatorIdx(*culpritInfo.Id)
 				s.logError(fmt.Sprintf("AggregateWithTweak failed. Culprit validator found: %d", culpritIdx), err)
 				s.executeClaim(pegout, validatorIdx, culpritIdx)
 			} else {
@@ -414,7 +414,7 @@ func (s *SignService) Sign(
 	signingHash []byte,
 	commitments map[uint16][]byte,
 	nonceName string,
-) ([]byte, *frost.Identifier, error) {
+) ([]byte, *frost.CulpritInfo, error) {
 	secretPackage := s.keyStore.LoadSecret(publicKey)
 	if secretPackage == nil {
 		return nil, nil, fmt.Errorf("failed to load secret package by key %X", publicKey)

@@ -73,7 +73,7 @@ func DkgPart1(identifier Identifier, min_signers uint16, max_signers uint16) ([]
 func DkgPart2(
 	r1Secret uintptr,
 	round1Packages map[Identifier]Package,
-) (map[Identifier]Package, uintptr, *Identifier, error) {
+) (map[Identifier]Package, uintptr, *CulpritInfo, error) {
 	pkgs, pin := makeCPackageSlice(round1Packages)
 	defer pin.Unpin()
 
@@ -96,7 +96,7 @@ func DkgPart2(
 	round2Packages := make(map[Identifier]Package)
 
 	if r2PackagesLen < 0 {
-		return round2Packages, 0, CulpritData(r2CulpritIdx, int32(r2PackagesLen)), Error(int32(r2PackagesLen))
+		return round2Packages, 0, NewCulpritInfo(r2CulpritIdx, int32(r2PackagesLen)), Error(int32(r2PackagesLen))
 	}
 
 	pkgs = unsafe.Slice((*C.Pkg)(r2Packages), r2PackagesLen)
@@ -115,7 +115,7 @@ func DkgPart3(
 	r2Secret uintptr,
 	round1Packages map[Identifier]Package,
 	round2Packages map[Identifier]Package,
-) ([]byte, []byte, *Identifier, error) {
+) ([]byte, []byte, *CulpritInfo, error) {
 	r1Pkgs, pin1 := makeCPackageSlice(round1Packages)
 	r2Pkgs, pin2 := makeCPackageSlice(round2Packages)
 	defer pin1.Unpin()
@@ -148,7 +148,7 @@ func DkgPart3(
 	)
 
 	if ret < 0 {
-		return nil, nil, CulpritData(r3CulpritIdx, int32(ret)), Error(int32(ret))
+		return nil, nil, NewCulpritInfo(r3CulpritIdx, int32(ret)), Error(int32(ret))
 	}
 
 	publicKeyPackage := make([]byte, publicPkgLen)
@@ -183,7 +183,7 @@ func SignWithTweak(
 	commitments map[Identifier]Package,
 	nonces Package,
 	merkleRoot []byte,
-) ([]byte, *Identifier, error) {
+) ([]byte, *CulpritInfo, error) {
 	commitmentsPkgs, commitmentsPin := makeCPackageSlice(commitments)
 	defer commitmentsPin.Unpin()
 
@@ -202,7 +202,7 @@ func SignWithTweak(
 	)
 
 	if ret < 0 {
-		return nil, CulpritData(culpritIdx, int32(ret)), Error(int32(ret))
+		return nil, NewCulpritInfo(culpritIdx, int32(ret)), Error(int32(ret))
 	}
 
 	return extractSlice(signingShares), nil, nil
@@ -214,7 +214,7 @@ func AggregateWithTweak(
 	signatureShares map[Identifier]Package,
 	pubkeyPackage Package,
 	merkleRoot []byte,
-) ([]byte, *Identifier, error) {
+) ([]byte, *CulpritInfo, error) {
 	commitmentsPkgs, commitmentsPin := makeCPackageSlice(commitments)
 	signatureSharesPkgs, signatureSharesPin := makeCPackageSlice(signatureShares)
 
@@ -237,7 +237,7 @@ func AggregateWithTweak(
 	)
 
 	if ret < 0 {
-		return nil, CulpritData(culpritIdx, int32(ret)), Error(int32(ret))
+		return nil, NewCulpritInfo(culpritIdx, int32(ret)), Error(int32(ret))
 	}
 
 	return extractSlice(signature), nil, nil

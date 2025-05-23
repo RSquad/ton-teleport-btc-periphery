@@ -82,20 +82,27 @@ var frostErrorMessages = map[LibFrostError]string{
 	Unknown:                             "unknonwn",
 }
 
+type CulpritInfo struct {
+	Id      *Identifier
+	ErrCode int32
+}
+
+func NewCulpritInfo(culpritData []byte, errCode int32) *CulpritInfo {
+	var id *Identifier = nil
+	if errCode == int32(ErrInvalidSignatureShare) || errCode == int32(ErrInvalidSecretShare) || errCode == int32(ErrInvalidProofOfKnowledge) {
+		copy(id[:], culpritData)
+	}
+
+	return &CulpritInfo{
+		Id:      id,
+		ErrCode: errCode,
+	}
+}
+
 // Error implements the error interface for FrostError
 func Error(code int32) error {
 	if msg, ok := frostErrorMessages[LibFrostError(code)]; ok {
 		return fmt.Errorf("frost error: %s, code %d", msg, code)
 	}
 	return fmt.Errorf("unknown FROST error code: %d", code)
-}
-
-func CulpritData(culpritData []byte, code int32) *Identifier {
-	if code == int32(ErrInvalidSignatureShare) || code == int32(ErrInvalidSecretShare) || code == int32(ErrInvalidProofOfKnowledge) {
-		var arr Identifier
-		copy(arr[:], culpritData)
-		return &arr
-	}
-
-	return nil
 }

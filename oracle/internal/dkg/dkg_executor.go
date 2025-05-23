@@ -272,12 +272,16 @@ func (e *Executor) executeR2(dkg *coordinator.DKG) bool {
 		}
 		delete(r1Packages, localIdentifier)
 
-		r2Packages, r2SecretPtr, culpritFrostIdx, err := frost.DkgPart2(e.artifacts.r1.secret.ptr, r1Packages)
+		r2Packages, r2SecretPtr, culpritInfo, err := frost.DkgPart2(e.artifacts.r1.secret.ptr, r1Packages)
 		if err != nil {
-			if culpritFrostIdx != nil {
-				culpritIdx := helpers.FrostToValidatorIdx(*culpritFrostIdx)
-				e.logError(dkg, fmt.Sprintf("R2 failed. Culprit validator found: %d", culpritIdx), err)
-				e.executeClaim(dkg, culpritIdx)
+			if culpritInfo != nil {
+				if (culpritInfo.Id != nil) {
+					culpritIdx := helpers.FrostToValidatorIdx(*culpritInfo.Id)
+					e.logError(dkg, fmt.Sprintf("R2 failed. Culprit validator found: %d", culpritIdx), err)
+					e.executeClaim(dkg, culpritIdx)
+				} else {
+					?
+				}
 			} else {
 				e.logError(dkg, "R2 failed", err)
 			}
@@ -386,11 +390,11 @@ func (e *Executor) executeR3(dkg *coordinator.DKG) bool {
 			return false
 		}
 
-		keyPackage, publicKeyPackage, culpritFrostIdx, err := frost.DkgPart3(e.artifacts.r2.secret.ptr, r1Packages, r2PackagesDecrypted)
+		keyPackage, publicKeyPackage, culpritInfo, err := frost.DkgPart3(e.artifacts.r2.secret.ptr, r1Packages, r2PackagesDecrypted)
 		if err != nil {
-			if culpritFrostIdx != nil {
+			if culpritInfo != nil {
 				e.logError(dkg, "Part3 failed. Culprit validator found.", err)
-				culpritIdx := helpers.FrostToValidatorIdx(*culpritFrostIdx)
+				culpritIdx := helpers.FrostToValidatorIdx(*culpritInfo.Id)
 				e.executeClaim(dkg, culpritIdx)
 			} else {
 				e.logDKGProcess(dkg, fmt.Sprintf("R3 failed: %v", err))
