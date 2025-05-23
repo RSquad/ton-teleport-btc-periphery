@@ -67,7 +67,7 @@ func (a *ExecutionArtifacts) IsEmpty() bool {
 type Executor struct {
 	inChan              chan *coordinator.DKG
 	until               time.Time
-	coordinatorContract *coordinator.CoordinatorContract
+	coordinatorContract coordinator.CoordinatorContract
 	artifacts           ExecutionArtifacts
 	keystore            keystore.Keystore
 	validator           *validator.Validator
@@ -77,7 +77,7 @@ type Executor struct {
 
 func NewExecutor(
 	inChan chan *coordinator.DKG,
-	coordinatorContract *coordinator.CoordinatorContract,
+	coordinatorContract coordinator.CoordinatorContract,
 	keystore keystore.Keystore,
 	validator *validator.Validator,
 ) *Executor {

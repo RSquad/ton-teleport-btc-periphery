@@ -12,14 +12,14 @@ import (
 )
 
 type Service struct {
-	coordinatorContract *coordinator.CoordinatorContract
+	coordinatorContract coordinator.CoordinatorContract
 	validator           *validator.Validator
 	fetchPeriod         int64 // Fetch period (in seconds)
 	sendStartDKGPeriod  int64 // sendStartDKG period (in seconds)
 }
 
 func NewService(
-	coordinatorContract *coordinator.CoordinatorContract,
+	coordinatorContract coordinator.CoordinatorContract,
 	validator *validator.Validator,
 	fetchPeriod int64,
 	sendStartDKGPeriod int64,

@@ -31,7 +31,7 @@ type CachedPegout struct {
 
 type SignService struct {
 	keyStore          keystore.Keystore
-	coordinator       *coordinator.CoordinatorContract
+	coordinator       coordinator.CoordinatorContract
 	ton               *tonclient.TonClient
 	cachedPegout      *CachedPegout
 	executeSignPeriod int64 // `period` in seconds to call the ExecuteSign() function
@@ -41,7 +41,7 @@ type SignService struct {
 
 func NewService(
 	keyStore keystore.Keystore,
-	coordinator *coordinator.CoordinatorContract,
+	coordinator coordinator.CoordinatorContract,
 	tonclient *tonclient.TonClient,
 	executeSignPeriod int64,
 ) *SignService {
@@ -400,6 +400,10 @@ func (s *SignService) doAggregate(
 	}
 
 	// Send signatures
+	s.SendSignatures(pegout, validatorIdx, signatures)
+}
+
+func (s *SignService) SendSignatures(pegout *CachedPegout, validatorIdx uint16, signatures [][]byte) int {
 	_, err := s.coordinator.SendSignatures(
 		pegout.ID,
 		validatorIdx,
@@ -413,11 +417,12 @@ func (s *SignService) doAggregate(
 		} else {
 			s.logSignatureSendError(pegout.ID, err)
 		}
-	} else {
-		s.logSignatureSent(pegout.ID)
+
+		return exitCode
 	}
 
-	return
+	s.logSignatureSent(pegout.ID)
+	return 0
 }
 
 func (s *SignService) Sign(

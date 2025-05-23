@@ -10,13 +10,13 @@ import (
 )
 
 type Fetcher struct {
-	coordinatorContract *coordinator.CoordinatorContract
+	coordinatorContract coordinator.CoordinatorContract
 	outChan             chan *coordinator.DKG
 	period              int64 // Fetch period (in seconds)
 }
 
 func NewFetcher(
-	coordinatorContract *coordinator.CoordinatorContract,
+	coordinatorContract coordinator.CoordinatorContract,
 	outChan chan *coordinator.DKG,
 	period int64,
 ) *Fetcher {

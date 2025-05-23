@@ -12,13 +12,13 @@ import (
 
 type FetcherDKG struct {
 	chDB                chan PayloadDB
-	coordinatorContract *coordinator.CoordinatorContract
+	coordinatorContract coordinator.CoordinatorContract
 	period              int64 // Fetch period (in seconds)
 }
 
 func NewFetcherDKG(
 	chDB chan PayloadDB,
-	coordinatorContract *coordinator.CoordinatorContract,
+	coordinatorContract coordinator.CoordinatorContract,
 	period int64,
 ) *FetcherDKG {
 	return &FetcherDKG{

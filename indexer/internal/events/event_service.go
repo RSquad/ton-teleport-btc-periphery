@@ -19,14 +19,14 @@ type EventService struct {
 	tonClient           *tonclient.TonClient
 	repo                *ent.Client
 	teleportContract    *teleportcontract.TeleportContract
-	coordinatorContract *coordinator.CoordinatorContract
+	coordinatorContract coordinator.CoordinatorContract
 }
 
 func NewEventService(
 	tonClient *tonclient.TonClient,
 	repo *ent.Client,
 	teleportContract *teleportcontract.TeleportContract,
-	coordinatorContract *coordinator.CoordinatorContract,
+	coordinatorContract coordinator.CoordinatorContract,
 ) *EventService {
 	return &EventService{
 		tonClient:           tonClient,
