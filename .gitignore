@@ -24,7 +24,6 @@ generated.go
 *.cgo1.go
 *.cgo2.c
 *_testmain.go
-*_mock.go
 
 /vendor/
 
