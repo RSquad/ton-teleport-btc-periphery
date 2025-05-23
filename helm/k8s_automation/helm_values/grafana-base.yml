@@ -62,3 +62,8 @@ grafana.ini:
     viewers_can_edit: false
   security:
     allow_embedding: true
+  feature_toggles:
+    publicDashboards: true
+  auth.anonymous:
+    enabled: true
+    org_role: Viewer
