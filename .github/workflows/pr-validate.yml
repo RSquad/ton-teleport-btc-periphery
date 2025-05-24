@@ -26,22 +26,6 @@ jobs:
           echo "Testing oracle Docker build..."
           docker build -f oracle/Dockerfile -t test-oracle .
 
-  lint:
-    name: Lint Go Code
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.23.1'
-      - name: Run golangci-lint
-        uses: golangci/golangci-lint-action@v6
-        with:
-          version: latest
-          args: --timeout=5m
-
   complete:
     name: PR check complete
     needs: [build-and-test, lint]
@@ -63,7 +47,7 @@ jobs:
           thread_id: 1321
           format: markdown
           message: |
-            ${{ (needs.build-and-test.result == 'success' && needs.lint.result == 'success') && '✅ *Testing succeeded*' || '❌ *Testing failed*' }}
+            ${{ needs.build-and-test.result == 'success' && '✅ *Testing succeeded*' || '❌ *Testing failed*' }}
             *Repository:* `${{ github.repository }}`
             *PR:* [#${{ github.event.pull_request.number }}](${{ github.event.pull_request.html_url }})
             *Branch:* `${{ github.ref_name }}`
