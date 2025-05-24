@@ -81,7 +81,7 @@ jobs:
             *Build #:* `${{ github.run_number }}`
             
             *Build Results:*
-            • Indexer: ${{ needs.build-indexer.result == 'success' && '✅' || '❌' }}
-            • Relayer: ${{ needs.build-relayer.result == 'success' && '✅' || '❌' }}
-            • DB Backup: ${{ needs.build-db-backup.result == 'success' && '✅' || '❌' }}
-            • Oracle: ${{ needs.build-oracle.result == 'success' && '✅' || '❌' }}
+            • Indexer:    ${{ needs.build-indexer.result == 'success' && '✅' || '❌' }}
+            • Relayer:    ${{ needs.build-relayer.result == 'success' && '✅' || '❌' }}
+            • DB Backup:  ${{ needs.build-db-backup.result == 'success' && '✅' || '❌' }}
+            • Oracle:     ${{ needs.build-oracle.result == 'success' && '✅' || '❌' }}
