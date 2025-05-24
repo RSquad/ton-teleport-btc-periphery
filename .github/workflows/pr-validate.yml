@@ -9,33 +9,60 @@ permissions:
   contents: read
 
 jobs:
-  build-and-test:
-    name: Build Components
+  build-indexer:
+    name: Build Indexer
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
-      - name: Verify Docker builds
+      - name: Build indexer Docker image
         run: |
           echo "Testing indexer Docker build..."
           docker build -f indexer/Dockerfile -t test-indexer .
+
+  build-relayer:
+    name: Build Relayer
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+      - name: Build relayer Docker image
+        run: |
           echo "Testing relayer Docker build..."
           docker build -f relayer/Dockerfile -t test-relayer .
+
+  build-db-backup:
+    name: Build DB Backup
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+      - name: Build db-backup Docker image
+        run: |
           echo "Testing db-backup Docker build..."
           docker build -f db-backup/Dockerfile -t test-db-backup .
+
+  build-oracle:
+    name: Build Oracle
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+      - name: Build oracle Docker image
+        run: |
           echo "Testing oracle Docker build..."
           docker build -f oracle/Dockerfile -t test-oracle .
 
   complete:
     name: PR check complete
-    needs: [build-and-test, lint]
+    needs: [build-indexer, build-relayer, build-db-backup, build-oracle]
     runs-on: ubuntu-latest
     steps:
       - run: echo "✅ Testing succeeded – ready to merge."
 
   notify:
     name: Telegram notification
-    needs: [build-and-test, lint]
+    needs: [build-indexer, build-relayer, build-db-backup, build-oracle]
     runs-on: ubuntu-latest
     if: always()
     steps:
@@ -47,8 +74,14 @@ jobs:
           thread_id: 1321
           format: markdown
           message: |
-            ${{ needs.build-and-test.result == 'success' && '✅ *Testing succeeded*' || '❌ *Testing failed*' }}
+            ${{ (needs.build-indexer.result == 'success' && needs.build-relayer.result == 'success' && needs.build-db-backup.result == 'success' && needs.build-oracle.result == 'success') && '✅ *Testing succeeded*' || '❌ *Testing failed*' }}
             *Repository:* `${{ github.repository }}`
             *PR:* [#${{ github.event.pull_request.number }}](${{ github.event.pull_request.html_url }})
             *Branch:* `${{ github.ref_name }}`
             *Build #:* `${{ github.run_number }}`
+            
+            *Build Results:*
+            • Indexer: ${{ needs.build-indexer.result == 'success' && '✅' || '❌' }}
+            • Relayer: ${{ needs.build-relayer.result == 'success' && '✅' || '❌' }}
+            • DB Backup: ${{ needs.build-db-backup.result == 'success' && '✅' || '❌' }}
+            • Oracle: ${{ needs.build-oracle.result == 'success' && '✅' || '❌' }}
