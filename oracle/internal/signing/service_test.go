@@ -15,8 +15,8 @@ import (
 	tonutils "github.com/xssnick/tonutils-go/ton"
 )
 
-func newCoordinatorContractMock() *coordinator.CoordinatorContractMock {
-	return &coordinator.CoordinatorContractMock{
+func newCoordinatorContractMock() *coordinator.CoordinatorMock {
+	return &coordinator.CoordinatorMock{
 		ConnectSignerFunc: func(signerMoqParam signer.Signer) {
 			panic("mock out the ConnectSigner method")
 		},
