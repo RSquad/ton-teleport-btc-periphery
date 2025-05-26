@@ -84,12 +84,12 @@ var frostErrorMessages = map[LibFrostError]string{
 
 type CulpritInfo struct {
 	Id      *Identifier
-	ErrCode int32
+	ErrCode LibFrostError
 }
 
-func NewCulpritInfo(culpritData []byte, errCode int32) *CulpritInfo {
+func NewCulpritInfo(culpritData []byte, errCode LibFrostError) *CulpritInfo {
 	var id *Identifier = nil
-	if errCode == int32(ErrInvalidSignatureShare) || errCode == int32(ErrInvalidSecretShare) || errCode == int32(ErrInvalidProofOfKnowledge) {
+	if errCode == ErrInvalidSignatureShare || errCode == ErrInvalidSecretShare || errCode == ErrInvalidProofOfKnowledge {
 		copy(id[:], culpritData)
 	}
 

@@ -96,7 +96,7 @@ func DkgPart2(
 	round2Packages := make(map[Identifier]Package)
 
 	if r2PackagesLen < 0 {
-		return round2Packages, 0, NewCulpritInfo(r2CulpritIdx, int32(r2PackagesLen)), Error(int32(r2PackagesLen))
+		return round2Packages, 0, NewCulpritInfo(r2CulpritIdx, LibFrostError(r2PackagesLen)), Error(int32(r2PackagesLen))
 	}
 
 	pkgs = unsafe.Slice((*C.Pkg)(r2Packages), r2PackagesLen)
@@ -148,7 +148,7 @@ func DkgPart3(
 	)
 
 	if ret < 0 {
-		return nil, nil, NewCulpritInfo(r3CulpritIdx, int32(ret)), Error(int32(ret))
+		return nil, nil, NewCulpritInfo(r3CulpritIdx, LibFrostError(ret)), Error(int32(ret))
 	}
 
 	publicKeyPackage := make([]byte, publicPkgLen)
@@ -202,7 +202,7 @@ func SignWithTweak(
 	)
 
 	if ret < 0 {
-		return nil, NewCulpritInfo(culpritIdx, int32(ret)), Error(int32(ret))
+		return nil, NewCulpritInfo(culpritIdx, LibFrostError(ret)), Error(int32(ret))
 	}
 
 	return extractSlice(signingShares), nil, nil
@@ -237,7 +237,7 @@ func AggregateWithTweak(
 	)
 
 	if ret < 0 {
-		return nil, NewCulpritInfo(culpritIdx, int32(ret)), Error(int32(ret))
+		return nil, NewCulpritInfo(culpritIdx, LibFrostError(ret)), Error(int32(ret))
 	}
 
 	return extractSlice(signature), nil, nil

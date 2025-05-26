@@ -332,7 +332,7 @@ func (s *SignService) doSign(
 				pegout.addrStr,               // pegout address used as key to load nonce from keystore
 			)
 			if err != nil {
-				if culpritInfo != nil {
+				if (culpritInfo != nil) && (culpritInfo.Id != nil) {
 					culpritIdx := helpers.FrostToValidatorIdx(*culpritInfo.Id)
 					s.logError(fmt.Sprintf("Sign failed. Culprit validator found: %d", culpritIdx), err)
 					s.executeClaim(pegout, validatorIdx, culpritIdx)
@@ -382,7 +382,7 @@ func (s *SignService) doAggregate(
 			tapTweak,
 		)
 		if err != nil {
-			if culpritInfo != nil {
+			if (culpritInfo != nil) && (culpritInfo.Id != nil) {
 				culpritIdx := helpers.FrostToValidatorIdx(*culpritInfo.Id)
 				s.logError(fmt.Sprintf("AggregateWithTweak failed. Culprit validator found: %d", culpritIdx), err)
 				s.executeClaim(pegout, validatorIdx, culpritIdx)
