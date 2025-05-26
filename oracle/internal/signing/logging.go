@@ -73,6 +73,10 @@ func (s *SignService) logErrNoOracleCommitments(pegoutID uint64) {
 	errorEvent().Err(err)
 }
 
+func (s *SignService) logPegoutSigned(pegoutID uint64) {
+	infoEventWithPegoutID(pegoutID).Msg("pegout signed")
+}
+
 func (s *SignService) logSigningShareSent(pegoutID uint64) {
 	infoEventWithPegoutID(pegoutID).Msg("signing share sent")
 }
@@ -111,10 +115,6 @@ func (s *SignService) logAggregateSignShares(pegoutID uint64) {
 
 func (s *SignService) logSignatureSent(pegoutID uint64) {
 	infoEventWithPegoutID(pegoutID).Msg("Signature sent")
-}
-
-func (s *SignService) logSignaturesSent(pegoutID uint64, sentSignsCount uint16, totalCount uint16) {
-	infoEventWithPegoutID(pegoutID).Msgf("The signature has already been sent. Waiting for other oracles (ready %d of %d)", sentSignsCount, totalCount)
 }
 
 func (s *SignService) logSignatureSendError(pegoutID uint64, err error) {
