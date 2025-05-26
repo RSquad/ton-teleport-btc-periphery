@@ -124,9 +124,9 @@ type ResetPegoutSigningRequest struct {
 }
 
 type PegoutSignatures struct {
-	mask  *big.Int
-	count uint16
-	hash  []byte
+	Mask  *big.Int
+	Count uint16
+	Hash  []byte
 }
 
 type PegoutRecord struct {
