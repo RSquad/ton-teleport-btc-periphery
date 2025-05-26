@@ -225,9 +225,7 @@ func (s *SignService) execute(ctx context.Context, dkg *coordinator.DKG) {
 	// Execute signing steps
 	if s.doCommit(validatorIdx, cachedPegout, minSigners) {
 		if s.doSign(validatorIdx, cachedPegout, minSigners) {
-			if s.doAggregate(validatorIdx, cachedPegout, pubkeyPackage) {
-				s.logPegoutSigned(cachedPegout.ID)
-			}
+			s.doAggregate(validatorIdx, cachedPegout, pubkeyPackage)
 		}
 	}
 }
@@ -365,8 +363,14 @@ func (s *SignService) doAggregate(
 	validatorIdx uint16,
 	pegout *CachedPegout,
 	pubkeyPackage []byte,
-) bool {
+) {
 	s.logAggregateSignShares(pegout.ID)
+
+	// Check if the signatures have already been sent
+	if checkSignaturesMask(pegout, validatorIdx) {
+		s.logSignaturesSent(pegout.ID, pegout.artifacts.Signatures.Count, pegout.artifacts.MaxSigners)
+		return
+	}
 
 	commitmentsPackages := helpers.ConvertMapToFrostPackages(pegout.artifacts.Commitments)
 	signatures := make([][]byte, 0, len(pegout.signingHashes))
@@ -389,23 +393,36 @@ func (s *SignService) doAggregate(
 			} else {
 				s.logAggregateSignSharesError(err)
 			}
-			return false
+			return
 		}
 
 		signatures = append(signatures, signature)
 	}
 
-	if _, err := s.coordinator.SendSignatures(
+	// Send signatures
+	s.SendSignatures(pegout, validatorIdx, signatures)
+}
+
+func (s *SignService) SendSignatures(pegout *CachedPegout, validatorIdx uint16, signatures [][]byte) int {
+	_, err := s.coordinator.SendSignatures(
 		pegout.ID,
 		validatorIdx,
 		signatures,
-	); err != nil {
-		s.logSignatureSendError(pegout.ID, err)
-	} else {
-		s.logSignatureSent(pegout.ID)
+	)
+
+	if err != nil {
+		exitCode, _ := helpers.ExtractExitCode(err.Error())
+		if exitCode == helpers.DifferentPegoutSignatures {
+			s.sendClaimBySignatureMask(pegout, validatorIdx)
+		} else {
+			s.logSignatureSendError(pegout.ID, err)
+		}
+
+		return exitCode
 	}
 
-	return false
+	s.logSignatureSent(pegout.ID)
+	return 0
 }
 
 func (s *SignService) Sign(
@@ -502,4 +519,17 @@ func (s *SignService) executeResetPegoutSigning(pegoutID uint64, validatorIdx ui
 
 func (s *SignService) ClaimCompleted(pegout *CachedPegout, validatorIdx uint16) bool {
 	return pegout.artifacts.ClaimsMask.Bit(int(validatorIdx)) > 0
+}
+
+func (s *SignService) sendClaimBySignatureMask(pegout *CachedPegout, validatorIdx uint16) {
+	// Culprit Oracle id = index of the first non zero bit in pegout.artifacts.Signatures.Mask
+	culpritIdx := pegout.artifacts.Signatures.Mask.BitLen() - 1
+	s.logError(fmt.Sprintf("Signature sending failed. Culprit validator identified: %d. The signature sent by the culprit validator differs from the calculated signature", culpritIdx), nil)
+
+	// Sent claim
+	s.executeClaim(pegout, validatorIdx, uint16(culpritIdx))
+}
+
+func checkSignaturesMask(pegout *CachedPegout, validatorIdx uint16) bool {
+	return pegout.artifacts.Signatures.Mask.Bit(int(validatorIdx)) == 1
 }
