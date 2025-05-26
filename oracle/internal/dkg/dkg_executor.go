@@ -280,24 +280,7 @@ func (e *Executor) executeR2(dkg *coordinator.DKG) bool {
 					e.logError(dkg, fmt.Sprintf("R2 failed. Culprit validator found: %d", culpritIdx), err)
 					e.executeClaim(dkg, culpritIdx)
 				} else if culpritInfo.ErrCode == frost.ErrIncorrectNumberOfCommitments {
-					minSigners, err := helpers.CalcMinSigners(dkg.MaxSigners)
-					if err != nil {
-						e.logDKGProcess(dkg, fmt.Sprintf("Failed to calculate min signers: %v", err))
-						return false
-					}
-
-					var culpritIdx uint16
-					for frostCulpritIdx, r1Package := range r1Packages {
-						r1Data := r1Package.ToBytes()
-						// The minimum sign value is stored as the 5th byte in the R1 package data
-						if (len(r1Data) < 6) || (uint16(r1Data[5]) != minSigners) {
-							culpritIdx = helpers.FrostToValidatorIdx(frostCulpritIdx)
-							break
-						}
-					}
-
-					e.logError(dkg, fmt.Sprintf("R2 failed. Culprit validator found: %d", culpritIdx), err)
-					e.executeClaim(dkg, culpritIdx)
+					e.ClaimIncorrectNumberOfCommitments(dkg, &r1Packages)
 				}
 			} else {
 				e.logError(dkg, "R2 failed", err)
@@ -479,4 +462,25 @@ func (e *Executor) claimCulpritByR3Mask(dkg *coordinator.DKG) {
 			return
 		}
 	}
+}
+
+func (e *Executor) ClaimIncorrectNumberOfCommitments(dkg *coordinator.DKG, r1Packages *map[frost.Identifier]frost.Package) {
+	minSigners, err := helpers.CalcMinSigners(dkg.MaxSigners)
+	if err != nil {
+		e.logDKGProcess(dkg, fmt.Sprintf("Failed to calculate min signers: %v", err))
+		return
+	}
+
+	var culpritIdx uint16
+	for frostCulpritIdx, r1Package := range *r1Packages {
+		r1Data := r1Package.ToBytes()
+		// The minimum sign value is stored as the 5th byte in the R1 package data
+		if (len(r1Data) < 6) || (uint16(r1Data[5]) != minSigners) {
+			culpritIdx = helpers.FrostToValidatorIdx(frostCulpritIdx)
+			break
+		}
+	}
+
+	e.logError(dkg, fmt.Sprintf("R2 failed. Culprit validator found: %d", culpritIdx), err)
+	e.executeClaim(dkg, culpritIdx)
 }
