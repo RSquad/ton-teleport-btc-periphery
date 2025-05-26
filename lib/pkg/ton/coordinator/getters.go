@@ -5,12 +5,8 @@ import (
 	"time"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/parseddict"
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/signer"
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
-	"github.com/xssnick/tonutils-go/address"
 	tonutils "github.com/xssnick/tonutils-go/ton"
 	"github.com/xssnick/tonutils-go/tvm/cell"
 )
@@ -30,28 +26,6 @@ const (
 
 const DefaultDGKTTL = time.Minute
 
-type CoordinatorContract struct {
-	ton.Contract
-	signer            signer.Signer
-	tonClient         *tonclient.TonClient
-	ctx               context.Context
-	ttl               time.Duration
-	tonApiCallTimeout int64
-}
-
-func New(
-	addr *address.Address,
-	tonClient *tonclient.TonClient,
-	signer signer.Signer,
-	ctx context.Context,
-	tonApiCallTimeout int64,
-) *CoordinatorContract {
-	ttl := DefaultDGKTTL
-	return &CoordinatorContract{
-		ton.Contract{Addr: addr}, signer, tonClient, ctx, ttl, tonApiCallTimeout,
-	}
-}
-
 func CallApiWithTimeout[T any](fn func(ctx context.Context) (T, error), parentCtx context.Context, timeout int64, name string) (T, error) {
 	startTs := time.Now()
 	apiCtx, cancelFn := context.WithTimeout(parentCtx, time.Duration(timeout)*time.Second)
@@ -65,7 +39,7 @@ func CallApiWithTimeout[T any](fn func(ctx context.Context) (T, error), parentCt
 	return res, err
 }
 
-func (c *CoordinatorContract) GetDkg(block *tonutils.BlockIDExt) (*DKG, error) {
+func (c *coordinatorContract) GetDkg(block *tonutils.BlockIDExt) (*DKG, error) {
 	if block == nil {
 		var err error
 
@@ -113,7 +87,7 @@ func (c *CoordinatorContract) GetDkg(block *tonutils.BlockIDExt) (*DKG, error) {
 	return dkg, nil
 }
 
-func (c *CoordinatorContract) GetPrevDKG() (*DKG, error) {
+func (c *coordinatorContract) GetPrevDKG() (*DKG, error) {
 	block, err := CallApiWithTimeout(
 		func(apiCallCtx context.Context) (*tonutils.BlockIDExt, error) {
 			return c.tonClient.API.CurrentMasterchainInfo(apiCallCtx)
@@ -152,7 +126,7 @@ func (c *CoordinatorContract) GetPrevDKG() (*DKG, error) {
 	return parseDGKSlice(result.MustCell(0).BeginParse())
 }
 
-func (c *CoordinatorContract) GetUnsignedPegouts() ([]PegoutRecord, error) {
+func (c *coordinatorContract) GetUnsignedPegouts() ([]PegoutRecord, error) {
 	block, err := CallApiWithTimeout(
 		func(apiCallCtx context.Context) (*tonutils.BlockIDExt, error) {
 			return c.tonClient.API.CurrentMasterchainInfo(apiCallCtx)

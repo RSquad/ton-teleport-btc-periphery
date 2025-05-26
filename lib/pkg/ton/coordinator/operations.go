@@ -11,7 +11,7 @@ import (
 	"github.com/xssnick/tonutils-go/tvm/cell"
 )
 
-func (c *CoordinatorContract) SendStartDKG() (*tlb.Transaction, error) {
+func (c *coordinatorContract) SendStartDKG() (*tlb.Transaction, error) {
 	unsignedMsgBody := cell.BeginCell().
 		MustStoreUInt(OpCodeStartDKG, 32).
 		MustStoreUInt(uint64(time.Now().Unix()+int64(c.ttl.Seconds())), 32).
@@ -34,7 +34,7 @@ func (c *CoordinatorContract) SendStartDKG() (*tlb.Transaction, error) {
 	return tx, err
 }
 
-func (c *CoordinatorContract) SendRound1(
+func (c *coordinatorContract) SendRound1(
 	validatorIdx uint16,
 	dkgUntil int64,
 	round1Package []byte,
@@ -45,7 +45,7 @@ func (c *CoordinatorContract) SendRound1(
 	), "SendRound1")
 }
 
-func (c *CoordinatorContract) SendRound2(
+func (c *coordinatorContract) SendRound2(
 	validatorIdx uint16,
 	dkgUntil int64,
 	round2Packages []byte,
@@ -55,7 +55,7 @@ func (c *CoordinatorContract) SendRound2(
 	), "SendRound2")
 }
 
-func (c *CoordinatorContract) SendDKGClaim(
+func (c *coordinatorContract) SendDKGClaim(
 	validatorIdx uint16,
 	dkgUntil int64,
 	culpritIdx uint16,
@@ -65,7 +65,7 @@ func (c *CoordinatorContract) SendDKGClaim(
 	), "SendDKGClaim")
 }
 
-func (c *CoordinatorContract) SendPubkeyPackage(
+func (c *coordinatorContract) SendPubkeyPackage(
 	validatorIdx uint16,
 	dkgUntil int64,
 	sessionPublicKey []byte,
@@ -76,7 +76,7 @@ func (c *CoordinatorContract) SendPubkeyPackage(
 	), "SendPubkeyPackage")
 }
 
-func (c *CoordinatorContract) SendCommitments(
+func (c *coordinatorContract) SendCommitments(
 	PegoutID uint64,
 	ValidatorIdx uint16,
 	Commitments []byte,
@@ -90,7 +90,7 @@ func (c *CoordinatorContract) SendCommitments(
 	), "SendCommitments")
 }
 
-func (c *CoordinatorContract) SendSigningShare(
+func (c *coordinatorContract) SendSigningShare(
 	PegoutID uint64,
 	ValidatorIdx uint16,
 	SigningShares [][]byte,
@@ -101,7 +101,7 @@ func (c *CoordinatorContract) SendSigningShare(
 	), "SendSigningShare")
 }
 
-func (c *CoordinatorContract) SendSignatures(
+func (c *coordinatorContract) SendSignatures(
 	PegoutID uint64,
 	ValidatorIdx uint16,
 	Signatures [][]byte,
@@ -112,7 +112,7 @@ func (c *CoordinatorContract) SendSignatures(
 	), "SendSignatures")
 }
 
-func (c *CoordinatorContract) SendSigningClaim(
+func (c *coordinatorContract) SendSigningClaim(
 	PegoutID uint64,
 	ValidatorIdx uint16,
 	culpritIdx uint16,
@@ -123,7 +123,7 @@ func (c *CoordinatorContract) SendSigningClaim(
 	), "SendSigningClaim")
 }
 
-func (c *CoordinatorContract) SendResetPegoutSigning(
+func (c *coordinatorContract) SendResetPegoutSigning(
 	PegoutID uint64,
 	ValidatorIdx uint16,
 ) (*tlb.Transaction, error) {
@@ -133,11 +133,11 @@ func (c *CoordinatorContract) SendResetPegoutSigning(
 	), "SendResetPegoutSigning")
 }
 
-func (c *CoordinatorContract) ConnectSigner(signer signer.Signer) {
+func (c *coordinatorContract) ConnectSigner(signer signer.Signer) {
 	c.signer = signer
 }
 
-func (c *CoordinatorContract) sendBodyCell(bodyCell *cell.Cell, name string) (*tlb.Transaction, error) {
+func (c *coordinatorContract) sendBodyCell(bodyCell *cell.Cell, name string) (*tlb.Transaction, error) {
 	msg, err := ton.BuildExtMsg(bodyCell, c.Addr, c.signer)
 	if err != nil {
 		return nil, err
