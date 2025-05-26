@@ -31,7 +31,7 @@ type CachedPegout struct {
 
 type SignService struct {
 	keyStore          keystore.Keystore
-	coordinator       coordinator.CoordinatorContract
+	coordinator       coordinator.Coordinator
 	ton               *tonclient.TonClient
 	cachedPegout      *CachedPegout
 	executeSignPeriod int64 // `period` in seconds to call the ExecuteSign() function
@@ -41,7 +41,7 @@ type SignService struct {
 
 func NewService(
 	keyStore keystore.Keystore,
-	coordinator coordinator.CoordinatorContract,
+	coordinator coordinator.Coordinator,
 	tonclient *tonclient.TonClient,
 	executeSignPeriod int64,
 ) *SignService {
