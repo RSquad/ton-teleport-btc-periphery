@@ -1,4 +1,4 @@
-//go:generate moq -out coordinator_contract_mock.go . CoordinatorContract
+//go:generate moq -out coordinator_contract_mock.go . Coordinator
 
 package coordinator
 
@@ -14,7 +14,7 @@ import (
 	tonutils "github.com/xssnick/tonutils-go/ton"
 )
 
-type CoordinatorContract interface {
+type Coordinator interface {
 	GetDkg(block *tonutils.BlockIDExt) (*DKG, error)
 	GetPrevDKG() (*DKG, error)
 	GetUnsignedPegouts() ([]PegoutRecord, error)
@@ -94,7 +94,7 @@ func New(
 	signer signer.Signer,
 	ctx context.Context,
 	tonApiCallTimeout int64,
-) CoordinatorContract {
+) Coordinator {
 	ttl := DefaultDGKTTL
 	return &coordinatorContract{
 		ton.Contract{Addr: addr}, signer, tonClient, ctx, ttl, tonApiCallTimeout,
