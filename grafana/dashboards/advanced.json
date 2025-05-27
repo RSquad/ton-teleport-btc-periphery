@@ -22,10 +22,7 @@
     "links": [],
     "panels": [
         {
-            "datasource": {
-                "type": "yesoreyeram-infinity-datasource",
-                "uid": "dem2k81ld0veoe"
-            },
+            "datasource": "yesoreyeram-infinity-datasource",
             "fieldConfig": {
                 "defaults": {
                     "color": {
@@ -95,10 +92,7 @@
                             "type": "string"
                         }
                     ],
-                    "datasource": {
-                        "type": "yesoreyeram-infinity-datasource",
-                        "uid": "dem2k81ld0veoe"
-                    },
+                    "datasource": "yesoreyeram-infinity-datasource",
                     "filters": [],
                     "format": "table",
                     "global_query_id": "",
@@ -134,10 +128,7 @@
             "type": "stat"
         },
         {
-            "datasource": {
-                "type": "yesoreyeram-infinity-datasource",
-                "uid": "dem2k81ld0veoe"
-            },
+            "datasource": "yesoreyeram-infinity-datasource",
             "fieldConfig": {
                 "defaults": {
                     "color": {
@@ -218,10 +209,7 @@
                             "type": "string"
                         }
                     ],
-                    "datasource": {
-                        "type": "yesoreyeram-infinity-datasource",
-                        "uid": "dem2k81ld0veoe"
-                    },
+                    "datasource": "yesoreyeram-infinity-datasource",
                     "filters": [],
                     "format": "table",
                     "global_query_id": "",
@@ -289,10 +277,7 @@
             "type": "text"
         },
         {
-            "datasource": {
-                "type": "yesoreyeram-infinity-datasource",
-                "uid": "dem2k81ld0veoe"
-            },
+            "datasource": "yesoreyeram-infinity-datasource",
             "fieldConfig": {
                 "defaults": {
                     "color": {
@@ -371,10 +356,7 @@
                             "type": "string"
                         }
                     ],
-                    "datasource": {
-                        "type": "yesoreyeram-infinity-datasource",
-                        "uid": "dem2k81ld0veoe"
-                    },
+                    "datasource": "yesoreyeram-infinity-datasource",
                     "filters": [],
                     "format": "table",
                     "global_query_id": "",
@@ -411,10 +393,7 @@
             "type": "stat"
         },
         {
-            "datasource": {
-                "type": "yesoreyeram-infinity-datasource",
-                "uid": "dem2k81ld0veoe"
-            },
+            "datasource": "yesoreyeram-infinity-datasource",
             "fieldConfig": {
                 "defaults": {
                     "color": {
@@ -490,10 +469,7 @@
                             "type": "string"
                         }
                     ],
-                    "datasource": {
-                        "type": "yesoreyeram-infinity-datasource",
-                        "uid": "dem2k81ld0veoe"
-                    },
+                    "datasource": "yesoreyeram-infinity-datasource",
                     "filters": [],
                     "format": "table",
                     "global_query_id": "",
@@ -561,10 +537,7 @@
             "type": "text"
         },
         {
-            "datasource": {
-                "type": "yesoreyeram-infinity-datasource",
-                "uid": "dem2k81ld0veoe"
-            },
+            "datasource": "yesoreyeram-infinity-datasource",
             "fieldConfig": {
                 "defaults": {
                     "color": {
@@ -653,10 +626,7 @@
                             "type": "string"
                         }
                     ],
-                    "datasource": {
-                        "type": "yesoreyeram-infinity-datasource",
-                        "uid": "dem2k81ld0veoe"
-                    },
+                    "datasource": "yesoreyeram-infinity-datasource",
                     "filters": [],
                     "format": "table",
                     "global_query_id": "",
@@ -720,10 +690,7 @@
             "type": "stat"
         },
         {
-            "datasource": {
-                "type": "yesoreyeram-infinity-datasource",
-                "uid": "dem2k81ld0veoe"
-            },
+            "datasource": "yesoreyeram-infinity-datasource",
             "fieldConfig": {
                 "defaults": {
                     "color": {
@@ -775,10 +742,7 @@
             "targets": [
                 {
                     "columns": [],
-                    "datasource": {
-                        "type": "yesoreyeram-infinity-datasource",
-                        "uid": "dem2k81ld0veoe"
-                    },
+                    "datasource": "yesoreyeram-infinity-datasource",
                     "filters": [],
                     "format": "table",
                     "global_query_id": "",
@@ -912,10 +876,7 @@
             "type": "text"
         },
         {
-            "datasource": {
-                "type": "yesoreyeram-infinity-datasource",
-                "uid": "dem2k81ld0veoe"
-            },
+            "datasource": "yesoreyeram-infinity-datasource",
             "fieldConfig": {
                 "defaults": {
                     "color": {
@@ -997,10 +958,7 @@
             "targets": [
                 {
                     "columns": [],
-                    "datasource": {
-                        "type": "yesoreyeram-infinity-datasource",
-                        "uid": "dem2k81ld0veoe"
-                    },
+                    "datasource": "yesoreyeram-infinity-datasource",
                     "filters": [],
                     "format": "table",
                     "global_query_id": "",
@@ -1068,10 +1026,7 @@
             "type": "stat"
         },
         {
-            "datasource": {
-                "type": "yesoreyeram-infinity-datasource",
-                "uid": "dem2k81ld0veoe"
-            },
+            "datasource": "yesoreyeram-infinity-datasource",
             "fieldConfig": {
                 "defaults": {
                     "color": {
@@ -1155,10 +1110,7 @@
                             "type": "string"
                         }
                     ],
-                    "datasource": {
-                        "type": "yesoreyeram-infinity-datasource",
-                        "uid": "dem2k81ld0veoe"
-                    },
+                    "datasource": "yesoreyeram-infinity-datasource",
                     "filterExpression": "",
                     "filters": [],
                     "format": "table",
@@ -1209,10 +1161,7 @@
             "type": "stat"
         },
         {
-            "datasource": {
-                "type": "yesoreyeram-infinity-datasource",
-                "uid": "dem2k81ld0veoe"
-            },
+            "datasource": "yesoreyeram-infinity-datasource",
             "fieldConfig": {
                 "defaults": {
                     "color": {
@@ -1270,10 +1219,7 @@
             "targets": [
                 {
                     "columns": [],
-                    "datasource": {
-                        "type": "yesoreyeram-infinity-datasource",
-                        "uid": "dem2k81ld0veoe"
-                    },
+                    "datasource": "yesoreyeram-infinity-datasource",
                     "filters": [],
                     "format": "table",
                     "global_query_id": "",
@@ -1336,10 +1282,7 @@
             "type": "stat"
         },
         {
-            "datasource": {
-                "type": "yesoreyeram-infinity-datasource",
-                "uid": "dem2k81ld0veoe"
-            },
+            "datasource": "yesoreyeram-infinity-datasource",
             "fieldConfig": {
                 "defaults": {
                     "color": {
@@ -1472,10 +1415,7 @@
                 {
                     "columns": [],
                     "data": "",
-                    "datasource": {
-                        "type": "yesoreyeram-infinity-datasource",
-                        "uid": "dem2k81ld0veoe"
-                    },
+                    "datasource": "yesoreyeram-infinity-datasource",
                     "filters": [],
                     "format": "table",
                     "global_query_id": "",
