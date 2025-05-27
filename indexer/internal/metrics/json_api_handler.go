@@ -123,6 +123,7 @@ func (apiHandler JsonApiHandler) GetBurns() (string, error) {
 				COALESCE(p.addr, '_') AS pegout_addr,
 				b.sender_addr,
 				COALESCE(p.bitcoin_tx_id, '_') AS bitcoin_tx_id,
+				COALESCE(p.bitcoin_tx_raw, '_') AS bitcoin_tx_raw,
 				COALESCE(tt.hash, '_') AS ton_tx,
 				COALESCE(p.status, '_') AS pegout_status 
 			FROM burns AS b 
@@ -161,7 +162,8 @@ func (apiHandler JsonApiHandler) GetReinits() (string, error) {
 				tt.hash AS ton_tx,
 		    TO_CHAR(CAST(r.amount AS real) / 100000000.0, 'FM999999990.00000000') || ' BTC' AS amount,
 		    COALESCE(p.addr, '_') AS pegout_addr,
-		    COALESCE(p.bitcoin_tx_id, '_') AS bitcoin_tx_id,		    
+		    COALESCE(p.bitcoin_tx_id, '_') AS bitcoin_tx_id,
+				COALESCE(p.bitcoin_tx_raw, '_') AS bitcoin_tx_raw,
 		    COALESCE(p.status, '_') AS pegout_status
 		  FROM ton_txes AS tt
 			INNER JOIN reinits AS r ON tt.id = r.ton_tx_reinit
