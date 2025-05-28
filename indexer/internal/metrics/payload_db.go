@@ -10,6 +10,7 @@ const (
 	PayloadTypeContractBitcoinClient
 	PayloadTypeBlockChainInfo
 	PayloadTypeContractTeleport
+	PayloadTypeContractCoordinator
 )
 
 type PayloadDB struct {

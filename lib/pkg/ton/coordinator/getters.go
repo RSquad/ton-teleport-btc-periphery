@@ -26,6 +26,20 @@ const (
 	OpCodeCoordinatorSendSignature      = 0xd0720000
 	OpCodeCoordinatorSigningClaim       = 0x5fcb0000
 	OpCodeCoordinatorResetPegoutSigning = 0xe6c20000
+	storageIndexIntiated                = 0
+	storageIndexStandaloneMode          = 1
+	storageIndexId                      = 2
+	storageIndexConfiguratorAddr        = 3
+	storageIndexEnabled                 = 4
+	storageIndexDkg                     = 5
+	storageIndexPrevDkg                 = 6
+	storageIndexUnsignedPegouts         = 7
+	storageIndexPegoutTxCode            = 8
+	storageIndexMinClaimsPercent        = 9
+	storageIndexMinSignersThreshold     = 10
+	storageIndexDkgLifetime             = 11
+	storageIndexSigningTimeout          = 12
+	storageIndexTeleportAddr            = 13
 )
 
 const DefaultDGKTTL = time.Minute
@@ -37,6 +51,23 @@ type CoordinatorContract struct {
 	ctx               context.Context
 	ttl               time.Duration
 	tonApiCallTimeout int64
+}
+
+type Storage struct {
+	Initiated           bool
+	StandaloneMode      bool
+	Id                  uint16
+	ConfiguratorAddr    *address.Address
+	Enabled             bool
+	Dkg                 *DKG
+	PrevDkg             *DKG
+	UnsignedPegouts     []PegoutRecord
+	PegoutTxCode        *cell.Cell
+	MinClaimsPercent    uint16
+	MinSignersThreshold uint16
+	DkgLifetime         uint32
+	SigningTimeout      uint32
+	TeleportAddr        *address.Address
 }
 
 func New(
@@ -186,7 +217,86 @@ func (c *CoordinatorContract) GetUnsignedPegouts() ([]PegoutRecord, error) {
 	if err != nil {
 		return nil, err
 	}
-	dict, err := cell.BeginParse().ToDict(64)
+	return parseUnsignedPegouts(cell)
+}
+
+func (c *CoordinatorContract) GetStorage(block *tonutils.BlockIDExt) (Storage, error) {
+	if block == nil {
+		var err error
+		block, err = c.tonClient.API.CurrentMasterchainInfo(c.ctx)
+		if err != nil {
+			return Storage{}, err
+		}
+	}
+
+	storage, err := c.tonClient.API.RunGetMethod(c.ctx, block, c.Addr, "get_storage")
+	if err != nil {
+		return Storage{}, err
+	}
+
+	initiated := storage.MustInt(storageIndexIntiated).Bit(0) > 0
+	standaloneMode := storage.MustInt(storageIndexStandaloneMode).Bit(0) > 0
+	id := uint16(storage.MustInt(storageIndexId).Uint64())
+	configuratodAddr := storage.MustSlice(storageIndexConfiguratorAddr).MustLoadAddr()
+	enabled := storage.MustInt(storageIndexEnabled).Bit(0) > 0
+	dkg, err := parseDGKSlice(storage.MustCell(storageIndexDkg).BeginParse())
+	if err != nil {
+		return Storage{}, err
+	}
+	var prevDkg *DKG
+	dkgNotExists, err := storage.IsNil(storageIndexPrevDkg)
+	if err != nil {
+		return Storage{}, err
+	}
+	if dkgNotExists {
+		prevDkg = &DKG{}
+	} else {
+		prevDkg, err = parseDGKSlice(storage.MustCell(storageIndexPrevDkg).BeginParse())
+	}
+	if err != nil {
+		return Storage{}, err
+	}
+
+	var unsignedPegouts []PegoutRecord
+	unsignedPegoutsNotExist, err := storage.IsNil(storageIndexUnsignedPegouts)
+	if err != nil {
+		return Storage{}, err
+	}
+	if unsignedPegoutsNotExist {
+		unsignedPegouts = []PegoutRecord{}
+	} else {
+		unsignedPegouts, err = parseUnsignedPegouts(storage.MustCell(storageIndexUnsignedPegouts))
+	}
+	if err != nil {
+		return Storage{}, err
+	}
+	pegoutTxCode := storage.MustCell(storageIndexPegoutTxCode)
+	minClaimsPercent := uint16(storage.MustInt(storageIndexMinClaimsPercent).Uint64())
+	minSignersThreshold := uint16(storage.MustInt(storageIndexMinSignersThreshold).Uint64())
+	dkgLifetime := uint32(storage.MustInt(storageIndexDkgLifetime).Uint64())
+	signingTimeout := uint32(storage.MustInt(storageIndexSigningTimeout).Uint64())
+	teleportAddr := storage.MustSlice(storageIndexTeleportAddr).MustLoadAddr()
+
+	return Storage{
+		Initiated:           initiated,
+		StandaloneMode:      standaloneMode,
+		Id:                  id,
+		ConfiguratorAddr:    configuratodAddr,
+		Enabled:             enabled,
+		Dkg:                 dkg,
+		PrevDkg:             prevDkg,
+		UnsignedPegouts:     unsignedPegouts,
+		PegoutTxCode:        pegoutTxCode,
+		MinClaimsPercent:    minClaimsPercent,
+		MinSignersThreshold: minSignersThreshold,
+		DkgLifetime:         dkgLifetime,
+		SigningTimeout:      signingTimeout,
+		TeleportAddr:        teleportAddr,
+	}, nil
+}
+
+func parseUnsignedPegouts(pegoutsCell *cell.Cell) ([]PegoutRecord, error) {
+	dict, err := pegoutsCell.BeginParse().ToDict(64)
 	if err != nil {
 		return nil, err
 	}
