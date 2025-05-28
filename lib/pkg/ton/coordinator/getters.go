@@ -5,10 +5,7 @@ import (
 	"time"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/parseddict"
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/signer"
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
 	"github.com/xssnick/tonutils-go/address"
 	tonutils "github.com/xssnick/tonutils-go/ton"
@@ -44,15 +41,6 @@ const (
 
 const DefaultDGKTTL = time.Minute
 
-type CoordinatorContract struct {
-	ton.Contract
-	signer            signer.Signer
-	tonClient         *tonclient.TonClient
-	ctx               context.Context
-	ttl               time.Duration
-	tonApiCallTimeout int64
-}
-
 type Storage struct {
 	Initiated           bool
 	StandaloneMode      bool
@@ -70,19 +58,6 @@ type Storage struct {
 	TeleportAddr        *address.Address
 }
 
-func New(
-	addr *address.Address,
-	tonClient *tonclient.TonClient,
-	signer signer.Signer,
-	ctx context.Context,
-	tonApiCallTimeout int64,
-) *CoordinatorContract {
-	ttl := DefaultDGKTTL
-	return &CoordinatorContract{
-		ton.Contract{Addr: addr}, signer, tonClient, ctx, ttl, tonApiCallTimeout,
-	}
-}
-
 func CallApiWithTimeout[T any](fn func(ctx context.Context) (T, error), parentCtx context.Context, timeout int64, name string) (T, error) {
 	startTs := time.Now()
 	apiCtx, cancelFn := context.WithTimeout(parentCtx, time.Duration(timeout)*time.Second)
@@ -96,7 +71,7 @@ func CallApiWithTimeout[T any](fn func(ctx context.Context) (T, error), parentCt
 	return res, err
 }
 
-func (c *CoordinatorContract) GetDkg(block *tonutils.BlockIDExt) (*DKG, error) {
+func (c *coordinatorContract) GetDkg(block *tonutils.BlockIDExt) (*DKG, error) {
 	if block == nil {
 		var err error
 
@@ -142,7 +117,7 @@ func (c *CoordinatorContract) GetDkg(block *tonutils.BlockIDExt) (*DKG, error) {
 	return dkg, nil
 }
 
-func (c *CoordinatorContract) GetPrevDKG() (*DKG, error) {
+func (c *coordinatorContract) GetPrevDKG() (*DKG, error) {
 	block, err := CallApiWithTimeout(
 		func(apiCallCtx context.Context) (*tonutils.BlockIDExt, error) {
 			return c.tonClient.API.CurrentMasterchainInfo(apiCallCtx)
@@ -179,7 +154,7 @@ func (c *CoordinatorContract) GetPrevDKG() (*DKG, error) {
 	return parseDGKSlice(result.MustCell(0).BeginParse())
 }
 
-func (c *CoordinatorContract) GetUnsignedPegouts() ([]PegoutRecord, error) {
+func (c *coordinatorContract) GetUnsignedPegouts() ([]PegoutRecord, error) {
 	block, err := CallApiWithTimeout(
 		func(apiCallCtx context.Context) (*tonutils.BlockIDExt, error) {
 			return c.tonClient.API.CurrentMasterchainInfo(apiCallCtx)
@@ -220,7 +195,7 @@ func (c *CoordinatorContract) GetUnsignedPegouts() ([]PegoutRecord, error) {
 	return parseUnsignedPegouts(cell)
 }
 
-func (c *CoordinatorContract) GetStorage(block *tonutils.BlockIDExt) (Storage, error) {
+func (c *coordinatorContract) GetStorage(block *tonutils.BlockIDExt) (Storage, error) {
 	if block == nil {
 		var err error
 		block, err = c.tonClient.API.CurrentMasterchainInfo(c.ctx)
@@ -308,7 +283,7 @@ func parseUnsignedPegouts(pegoutsCell *cell.Cell) ([]PegoutRecord, error) {
 	pegouts := make([]PegoutRecord, 0, len(entries))
 	for _, kv := range entries {
 
-		ID := kv.Key.MustLoadUInt(64) // TODO:
+		ID := kv.Key.MustLoadUInt(64)
 		value := kv.Value.MustLoadRef()
 
 		MaxSigners := uint16(value.MustLoadUInt(16))
@@ -344,9 +319,9 @@ func parseUnsignedPegouts(pegoutsCell *cell.Cell) ([]PegoutRecord, error) {
 
 		sigSlice := value.MustLoadRef()
 		Signatures := PegoutSignatures{
-			mask:  sigSlice.MustLoadBigUInt(256),
-			count: uint16(sigSlice.MustLoadUInt(16)),
-			hash:  sigSlice.MustLoadSlice(256),
+			Mask:  sigSlice.MustLoadBigUInt(256),
+			Count: uint16(sigSlice.MustLoadUInt(16)),
+			Hash:  sigSlice.MustLoadSlice(256),
 		}
 
 		refSlice := value.MustLoadRef()

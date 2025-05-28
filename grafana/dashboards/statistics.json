@@ -22,10 +22,7 @@
     "links": [],
     "panels": [
         {
-            "datasource": {
-                "type": "yesoreyeram-infinity-datasource",
-                "uid": "dem2k81ld0veoe"
-            },
+            "datasource": "yesoreyeram-infinity-datasource",
             "fieldConfig": {
                 "defaults": {
                     "color": {
@@ -72,10 +69,7 @@
             "targets": [
                 {
                     "columns": [],
-                    "datasource": {
-                        "type": "yesoreyeram-infinity-datasource",
-                        "uid": "dem2k81ld0veoe"
-                    },
+                    "datasource": "yesoreyeram-infinity-datasource",
                     "filters": [],
                     "format": "table",
                     "global_query_id": "",
@@ -111,10 +105,7 @@
             "type": "stat"
         },
         {
-            "datasource": {
-                "type": "yesoreyeram-infinity-datasource",
-                "uid": "dem2k81ld0veoe"
-            },
+            "datasource": "yesoreyeram-infinity-datasource",
             "fieldConfig": {
                 "defaults": {
                     "color": {
@@ -161,10 +152,7 @@
             "targets": [
                 {
                     "columns": [],
-                    "datasource": {
-                        "type": "yesoreyeram-infinity-datasource",
-                        "uid": "dem2k81ld0veoe"
-                    },
+                    "datasource": "yesoreyeram-infinity-datasource",
                     "filters": [],
                     "format": "table",
                     "global_query_id": "",
@@ -200,10 +188,7 @@
             "type": "stat"
         },
         {
-            "datasource": {
-                "type": "yesoreyeram-infinity-datasource",
-                "uid": "dem2k81ld0veoe"
-            },
+            "datasource": "yesoreyeram-infinity-datasource",
             "fieldConfig": {
                 "defaults": {
                     "color": {
@@ -251,10 +236,7 @@
             "targets": [
                 {
                     "columns": [],
-                    "datasource": {
-                        "type": "yesoreyeram-infinity-datasource",
-                        "uid": "dem2k81ld0veoe"
-                    },
+                    "datasource": "yesoreyeram-infinity-datasource",
                     "filters": [],
                     "format": "table",
                     "global_query_id": "",
@@ -302,10 +284,7 @@
             "type": "stat"
         },
         {
-            "datasource": {
-                "type": "yesoreyeram-infinity-datasource",
-                "uid": "dem2k81ld0veoe"
-            },
+            "datasource": "yesoreyeram-infinity-datasource",
             "fieldConfig": {
                 "defaults": {
                     "color": {
@@ -353,10 +332,7 @@
             "targets": [
                 {
                     "columns": [],
-                    "datasource": {
-                        "type": "yesoreyeram-infinity-datasource",
-                        "uid": "dem2k81ld0veoe"
-                    },
+                    "datasource": "yesoreyeram-infinity-datasource",
                     "filters": [],
                     "format": "table",
                     "global_query_id": "",
@@ -392,10 +368,7 @@
             "type": "stat"
         },
         {
-            "datasource": {
-                "type": "yesoreyeram-infinity-datasource",
-                "uid": "dem2k81ld0veoe"
-            },
+            "datasource": "yesoreyeram-infinity-datasource",
             "fieldConfig": {
                 "defaults": {
                     "color": {
@@ -443,10 +416,7 @@
             "targets": [
                 {
                     "columns": [],
-                    "datasource": {
-                        "type": "yesoreyeram-infinity-datasource",
-                        "uid": "dem2k81ld0veoe"
-                    },
+                    "datasource": "yesoreyeram-infinity-datasource",
                     "filters": [],
                     "format": "table",
                     "global_query_id": "",
@@ -483,10 +453,7 @@
             "type": "stat"
         },
         {
-            "datasource": {
-                "type": "yesoreyeram-infinity-datasource",
-                "uid": "dem2k81ld0veoe"
-            },
+            "datasource": "yesoreyeram-infinity-datasource",
             "fieldConfig": {
                 "defaults": {
                     "color": {
@@ -584,10 +551,7 @@
                             "type": "number"
                         }
                     ],
-                    "datasource": {
-                        "type": "yesoreyeram-infinity-datasource",
-                        "uid": "dem2k81ld0veoe"
-                    },
+                    "datasource": "yesoreyeram-infinity-datasource",
                     "filters": [],
                     "format": "timeseries",
                     "global_query_id": "",
@@ -608,10 +572,7 @@
             "type": "timeseries"
         },
         {
-            "datasource": {
-                "type": "yesoreyeram-infinity-datasource",
-                "uid": "dem2k81ld0veoe"
-            },
+            "datasource": "yesoreyeram-infinity-datasource",
             "fieldConfig": {
                 "defaults": {
                     "color": {
@@ -710,10 +671,7 @@
                             "type": "number"
                         }
                     ],
-                    "datasource": {
-                        "type": "yesoreyeram-infinity-datasource",
-                        "uid": "dem2k81ld0veoe"
-                    },
+                    "datasource": "yesoreyeram-infinity-datasource",
                     "filters": [],
                     "format": "timeseries",
                     "global_query_id": "",
@@ -742,10 +700,7 @@
                             "type": "number"
                         }
                     ],
-                    "datasource": {
-                        "type": "yesoreyeram-infinity-datasource",
-                        "uid": "dem2k81ld0veoe"
-                    },
+                    "datasource": "yesoreyeram-infinity-datasource",
                     "filters": [],
                     "format": "timeseries",
                     "global_query_id": "",
@@ -767,10 +722,7 @@
             "type": "timeseries"
         },
         {
-            "datasource": {
-                "type": "yesoreyeram-infinity-datasource",
-                "uid": "dem2k81ld0veoe"
-            },
+            "datasource": "yesoreyeram-infinity-datasource",
             "fieldConfig": {
                 "defaults": {
                     "color": {
@@ -894,10 +846,7 @@
                             "type": "number"
                         }
                     ],
-                    "datasource": {
-                        "type": "yesoreyeram-infinity-datasource",
-                        "uid": "dem2k81ld0veoe"
-                    },
+                    "datasource": "yesoreyeram-infinity-datasource",
                     "filters": [],
                     "format": "timeseries",
                     "global_query_id": "",
@@ -926,10 +875,7 @@
                             "type": "number"
                         }
                     ],
-                    "datasource": {
-                        "type": "yesoreyeram-infinity-datasource",
-                        "uid": "dem2k81ld0veoe"
-                    },
+                    "datasource": "yesoreyeram-infinity-datasource",
                     "filters": [],
                     "format": "timeseries",
                     "global_query_id": "",

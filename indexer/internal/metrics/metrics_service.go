@@ -25,7 +25,7 @@ type MetricsService struct {
 }
 
 func NewService(
-	coordinatorContract *coordinator.CoordinatorContract,
+	coordinatorContract coordinator.Coordinator,
 	bitcoinClientContract *bitcoinclientcontract.BitcoinClientContract,
 	teleportContract *teleportcontract.TeleportContract,
 	bitcoinClient *bitcoin.Client,
