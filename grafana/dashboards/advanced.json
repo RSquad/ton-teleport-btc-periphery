@@ -1190,7 +1190,28 @@
             "pluginVersion": "11.5.2",
             "targets": [
                 {
-                    "columns": [],
+                    "columns": [
+                        {
+                            "selector": "contractBitcoinClient.ConfirmationsNeeded",
+                            "text": "Confirmations Needed",
+                            "type": "string"
+                        },
+                        {
+                            "selector": "contractBitcoinClient.LastConfirmedBlockHash",
+                            "text": "Last Confirmed Block Hash",
+                            "type": "string"
+                        },
+                        {
+                            "selector": "contractBitcoinClient.LastConfirmedBlockHeight",
+                            "text": "Last Confirmed Block Height",
+                            "type": "string"
+                        },
+                        {
+                            "selector": "",
+                            "text": "",
+                            "type": "string"
+                        }
+                    ],
                     "computed_columns": [
                         {
                             "selector": "",
@@ -1205,7 +1226,7 @@
                     "global_query_id": "",
                     "parser": "backend",
                     "refId": "A",
-                    "root_selector": "contractBitcoinClient",
+                    "root_selector": "",
                     "source": "url",
                     "type": "json",
                     "url": "http://indexer/api/metrics?source=info",
@@ -1221,7 +1242,8 @@
                     "id": "organize",
                     "options": {
                         "excludeByName": {
-                            "CandidateBlockHashes": false
+                            "CandidateBlockHashes": false,
+                            "Value": false
                         },
                         "includeByName": {},
                         "indexByName": {
