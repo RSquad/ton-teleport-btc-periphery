@@ -995,6 +995,18 @@
                                 }
                             }
                         ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Field"
+                        },
+                        "properties": [
+                            {
+                                "id": "custom.width",
+                                "value": 175
+                            }
+                        ]
                     }
                 ]
             },
@@ -1139,6 +1151,18 @@
                                     "type": "color-text",
                                     "wrapText": false
                                 }
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Field"
+                        },
+                        "properties": [
+                            {
+                                "id": "custom.width",
+                                "value": 250
                             }
                         ]
                     }
