@@ -91,10 +91,7 @@ func Error(code int32) error {
 }
 
 func CulpritData(culpritData []byte, code int32) *Identifier {
-	if code == int32(ErrInvalidSignatureShare) ||
-		code == int32(ErrInvalidSecretShare) ||
-		code == int32(ErrInvalidProofOfKnowledge) ||
-		code == int32(ErrIncorrectNumberOfCommitments) {
+	if len(culpritData) != 0 {
 		var arr Identifier
 		copy(arr[:], culpritData)
 		return &arr
