@@ -32,13 +32,13 @@ type ContractCoordinatorData struct {
 
 type FetcherContractCoordinator struct {
 	chDB                chan PayloadDB
-	coordinatorContract *coordinator.CoordinatorContract
+	coordinatorContract coordinator.Coordinator
 	period              int64 // Fetch period (in seconds)
 }
 
 func NewFetcherContractCoordinator(
 	chDB chan PayloadDB,
-	coordinatorContract *coordinator.CoordinatorContract,
+	coordinatorContract coordinator.Coordinator,
 	period int64,
 ) *FetcherContractCoordinator {
 	return &FetcherContractCoordinator{
