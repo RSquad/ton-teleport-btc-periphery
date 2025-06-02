@@ -1,10 +1,12 @@
 package signing
 
 import (
+	"crypto/rand"
 	"errors"
 	"fmt"
 	"math/big"
 	"testing"
+	"time"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/pegoutcontract"
@@ -32,7 +34,7 @@ func newCoordinatorContractMock() *coordinator.CoordinatorMock {
 		GetUnsignedPegoutsFunc: func() ([]coordinator.PegoutRecord, error) {
 			panic("mock out the GetUnsignedPegouts method")
 		},
-		SendCommitmentsFunc: func(pegoutID uint64, validatorIdx uint16, commitments []byte) (*tlb.Transaction, error) {
+		SendCommitmentsFunc: func(pegoutID uint64, pegoutUntil int64, validatorIdx uint16, commitments []byte) (*tlb.Transaction, error) {
 			panic("mock out the SendCommitments method")
 		},
 		SendDKGClaimFunc: func(validatorIdx uint16, dkgUntil int64, culpritIdx uint16) (*tlb.Transaction, error) {
@@ -50,7 +52,7 @@ func newCoordinatorContractMock() *coordinator.CoordinatorMock {
 		SendRound2Func: func(validatorIdx uint16, dkgUntil int64, round2Packages []byte) (*tlb.Transaction, error) {
 			panic("mock out the SendRound2 method")
 		},
-		SendSignaturesFunc: func(pegoutID uint64, validatorIdx uint16, signatures [][]byte) (*tlb.Transaction, error) {
+		SendSignaturesFunc: func(pegoutID uint64, pegoutUntil int64, validatorIdx uint16, signatures [][]byte) (*tlb.Transaction, error) {
 			if validatorIdx == 1 {
 				// Emulate an error (err::different_pegout_signatures = 168) during the coordinator contract call
 				return nil, errors.New("...exitcode=168...")
@@ -59,7 +61,7 @@ func newCoordinatorContractMock() *coordinator.CoordinatorMock {
 			// Emulate a successful send signatures to the coordinator contract
 			return nil, nil
 		},
-		SendSigningClaimFunc: func(pegoutID uint64, validatorIdx uint16, culpritIdx uint16) (*tlb.Transaction, error) {
+		SendSigningClaimFunc: func(pegoutID uint64, pegoutUntil int64, validatorIdx uint16, culpritIdx uint16) (*tlb.Transaction, error) {
 			if validatorIdx != 1 {
 				panic(fmt.Sprintf("Wrong validatorIdx: expected 1, but got %d", validatorIdx))
 			}
@@ -71,7 +73,7 @@ func newCoordinatorContractMock() *coordinator.CoordinatorMock {
 			// Emulate a successful send claim to the coordinator contract
 			return nil, nil
 		},
-		SendSigningShareFunc: func(pegoutID uint64, validatorIdx uint16, signingShares [][]byte) (*tlb.Transaction, error) {
+		SendSigningShareFunc: func(pegoutID uint64, pegoutUntil int64, validatorIdx uint16, signingShares [][]byte) (*tlb.Transaction, error) {
 			panic("mock out the SendSigningShare method")
 		},
 		SendStartDKGFunc: func() (*tlb.Transaction, error) {
@@ -122,4 +124,65 @@ func TestSignService_SendSignatures_ERROR_DifferentPegoutSignatures(t *testing.T
 	if resCode != helpers.DifferentPegoutSignatures {
 		t.Fatalf("expected resCode = %d (DifferentPegoutSignatures), got %d", helpers.DifferentPegoutSignatures, resCode)
 	}
+}
+
+func TestPegoutUntil(t *testing.T) {
+	pegout := &CachedPegout{
+		ID:            1,
+		addrStr:       "",
+		inputs:        []pegoutcontract.TxInput{},
+		tx:            nil,
+		signingHashes: [][]byte{},
+		artifacts: &coordinator.PegoutRecord{
+			ExpiredAt:  time.Unix(100000000, 0),
+			ClaimsMask: big.NewInt(0),
+		},
+	}
+
+	validateExpiredAt := func(pegout *CachedPegout, pegoutUntil int64) {
+		if pegout.artifacts.ExpiredAt.Unix() != pegoutUntil {
+			t.Fatalf("Wrong pegoutUntil: expected %d, but got %d", pegout.artifacts.ExpiredAt.Unix(), pegoutUntil)
+		}
+	}
+
+	coordinator := &coordinator.CoordinatorMock{
+		SendCommitmentsFunc: func(pegoutID uint64, pegoutUntil int64, validatorIdx uint16, commitments []byte) (*tlb.Transaction, error) {
+			validateExpiredAt(pegout, pegoutUntil)
+			return nil, nil
+		},
+		SendSigningShareFunc: func(pegoutID uint64, pegoutUntil int64, validatorIdx uint16, signingShares [][]byte) (*tlb.Transaction, error) {
+			validateExpiredAt(pegout, pegoutUntil)
+			return nil, nil
+		},
+		SendSignaturesFunc: func(pegoutID uint64, pegoutUntil int64, validatorIdx uint16, signatures [][]byte) (*tlb.Transaction, error) {
+			validateExpiredAt(pegout, pegoutUntil)
+			return nil, nil
+		},
+		SendSigningClaimFunc: func(pegoutID uint64, pegoutUntil int64, validatorIdx uint16, culpritIdx uint16) (*tlb.Transaction, error) {
+			validateExpiredAt(pegout, pegoutUntil)
+			return nil, nil
+		},
+	}
+
+	service := NewService(nil, coordinator, nil, 0)
+	validatorIdx := uint16(0)
+
+	commitments := make([]byte, 32)
+	rand.Read(commitments)
+
+	service.sendCommitments(pegout, validatorIdx, commitments)
+
+	signShares := make([][]byte, 1)
+	signShares[0] = make([]byte, 32)
+	rand.Read(signShares[0])
+
+	service.sendSigningShares(pegout, validatorIdx, signShares)
+
+	signatures := make([][]byte, 1)
+	signatures[0] = make([]byte, 64)
+	rand.Read(signatures[0])
+
+	service.SendSignatures(pegout, validatorIdx, signatures)
+
+	service.executeClaim(pegout, validatorIdx, 1)
 }

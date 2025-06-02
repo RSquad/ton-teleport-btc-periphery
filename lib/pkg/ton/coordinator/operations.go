@@ -78,6 +78,7 @@ func (c *coordinatorContract) SendPubkeyPackage(
 
 func (c *coordinatorContract) SendCommitments(
 	PegoutID uint64,
+	PegoutUntil int64,
 	ValidatorIdx uint16,
 	Commitments []byte,
 ) (*tlb.Transaction, error) {
@@ -86,40 +87,43 @@ func (c *coordinatorContract) SendCommitments(
 	}
 	return c.sendBodyCell(BuildSendCommitmentsBody(
 		int64(c.ttl.Seconds()),
-		&CommitmentRequest{PegoutID, ValidatorIdx, Commitments},
+		&CommitmentRequest{PegoutID, PegoutUntil, ValidatorIdx, Commitments},
 	), "SendCommitments")
 }
 
 func (c *coordinatorContract) SendSigningShare(
 	PegoutID uint64,
+	PegoutUntil int64,
 	ValidatorIdx uint16,
 	SigningShares [][]byte,
 ) (*tlb.Transaction, error) {
 	return c.sendBodyCell(BuildSendSigningShareBody(
 		int64(c.ttl.Seconds()),
-		&SigningShareRequest{PegoutID, ValidatorIdx, SigningShares},
+		&SigningShareRequest{PegoutID, PegoutUntil, ValidatorIdx, SigningShares},
 	), "SendSigningShare")
 }
 
 func (c *coordinatorContract) SendSignatures(
 	PegoutID uint64,
+	PegoutUntil int64,
 	ValidatorIdx uint16,
 	Signatures [][]byte,
 ) (*tlb.Transaction, error) {
 	return c.sendBodyCell(BuildSendSignaturesBody(
 		int64(c.ttl.Seconds()),
-		&SignaturesRequest{PegoutID, ValidatorIdx, Signatures},
+		&SignaturesRequest{PegoutID, PegoutUntil, ValidatorIdx, Signatures},
 	), "SendSignatures")
 }
 
 func (c *coordinatorContract) SendSigningClaim(
 	PegoutID uint64,
+	PegoutUntil int64,
 	ValidatorIdx uint16,
 	culpritIdx uint16,
 ) (*tlb.Transaction, error) {
 	return c.sendBodyCell(BuildSendSigningClaimBody(
 		int64(c.ttl.Seconds()),
-		&SigningClaimRequest{PegoutID, ValidatorIdx, culpritIdx},
+		&SigningClaimRequest{PegoutID, PegoutUntil, ValidatorIdx, culpritIdx},
 	), "SendSigningClaim")
 }
 
