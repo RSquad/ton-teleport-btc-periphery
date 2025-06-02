@@ -18,7 +18,7 @@
     "editable": true,
     "fiscalYearStartMonth": 0,
     "graphTooltip": 0,
-    "id": 8,
+    "id": 1,
     "links": [],
     "panels": [
         {
@@ -27,6 +27,13 @@
                 "defaults": {
                     "color": {
                         "mode": "thresholds"
+                    },
+                    "custom": {
+                        "align": "left",
+                        "cellOptions": {
+                            "type": "auto"
+                        },
+                        "inspect": false
                     },
                     "links": [],
                     "mappings": [],
@@ -40,37 +47,60 @@
                         ]
                     }
                 },
-                "overrides": []
+                "overrides": [
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Field"
+                        },
+                        "properties": [
+                            {
+                                "id": "custom.width",
+                                "value": 175
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Value"
+                        },
+                        "properties": [
+                            {
+                                "id": "custom.cellOptions",
+                                "value": {
+                                    "type": "color-text",
+                                    "wrapText": false
+                                }
+                            }
+                        ]
+                    }
+                ]
             },
             "gridPos": {
-                "h": 4,
+                "h": 5,
                 "w": 12,
                 "x": 0,
                 "y": 0
             },
             "id": 1,
             "options": {
-                "colorMode": "value",
-                "contentAlignment": "left",
-                "graphMode": "none",
-                "justifyMode": "auto",
-                "orientation": "horizontal",
-                "percentChangeColorMode": "standard",
-                "reduceOptions": {
-                    "calcs": [
-                        "lastNotNull"
+                "cellHeight": "sm",
+                "footer": {
+                    "countRows": false,
+                    "fields": "",
+                    "reducer": [
+                        "sum"
                     ],
-                    "fields": "/.*/",
-                    "values": false
+                    "show": false
                 },
-                "showPercentChange": false,
-                "text": {
-                    "align": "left",
-                    "titleSize": 15,
-                    "valueSize": 15
-                },
-                "textMode": "value_and_name",
-                "wideLayout": true
+                "showHeader": false,
+                "sortBy": [
+                    {
+                        "desc": true,
+                        "displayName": "cc848d3f6113693ce52e4c971cd647dc241dbcfc929a07755fdd9f3f8d4eb891"
+                    }
+                ]
             },
             "pluginVersion": "11.5.2",
             "targets": [
@@ -111,21 +141,42 @@
             "title": "System",
             "transformations": [
                 {
+                    "id": "extractFields",
+                    "options": {
+                        "delimiter": ",",
+                        "format": "regexp",
+                        "keepTime": false,
+                        "regExp": "",
+                        "replace": false,
+                        "source": "Current Internal Key"
+                    }
+                },
+                {
                     "id": "organize",
                     "options": {
-                        "excludeByName": {},
+                        "excludeByName": {
+                            "NewField": false,
+                            "Total": false
+                        },
                         "includeByName": {},
                         "indexByName": {
-                            "Current Internal Key": 0,
-                            "Sequence Locktime": 2,
+                            "Current Internal Key": 2,
+                            "NewField": 0,
+                            "Sequence Locktime": 3,
                             "Tweaked Key": 1
                         },
-                        "renameByName": {}
+                        "renameByName": {
+                            "NewField": ""
+                        }
                     }
+                },
+                {
+                    "id": "transpose",
+                    "options": {}
                 }
             ],
             "transparent": true,
-            "type": "stat"
+            "type": "table"
         },
         {
             "datasource": "yesoreyeram-infinity-datasource",
@@ -133,6 +184,13 @@
                 "defaults": {
                     "color": {
                         "mode": "thresholds"
+                    },
+                    "custom": {
+                        "align": "left",
+                        "cellOptions": {
+                            "type": "auto"
+                        },
+                        "inspect": false
                     },
                     "mappings": [],
                     "thresholds": {
@@ -149,7 +207,19 @@
                     {
                         "matcher": {
                             "id": "byName",
-                            "options": "Last Pegout Tx ID"
+                            "options": "Field"
+                        },
+                        "properties": [
+                            {
+                                "id": "custom.width",
+                                "value": 250
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Value"
                         },
                         "properties": [
                             {
@@ -163,36 +233,42 @@
                                 ]
                             }
                         ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Value"
+                        },
+                        "properties": [
+                            {
+                                "id": "custom.cellOptions",
+                                "value": {
+                                    "type": "color-text",
+                                    "wrapText": false
+                                }
+                            }
+                        ]
                     }
                 ]
             },
             "gridPos": {
-                "h": 4,
+                "h": 5,
                 "w": 12,
                 "x": 12,
                 "y": 0
             },
             "id": 11,
             "options": {
-                "colorMode": "value",
-                "graphMode": "none",
-                "justifyMode": "auto",
-                "orientation": "horizontal",
-                "percentChangeColorMode": "standard",
-                "reduceOptions": {
-                    "calcs": [
-                        "lastNotNull"
+                "cellHeight": "sm",
+                "footer": {
+                    "countRows": false,
+                    "fields": "",
+                    "reducer": [
+                        "sum"
                     ],
-                    "fields": "/.*/",
-                    "values": false
+                    "show": false
                 },
-                "showPercentChange": false,
-                "text": {
-                    "titleSize": 15,
-                    "valueSize": 15
-                },
-                "textMode": "value_and_name",
-                "wideLayout": true
+                "showHeader": false
             },
             "pluginVersion": "11.5.2",
             "targets": [
@@ -231,50 +307,32 @@
                     "id": "extractFields",
                     "options": {
                         "delimiter": ",",
-                        "format": "json",
-                        "jsonPaths": [
-                            {
-                                "alias": "Unconfirmed Pegouts Count",
-                                "path": "PegoutChainCounter"
-                            },
-                            {
-                                "path": "LastPegoutTxID"
-                            }
-                        ],
-                        "keepTime": false,
-                        "replace": true,
-                        "source": "payload"
+                        "format": "regexp",
+                        "source": "Unconfirmed Pegout Count"
+                    }
+                },
+                {
+                    "id": "organize",
+                    "options": {
+                        "excludeByName": {},
+                        "includeByName": {},
+                        "indexByName": {
+                            "Last Pegout Tx ID": 2,
+                            "NewField": 0,
+                            "Unconfirmed Pegout Count": 1
+                        },
+                        "renameByName": {}
+                    }
+                },
+                {
+                    "id": "transpose",
+                    "options": {
+                        "firstFieldName": ""
                     }
                 }
             ],
             "transparent": true,
-            "type": "stat"
-        },
-        {
-            "fieldConfig": {
-                "defaults": {},
-                "overrides": []
-            },
-            "gridPos": {
-                "h": 1,
-                "w": 24,
-                "x": 0,
-                "y": 4
-            },
-            "id": 30,
-            "options": {
-                "code": {
-                    "language": "plaintext",
-                    "showLineNumbers": false,
-                    "showMiniMap": false
-                },
-                "content": "",
-                "mode": "markdown"
-            },
-            "pluginVersion": "11.5.2",
-            "title": "",
-            "transparent": true,
-            "type": "text"
+            "type": "table"
         },
         {
             "datasource": "yesoreyeram-infinity-datasource",
@@ -283,13 +341,14 @@
                     "color": {
                         "mode": "thresholds"
                     },
-                    "links": [
-                        {
-                            "targetBlank": true,
-                            "title": "",
-                            "url": "https://testnet.tonviewer.com/${__value.text}"
-                        }
-                    ],
+                    "custom": {
+                        "align": "left",
+                        "cellOptions": {
+                            "type": "auto"
+                        },
+                        "inspect": false
+                    },
+                    "links": [],
                     "mappings": [],
                     "thresholds": {
                         "mode": "absolute",
@@ -301,7 +360,45 @@
                         ]
                     }
                 },
-                "overrides": []
+                "overrides": [
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Field"
+                        },
+                        "properties": [
+                            {
+                                "id": "custom.width",
+                                "value": 175
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Value"
+                        },
+                        "properties": [
+                            {
+                                "id": "links",
+                                "value": [
+                                    {
+                                        "targetBlank": true,
+                                        "title": "",
+                                        "url": "https://testnet.tonviewer.com/${__value.text}"
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "custom.cellOptions",
+                                "value": {
+                                    "type": "color-text",
+                                    "wrapText": false
+                                }
+                            }
+                        ]
+                    }
+                ]
             },
             "gridPos": {
                 "h": 6,
@@ -311,25 +408,16 @@
             },
             "id": 5,
             "options": {
-                "colorMode": "value",
-                "graphMode": "none",
-                "justifyMode": "auto",
-                "orientation": "horizontal",
-                "percentChangeColorMode": "standard",
-                "reduceOptions": {
-                    "calcs": [
-                        "lastNotNull"
+                "cellHeight": "sm",
+                "footer": {
+                    "countRows": false,
+                    "fields": "",
+                    "reducer": [
+                        "sum"
                     ],
-                    "fields": "/.*/",
-                    "values": false
+                    "show": false
                 },
-                "showPercentChange": false,
-                "text": {
-                    "titleSize": 15,
-                    "valueSize": 15
-                },
-                "textMode": "value_and_name",
-                "wideLayout": true
+                "showHeader": false
             },
             "pluginVersion": "11.5.2",
             "targets": [
@@ -375,22 +463,40 @@
             "title": "Contract Addresses",
             "transformations": [
                 {
+                    "id": "extractFields",
+                    "options": {
+                        "delimiter": ",",
+                        "format": "regexp",
+                        "source": "tgBTC"
+                    }
+                },
+                {
                     "id": "organize",
                     "options": {
-                        "excludeByName": {},
+                        "excludeByName": {
+                            "tgBTC": false
+                        },
                         "includeByName": {},
                         "indexByName": {
-                            "Bitcoin Client": 3,
-                            "Coordinator": 2,
-                            "Teleport": 1,
-                            "tgBTC": 0
+                            "Bitcoin Client": 4,
+                            "Coordinator": 3,
+                            "NewField": 0,
+                            "Teleport": 2,
+                            "tgBTC": 1
                         },
-                        "renameByName": {}
+                        "renameByName": {
+                            "0": "",
+                            "NewField": "tgBTC"
+                        }
                     }
+                },
+                {
+                    "id": "transpose",
+                    "options": {}
                 }
             ],
             "transparent": true,
-            "type": "stat"
+            "type": "table"
         },
         {
             "datasource": "yesoreyeram-infinity-datasource",
@@ -398,6 +504,13 @@
                 "defaults": {
                     "color": {
                         "mode": "thresholds"
+                    },
+                    "custom": {
+                        "align": "left",
+                        "cellOptions": {
+                            "type": "auto"
+                        },
+                        "inspect": false
                     },
                     "mappings": [],
                     "thresholds": {
@@ -414,50 +527,50 @@
                     {
                         "matcher": {
                             "id": "byName",
-                            "options": "Last Pegout Tx ID"
+                            "options": "Field"
                         },
                         "properties": [
                             {
-                                "id": "links",
-                                "value": [
-                                    {
-                                        "targetBlank": true,
-                                        "title": "",
-                                        "url": "https://mempool.space/signet/tx/${__value.text}"
-                                    }
-                                ]
+                                "id": "custom.width",
+                                "value": 250
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Value"
+                        },
+                        "properties": [
+                            {
+                                "id": "custom.cellOptions",
+                                "value": {
+                                    "type": "color-text",
+                                    "wrapText": false
+                                }
                             }
                         ]
                     }
                 ]
             },
             "gridPos": {
-                "h": 2,
+                "h": 3,
                 "w": 12,
                 "x": 12,
                 "y": 5
             },
             "id": 28,
             "options": {
-                "colorMode": "value",
-                "graphMode": "none",
-                "justifyMode": "auto",
-                "orientation": "horizontal",
-                "percentChangeColorMode": "standard",
-                "reduceOptions": {
-                    "calcs": [
-                        "lastNotNull"
+                "cellHeight": "sm",
+                "footer": {
+                    "countRows": false,
+                    "fields": "",
+                    "reducer": [
+                        "sum"
                     ],
-                    "fields": "/.*/",
-                    "values": false
+                    "show": false
                 },
-                "showPercentChange": false,
-                "text": {
-                    "titleSize": 15,
-                    "valueSize": 15
-                },
-                "textMode": "value_and_name",
-                "wideLayout": true
+                "showHeader": false
             },
             "pluginVersion": "11.5.2",
             "targets": [
@@ -491,50 +604,29 @@
                     "id": "extractFields",
                     "options": {
                         "delimiter": ",",
-                        "format": "json",
-                        "jsonPaths": [
-                            {
-                                "alias": "Unconfirmed Pegouts Count",
-                                "path": "PegoutChainCounter"
-                            },
-                            {
-                                "path": "LastPegoutTxID"
-                            }
-                        ],
-                        "keepTime": false,
-                        "replace": true,
-                        "source": "payload"
+                        "format": "regexp",
+                        "source": "Processing Pegins Count"
                     }
+                },
+                {
+                    "id": "organize",
+                    "options": {
+                        "excludeByName": {},
+                        "includeByName": {},
+                        "indexByName": {
+                            "NewField": 0,
+                            "Processing Pegins Count": 1
+                        },
+                        "renameByName": {}
+                    }
+                },
+                {
+                    "id": "transpose",
+                    "options": {}
                 }
             ],
             "transparent": true,
-            "type": "stat"
-        },
-        {
-            "fieldConfig": {
-                "defaults": {},
-                "overrides": []
-            },
-            "gridPos": {
-                "h": 1,
-                "w": 12,
-                "x": 12,
-                "y": 7
-            },
-            "id": 31,
-            "options": {
-                "code": {
-                    "language": "plaintext",
-                    "showLineNumbers": false,
-                    "showMiniMap": false
-                },
-                "content": "",
-                "mode": "markdown"
-            },
-            "pluginVersion": "11.5.2",
-            "title": "",
-            "transparent": true,
-            "type": "text"
+            "type": "table"
         },
         {
             "datasource": "yesoreyeram-infinity-datasource",
@@ -543,6 +635,13 @@
                     "color": {
                         "mode": "thresholds"
                     },
+                    "custom": {
+                        "align": "left",
+                        "cellOptions": {
+                            "type": "auto"
+                        },
+                        "inspect": false
+                    },
                     "mappings": [],
                     "thresholds": {
                         "mode": "absolute",
@@ -550,10 +649,6 @@
                             {
                                 "color": "green",
                                 "value": null
-                            },
-                            {
-                                "color": "red",
-                                "value": 80
                             }
                         ]
                     },
@@ -575,36 +670,42 @@
                                 "value": "BTC"
                             }
                         ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Value"
+                        },
+                        "properties": [
+                            {
+                                "id": "custom.cellOptions",
+                                "value": {
+                                    "type": "color-text",
+                                    "wrapText": false
+                                }
+                            }
+                        ]
                     }
                 ]
             },
             "gridPos": {
-                "h": 4,
+                "h": 5,
                 "w": 6,
                 "x": 12,
                 "y": 8
             },
             "id": 18,
             "options": {
-                "colorMode": "value",
-                "graphMode": "none",
-                "justifyMode": "auto",
-                "orientation": "horizontal",
-                "percentChangeColorMode": "standard",
-                "reduceOptions": {
-                    "calcs": [
-                        "lastNotNull"
+                "cellHeight": "sm",
+                "footer": {
+                    "countRows": false,
+                    "fields": "",
+                    "reducer": [
+                        "sum"
                     ],
-                    "fields": "/.*/",
-                    "values": false
+                    "show": false
                 },
-                "showPercentChange": false,
-                "text": {
-                    "titleSize": 15,
-                    "valueSize": 15
-                },
-                "textMode": "value_and_name",
-                "wideLayout": true
+                "showHeader": false
             },
             "pluginVersion": "11.5.2",
             "targets": [
@@ -673,21 +774,25 @@
                     "id": "organize",
                     "options": {
                         "excludeByName": {
-                            "TotalServiceFee": true
+                            "TotalServiceFee": false
                         },
                         "includeByName": {},
                         "indexByName": {
-                            "Base": 1,
-                            "Next Pegout Fee": 2,
-                            "Total Service Fee": 0,
-                            "TotalServiceFee": 3
+                            "Base": 2,
+                            "Next Pegout Fee": 3,
+                            "Total Service Fee": 1,
+                            "TotalServiceFee": 0
                         },
                         "renameByName": {}
                     }
+                },
+                {
+                    "id": "transpose",
+                    "options": {}
                 }
             ],
             "transparent": true,
-            "type": "stat"
+            "type": "table"
         },
         {
             "datasource": "yesoreyeram-infinity-datasource",
@@ -695,6 +800,13 @@
                 "defaults": {
                     "color": {
                         "mode": "thresholds"
+                    },
+                    "custom": {
+                        "align": "left",
+                        "cellOptions": {
+                            "type": "auto"
+                        },
+                        "inspect": false
                     },
                     "mappings": [],
                     "thresholds": {
@@ -708,35 +820,42 @@
                     },
                     "unit": "BTC"
                 },
-                "overrides": []
+                "overrides": [
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Value"
+                        },
+                        "properties": [
+                            {
+                                "id": "custom.cellOptions",
+                                "value": {
+                                    "type": "color-text",
+                                    "wrapText": false
+                                }
+                            }
+                        ]
+                    }
+                ]
             },
             "gridPos": {
-                "h": 4,
+                "h": 5,
                 "w": 6,
                 "x": 18,
                 "y": 8
             },
             "id": 13,
             "options": {
-                "colorMode": "value",
-                "graphMode": "none",
-                "justifyMode": "auto",
-                "orientation": "horizontal",
-                "percentChangeColorMode": "standard",
-                "reduceOptions": {
-                    "calcs": [
-                        "lastNotNull"
+                "cellHeight": "sm",
+                "footer": {
+                    "countRows": false,
+                    "fields": "",
+                    "reducer": [
+                        "sum"
                     ],
-                    "fields": "/.*/",
-                    "values": false
+                    "show": false
                 },
-                "showPercentChange": false,
-                "text": {
-                    "titleSize": 15,
-                    "valueSize": 15
-                },
-                "textMode": "value_and_name",
-                "wideLayout": true
+                "showHeader": false
             },
             "pluginVersion": "11.5.2",
             "targets": [
@@ -760,34 +879,6 @@
             ],
             "title": "Limits",
             "transformations": [
-                {
-                    "id": "extractFields",
-                    "options": {
-                        "delimiter": ",",
-                        "format": "json",
-                        "jsonPaths": [
-                            {
-                                "path": "Limits"
-                            }
-                        ],
-                        "replace": true,
-                        "source": "payload"
-                    }
-                },
-                {
-                    "id": "extractFields",
-                    "options": {
-                        "delimiter": ",",
-                        "format": "json",
-                        "jsonPaths": [
-                            {
-                                "path": ""
-                            }
-                        ],
-                        "replace": true,
-                        "source": "Limits"
-                    }
-                },
                 {
                     "id": "calculateField",
                     "options": {
@@ -835,45 +926,24 @@
                     }
                 },
                 {
-                    "id": "filterFieldsByName",
+                    "id": "organize",
                     "options": {
-                        "include": {
-                            "names": [
-                                "Min Pegin Value",
-                                "Min Pegout Value"
-                            ]
-                        }
+                        "excludeByName": {
+                            "MinPeginAmount": true,
+                            "MinPegoutAmount": true
+                        },
+                        "includeByName": {},
+                        "indexByName": {},
+                        "renameByName": {}
                     }
+                },
+                {
+                    "id": "transpose",
+                    "options": {}
                 }
             ],
             "transparent": true,
-            "type": "stat"
-        },
-        {
-            "fieldConfig": {
-                "defaults": {},
-                "overrides": []
-            },
-            "gridPos": {
-                "h": 1,
-                "w": 24,
-                "x": 0,
-                "y": 12
-            },
-            "id": 29,
-            "options": {
-                "code": {
-                    "language": "plaintext",
-                    "showLineNumbers": false,
-                    "showMiniMap": false
-                },
-                "content": "",
-                "mode": "markdown"
-            },
-            "pluginVersion": "11.5.2",
-            "title": "",
-            "transparent": true,
-            "type": "text"
+            "type": "table"
         },
         {
             "datasource": "yesoreyeram-infinity-datasource",
@@ -881,6 +951,13 @@
                 "defaults": {
                     "color": {
                         "mode": "thresholds"
+                    },
+                    "custom": {
+                        "align": "left",
+                        "cellOptions": {
+                            "type": "auto"
+                        },
+                        "inspect": false
                     },
                     "mappings": [],
                     "thresholds": {
@@ -897,7 +974,7 @@
                     {
                         "matcher": {
                             "id": "byName",
-                            "options": "Chain Best Block Hash"
+                            "options": "Value"
                         },
                         "properties": [
                             {
@@ -909,18 +986,25 @@
                                         "url": "https://mempool.space/signet/block/${__value.text}"
                                     }
                                 ]
+                            },
+                            {
+                                "id": "custom.cellOptions",
+                                "value": {
+                                    "type": "color-text",
+                                    "wrapText": false
+                                }
                             }
                         ]
                     },
                     {
                         "matcher": {
                             "id": "byName",
-                            "options": "Median Time"
+                            "options": "Field"
                         },
                         "properties": [
                             {
-                                "id": "unit",
-                                "value": "dateTimeAsLocal"
+                                "id": "custom.width",
+                                "value": 175
                             }
                         ]
                     }
@@ -930,41 +1014,59 @@
                 "h": 6,
                 "w": 12,
                 "x": 0,
-                "y": 13
+                "y": 11
             },
             "id": 27,
             "options": {
-                "colorMode": "value",
-                "graphMode": "none",
-                "justifyMode": "auto",
-                "orientation": "horizontal",
-                "percentChangeColorMode": "standard",
-                "reduceOptions": {
-                    "calcs": [
-                        "lastNotNull"
+                "cellHeight": "sm",
+                "footer": {
+                    "countRows": false,
+                    "fields": "",
+                    "reducer": [
+                        "sum"
                     ],
-                    "fields": "/.*/",
-                    "values": false
+                    "show": false
                 },
-                "showPercentChange": false,
-                "text": {
-                    "titleSize": 15,
-                    "valueSize": 15
-                },
-                "textMode": "value_and_name",
-                "wideLayout": true
+                "frameIndex": 0,
+                "showHeader": false
             },
             "pluginVersion": "11.5.2",
             "targets": [
                 {
-                    "columns": [],
+                    "columns": [
+                        {
+                            "selector": "blockChainInfo.chain",
+                            "text": "Chain",
+                            "type": "string"
+                        },
+                        {
+                            "selector": "blockChainInfo.blocks",
+                            "text": "Chain Height",
+                            "type": "string"
+                        },
+                        {
+                            "selector": "blockChainInfo.bestblockhash",
+                            "text": "Best Block Hash",
+                            "type": "string"
+                        },
+                        {
+                            "selector": "blockChainInfo.mediantime",
+                            "text": "Median Time",
+                            "type": "timestamp_epoch_s"
+                        },
+                        {
+                            "selector": "",
+                            "text": "",
+                            "type": "string"
+                        }
+                    ],
                     "datasource": "yesoreyeram-infinity-datasource",
                     "filters": [],
                     "format": "table",
                     "global_query_id": "",
                     "parser": "backend",
                     "refId": "A",
-                    "root_selector": "blockChainInfo",
+                    "root_selector": "",
                     "source": "url",
                     "type": "json",
                     "url": "http://indexer/api/metrics?source=info",
@@ -977,53 +1079,29 @@
             "title": "Bitcoin Network State",
             "transformations": [
                 {
-                    "id": "calculateField",
+                    "id": "organize",
                     "options": {
-                        "alias": "Median Time",
-                        "binary": {
-                            "left": {
-                                "matcher": {
-                                    "id": "byName",
-                                    "options": "mediantime"
-                                }
-                            },
-                            "operator": "*",
-                            "right": {
-                                "fixed": "1000"
-                            }
+                        "excludeByName": {},
+                        "includeByName": {},
+                        "indexByName": {
+                            "Best Block Hash": 3,
+                            "Chain": 1,
+                            "Chain Height": 2,
+                            "Median Time": 4,
+                            "Value": 0
                         },
-                        "mode": "binary",
-                        "reduce": {
-                            "reducer": "sum"
-                        },
-                        "replaceFields": false
+                        "renameByName": {}
                     }
                 },
                 {
-                    "id": "organize",
+                    "id": "transpose",
                     "options": {
-                        "excludeByName": {
-                            "mediantime": true
-                        },
-                        "includeByName": {},
-                        "indexByName": {
-                            "Median Time": 4,
-                            "bestblockhash": 2,
-                            "blocks": 1,
-                            "chain": 0,
-                            "mediantime": 3
-                        },
-                        "renameByName": {
-                            "bestblockhash": "Chain Best Block Hash",
-                            "blocks": "Chain Height",
-                            "chain": "Chain",
-                            "mediantime": ""
-                        }
+                        "restFieldsName": ""
                     }
                 }
             ],
             "transparent": true,
-            "type": "stat"
+            "type": "table"
         },
         {
             "datasource": "yesoreyeram-infinity-datasource",
@@ -1031,6 +1109,13 @@
                 "defaults": {
                     "color": {
                         "mode": "thresholds"
+                    },
+                    "custom": {
+                        "align": "left",
+                        "cellOptions": {
+                            "type": "auto"
+                        },
+                        "inspect": false
                     },
                     "mappings": [],
                     "thresholds": {
@@ -1047,7 +1132,7 @@
                     {
                         "matcher": {
                             "id": "byName",
-                            "options": "Last Confirmed Block Hash"
+                            "options": "Value"
                         },
                         "properties": [
                             {
@@ -1059,15 +1144,27 @@
                                         "url": "https://mempool.space/signet/block/${__value.text}"
                                     }
                                 ]
+                            },
+                            {
+                                "id": "custom.cellOptions",
+                                "value": {
+                                    "type": "color-text",
+                                    "wrapText": false
+                                }
                             }
                         ]
                     },
                     {
                         "matcher": {
                             "id": "byName",
-                            "options": "Candidates Tree"
+                            "options": "Field"
                         },
-                        "properties": []
+                        "properties": [
+                            {
+                                "id": "custom.width",
+                                "value": 250
+                            }
+                        ]
                     }
                 ]
             },
@@ -1079,30 +1176,42 @@
             },
             "id": 25,
             "options": {
-                "colorMode": "value",
-                "graphMode": "none",
-                "justifyMode": "auto",
-                "orientation": "horizontal",
-                "percentChangeColorMode": "standard",
-                "reduceOptions": {
-                    "calcs": [
-                        "lastNotNull"
+                "cellHeight": "sm",
+                "footer": {
+                    "countRows": false,
+                    "fields": "",
+                    "reducer": [
+                        "sum"
                     ],
-                    "fields": "/.*/",
-                    "values": false
+                    "show": false
                 },
-                "showPercentChange": false,
-                "text": {
-                    "titleSize": 15,
-                    "valueSize": 15
-                },
-                "textMode": "value_and_name",
-                "wideLayout": true
+                "showHeader": false
             },
             "pluginVersion": "11.5.2",
             "targets": [
                 {
-                    "columns": [],
+                    "columns": [
+                        {
+                            "selector": "contractBitcoinClient.ConfirmationsNeeded",
+                            "text": "Confirmations Needed",
+                            "type": "string"
+                        },
+                        {
+                            "selector": "contractBitcoinClient.LastConfirmedBlockHash",
+                            "text": "Last Confirmed Block Hash",
+                            "type": "string"
+                        },
+                        {
+                            "selector": "contractBitcoinClient.LastConfirmedBlockHeight",
+                            "text": "Last Confirmed Block Height",
+                            "type": "string"
+                        },
+                        {
+                            "selector": "",
+                            "text": "",
+                            "type": "string"
+                        }
+                    ],
                     "computed_columns": [
                         {
                             "selector": "",
@@ -1117,7 +1226,7 @@
                     "global_query_id": "",
                     "parser": "backend",
                     "refId": "A",
-                    "root_selector": "contractBitcoinClient",
+                    "root_selector": "",
                     "source": "url",
                     "type": "json",
                     "url": "http://indexer/api/metrics?source=info",
@@ -1133,14 +1242,15 @@
                     "id": "organize",
                     "options": {
                         "excludeByName": {
-                            "CandidateBlockHashes": true
+                            "CandidateBlockHashes": false,
+                            "Value": false
                         },
                         "includeByName": {},
                         "indexByName": {
-                            "CandidateBlockHashes": 3,
-                            "ConfirmationsNeeded": 0,
-                            "LastConfirmedBlockHash": 1,
-                            "LastConfirmedBlockHeight": 2
+                            "CandidateBlockHashes": 0,
+                            "ConfirmationsNeeded": 1,
+                            "LastConfirmedBlockHash": 2,
+                            "LastConfirmedBlockHeight": 3
                         },
                         "renameByName": {
                             "0": "Candidates Tree",
@@ -1155,10 +1265,14 @@
                             "mediantime": "Median Time"
                         }
                     }
+                },
+                {
+                    "id": "transpose",
+                    "options": {}
                 }
             ],
             "transparent": true,
-            "type": "stat"
+            "type": "table"
         },
         {
             "datasource": "yesoreyeram-infinity-datasource",
@@ -1167,6 +1281,13 @@
                     "color": {
                         "mode": "thresholds"
                     },
+                    "custom": {
+                        "align": "left",
+                        "cellOptions": {
+                            "type": "color-text"
+                        },
+                        "inspect": false
+                    },
                     "links": [
                         {
                             "targetBlank": true,
@@ -1174,7 +1295,25 @@
                             "url": "https://mempool.space/signet/block/${__value.text}"
                         }
                     ],
-                    "mappings": [],
+                    "mappings": [
+                        {
+                            "options": {
+                                "0": {
+                                    "index": 0,
+                                    "text": "-"
+                                },
+                                "1": {
+                                    "index": 1,
+                                    "text": "-"
+                                },
+                                "LastConfirmedBlockHash": {
+                                    "index": 2,
+                                    "text": "-"
+                                }
+                            },
+                            "type": "value"
+                        }
+                    ],
                     "thresholds": {
                         "mode": "absolute",
                         "steps": [
@@ -1188,32 +1327,23 @@
                 "overrides": []
             },
             "gridPos": {
-                "h": 4,
+                "h": 5,
                 "w": 12,
                 "x": 12,
                 "y": 18
             },
             "id": 26,
             "options": {
-                "colorMode": "value",
-                "graphMode": "none",
-                "justifyMode": "auto",
-                "orientation": "horizontal",
-                "percentChangeColorMode": "standard",
-                "reduceOptions": {
-                    "calcs": [
-                        "lastNotNull"
+                "cellHeight": "sm",
+                "footer": {
+                    "countRows": false,
+                    "fields": "",
+                    "reducer": [
+                        "sum"
                     ],
-                    "fields": "/.*/",
-                    "values": false
+                    "show": false
                 },
-                "showPercentChange": false,
-                "text": {
-                    "titleSize": 15,
-                    "valueSize": 15
-                },
-                "textMode": "value_and_name",
-                "wideLayout": true
+                "showHeader": false
             },
             "pluginVersion": "11.5.2",
             "targets": [
@@ -1235,7 +1365,7 @@
                     }
                 }
             ],
-            "title": "",
+            "title": "Candidates Tree",
             "transformations": [
                 {
                     "id": "extractFields",
@@ -1256,16 +1386,17 @@
                     "id": "organize",
                     "options": {
                         "excludeByName": {
-                            "CandidateBlockHashes": true,
+                            "1": false,
+                            "CandidateBlockHashes": false,
                             "ConfirmationsNeeded": true,
                             "LastConfirmedBlockHash": false,
                             "LastConfirmedBlockHeight": true
                         },
                         "includeByName": {},
                         "indexByName": {
-                            "0": 0,
-                            "1": 1,
-                            "CandidateBlockHashes": 2,
+                            "0": 1,
+                            "1": 2,
+                            "CandidateBlockHashes": 0,
                             "ConfirmationsNeeded": 3,
                             "LastConfirmedBlockHash": 5,
                             "LastConfirmedBlockHeight": 4
@@ -1276,10 +1407,25 @@
                             "LastConfirmedBlockHash": " "
                         }
                     }
+                },
+                {
+                    "id": "transpose",
+                    "options": {}
+                },
+                {
+                    "id": "organize",
+                    "options": {
+                        "excludeByName": {
+                            "Field": true
+                        },
+                        "includeByName": {},
+                        "indexByName": {},
+                        "renameByName": {}
+                    }
                 }
             ],
             "transparent": true,
-            "type": "stat"
+            "type": "table"
         },
         {
             "datasource": "yesoreyeram-infinity-datasource",
@@ -1291,8 +1437,7 @@
                     "custom": {
                         "align": "left",
                         "cellOptions": {
-                            "type": "auto",
-                            "wrapText": false
+                            "type": "color-text"
                         },
                         "inspect": false
                     },
@@ -1395,7 +1540,7 @@
                 "h": 5,
                 "w": 24,
                 "x": 0,
-                "y": 22
+                "y": 23
             },
             "id": 22,
             "options": {
@@ -1508,6 +1653,6 @@
     "timezone": "browser",
     "title": "Advanced",
     "uid": "ad5935b6-fc66-4fbf-b71e-58fe9c068a95",
-    "version": 6,
+    "version": 1,
     "weekStart": ""
 }
