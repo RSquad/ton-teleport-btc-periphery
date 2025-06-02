@@ -123,6 +123,10 @@ func (s *SignService) logSendSigningShare(pegoutID uint64, signShares [][]byte) 
 	infoEventWithPegoutID(pegoutID).Msgf("send %d signing shares", len(signShares))
 }
 
+func (s *SignService) logSendCommitmentsError(pegoutID uint64, err error) {
+	errorEventWithPegoutID(pegoutID).Err(err).Msg("failed to send commitments")
+}
+
 func (s *SignService) logSendSigningShareError(pegoutID uint64, err error) {
 	msg := helpers.HandleTvmError(err)
 	errorEventWithPegoutID(pegoutID).Err(err).Msg("failed to send signing share: " + msg)

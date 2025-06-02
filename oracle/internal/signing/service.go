@@ -274,16 +274,8 @@ func (s *SignService) doCommit(
 		s.logError("failed to serialize commitments", err)
 		return false
 	}
-	s.logSendCommitments(pegout.ID)
-	if _, err := s.coordinator.SendCommitments(
-		pegout.ID,
-		validatorIdx,
-		packedCommitments,
-	); err != nil {
-		s.logError("failed to send commitments", err)
-	} else {
-		s.logCommitSent(pegout.ID)
-	}
+
+	s.sendCommitments(pegout, validatorIdx, packedCommitments)
 
 	return false
 }
@@ -337,16 +329,7 @@ func (s *SignService) doSign(
 		s.keyStore.StoreSigningShares(pegout.addrStr, signShares)
 	}
 
-	s.logSendSigningShare(pegout.ID, signShares)
-	if _, err := s.coordinator.SendSigningShare(
-		pegout.ID,
-		validatorIdx,
-		signShares,
-	); err != nil {
-		s.logSendSigningShareError(pegout.ID, err)
-	} else {
-		s.logSigningShareSent(pegout.ID)
-	}
+	s.sendSigningShares(pegout, validatorIdx, signShares)
 
 	return false
 }
@@ -370,14 +353,47 @@ func (s *SignService) doAggregate(
 		signatures = append(signatures, signature)
 	}
 
-	if _, err := s.coordinator.SendSignatures(
+	// Send signatures
+	s.SendSignatures(pegout, validatorIdx, signatures)
+}
+
+func (s *SignService) sendCommitments(pegout *CachedPegout, validatorIdx uint16, commitments []byte) {
+	s.logSendCommitments(pegout.ID)
+	if _, err := s.coordinator.SendCommitments(
 		pegout.ID,
+		pegout.artifacts.ExpiredAt.Unix(),
+		validatorIdx,
+		commitments,
+	); err != nil {
+		s.logSendCommitmentsError(pegout.ID, err)
+	} else {
+		s.logCommitSent(pegout.ID)
+	}
+}
+
+func (s *SignService) sendSigningShares(pegout *CachedPegout, validatorIdx uint16, signShares [][]byte) {
+	s.logSendSigningShare(pegout.ID, signShares)
+	if _, err := s.coordinator.SendSigningShare(
+		pegout.ID,
+		pegout.artifacts.ExpiredAt.Unix(),
+		validatorIdx,
+		signShares,
+	); err != nil {
+		s.logSendSigningShareError(pegout.ID, err)
+	} else {
+		s.logSigningShareSent(pegout.ID)
+	}
+}
+
+func (s *SignService) SendSignatures(pegout *CachedPegout, validatorIdx uint16, signatures [][]byte) {
+	_, err := s.coordinator.SendSignatures(
+		pegout.ID,
+		pegout.artifacts.ExpiredAt.Unix(),
 		validatorIdx,
 		signatures,
-	); err != nil {
+	)
+	if err != nil {
 		s.logSignatureSendError(err)
-	} else {
-		s.logSignatureSent(pegout.ID)
 	}
 }
 
@@ -520,6 +536,7 @@ func (s *SignService) executeClaim(pegout *CachedPegout, validatorIdx uint16, cu
 
 	if _, err := s.coordinator.SendSigningClaim(
 		pegout.ID,
+		pegout.artifacts.ExpiredAt.Unix(),
 		validatorIdx,
 		culpritIdx,
 	); err != nil {

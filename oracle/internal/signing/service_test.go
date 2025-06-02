@@ -2,6 +2,7 @@ package signing
 
 import (
 	"bytes"
+	"crypto/rand"
 	"math/big"
 	"testing"
 	"time"
@@ -134,7 +135,7 @@ func TestGenerateCommitmentsForEachInput(t *testing.T) {
 	}
 
 	coordinator := &coordinator.CoordinatorMock{
-		SendCommitmentsFunc: func(pegoutID uint64, validatorIdx uint16, commitments []byte) (*tlb.Transaction, error) {
+		SendCommitmentsFunc: func(pegoutID uint64, pegoutUntil int64, validatorIdx uint16, commitments []byte) (*tlb.Transaction, error) {
 			if validatorIdx != 0 {
 				t.Fatal("validatorIdx should be 0")
 			}
@@ -171,7 +172,7 @@ func TestGenerateCommitmentsForEachInput(t *testing.T) {
 				},
 			}, nil
 		},
-		SendSignaturesFunc: func(pegoutID uint64, validatorIdx uint16, signatures [][]byte) (*tlb.Transaction, error) {
+		SendSignaturesFunc: func(pegoutID uint64, pegoutUntil int64, validatorIdx uint16, signatures [][]byte) (*tlb.Transaction, error) {
 			return nil, nil
 		},
 	}
@@ -277,4 +278,65 @@ func TestGenerateCommitmentsForEachInput(t *testing.T) {
 		// call again to be sure the code doesn't panic
 		service.cleanupNonces()
 	})
+}
+
+func TestPegoutUntil(t *testing.T) {
+	pegout := &CachedPegout{
+		ID:            1,
+		addrStr:       "",
+		inputs:        []pegoutcontract.TxInput{},
+		tx:            nil,
+		signingHashes: [][]byte{},
+		artifacts: &coordinator.PegoutRecord{
+			ExpiredAt:  time.Unix(100000000, 0),
+			ClaimsMask: big.NewInt(0),
+		},
+	}
+
+	validateExpiredAt := func(pegout *CachedPegout, pegoutUntil int64) {
+		if pegout.artifacts.ExpiredAt.Unix() != pegoutUntil {
+			t.Fatalf("Wrong pegoutUntil: expected %d, but got %d", pegout.artifacts.ExpiredAt.Unix(), pegoutUntil)
+		}
+	}
+
+	coordinator := &coordinator.CoordinatorMock{
+		SendCommitmentsFunc: func(pegoutID uint64, pegoutUntil int64, validatorIdx uint16, commitments []byte) (*tlb.Transaction, error) {
+			validateExpiredAt(pegout, pegoutUntil)
+			return nil, nil
+		},
+		SendSigningShareFunc: func(pegoutID uint64, pegoutUntil int64, validatorIdx uint16, signingShares [][]byte) (*tlb.Transaction, error) {
+			validateExpiredAt(pegout, pegoutUntil)
+			return nil, nil
+		},
+		SendSignaturesFunc: func(pegoutID uint64, pegoutUntil int64, validatorIdx uint16, signatures [][]byte) (*tlb.Transaction, error) {
+			validateExpiredAt(pegout, pegoutUntil)
+			return nil, nil
+		},
+		SendSigningClaimFunc: func(pegoutID uint64, pegoutUntil int64, validatorIdx uint16, culpritIdx uint16) (*tlb.Transaction, error) {
+			validateExpiredAt(pegout, pegoutUntil)
+			return nil, nil
+		},
+	}
+
+	service := NewService(nil, coordinator, nil, 0)
+	validatorIdx := uint16(0)
+
+	commitments := make([]byte, 32)
+	rand.Read(commitments)
+
+	service.sendCommitments(pegout, validatorIdx, commitments)
+
+	signShares := make([][]byte, 1)
+	signShares[0] = make([]byte, 32)
+	rand.Read(signShares[0])
+
+	service.sendSigningShares(pegout, validatorIdx, signShares)
+
+	signatures := make([][]byte, 1)
+	signatures[0] = make([]byte, 64)
+	rand.Read(signatures[0])
+
+	service.SendSignatures(pegout, validatorIdx, signatures)
+
+	service.executeClaim(pegout, validatorIdx, 1)
 }
