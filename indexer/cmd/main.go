@@ -38,7 +38,7 @@ type App struct {
 	BitcoinClient       *bitcoin.Client
 	EventService        *events.EventService
 	TeleportContract    *teleportcontract.TeleportContract
-	CoordinatorContract *coordinator.CoordinatorContract
+	CoordinatorContract coordinator.Coordinator
 	PegoutManager       *pegoutmanager.PegoutManager
 	MintService         *mintservice.MintService
 	Metrics             *metrics.Metrics
