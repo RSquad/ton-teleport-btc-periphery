@@ -274,7 +274,11 @@ func (s *SignService) doCommit(
 		}
 	}
 
-	packedCommitments := helpers.SerializeCommitments(pegout.commitments)
+	packedCommitments, err := helpers.SerializeCommitments(pegout.commitments, helpers.FrostCommitmentLength)
+	if err != nil {
+		s.logError("failed to serialize commitments", err)
+		return false
+	}
 	s.logSendCommitments(pegout.ID)
 	if _, err := s.coordinator.SendCommitments(
 		pegout.ID,

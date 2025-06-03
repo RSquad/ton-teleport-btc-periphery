@@ -18,6 +18,7 @@ const (
 	FrostDkgR2PackageSize              = 37 /*FROST R2 package to single validator*/
 	EncryptedFrostDkgR2PackageSize     = 24 /*nonce for encryption*/ + 16 /*encryption header*/ + FrostDkgR2PackageSize
 	SizeOfSingleDkgR2Package           = 2 /*ToValidatorId*/ + EncryptedFrostDkgR2PackageSize
+	FrostCommitmentLength              = 71
 )
 
 // Helpers
@@ -118,17 +119,19 @@ func DeserializeDkgR2(r2Packages map[uint16][]byte /*map[FROM]data*/, vsetMask *
 	return deserializedData, false, 0, nil
 }
 
-func SerializeCommitments(commitments [][]byte) []byte {
+func SerializeCommitments(commitments [][]byte, expectedLength int) ([]byte, error) {
 	serialized := []byte{}
 	serialized = append(serialized, byte(len(commitments)))
 	for _, commitment := range commitments {
-		serialized = append(serialized, byte(len(commitment)))
+		if len(commitment) != expectedLength {
+			return nil, fmt.Errorf("commitment length %d is not equal to %d", len(commitment), FrostCommitmentLength)
+		}
 		serialized = append(serialized, commitment...)
 	}
-	return serialized
+	return serialized, nil
 }
 
-func DeserializeCommitments(serialized []byte, expectedCount int) ([][]byte, error) {
+func DeserializeCommitments(serialized []byte, expectedCount int, expectedLength int) ([][]byte, error) {
 	if len(serialized) == 0 {
 		return nil, errors.New("serialized commitments data is empty")
 	}
@@ -140,29 +143,14 @@ func DeserializeCommitments(serialized []byte, expectedCount int) ([][]byte, err
 		return nil, fmt.Errorf("incorrect number of commitments: expected %d, got %d", expectedCount, commitmentsCount)
 	}
 
-	offset := 1
+	if len(serialized) < 1+commitmentsCount*expectedLength {
+		return nil, fmt.Errorf("insufficient data: cannot read commitments (expected %d bytes, have %d)", 1+commitmentsCount*expectedLength, len(serialized))
+	}
+
 	for i := 0; i < commitmentsCount; i++ {
-		// Check if we have enough bytes to read the commitment length
-		if offset >= len(serialized) {
-			return nil, fmt.Errorf("insufficient data: cannot read commitment %d length", i)
-		}
-		commitmentLen := int(serialized[offset])
-		offset += 1
-
-		// Check if we have enough bytes to read the commitment data
-		if offset+commitmentLen > len(serialized) {
-			return nil, fmt.Errorf("insufficient data: cannot read commitment %d (expected %d bytes, have %d)", i, commitmentLen, len(serialized)-offset)
-		}
-
-		// Validate commitment length is reasonable (prevent excessive memory allocation)
-		if commitmentLen > 256 {
-			return nil, fmt.Errorf("commitment %d length %d exceeds maximum allowed size", i, commitmentLen)
-		}
-
-		commitment := make([]byte, commitmentLen)
-		copy(commitment, serialized[offset:offset+commitmentLen])
+		commitment := make([]byte, expectedLength)
+		copy(commitment, serialized[1+i*expectedLength:1+(i+1)*expectedLength])
 		commitments = append(commitments, commitment)
-		offset += commitmentLen
 	}
 
 	return commitments, nil
@@ -177,7 +165,7 @@ func DeserializeInputCommitmentForAll(
 	commitmentsMap := make(map[uint16][]byte)
 	// for each validator, deserialize all commitments and return the commitment for the inputIndex
 	for validatorIdx, serializedCommitments := range validatorCommitments {
-		commitments, err := DeserializeCommitments(serializedCommitments, totalInputs)
+		commitments, err := DeserializeCommitments(serializedCommitments, totalInputs, FrostCommitmentLength)
 		if err != nil {
 			return nil, err
 		}
