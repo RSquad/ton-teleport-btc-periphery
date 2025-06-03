@@ -199,7 +199,10 @@ func WriteFile(
 	if info, err := os.Stat(filePath); err == nil {
 		// File exists, check if access flags match
 		if info.Mode().Perm() != flags.Perm() {
-			return fmt.Errorf("file exists but permissions don't match: expected %v, got %v", flags.Perm(), info.Mode().Perm())
+			// Try to remove file
+			if err := os.Remove(filePath); err != nil {
+				return fmt.Errorf("file exists but permissions don't match: expected %v, got %v, and the file can't be deleted: %v", flags.Perm(), info.Mode().Perm(), err)
+			}
 		}
 
 		// File exists and flags match, write data
