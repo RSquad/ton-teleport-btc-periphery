@@ -32,17 +32,17 @@ type FileKeystore struct {
 
 func New(rootPath string) (Keystore, error) {
 	var err error
-	err = os.MkdirAll(filepath.Join(rootPath, "secrets"), 0o700)
+	err = CreateDir(rootPath, "secrets", 0o700)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create secrets dir: %w", err)
 	}
 
-	err = os.MkdirAll(filepath.Join(rootPath, "temp"), 0o700)
+	err = CreateDir(rootPath, "temp", 0o700)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create temp dir: %w", err)
 	}
 
-	err = os.MkdirAll(filepath.Join(rootPath, "sessions"), 0o700)
+	err = CreateDir(rootPath, "sessions", 0o700)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create secrets dir: %w", err)
 	}
@@ -148,5 +148,43 @@ func (ks *FileKeystore) Cleanup() {
 	defer ks.mu.Unlock()
 
 	os.RemoveAll(filepath.Join(ks.rootPath, "temp"))
-	os.MkdirAll(filepath.Join(ks.rootPath, "temp"), 0o700)
+	CreateDir(ks.rootPath, "temp", 0o700)
+}
+
+// Creates a directory with specific access flags
+// basePath: existing path (error if doesn't exist)
+// subPath: path to create relative to basePath (may or may not exist)
+// flags: desired access permissions
+func CreateDir(
+	basePath string,
+	subPath string,
+	flags os.FileMode,
+) error {
+	// Check if base path exists
+	if _, err := os.Stat(basePath); os.IsNotExist(err) {
+		return fmt.Errorf("base path does not exist: %s", basePath)
+	}
+
+	resultPath := filepath.Join(basePath, subPath)
+
+	// Check if the sub path already exists
+	if info, err := os.Stat(resultPath); err == nil {
+		// Path exists, check if access flags match
+		if info.Mode().Perm() != flags.Perm() {
+			return fmt.Errorf("directory exists but permissions don't match: expected %v, got %v", flags.Perm(), info.Mode().Perm())
+		}
+
+		// Path exists and flags match, nothing to do
+		return nil
+	} else if !os.IsNotExist(err) {
+		// Some other error occurred
+		return fmt.Errorf("error checking path: %v", err)
+	}
+
+	// Path doesn't exist, create it with specified flags
+	if err := os.MkdirAll(resultPath, flags); err != nil {
+		return fmt.Errorf("failed to create directory: %v", err)
+	}
+
+	return nil
 }
