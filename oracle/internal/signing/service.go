@@ -224,9 +224,7 @@ func (s *SignService) execute(ctx context.Context, dkg *coordinator.DKG) {
 	// Execute signing steps
 	if s.doCommit(validatorIdx, cachedPegout, minSigners) {
 		if s.doSign(validatorIdx, cachedPegout, minSigners) {
-			if s.doAggregate(validatorIdx, cachedPegout, pubkeyPackage) {
-				s.logPegoutSigned(cachedPegout.ID)
-			}
+			s.doAggregate(validatorIdx, cachedPegout, pubkeyPackage)
 		}
 	}
 }
@@ -364,7 +362,7 @@ func (s *SignService) doAggregate(
 	validatorIdx uint16,
 	pegout *CachedPegout,
 	pubkeyPackage []byte,
-) bool {
+) {
 	s.logAggregateSignShares(pegout.ID)
 
 	commitmentsPackages := helpers.ConvertMapToFrostPackages(pegout.artifacts.Commitments)
@@ -388,7 +386,7 @@ func (s *SignService) doAggregate(
 			} else {
 				s.logAggregateSignSharesError(err)
 			}
-			return false
+			return
 		}
 
 		signatures = append(signatures, signature)
@@ -403,8 +401,6 @@ func (s *SignService) doAggregate(
 	} else {
 		s.logSignatureSent(pegout.ID)
 	}
-
-	return false
 }
 
 func (s *SignService) Sign(

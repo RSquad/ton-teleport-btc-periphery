@@ -73,10 +73,6 @@ func (s *SignService) logErrNoOracleCommitments(pegoutID uint64) {
 	errorEvent().Err(err)
 }
 
-func (s *SignService) logPegoutSigned(pegoutID uint64) {
-	infoEventWithPegoutID(pegoutID).Msg("pegout signed")
-}
-
 func (s *SignService) logSigningShareSent(pegoutID uint64) {
 	infoEventWithPegoutID(pegoutID).Msg("signing share sent")
 }
