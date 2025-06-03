@@ -107,7 +107,7 @@ func (ks *FileKeystore) write(filePath string, data []byte) error {
 	ks.mu.Lock()
 	defer ks.mu.Unlock()
 
-	return os.WriteFile(filePath, data, 0o600)
+	return WriteFile(filePath, data, 0o600)
 }
 
 func (ks *FileKeystore) StoreSecret(pubkey []byte, secret []byte) error {
@@ -184,6 +184,34 @@ func CreateDir(
 	// Path doesn't exist, create it with specified flags
 	if err := os.MkdirAll(resultPath, flags); err != nil {
 		return fmt.Errorf("failed to create directory: %v", err)
+	}
+
+	return nil
+}
+
+// Writes data to a file with specific access flags
+func WriteFile(
+	filePath string,
+	data []byte,
+	flags os.FileMode,
+) error {
+	// Check if the file already exists
+	if info, err := os.Stat(filePath); err == nil {
+		// File exists, check if access flags match
+		if info.Mode().Perm() != flags.Perm() {
+			return fmt.Errorf("file exists but permissions don't match: expected %v, got %v", flags.Perm(), info.Mode().Perm())
+		}
+
+		// File exists and flags match, write data
+		return os.WriteFile(filePath, data, flags)
+	} else if !os.IsNotExist(err) {
+		// Some other error occurred
+		return fmt.Errorf("error checking file: %v", err)
+	}
+
+	// Create and write file with specified flags
+	if err := os.WriteFile(filePath, data, flags); err != nil {
+		return fmt.Errorf("failed to write file: %v", err)
 	}
 
 	return nil
