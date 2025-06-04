@@ -131,14 +131,6 @@ func TestGenerateCommitmentsForEachInput(t *testing.T) {
 		LoadSecretFunc: func(pubKey []byte) []byte {
 			return keyPackages[0]
 		},
-		StoreNonceFunc: func(name string, nonce []byte) error {
-			t.Fatal("StoreNonceFunc should not be called")
-			return nil
-		},
-		LoadNonceFunc: func(name string) []byte {
-			t.Fatal("LoadNonceFunc should not be called")
-			return nil
-		},
 	}
 
 	coordinator := &coordinator.CoordinatorMock{
@@ -246,7 +238,7 @@ func TestGenerateCommitmentsForEachInput(t *testing.T) {
 		return commitments
 	}
 
-	t.Run("doSign: deserialize commitments", func(t *testing.T) {
+	t.Run("signInput: deserialize commitments", func(t *testing.T) {
 		commitmentsFor1Serialized, err := helpers.SerializeCommitments(generateCommitments(1, 2), helpers.FrostCommitmentLength)
 		if err != nil {
 			t.Fatal(err)
