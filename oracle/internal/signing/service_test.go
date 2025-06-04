@@ -179,6 +179,9 @@ func TestGenerateCommitmentsForEachInput(t *testing.T) {
 				},
 			}, nil
 		},
+		SendSignaturesFunc: func(pegoutID uint64, validatorIdx uint16, signatures [][]byte) (*tlb.Transaction, error) {
+			return nil, nil
+		},
 	}
 
 	// Create service instance
@@ -212,6 +215,15 @@ func TestGenerateCommitmentsForEachInput(t *testing.T) {
 				}
 			}
 		})
+		t.Run("Nonces are different", func(t *testing.T) {
+			for i, localNonce := range pegout.nonces {
+				for j, nonce := range pegout.nonces {
+					if i != j && bytes.Equal(localNonce, nonce) {
+						t.Fatal("nonces should be different")
+					}
+				}
+			}
+		})
 
 		t.Run("Local and coordinator commitments are equal", func(t *testing.T) {
 			for i, localCommitment := range pegout.commitments {
@@ -234,7 +246,7 @@ func TestGenerateCommitmentsForEachInput(t *testing.T) {
 		return commitments
 	}
 
-	t.Run("doSign", func(t *testing.T) {
+	t.Run("doSign: deserialize commitments", func(t *testing.T) {
 		commitmentsFor1Serialized, err := helpers.SerializeCommitments(generateCommitments(1, 2), helpers.FrostCommitmentLength)
 		if err != nil {
 			t.Fatal(err)
@@ -260,8 +272,13 @@ func TestGenerateCommitmentsForEachInput(t *testing.T) {
 		})
 	})
 
-	t.Run("Cleanup nonces", func(t *testing.T) {
-		service.cleanupNonces()
+	t.Run("Cleanup nonces in doAggregate", func(t *testing.T) {
+		if service.cachedPegout.nonces == nil {
+			t.Fatal("inputs should be set")
+		}
+		service.cachedPegout.inputs = make([]pegoutcontract.TxInput, 0)
+		service.doAggregate(validatorIdx, publicKeyPackage)
+
 		if service.cachedPegout.nonces != nil {
 			t.Fatal("nonces should be nil")
 		}
