@@ -58,16 +58,6 @@ func (s *SignService) logOracleEvictedFromSigning(pegoutID uint64) {
 	errorEvent().Err(err)
 }
 
-func (s *SignService) logErrNullNonceOrCommitments(nonces [][]byte, commitments [][]byte, pegoutAddrStr string) {
-	var err error = nil
-	if nonces == nil {
-		err = fmt.Errorf("failed to load nonce for %s", pegoutAddrStr)
-	} else if commitments == nil {
-		err = fmt.Errorf("failed to load commitments for %s", pegoutAddrStr)
-	}
-	errorEvent().Err(err)
-}
-
 func (s *SignService) logErrNoOracleCommitments(pegoutID uint64) {
 	err := fmt.Errorf("oracle didn't send commitment and cannot participate in signing for pegout %x", pegoutID)
 	errorEvent().Err(err)

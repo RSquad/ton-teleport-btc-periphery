@@ -257,21 +257,10 @@ func (s *SignService) doCommit(
 		return false
 	}
 
-	if pegout.nonces == nil || pegout.commitments == nil {
-		// If both nonce & commitments are not found in keystore
-		if pegout.nonces == nil && pegout.commitments == nil {
-			s.logMessage("generate commitments")
-			nonces, commitments, err := s.Commit(pegout.tx.InternalKey, len(pegout.inputs))
-			if err != nil {
-				s.logError("commit error", err)
-				return false
-			}
-			pegout.nonces = nonces
-			pegout.commitments = commitments
-		} else {
-			s.logErrNullNonceOrCommitments(pegout.nonces, pegout.commitments, pegout.addrStr)
-			return false
-		}
+	err := s.generateCommitments()
+	if err != nil {
+		s.logError("failed to generate commitments", err)
+		return false
 	}
 
 	packedCommitments, err := helpers.SerializeCommitments(pegout.commitments, helpers.FrostCommitmentLength)
@@ -384,6 +373,29 @@ func (s *SignService) doAggregate(
 	} else {
 		s.logSignatureSent(pegout.ID)
 	}
+}
+
+func (s *SignService) generateCommitments() error {
+	pegout := s.cachedPegout
+	if pegout.nonces == nil || pegout.commitments == nil {
+		// If both nonce & commitments are not found in keystore
+		if pegout.nonces == nil && pegout.commitments == nil {
+			s.logMessage("generate commitments")
+			nonces, commitments, err := s.Commit(pegout.tx.InternalKey, len(pegout.inputs))
+			if err != nil {
+				return fmt.Errorf("commit error: %w", err)
+			}
+			pegout.nonces = nonces
+			pegout.commitments = commitments
+		} else {
+			if pegout.nonces == nil {
+				return fmt.Errorf("failed to load nonce for %s", pegout.addrStr)
+			} else if pegout.commitments == nil {
+				return fmt.Errorf("failed to load commitments for %s", pegout.addrStr)
+			}
+		}
+	}
+	return nil
 }
 
 func (s *SignService) SignInput(validatorIdx uint16, inputIndex int) ([]byte, error) {
