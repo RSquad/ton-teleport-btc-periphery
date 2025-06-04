@@ -51,6 +51,7 @@ type ExecutionArtifacts struct {
 func (a *ExecutionArtifacts) Cleanup() {
 	if a.r1 != nil && a.r1.secret.ptr != 0 {
 		frost.FreeR1Secret(a.r1.secret.ptr)
+		a.SafeCleanR2PrivateX25519()
 	}
 	if a.r2 != nil && a.r2.secret.ptr != 0 {
 		frost.FreeR2Secret(a.r2.secret.ptr)
@@ -58,6 +59,14 @@ func (a *ExecutionArtifacts) Cleanup() {
 	a.r1 = nil
 	a.r2 = nil
 	a.r3 = nil
+}
+
+func (a *ExecutionArtifacts) SafeCleanR2PrivateX25519() {
+	if a.r1 == nil {
+		return
+	}
+
+	*a.r1.r2PrivateX25519 = [32]byte{}
 }
 
 func (a *ExecutionArtifacts) IsEmpty() bool {
@@ -427,6 +436,9 @@ func (e *Executor) executeR3(dkg *coordinator.DKG) bool {
 		}
 		e.logSendPubkeyPackageFailed(dkg, err)
 	}
+
+	e.artifacts.SafeCleanR2PrivateX25519()
+
 	return false
 }
 
