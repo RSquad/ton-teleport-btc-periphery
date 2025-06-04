@@ -83,15 +83,18 @@ func generateFrostKey(minSigners uint16, maxSigners uint16) (map[uint16][]byte, 
 	return keyPackages, publicKeyPackage
 }
 
-func TestServiceGenerateCommitmentsForEachInput(t *testing.T) {
+func TestGenerateCommitmentsForEachInput(t *testing.T) {
 	maxSigners := uint16(3)
 	minSigners := uint16(2)
+
+	// Generate frost group key
 	keyPackages, publicKeyPackage := generateFrostKey(minSigners, maxSigners)
 	groupPublicKey, err := frost.ExtractPublicKeyFromPackage(publicKeyPackage)
 	if err != nil {
 		t.Fatal(err)
 	}
 
+	// Prepare cached pegout
 	pegout := &CachedPegout{
 		ID:      1,
 		addrStr: address.NewAddress(0, 0, make([]byte, 32)).String(),
@@ -118,8 +121,12 @@ func TestServiceGenerateCommitmentsForEachInput(t *testing.T) {
 			ExpiredAt:       time.Now().Add(time.Minute),
 			SigningMask:     big.NewInt(7),
 		},
+		signingHashes: [][]byte{
+			make([]byte, 32),
+			make([]byte, 32),
+		},
 	}
-
+	// Create keystore mock
 	keystore := &keystore.KeystoreMock{
 		LoadSecretFunc: func(pubKey []byte) []byte {
 			return keyPackages[0]
@@ -174,24 +181,82 @@ func TestServiceGenerateCommitmentsForEachInput(t *testing.T) {
 		},
 	}
 
+	// Create service instance
 	service := NewService(keystore, coordinator, nil, 0)
 	service.cachedPegout = pegout
-	service.doCommit(0, 2)
+	validatorIdx := uint16(0)
 
-	if !pegout.artifacts.HasCommitment(0) {
-		t.Fatal("commitment should be set")
-	}
-	commitments, err := helpers.DeserializeCommitments(pegout.artifacts.Commitments[0], len(pegout.inputs), helpers.FrostCommitmentLength)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(commitments) != len(pegout.commitments) {
-		t.Fatal("commitments should be equal")
-	}
-	for i, localCommitment := range pegout.commitments {
-		if !bytes.Equal(localCommitment, commitments[i]) {
-			t.Fatal("commitments should be equal")
+	t.Run("doCommit", func(t *testing.T) {
+		service.doCommit(validatorIdx, minSigners)
+		t.Run("Check that commitment is set", func(t *testing.T) {
+			if !pegout.artifacts.HasCommitment(validatorIdx) {
+				t.Fatal("commitment should be set")
+			}
+		})
+		var commitments [][]byte
+		t.Run("Commitments are deserialized correctly", func(t *testing.T) {
+			commitments, err = helpers.DeserializeCommitments(pegout.artifacts.Commitments[validatorIdx], len(pegout.inputs), helpers.FrostCommitmentLength)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(commitments) != len(pegout.inputs) {
+				t.Fatal("commitments count should be equal to the number of inputs")
+			}
+		})
+		t.Run("Commitments are different", func(t *testing.T) {
+			for i, localCommitment := range pegout.commitments {
+				for j, commit := range pegout.commitments {
+					if i != j && bytes.Equal(localCommitment, commit) {
+						t.Fatal("commitments should be different")
+					}
+				}
+			}
+		})
+
+		t.Run("Local and coordinator commitments are equal", func(t *testing.T) {
+			for i, localCommitment := range pegout.commitments {
+				if !bytes.Equal(localCommitment, commitments[i]) {
+					t.Fatal("commitments should be equal")
+				}
+			}
+		})
+	})
+
+	generateCommitments := func(idx uint16, inputs uint16) [][]byte {
+		commitments := make([][]byte, inputs)
+		var err error
+		for i := range commitments {
+			_, commitments[i], err = frost.Commit(frost.NewPackage(keyPackages[idx]))
+			if err != nil {
+				t.Fatal(err)
+			}
 		}
+		return commitments
 	}
-	t.Log("DoCommit done")
+
+	t.Run("doSign", func(t *testing.T) {
+		commitmentsFor1Serialized, err := helpers.SerializeCommitments(generateCommitments(1, 2), helpers.FrostCommitmentLength)
+		if err != nil {
+			t.Fatal(err)
+		}
+		commitmentsFor2Serialized, err := helpers.SerializeCommitments(generateCommitments(2, 2), helpers.FrostCommitmentLength)
+		if err != nil {
+			t.Fatal(err)
+		}
+		pegout.artifacts.Commitments[1] = commitmentsFor1Serialized
+		pegout.artifacts.Commitments[2] = commitmentsFor2Serialized
+
+		t.Run("SignInput 0", func(t *testing.T) {
+			_, err = service.SignInput(validatorIdx, 0)
+			if err != nil {
+				t.Fatal(err)
+			}
+		})
+		t.Run("SignInput 1", func(t *testing.T) {
+			_, err = service.SignInput(validatorIdx, 1)
+			if err != nil {
+				t.Fatal(err)
+			}
+		})
+	})
 }
