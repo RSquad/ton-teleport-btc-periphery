@@ -86,10 +86,16 @@ func (s *SignService) cachePegoutClear() {
 }
 
 func (s *SignService) cleanupNonces() {
-	// zeroize nonces for security reasons
+	if s.cachedPegout == nil || s.cachedPegout.nonces == nil {
+		return
+	}
+
 	for i := range s.cachedPegout.nonces {
-		// fill with zeros
-		copy(s.cachedPegout.nonces[i], make([]byte, len(s.cachedPegout.nonces[i])))
+		if s.cachedPegout.nonces[i] != nil {
+			for j := range s.cachedPegout.nonces[i] {
+				s.cachedPegout.nonces[i][j] = 0
+			}
+		}
 	}
 	s.cachedPegout.nonces = nil
 }

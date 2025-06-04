@@ -259,4 +259,13 @@ func TestGenerateCommitmentsForEachInput(t *testing.T) {
 			}
 		})
 	})
+
+	t.Run("Cleanup nonces", func(t *testing.T) {
+		service.cleanupNonces()
+		if service.cachedPegout.nonces != nil {
+			t.Fatal("nonces should be nil")
+		}
+		// call again to be sure the code doesn't panic
+		service.cleanupNonces()
+	})
 }
