@@ -352,6 +352,24 @@ func TestDeserializeCommitments(t *testing.T) {
 				}
 			}
 		})
+
+		t.Run("DeserializeInputCommitmentForAll", func(t *testing.T) {
+			commitsMap := map[uint16][]byte{0: generateCommitment(0), 1: generateCommitment(1), 2: generateCommitment(2)}
+			result, err := DeserializeInputCommitmentForAll(commitsMap, 3, -1)
+			if err == nil {
+				t.Errorf("expected error but got none")
+			}
+			if result != nil {
+				t.Errorf("expected nil but got %v", result)
+			}
+			result, err = DeserializeInputCommitmentForAll(commitsMap, 3, 3)
+			if err == nil {
+				t.Errorf("expected error but got none")
+			}
+			if result != nil {
+				t.Errorf("expected nil but got %v", result)
+			}
+		})
 	}
 }
 

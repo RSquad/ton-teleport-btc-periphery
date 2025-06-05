@@ -162,6 +162,10 @@ func DeserializeInputCommitmentForAll(
 	totalInputs int, // total number of inputs in pegout transaction - used for validation
 	inputIndex int, // pegout transaction input index for which we need to deserialize commitments
 ) (map[uint16][]byte, error) {
+	if inputIndex < 0 || inputIndex >= totalInputs {
+		return nil, fmt.Errorf("inputIndex is out of range: %d", inputIndex)
+	}
+
 	commitmentsMap := make(map[uint16][]byte)
 	// for each validator, deserialize all commitments and return the commitment for the inputIndex
 	for validatorIdx, serializedCommitments := range validatorCommitments {
