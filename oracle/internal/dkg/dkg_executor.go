@@ -51,7 +51,7 @@ type ExecutionArtifacts struct {
 func (a *ExecutionArtifacts) Cleanup() {
 	if a.r1 != nil && a.r1.secret.ptr != 0 {
 		frost.FreeR1Secret(a.r1.secret.ptr)
-		a.SafeCleanR2PrivateX25519()
+		a.SafeCleanPrivateX25519()
 	}
 	if a.r2 != nil && a.r2.secret.ptr != 0 {
 		frost.FreeR2Secret(a.r2.secret.ptr)
@@ -61,7 +61,7 @@ func (a *ExecutionArtifacts) Cleanup() {
 	a.r3 = nil
 }
 
-func (a *ExecutionArtifacts) SafeCleanR2PrivateX25519() {
+func (a *ExecutionArtifacts) SafeCleanPrivateX25519() {
 	if a.r1 == nil {
 		return
 	}
@@ -331,6 +331,7 @@ func (e *Executor) executeR3(dkg *coordinator.DKG) bool {
 	e.logExecuteR3(dkg)
 
 	if dkg.Round3Completed() {
+		e.artifacts.SafeCleanPrivateX25519()
 		e.logDKGProcess(dkg, "R3 completed")
 		return true
 	}
@@ -437,7 +438,7 @@ func (e *Executor) executeR3(dkg *coordinator.DKG) bool {
 		e.logSendPubkeyPackageFailed(dkg, err)
 	}
 
-	e.artifacts.SafeCleanR2PrivateX25519()
+	e.artifacts.SafeCleanPrivateX25519()
 
 	return false
 }
