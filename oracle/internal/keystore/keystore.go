@@ -20,13 +20,9 @@ const (
 type Keystore interface {
 	LoadSecret(pubkey []byte) []byte
 	LoadSession(dkgUntilTimestamp int64) []byte
-	LoadNonce(name string) []byte
-	LoadCommitments(name string) []byte
 	LoadSigningShares(name string) [][]byte
 	StoreSecret(pubkey []byte, secret []byte) error
 	StoreSession(dkgUntilTimestamp int64, secret []byte) error
-	StoreNonce(name string, nonce []byte) error
-	StoreCommitments(name string, commitments []byte) error
 	StoreSigningShares(name string, pkgs [][]byte) error
 	Cleanup()
 }
@@ -79,14 +75,6 @@ func (ks *FileKeystore) LoadSession(dkgUntilTimestamp int64) []byte {
 	return ks.load("sessions", fileName)
 }
 
-func (ks *FileKeystore) LoadNonce(name string) []byte {
-	return ks.load("temp", "nonce_"+name)
-}
-
-func (ks *FileKeystore) LoadCommitments(name string) []byte {
-	return ks.load("temp", "commitments_"+name)
-}
-
 func (ks *FileKeystore) LoadSigningShares(name string) [][]byte {
 	data := ks.load("temp", "shares_"+name)
 	if data == nil {
@@ -126,16 +114,6 @@ func (ks *FileKeystore) StoreSession(dkgUntilTimestamp int64, secret []byte) err
 	fileName := fmt.Sprintf("%d", dkgUntilTimestamp)
 	filePath := filepath.Join(ks.rootPath, "sessions", fileName)
 	return ks.write(filePath, secret)
-}
-
-func (ks *FileKeystore) StoreNonce(name string, nonce []byte) error {
-	filePath := filepath.Join(ks.rootPath, "temp", "nonce_"+name)
-	return ks.write(filePath, nonce)
-}
-
-func (ks *FileKeystore) StoreCommitments(name string, commitments []byte) error {
-	filePath := filepath.Join(ks.rootPath, "temp", "commitments_"+name)
-	return ks.write(filePath, commitments)
 }
 
 func (ks *FileKeystore) StoreSigningShares(name string, pkgs [][]byte) error {
