@@ -52,12 +52,21 @@ func (a *ExecutionArtifacts) Cleanup() {
 	if a.r1 != nil && a.r1.secret.ptr != 0 {
 		frost.FreeR1Secret(a.r1.secret.ptr)
 	}
+	a.SafeCleanPrivateX25519()
 	if a.r2 != nil && a.r2.secret.ptr != 0 {
 		frost.FreeR2Secret(a.r2.secret.ptr)
 	}
 	a.r1 = nil
 	a.r2 = nil
 	a.r3 = nil
+}
+
+func (a *ExecutionArtifacts) SafeCleanPrivateX25519() {
+	if a.r1 == nil {
+		return
+	}
+
+	*a.r1.r2PrivateX25519 = [32]byte{}
 }
 
 func (a *ExecutionArtifacts) IsEmpty() bool {
@@ -322,6 +331,7 @@ func (e *Executor) executeR3(dkg *coordinator.DKG) bool {
 	e.logExecuteR3(dkg)
 
 	if dkg.Round3Completed() {
+		e.artifacts.SafeCleanPrivateX25519()
 		e.logDKGProcess(dkg, "R3 completed")
 		return true
 	}
@@ -408,6 +418,7 @@ func (e *Executor) executeR3(dkg *coordinator.DKG) bool {
 			publicKeyPackage: publicKeyPackage,
 			publicKey:        publicKey,
 		}
+		e.artifacts.SafeCleanPrivateX25519()
 		err = e.keystore.StoreSecret(publicKey[1:], keyPackage)
 		if err != nil {
 			e.logError(dkg, "failed to store secret", err)
@@ -427,6 +438,7 @@ func (e *Executor) executeR3(dkg *coordinator.DKG) bool {
 		}
 		e.logSendPubkeyPackageFailed(dkg, err)
 	}
+
 	return false
 }
 
