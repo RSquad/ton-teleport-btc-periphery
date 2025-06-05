@@ -58,16 +58,6 @@ func (s *SignService) logOracleEvictedFromSigning(pegoutID uint64) {
 	errorEvent().Err(err)
 }
 
-func (s *SignService) logErrNullNonceOrCommitments(nonce []byte, commitments []byte, pegoutAddrStr string) {
-	var err error = nil
-	if nonce == nil {
-		err = fmt.Errorf("failed to load nonce for %s", pegoutAddrStr)
-	} else if commitments == nil {
-		err = fmt.Errorf("failed to load commitments for %s", pegoutAddrStr)
-	}
-	errorEvent().Err(err)
-}
-
 func (s *SignService) logErrNoOracleCommitments(pegoutID uint64) {
 	err := fmt.Errorf("oracle didn't send commitment and cannot participate in signing for pegout %x", pegoutID)
 	errorEvent().Err(err)
@@ -105,8 +95,8 @@ func (s *SignService) logErrNothingToSign(pegoutID uint64) {
 	errorEventWithPegoutID(pegoutID).Msg("pegout has no signing hashes")
 }
 
-func (s *SignService) logAggregateSignShares(pegoutID uint64) {
-	infoEventWithPegoutID(pegoutID).Msg("Aggregate sign shares")
+func (s *SignService) logAggregateSignShares() {
+	infoEventWithPegoutID(s.cachedPegout.ID).Msg("Aggregate sign shares")
 }
 
 func (s *SignService) logSignatureSent(pegoutID uint64) {
@@ -117,12 +107,16 @@ func (s *SignService) logSignatureSendError(err error) {
 	errorEvent().Err(err).Msg("failed to send signatures")
 }
 
-func (s *SignService) logAggregateSignSharesError(err error) {
-	errorEvent().Err(err).Msg("failed to aggregate sign shares")
+func (s *SignService) logSignError(inputIndex int, err error) {
+	errorEvent().Err(err).Msgf("failed to generate signing share for input %d", inputIndex)
 }
 
-func (s *SignService) logSendCommitments(pegoutID uint64, commitments []byte) {
-	infoEventWithPegoutID(pegoutID).Msgf("send commitments: %x", commitments)
+func (s *SignService) logAggregateSignSharesError(inputIndex int, err error) {
+	errorEvent().Err(err).Msgf("failed to aggregate signature for input %d", inputIndex)
+}
+
+func (s *SignService) logSendCommitments(pegoutID uint64) {
+	infoEventWithPegoutID(pegoutID).Msg("send commitments")
 }
 
 func (s *SignService) logSendSigningShare(pegoutID uint64, signShares [][]byte) {
