@@ -89,11 +89,14 @@ func DeserializeDkgR2(r2Packages map[uint16][]byte /*map[FROM]data*/, vsetMask *
 	}
 
 	// We need to iterate over r2Packages in deterministic order (which is not guaranteed for map[])
-
 	for _, fromValidatorIdx := range ExtractSortedKeysFromMap(r2Packages) {
 		toValidatorData := make(map[uint16][]byte)
 		serializedToPkgs := r2Packages[fromValidatorIdx]
 		packagesSize := len(serializedToPkgs)
+
+		if vsetMask.Bit(int(fromValidatorIdx)) == 0 {
+			return nil, true, fromValidatorIdx, fmt.Errorf("fromValidatorIdx %d in not in VSet", fromValidatorIdx)
+		}
 
 		// Packages count
 		if packagesSize < 2 {
@@ -133,16 +136,8 @@ func DeserializeDkgR2(r2Packages map[uint16][]byte /*map[FROM]data*/, vsetMask *
 			readOffset += EncryptedFrostDkgR2PackageSize
 		}
 
-		// Check if we have destination validatorIdx excluded from the vset mask
-		// All and only the validator indexes from VSet must be in toValidatorData (exept fromValidatorIdx)
-		vSetSize := uint(0)
-		for toValidatorIdx := range toValidatorData {
-			vSetSize += vsetMask.Bit(int(toValidatorIdx))
-		}
-		vSetSize += vsetMask.Bit(int(fromValidatorIdx))
-
-		if vSetSize != uint(maxSigners) {
-			return nil, true, fromValidatorIdx, fmt.Errorf("incorrect package count: expected %d, actual %d", maxSigners, vSetSize)
+		if len(toValidatorData) != int(maxSigners-1 /*ourself*/) {
+			return nil, true, fromValidatorIdx, fmt.Errorf("valid packages count %d from Validator %d is not equal to maxSigners: expected %d", len(toValidatorData), fromValidatorIdx, maxSigners)
 		}
 
 		deserializedData[fromValidatorIdx] = toValidatorData

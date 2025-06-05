@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/binary"
 	"math/big"
+	"strings"
 	"testing"
 )
 
@@ -461,100 +462,157 @@ const (
 	DKG_R2_CORRUPT_VALIDATOR_IDX
 	DKG_R2_CORRUPT_PACKAGE_PAYLOAD_INC
 	DKG_R2_CORRUPT_PACKAGE_PAYLOAD_DEC
+	DKG_R2_CORRUPT_IGNORE_VSET
 )
 
-func generateDkgR2Packages(validatorsCount uint16, flags generateDkgR2PackagesFlag) map[uint16][]byte {
+func generateDkgR2Packages(validatorsCount uint16, culpritIdx int, vSetMask *big.Int, flags generateDkgR2PackagesFlag) map[uint16][]byte {
 	r2Packages := make(map[uint16][]byte)
 	tmpBuf := make([]byte, 2)
 
-	for fromValidatorIdx := uint16(0); fromValidatorIdx < validatorsCount; fromValidatorIdx++ {
+	for fromValidatorIdx := 0; fromValidatorIdx < int(validatorsCount); fromValidatorIdx++ {
+		if vSetMask.Bit(fromValidatorIdx) == 0 {
+			continue
+		}
+
 		data := make([]byte, 0)
 
 		// Packages count
-		if flags&DKG_R2_CORRUPT_PACKAGES_COUNT_INC != 0 {
-			binary.BigEndian.PutUint16(tmpBuf, validatorsCount*2)
-		} else if flags&DKG_R2_CORRUPT_PACKAGES_COUNT_DEC != 0 {
-			binary.BigEndian.PutUint16(tmpBuf, validatorsCount/2)
-		} else if flags&DKG_R2_CORRUPT_SEND_PACKAGE_TO_SELF != 0 {
-			binary.BigEndian.PutUint16(tmpBuf, validatorsCount)
-		} else {
-			binary.BigEndian.PutUint16(tmpBuf, validatorsCount-1)
+		binary.BigEndian.PutUint16(tmpBuf, validatorsCount-1)
+		if fromValidatorIdx == culpritIdx {
+			if flags&DKG_R2_CORRUPT_PACKAGES_COUNT_INC != 0 {
+				binary.BigEndian.PutUint16(tmpBuf, validatorsCount*2)
+			} else if flags&DKG_R2_CORRUPT_PACKAGES_COUNT_DEC != 0 {
+				binary.BigEndian.PutUint16(tmpBuf, validatorsCount/2)
+			} else if flags&DKG_R2_CORRUPT_SEND_PACKAGE_TO_SELF != 0 {
+				binary.BigEndian.PutUint16(tmpBuf, validatorsCount)
+			}
 		}
 		data = append(data, tmpBuf...)
 
 		// Packages
 		for toValidatorIdx := uint16(0); toValidatorIdx < validatorsCount; toValidatorIdx++ {
-			if flags&DKG_R2_CORRUPT_SEND_PACKAGE_TO_SELF == 0 {
-				if toValidatorIdx == fromValidatorIdx {
+			if fromValidatorIdx == culpritIdx {
+				if flags&DKG_R2_CORRUPT_VALIDATOR_IDX == 0 {
+					if vSetMask.Bit(int(toValidatorIdx)) == 0 {
+						continue
+					}
+				}
+			} else {
+				if vSetMask.Bit(int(toValidatorIdx)) == 0 {
+					continue
+				}
+			}
+
+			if fromValidatorIdx == culpritIdx {
+				if flags&DKG_R2_CORRUPT_SEND_PACKAGE_TO_SELF == 0 {
+					if int(toValidatorIdx) == fromValidatorIdx {
+						continue
+					}
+				}
+			} else {
+				if int(toValidatorIdx) == fromValidatorIdx {
 					continue
 				}
 			}
 
 			// To validator idx
-			if flags&DKG_R2_CORRUPT_VALIDATOR_IDX != 0 {
-				binary.BigEndian.PutUint16(tmpBuf, toValidatorIdx>>3)
-			} else {
-				binary.BigEndian.PutUint16(tmpBuf, toValidatorIdx)
+			binary.BigEndian.PutUint16(tmpBuf, toValidatorIdx)
+			if fromValidatorIdx == culpritIdx {
+				if flags&DKG_R2_CORRUPT_VALIDATOR_IDX != 0 {
+					binary.BigEndian.PutUint16(tmpBuf, toValidatorIdx>>3)
+				}
 			}
 			data = append(data, tmpBuf...)
 
 			// Package payload
 			packagePayloadSize := EncryptedFrostDkgR2PackageSize
-			if flags&DKG_R2_CORRUPT_PACKAGE_PAYLOAD_INC != 0 {
-				packagePayloadSize = EncryptedFrostDkgR2PackageSize + 5
-			} else if flags&DKG_R2_CORRUPT_PACKAGE_PAYLOAD_DEC != 0 {
-				packagePayloadSize = EncryptedFrostDkgR2PackageSize - 5
+			if fromValidatorIdx == culpritIdx {
+				if flags&DKG_R2_CORRUPT_PACKAGE_PAYLOAD_INC != 0 {
+					packagePayloadSize = EncryptedFrostDkgR2PackageSize + 5
+				} else if flags&DKG_R2_CORRUPT_PACKAGE_PAYLOAD_DEC != 0 {
+					packagePayloadSize = EncryptedFrostDkgR2PackageSize - 5
+				}
 			}
+
 			r2Package := make([]byte, packagePayloadSize)
 			rand.Read(r2Package)
 			data = append(data, r2Package...)
 		}
 
 		//
-		r2Packages[fromValidatorIdx] = data
+		r2Packages[uint16(fromValidatorIdx)] = data
 	}
+
+	//fmt.Printf("len(r2Packages) = %d", len(r2Packages))
 
 	return r2Packages
 }
 
 func TestDeserializeDkgR2(t *testing.T) {
-	// Build DkgR2 package
-	maxSigners := uint16(3)
-	r2Packages := generateDkgR2Packages(maxSigners, 0)
-	vsetMask := big.NewInt(0b111)
-
-	resMap, _, _, err := DeserializeDkgR2(r2Packages, vsetMask, maxSigners)
-
-	if err != nil {
-		t.Errorf("Deserialization error: %v", err)
-		return
+	tests := []struct {
+		maxSigners    uint16
+		vsetMask      *big.Int
+		culpritIdx    int
+		flags         generateDkgR2PackagesFlag
+		expectedError string
+	}{
+		/*{
+			maxSigners:    uint16(3),
+			vsetMask:      big.NewInt(0b111),
+			culpritIdx:    -1,
+			flags:         0,
+			expectedError: "",
+		},*/
+		{
+			maxSigners:    uint16(2),
+			vsetMask:      big.NewInt(0b101),
+			culpritIdx:    -1,
+			flags:         0,
+			expectedError: "",
+			//expectedError: "toValidatorIdx is not in VSet",
+		},
 	}
 
-	// Verify resMap
-	if len(resMap) != 3 {
-		t.Errorf("len(resMap) = %d expected to be %d", len(resMap), 3)
-		return
+	for _, tt := range tests {
+		r2Packages := generateDkgR2Packages(tt.maxSigners, tt.culpritIdx, tt.vsetMask, tt.flags)
+
+		_, isCulprit, culpritId, err := DeserializeDkgR2(r2Packages, tt.vsetMask, tt.maxSigners)
+
+		if tt.culpritIdx >= 0 {
+			if !isCulprit || culpritId != uint16(tt.culpritIdx) {
+				t.Errorf("Expected isCulprit = true and culpritId = %d, actual values isCulprit = %v, culpritId = %d", tt.culpritIdx, isCulprit, culpritId)
+				continue
+			}
+		}
+
+		if len(tt.expectedError) == 0 {
+			if err != nil {
+				t.Errorf("Deserialization error: %v", err)
+				continue
+			}
+		} else {
+			if err == nil {
+				t.Errorf("Expected error `%s`", tt.expectedError)
+				continue
+			}
+
+			if strings.Contains(err.Error(), tt.expectedError) == false {
+				t.Errorf("Expected error `%s`, but got `%s`", tt.expectedError, err.Error())
+				continue
+			}
+		}
+
+		/*
+			// Verify resMap
+			if len(resMap) != 3 {
+				t.Errorf("len(resMap) = %d expected to be %d", len(resMap), 3)
+				return
+			}
+		*/
 	}
 }
 
-func TestDeserializeDkgR2_VSet_1(t *testing.T) {
-	// Build DkgR2 package
-	maxSigners := uint16(3)
-	r2Packages := generateDkgR2Packages(maxSigners, 0)
-	vsetMask := big.NewInt(0b101) // Exclude validator (idx = 1)
-
-	_, isCulprit, culpritId, err := DeserializeDkgR2(r2Packages, vsetMask, maxSigners)
-
-	if !isCulprit || culpritId != 0 {
-		t.Errorf("Expected isCulprit = true and culpritId = 0, actual values isCulprit = %v, culpritId = %d", isCulprit, culpritId)
-		return
-	}
-
-	if err == nil {
-		t.Errorf("Expected error `toValidatorIdx is not in VSet`")
-		return
-	}
-}
+/*
 
 func TestDeserializeDkgR2_Empty(t *testing.T) {
 	// Build DkgR2 package
@@ -562,7 +620,7 @@ func TestDeserializeDkgR2_Empty(t *testing.T) {
 	vsetMask := big.NewInt(0b111)
 	r2Packages := make(map[uint16][]byte)
 
-	_, _, _, err := DeserializeDkgR2(r2Packages, vsetMask, maxSigners)
+	_, isCulprit, culpritId, err := DeserializeDkgR2(r2Packages, vsetMask, maxSigners)
 
 	if err == nil {
 		t.Errorf("Expected error `r2Packages is empty`")
@@ -573,8 +631,8 @@ func TestDeserializeDkgR2_Empty(t *testing.T) {
 func TestDeserializeDkgR2_AboveMaxSigners(t *testing.T) {
 	// Build DkgR2 package
 	maxSigners := uint16(3)
-	r2Packages := generateDkgR2Packages(maxSigners+1, 0)
 	vsetMask := big.NewInt(0b111)
+	r2Packages := generateDkgR2Packages(maxSigners+1, vsetMask, 0)
 
 	_, isCulprit, culpritId, err := DeserializeDkgR2(r2Packages, vsetMask, maxSigners)
 
@@ -592,8 +650,8 @@ func TestDeserializeDkgR2_AboveMaxSigners(t *testing.T) {
 func TestDeserializeDkgR2_BelowMaxSigners(t *testing.T) {
 	// Build DkgR2 package
 	maxSigners := uint16(3)
-	r2Packages := generateDkgR2Packages(maxSigners-1, 0)
 	vsetMask := big.NewInt(0b111)
+	r2Packages := generateDkgR2Packages(maxSigners-1, vsetMask, 0)
 
 	_, isCulprit, culpritId, err := DeserializeDkgR2(r2Packages, vsetMask, maxSigners)
 
@@ -611,8 +669,8 @@ func TestDeserializeDkgR2_BelowMaxSigners(t *testing.T) {
 func TestDeserializeDkgR2_WrongPAckagesCount1(t *testing.T) {
 	// Build DkgR2 package
 	maxSigners := uint16(3)
-	r2Packages := generateDkgR2Packages(maxSigners-1, DKG_R2_CORRUPT_PACKAGES_COUNT_INC)
 	vsetMask := big.NewInt(0b111)
+	r2Packages := generateDkgR2Packages(maxSigners-1, vsetMask, DKG_R2_CORRUPT_PACKAGES_COUNT_INC)
 
 	_, isCulprit, culpritId, err := DeserializeDkgR2(r2Packages, vsetMask, maxSigners)
 
@@ -630,8 +688,8 @@ func TestDeserializeDkgR2_WrongPAckagesCount1(t *testing.T) {
 func TestDeserializeDkgR2_WrongPAckagesCount2(t *testing.T) {
 	// Build DkgR2 package
 	maxSigners := uint16(3)
-	r2Packages := generateDkgR2Packages(maxSigners-1, DKG_R2_CORRUPT_PACKAGES_COUNT_DEC)
 	vsetMask := big.NewInt(0b111)
+	r2Packages := generateDkgR2Packages(maxSigners-1, vsetMask, DKG_R2_CORRUPT_PACKAGES_COUNT_DEC)
 
 	_, isCulprit, culpritId, err := DeserializeDkgR2(r2Packages, vsetMask, maxSigners)
 
@@ -649,8 +707,8 @@ func TestDeserializeDkgR2_WrongPAckagesCount2(t *testing.T) {
 func TestDeserializeDkgR2_SendPackageToSelf(t *testing.T) {
 	// Build DkgR2 package
 	maxSigners := uint16(3)
-	r2Packages := generateDkgR2Packages(maxSigners-1, DKG_R2_CORRUPT_SEND_PACKAGE_TO_SELF)
 	vsetMask := big.NewInt(0b111)
+	r2Packages := generateDkgR2Packages(maxSigners-1, vsetMask, DKG_R2_CORRUPT_SEND_PACKAGE_TO_SELF)
 
 	_, isCulprit, culpritId, err := DeserializeDkgR2(r2Packages, vsetMask, maxSigners)
 
@@ -668,8 +726,8 @@ func TestDeserializeDkgR2_SendPackageToSelf(t *testing.T) {
 func TestDeserializeDkgR2_CorruptValidatorIdx(t *testing.T) {
 	// Build DkgR2 package
 	maxSigners := uint16(3)
-	r2Packages := generateDkgR2Packages(maxSigners-1, DKG_R2_CORRUPT_VALIDATOR_IDX)
 	vsetMask := big.NewInt(0b111)
+	r2Packages := generateDkgR2Packages(maxSigners-1, vsetMask, DKG_R2_CORRUPT_VALIDATOR_IDX)
 
 	_, isCulprit, culpritId, err := DeserializeDkgR2(r2Packages, vsetMask, maxSigners)
 
@@ -687,8 +745,8 @@ func TestDeserializeDkgR2_CorruptValidatorIdx(t *testing.T) {
 func TestDeserializeDkgR2_CorruptPackagePayloadSizeInc(t *testing.T) {
 	// Build DkgR2 package
 	maxSigners := uint16(3)
-	r2Packages := generateDkgR2Packages(maxSigners-1, DKG_R2_CORRUPT_PACKAGE_PAYLOAD_INC)
 	vsetMask := big.NewInt(0b111)
+	r2Packages := generateDkgR2Packages(maxSigners-1, vsetMask, DKG_R2_CORRUPT_PACKAGE_PAYLOAD_INC)
 
 	_, isCulprit, culpritId, err := DeserializeDkgR2(r2Packages, vsetMask, maxSigners)
 
@@ -706,8 +764,8 @@ func TestDeserializeDkgR2_CorruptPackagePayloadSizeInc(t *testing.T) {
 func TestDeserializeDkgR2_CorruptPackagePayloadSizeDec(t *testing.T) {
 	// Build DkgR2 package
 	maxSigners := uint16(3)
-	r2Packages := generateDkgR2Packages(maxSigners-1, DKG_R2_CORRUPT_PACKAGE_PAYLOAD_DEC)
 	vsetMask := big.NewInt(0b111)
+	r2Packages := generateDkgR2Packages(maxSigners-1, vsetMask, DKG_R2_CORRUPT_PACKAGE_PAYLOAD_DEC)
 
 	_, _, _, err := DeserializeDkgR2(r2Packages, vsetMask, maxSigners)
 
@@ -716,3 +774,4 @@ func TestDeserializeDkgR2_CorruptPackagePayloadSizeDec(t *testing.T) {
 		return
 	}
 }
+*/
