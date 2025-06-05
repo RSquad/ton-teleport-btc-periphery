@@ -475,6 +475,8 @@ func generateDkgR2Packages(validatorsCount uint16, flags generateDkgR2PackagesFl
 			binary.BigEndian.PutUint16(tmpBuf, validatorsCount*2)
 		} else if flags&DKG_R2_CORRUPT_PACKAGES_COUNT_DEC != 0 {
 			binary.BigEndian.PutUint16(tmpBuf, validatorsCount/2)
+		} else if flags&DKG_R2_CORRUPT_SEND_PACKAGE_TO_SELF != 0 {
+			binary.BigEndian.PutUint16(tmpBuf, validatorsCount)
 		} else {
 			binary.BigEndian.PutUint16(tmpBuf, validatorsCount-1)
 		}
@@ -531,6 +533,20 @@ func TestDeserializeDkgR2(t *testing.T) {
 	// Verify resMap
 	if len(resMap) != 3 {
 		t.Errorf("len(resMap) = %d expected to be %d", len(resMap), 3)
+		return
+	}
+}
+
+func TestDeserializeDkgR2_VSet_1(t *testing.T) {
+	// Build DkgR2 package
+	maxSigners := uint16(3)
+	r2Packages := generateDkgR2Packages(maxSigners, 0)
+	vsetMask := big.NewInt(0b101) // Exclude validator (idx = 1)
+
+	_, _, _, err := DeserializeDkgR2(r2Packages, vsetMask, maxSigners)
+
+	if err == nil {
+		t.Errorf("Expected error `toValidatorIdx is not in VSet`")
 		return
 	}
 }

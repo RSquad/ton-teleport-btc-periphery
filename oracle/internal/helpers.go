@@ -73,33 +73,41 @@ func DeserializeDkgR2(r2Packages map[uint16][]byte /*map[FROM]data*/, vsetMask *
 	deserializedData := make(map[uint16]map[uint16][]byte)
 
 	if len(r2Packages) == 0 {
-		return deserializedData, false, 0, errors.New("r2Packages is empty")
+		return nil, false, 0, errors.New("r2Packages is empty")
 	}
 
 	for fromValidatorIdx, serializedToPkgs := range r2Packages {
 		toValidatorData := make(map[uint16][]byte)
 
-		readOffset := 0
-		bytesLeft := len(serializedToPkgs)
+		packagesSize := len(serializedToPkgs)
 
 		// Packages count
-		if bytesLeft < 2 {
+		if packagesSize < 2 {
 			return nil, true, fromValidatorIdx, errors.New("not enough bytes in package")
 		}
 
-		packagesCount := binary.BigEndian.Uint16(serializedToPkgs[readOffset : readOffset+2])
-		readOffset += 2
-		bytesLeft -= 2
+		packagesCount := int(binary.BigEndian.Uint16(serializedToPkgs[0:2]))
+
+		if (packagesSize - 2) != packagesCount*(2 /*validator idx*/ +EncryptedFrostDkgR2PackageSize) {
+			return nil, true, fromValidatorIdx, errors.New("not enough bytes in package")
+		}
+
+		var readOffset = 2
 
 		for range packagesCount {
-			if bytesLeft < (2 /*ToValidatorId*/ + EncryptedFrostDkgR2PackageSize) {
-				return nil, true, fromValidatorIdx, errors.New("not enough bytes in package")
-			}
-
 			// To validator idx
 			toValidatorIdx := binary.BigEndian.Uint16(serializedToPkgs[readOffset : readOffset+2])
 			readOffset += 2
-			bytesLeft -= 2
+
+			// Check VSet
+			if vsetMask.Bit(int(toValidatorIdx)) == 0 {
+				return nil, true, fromValidatorIdx, fmt.Errorf("toValidatorIdx is not in VSet. fromValidatorIdx %d, toValidatorIdx %d", fromValidatorIdx, toValidatorIdx)
+			}
+
+			// Check if toValidatorIdx != fromValidatorIdx
+			if toValidatorIdx == fromValidatorIdx {
+				return nil, true, fromValidatorIdx, fmt.Errorf("toValidatorIdx %d is the same as fromValidatorIdx %d", toValidatorIdx, fromValidatorIdx)
+			}
 
 			// Check if toValidatorIdx is unique
 			_, exists := toValidatorData[toValidatorIdx]
@@ -109,17 +117,18 @@ func DeserializeDkgR2(r2Packages map[uint16][]byte /*map[FROM]data*/, vsetMask *
 
 			toValidatorData[toValidatorIdx] = serializedToPkgs[readOffset : readOffset+EncryptedFrostDkgR2PackageSize]
 			readOffset += EncryptedFrostDkgR2PackageSize
-			bytesLeft -= EncryptedFrostDkgR2PackageSize
 		}
 
-		// Check toValidatorData. All and only the validator indexes from VSet must be in toValidatorData (exept fromValidatorIdx)
-		count := uint(0)
+		// Check if we have destination validatorIdx excluded from the vset mask
+		// All and only the validator indexes from VSet must be in toValidatorData (exept fromValidatorIdx)
+		vSetSize := uint(0)
 		for toValidatorIdx := range toValidatorData {
-			count += vsetMask.Bit(int(toValidatorIdx))
+			vSetSize += vsetMask.Bit(int(toValidatorIdx))
 		}
+		vSetSize += vsetMask.Bit(int(fromValidatorIdx))
 
-		if count != uint(maxSigners-1 /*fromValidatorIdx*/) {
-			return nil, true, fromValidatorIdx, fmt.Errorf("incorrect package count: expected %d, actual %d", maxSigners-1, count)
+		if vSetSize != uint(maxSigners) {
+			return nil, true, fromValidatorIdx, fmt.Errorf("incorrect package count: expected %d, actual %d", maxSigners, vSetSize)
 		}
 
 		deserializedData[fromValidatorIdx] = toValidatorData
