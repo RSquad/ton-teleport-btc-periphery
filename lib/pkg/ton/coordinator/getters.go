@@ -23,20 +23,6 @@ const (
 	OpCodeCoordinatorSendSignature      = 0xd0720000
 	OpCodeCoordinatorSigningClaim       = 0x5fcb0000
 	OpCodeCoordinatorResetPegoutSigning = 0xe6c20000
-	storageIndexIntiated                = 0
-	storageIndexStandaloneMode          = 1
-	storageIndexId                      = 2
-	storageIndexConfiguratorAddr        = 3
-	storageIndexEnabled                 = 4
-	storageIndexDkg                     = 5
-	storageIndexPrevDkg                 = 6
-	storageIndexUnsignedPegouts         = 7
-	storageIndexPegoutTxCode            = 8
-	storageIndexMinClaimsPercent        = 9
-	storageIndexMinSignersThreshold     = 10
-	storageIndexDkgLifetime             = 11
-	storageIndexSigningTimeout          = 12
-	storageIndexTeleportAddr            = 13
 )
 
 const DefaultDGKTTL = time.Minute
@@ -55,6 +41,7 @@ type Storage struct {
 	MinSignersThreshold uint16
 	DkgLifetime         uint32
 	SigningTimeout      uint32
+	NextPegoutIdx       uint64
 	TeleportAddr        *address.Address
 }
 
@@ -203,54 +190,55 @@ func (c *coordinatorContract) GetStorage(block *tonutils.BlockIDExt) (Storage, e
 			return Storage{}, err
 		}
 	}
-
-	storage, err := c.tonClient.API.RunGetMethod(c.ctx, block, c.Addr, "get_storage")
+	acc, err := c.tonClient.FetchAcc(c.Addr, block)
+	storage := acc.Data.BeginParse()
 	if err != nil {
 		return Storage{}, err
 	}
 
-	initiated := storage.MustInt(storageIndexIntiated).Bit(0) > 0
-	standaloneMode := storage.MustInt(storageIndexStandaloneMode).Bit(0) > 0
-	id := uint16(storage.MustInt(storageIndexId).Uint64())
-	configuratodAddr := storage.MustSlice(storageIndexConfiguratorAddr).MustLoadAddr()
-	enabled := storage.MustInt(storageIndexEnabled).Bit(0) > 0
-	dkg, err := parseDGKSlice(storage.MustCell(storageIndexDkg).BeginParse())
+	initiated := storage.MustLoadBoolBit()
+	standaloneMode := storage.MustLoadBoolBit()
+	id := uint16(storage.MustLoadUInt(16))
+	configuratodAddr := storage.MustLoadAddr()
+	enabled := storage.MustLoadBoolBit()
+	dkg, err := parseDGKSlice(storage.MustLoadRef())
 	if err != nil {
 		return Storage{}, err
 	}
 	var prevDkg *DKG
-	dkgNotExists, err := storage.IsNil(storageIndexPrevDkg)
+	prevDkgSlice, err := storage.LoadMaybeRef()
 	if err != nil {
 		return Storage{}, err
 	}
-	if dkgNotExists {
+	if prevDkgSlice == nil {
 		prevDkg = &DKG{}
 	} else {
-		prevDkg, err = parseDGKSlice(storage.MustCell(storageIndexPrevDkg).BeginParse())
+		prevDkg, err = parseDGKSlice(prevDkgSlice)
 	}
 	if err != nil {
 		return Storage{}, err
 	}
 
 	var unsignedPegouts []PegoutRecord
-	unsignedPegoutsNotExist, err := storage.IsNil(storageIndexUnsignedPegouts)
+	unsignedPegoutsSlice, err := storage.LoadMaybeRef()
 	if err != nil {
 		return Storage{}, err
 	}
-	if unsignedPegoutsNotExist {
+	if unsignedPegoutsSlice == nil {
 		unsignedPegouts = []PegoutRecord{}
 	} else {
-		unsignedPegouts, err = parseUnsignedPegouts(storage.MustCell(storageIndexUnsignedPegouts))
+		unsignedPegouts, err = parseUnsignedPegouts(unsignedPegoutsSlice.MustToCell())
 	}
 	if err != nil {
 		return Storage{}, err
 	}
-	pegoutTxCode := storage.MustCell(storageIndexPegoutTxCode)
-	minClaimsPercent := uint16(storage.MustInt(storageIndexMinClaimsPercent).Uint64())
-	minSignersThreshold := uint16(storage.MustInt(storageIndexMinSignersThreshold).Uint64())
-	dkgLifetime := uint32(storage.MustInt(storageIndexDkgLifetime).Uint64())
-	signingTimeout := uint32(storage.MustInt(storageIndexSigningTimeout).Uint64())
-	teleportAddr := storage.MustSlice(storageIndexTeleportAddr).MustLoadAddr()
+	pegoutTxCode := storage.MustLoadRef().MustToCell()
+	minClaimsPercent := uint16(storage.MustLoadUInt(16))
+	minSignersThreshold := uint16(storage.MustLoadUInt(16))
+	dkgLifetime := uint32(storage.MustLoadUInt(32))
+	signingTimeout := uint32(storage.MustLoadUInt(32))
+	nextPegoutIdx := storage.MustLoadUInt(64)
+	teleportAddr := storage.MustLoadAddr()
 
 	return Storage{
 		Initiated:           initiated,
@@ -266,6 +254,7 @@ func (c *coordinatorContract) GetStorage(block *tonutils.BlockIDExt) (Storage, e
 		MinSignersThreshold: minSignersThreshold,
 		DkgLifetime:         dkgLifetime,
 		SigningTimeout:      signingTimeout,
+		NextPegoutIdx:       nextPegoutIdx,
 		TeleportAddr:        teleportAddr,
 	}, nil
 }

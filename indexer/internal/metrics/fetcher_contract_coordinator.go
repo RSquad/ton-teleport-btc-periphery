@@ -27,6 +27,7 @@ type ContractCoordinatorData struct {
 	MinSignersThreshold uint16
 	DkgLifetime         uint32
 	SigningTimeout      uint32
+	NextPegoutIdx       uint64
 	TeleportAddr        string
 }
 
@@ -89,6 +90,7 @@ func (fetcher *FetcherContractCoordinator) Fetch() {
 		MinSignersThreshold: storage.MinSignersThreshold,
 		DkgLifetime:         storage.DkgLifetime,
 		SigningTimeout:      storage.SigningTimeout,
+		NextPegoutIdx:       storage.NextPegoutIdx,
 		TeleportAddr:        utils.AddrToRawString(storage.TeleportAddr),
 	}
 
