@@ -191,15 +191,15 @@ func (c *coordinatorContract) GetStorage(block *tonutils.BlockIDExt) (Storage, e
 		}
 	}
 	acc, err := c.tonClient.FetchAcc(c.Addr, block)
-	storage := acc.Data.BeginParse()
 	if err != nil {
 		return Storage{}, err
 	}
+	storage := acc.Data.BeginParse()
 
 	initiated := storage.MustLoadBoolBit()
 	standaloneMode := storage.MustLoadBoolBit()
 	id := uint16(storage.MustLoadUInt(16))
-	configuratodAddr := storage.MustLoadAddr()
+	configuratorAddr := storage.MustLoadAddr()
 	enabled := storage.MustLoadBoolBit()
 	dkg, err := parseDGKSlice(storage.MustLoadRef())
 	if err != nil {
@@ -244,7 +244,7 @@ func (c *coordinatorContract) GetStorage(block *tonutils.BlockIDExt) (Storage, e
 		Initiated:           initiated,
 		StandaloneMode:      standaloneMode,
 		Id:                  id,
-		ConfiguratorAddr:    configuratodAddr,
+		ConfiguratorAddr:    configuratorAddr,
 		Enabled:             enabled,
 		Dkg:                 dkg,
 		PrevDkg:             prevDkg,
