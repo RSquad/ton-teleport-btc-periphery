@@ -7,10 +7,12 @@ import (
 	"math"
 	"math/big"
 	"regexp"
+	"sort"
 	"strconv"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/frost"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
+	"golang.org/x/exp/constraints"
 )
 
 const (
@@ -24,6 +26,16 @@ const (
 )
 
 // Helpers
+func ExtractSortedKeysFromMap[K constraints.Ordered, V any](m map[K]V) []K {
+	keys := make([]K, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Slice(keys, func(i, j int) bool {
+		return keys[i] < keys[j]
+	})
+	return keys
+}
 
 func DeserializeDkgR1(origMap map[uint16][]byte) (map[frost.Identifier]frost.Package, map[uint16][]byte, uint16, error) {
 	frostMap := make(map[frost.Identifier]frost.Package)
@@ -76,9 +88,11 @@ func DeserializeDkgR2(r2Packages map[uint16][]byte /*map[FROM]data*/, vsetMask *
 		return nil, false, 0, errors.New("r2Packages is empty")
 	}
 
-	for fromValidatorIdx, serializedToPkgs := range r2Packages {
-		toValidatorData := make(map[uint16][]byte)
+	// We need to iterate over r2Packages in deterministic order (which is not guaranteed for map[])
 
+	for _, fromValidatorIdx := range ExtractSortedKeysFromMap(r2Packages) {
+		toValidatorData := make(map[uint16][]byte)
+		serializedToPkgs := r2Packages[fromValidatorIdx]
 		packagesSize := len(serializedToPkgs)
 
 		// Packages count

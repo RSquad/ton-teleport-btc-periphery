@@ -543,7 +543,12 @@ func TestDeserializeDkgR2_VSet_1(t *testing.T) {
 	r2Packages := generateDkgR2Packages(maxSigners, 0)
 	vsetMask := big.NewInt(0b101) // Exclude validator (idx = 1)
 
-	_, _, _, err := DeserializeDkgR2(r2Packages, vsetMask, maxSigners)
+	_, isCulprit, culpritId, err := DeserializeDkgR2(r2Packages, vsetMask, maxSigners)
+
+	if !isCulprit || culpritId != 0 {
+		t.Errorf("Expected isCulprit = true and culpritId = 0, actual values isCulprit = %v, culpritId = %d", isCulprit, culpritId)
+		return
+	}
 
 	if err == nil {
 		t.Errorf("Expected error `toValidatorIdx is not in VSet`")
@@ -571,7 +576,12 @@ func TestDeserializeDkgR2_AboveMaxSigners(t *testing.T) {
 	r2Packages := generateDkgR2Packages(maxSigners+1, 0)
 	vsetMask := big.NewInt(0b111)
 
-	_, _, _, err := DeserializeDkgR2(r2Packages, vsetMask, maxSigners)
+	_, isCulprit, culpritId, err := DeserializeDkgR2(r2Packages, vsetMask, maxSigners)
+
+	if !isCulprit || culpritId != 0 {
+		t.Errorf("Expected isCulprit = true and culpritId = 0, actual values isCulprit = %v, culpritId = %d", isCulprit, culpritId)
+		return
+	}
 
 	if err == nil {
 		t.Errorf("Expected error `incorrect package count`")
@@ -585,7 +595,12 @@ func TestDeserializeDkgR2_BelowMaxSigners(t *testing.T) {
 	r2Packages := generateDkgR2Packages(maxSigners-1, 0)
 	vsetMask := big.NewInt(0b111)
 
-	_, _, _, err := DeserializeDkgR2(r2Packages, vsetMask, maxSigners)
+	_, isCulprit, culpritId, err := DeserializeDkgR2(r2Packages, vsetMask, maxSigners)
+
+	if !isCulprit || culpritId != 0 {
+		t.Errorf("Expected isCulprit = true and culpritId = 0, actual values isCulprit = %v, culpritId = %d", isCulprit, culpritId)
+		return
+	}
 
 	if err == nil {
 		t.Errorf("Expected error `incorrect package count`")
@@ -599,7 +614,12 @@ func TestDeserializeDkgR2_WrongPAckagesCount1(t *testing.T) {
 	r2Packages := generateDkgR2Packages(maxSigners-1, DKG_R2_CORRUPT_PACKAGES_COUNT_INC)
 	vsetMask := big.NewInt(0b111)
 
-	_, _, _, err := DeserializeDkgR2(r2Packages, vsetMask, maxSigners)
+	_, isCulprit, culpritId, err := DeserializeDkgR2(r2Packages, vsetMask, maxSigners)
+
+	if !isCulprit || culpritId != 0 {
+		t.Errorf("Expected isCulprit = true and culpritId = 0, actual values isCulprit = %v, culpritId = %d", isCulprit, culpritId)
+		return
+	}
 
 	if err == nil {
 		t.Errorf("Expected error `not enough bytes in package`")
@@ -613,7 +633,12 @@ func TestDeserializeDkgR2_WrongPAckagesCount2(t *testing.T) {
 	r2Packages := generateDkgR2Packages(maxSigners-1, DKG_R2_CORRUPT_PACKAGES_COUNT_DEC)
 	vsetMask := big.NewInt(0b111)
 
-	_, _, _, err := DeserializeDkgR2(r2Packages, vsetMask, maxSigners)
+	_, isCulprit, culpritId, err := DeserializeDkgR2(r2Packages, vsetMask, maxSigners)
+
+	if !isCulprit || culpritId != 0 {
+		t.Errorf("Expected isCulprit = true and culpritId = 0, actual values isCulprit = %v, culpritId = %d", isCulprit, culpritId)
+		return
+	}
 
 	if err == nil {
 		t.Errorf("Expected error `not enough bytes in package`")
@@ -627,7 +652,12 @@ func TestDeserializeDkgR2_SendPackageToSelf(t *testing.T) {
 	r2Packages := generateDkgR2Packages(maxSigners-1, DKG_R2_CORRUPT_SEND_PACKAGE_TO_SELF)
 	vsetMask := big.NewInt(0b111)
 
-	_, _, _, err := DeserializeDkgR2(r2Packages, vsetMask, maxSigners)
+	_, isCulprit, culpritId, err := DeserializeDkgR2(r2Packages, vsetMask, maxSigners)
+
+	if !isCulprit || culpritId != 0 {
+		t.Errorf("Expected isCulprit = true and culpritId = 0, actual values isCulprit = %v, culpritId = %d", isCulprit, culpritId)
+		return
+	}
 
 	if err == nil {
 		t.Errorf("Expected error `incorrect package count`")
@@ -641,7 +671,12 @@ func TestDeserializeDkgR2_CorruptValidatorIdx(t *testing.T) {
 	r2Packages := generateDkgR2Packages(maxSigners-1, DKG_R2_CORRUPT_VALIDATOR_IDX)
 	vsetMask := big.NewInt(0b111)
 
-	_, _, _, err := DeserializeDkgR2(r2Packages, vsetMask, maxSigners)
+	_, isCulprit, culpritId, err := DeserializeDkgR2(r2Packages, vsetMask, maxSigners)
+
+	if !isCulprit || culpritId != 0 {
+		t.Errorf("Expected isCulprit = true and culpritId = 0, actual values isCulprit = %v, culpritId = %d", isCulprit, culpritId)
+		return
+	}
 
 	if err == nil {
 		t.Errorf("Expected error `incorrect package count`")
@@ -655,7 +690,12 @@ func TestDeserializeDkgR2_CorruptPackagePayloadSizeInc(t *testing.T) {
 	r2Packages := generateDkgR2Packages(maxSigners-1, DKG_R2_CORRUPT_PACKAGE_PAYLOAD_INC)
 	vsetMask := big.NewInt(0b111)
 
-	_, _, _, err := DeserializeDkgR2(r2Packages, vsetMask, maxSigners)
+	_, isCulprit, culpritId, err := DeserializeDkgR2(r2Packages, vsetMask, maxSigners)
+
+	if !isCulprit || culpritId != 0 {
+		t.Errorf("Expected isCulprit = true and culpritId = 0, actual values isCulprit = %v, culpritId = %d", isCulprit, culpritId)
+		return
+	}
 
 	if err == nil {
 		t.Errorf("Expected error `incorrect package count`")
