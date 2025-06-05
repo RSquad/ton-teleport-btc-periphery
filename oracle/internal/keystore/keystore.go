@@ -11,6 +11,12 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 )
 
+const (
+	FileMaskOwnerRWX           = 0o700
+	FileMaskOwnerRW            = 0o600
+	FileMaskOwnerGRoupOtherRWX = 0o777
+)
+
 type Keystore interface {
 	LoadSecret(pubkey []byte) []byte
 	LoadSession(dkgUntilTimestamp int64) []byte
@@ -32,17 +38,17 @@ type FileKeystore struct {
 
 func New(rootPath string) (Keystore, error) {
 	var err error
-	err = CreateDir(rootPath, "secrets", 0o700)
+	err = CreateDir(rootPath, "secrets", FileMaskOwnerRWX)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create secrets dir: %w", err)
 	}
 
-	err = CreateDir(rootPath, "temp", 0o700)
+	err = CreateDir(rootPath, "temp", FileMaskOwnerRWX)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create temp dir: %w", err)
 	}
 
-	err = CreateDir(rootPath, "sessions", 0o700)
+	err = CreateDir(rootPath, "sessions", FileMaskOwnerRWX)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create secrets dir: %w", err)
 	}
@@ -107,7 +113,7 @@ func (ks *FileKeystore) write(filePath string, data []byte) error {
 	ks.mu.Lock()
 	defer ks.mu.Unlock()
 
-	return WriteFile(filePath, data, 0o600)
+	return WriteFile(filePath, data, FileMaskOwnerRW)
 }
 
 func (ks *FileKeystore) StoreSecret(pubkey []byte, secret []byte) error {
@@ -148,11 +154,11 @@ func (ks *FileKeystore) Cleanup() {
 	defer ks.mu.Unlock()
 
 	os.RemoveAll(filepath.Join(ks.rootPath, "temp"))
-	CreateDir(ks.rootPath, "temp", 0o700)
+	CreateDir(ks.rootPath, "temp", FileMaskOwnerRWX)
 }
 
 // Creates a directory with specific access flags
-// basePath: existing path (error if doesn't exist)
+// basePath: existing path (do not check access flags)
 // subPath: path to create relative to basePath (may or may not exist)
 // flags: desired access permissions
 func CreateDir(
@@ -161,8 +167,15 @@ func CreateDir(
 	flags os.FileMode,
 ) error {
 	// Check if base path exists
-	if _, err := os.Stat(basePath); os.IsNotExist(err) {
-		return fmt.Errorf("base path does not exist: %s", basePath)
+	if _, err := os.Stat(basePath); err != nil {
+		if os.IsNotExist(err) {
+			// Path doesn't exist, create it with specified flags
+			if err := os.MkdirAll(basePath, flags); err != nil {
+				return fmt.Errorf("failed to create directory: %v", err)
+			}
+		} else {
+			return err
+		}
 	}
 
 	resultPath := filepath.Join(basePath, subPath)

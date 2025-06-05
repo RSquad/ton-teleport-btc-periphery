@@ -18,7 +18,7 @@ func ClearTmp(t *testing.T) {
 	_, err := os.Stat(tmpDir)
 	if err != nil {
 		if os.IsNotExist(err) {
-			if err := os.MkdirAll(tmpDir, 0o700); err != nil {
+			if err := os.MkdirAll(tmpDir, FileMaskOwnerRWX); err != nil {
 				t.Errorf("failed to create directory: %v", err)
 				return
 			}
@@ -74,9 +74,9 @@ func ClearAndCreate(t *testing.T) Keystore {
 	}
 
 	// Verify that the folders exist (created)
-	VerifyExists("secrets", 0o700, t)
-	VerifyExists("temp", 0o700, t)
-	VerifyExists("sessions", 0o700, t)
+	VerifyExists("secrets", FileMaskOwnerRWX, t)
+	VerifyExists("temp", FileMaskOwnerRWX, t)
+	VerifyExists("sessions", FileMaskOwnerRWX, t)
 
 	return ks
 }
@@ -109,9 +109,9 @@ func TestKeystoreFolderCreationWithExistedFolders_Success(t *testing.T) {
 	}
 
 	// Verify that the folders exist (created)
-	VerifyExists("secrets", 0o700, t)
-	VerifyExists("temp", 0o700, t)
-	VerifyExists("sessions", 0o700, t)
+	VerifyExists("secrets", FileMaskOwnerRWX, t)
+	VerifyExists("temp", FileMaskOwnerRWX, t)
+	VerifyExists("sessions", FileMaskOwnerRWX, t)
 }
 
 func TestKeystoreFolderCreationWithExistedFoldersWrongPermissions_Success(t *testing.T) {
@@ -119,9 +119,9 @@ func TestKeystoreFolderCreationWithExistedFoldersWrongPermissions_Success(t *tes
 	ClearAndCreate(t)
 
 	// Change permissions
-	ChangePermissions("secrets", 0o777, t)
-	ChangePermissions("temp", 0o777, t)
-	ChangePermissions("sessions", 0o777, t)
+	ChangePermissions("secrets", FileMaskOwnerGRoupOtherRWX, t)
+	ChangePermissions("temp", FileMaskOwnerGRoupOtherRWX, t)
+	ChangePermissions("sessions", FileMaskOwnerGRoupOtherRWX, t)
 
 	// Create again
 	_, err := New(TmpRootPath())
@@ -151,8 +151,8 @@ func TestKeystoreWriteFile(t *testing.T) {
 	}
 
 	// Change permissions
-	ChangePermissions(filepath.Join("secrets", pubkey), 0o777, t)
-	VerifyExists(filepath.Join("secrets", pubkey), 0o777, t)
+	ChangePermissions(filepath.Join("secrets", pubkey), FileMaskOwnerGRoupOtherRWX, t)
+	VerifyExists(filepath.Join("secrets", pubkey), FileMaskOwnerGRoupOtherRWX, t)
 
 	// Write file
 	err = ks.StoreSecret(pubkeyData, []byte("test payload"))
@@ -161,5 +161,5 @@ func TestKeystoreWriteFile(t *testing.T) {
 		return
 	}
 
-	VerifyExists(filepath.Join("secrets", pubkey), 0o600, t)
+	VerifyExists(filepath.Join("secrets", pubkey), FileMaskOwnerRW, t)
 }
