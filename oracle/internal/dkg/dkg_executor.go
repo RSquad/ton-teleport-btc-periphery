@@ -10,6 +10,7 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/frost"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/signer"
 	helpers "github.com/rsquad/ton-teleport-btc-periphery/oracle/internal"
 	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/keystore"
 	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/validator"
@@ -71,7 +72,7 @@ type Executor struct {
 	artifacts           ExecutionArtifacts
 	keystore            keystore.Keystore
 	validator           *validator.Validator
-	sessionPublicKey    []byte
+	sessionSigner       signer.Signer
 }
 
 func NewExecutor(
@@ -87,6 +88,7 @@ func NewExecutor(
 		artifacts:           ExecutionArtifacts{},
 		keystore:            keystore,
 		validator:           validator,
+		sessionSigner:       nil,
 	}
 }
 
@@ -112,21 +114,20 @@ func (e *Executor) Work(ctx context.Context, wg *sync.WaitGroup) {
 
 func (e *Executor) Cleanup() {
 	e.artifacts.Cleanup()
-	e.sessionPublicKey = nil
+	e.sessionSigner = nil
 }
 
 func (e *Executor) OnStartNewDKG(dkg *coordinator.DKG) bool {
 	e.Cleanup()
 
 	// Get session public key
-	{
-		sessionSigner, err := validator.NewSessionSigner(e.keystore, dkg.Until.Unix())
-		if err != nil {
-			e.logDKGProcess(dkg, fmt.Sprintf("Failed to create SessionSigner: %v", err))
-			return false
-		}
-		e.sessionPublicKey = sessionSigner.PublicKey()
+
+	sessionSigner, err := validator.NewSessionSigner(e.keystore, dkg.Until.Unix())
+	if err != nil {
+		e.logDKGProcess(dkg, fmt.Sprintf("Failed to create SessionSigner: %v", err))
+		return false
 	}
+	e.sessionSigner = sessionSigner
 
 	e.until = dkg.Until
 	e.logNewDKGStarted(dkg)
@@ -414,7 +415,7 @@ func (e *Executor) executeR3(dkg *coordinator.DKG, validatorIdx uint16) bool {
 	if _, err := e.coordinatorContract.SendPubkeyPackage(
 		validatorIdx,
 		dkg.Until.Unix(),
-		e.sessionPublicKey,
+		e.sessionSigner,
 		e.artifacts.r3.publicKeyPackage,
 	); err != nil {
 		exitCode, _ := helpers.ExtractExitCode(err.Error())
