@@ -54,6 +54,7 @@ func BuildSendCommitmentsBody(ttl int64, req *CommitmentRequest) *cell.Cell {
 		MustStoreUInt(uint64(time.Now().Unix()+ttl), 32).
 		MustStoreUInt(uint64(req.ValidatorIdx), 16).
 		MustStoreUInt(req.PegoutID, 64).
+		MustStoreUInt(uint64(req.PegoutUntil), 32).
 		MustStoreRef(utils.SplitBytesToCells(req.Commitments)).
 		EndCell()
 }
@@ -72,6 +73,7 @@ func BuildSendSigningShareBody(ttl int64, req *SigningShareRequest) *cell.Cell {
 		MustStoreUInt(uint64(time.Now().Unix()+ttl), 32).
 		MustStoreUInt(uint64(req.ValidatorIdx), 16).
 		MustStoreUInt(req.PegoutID, 64).
+		MustStoreUInt(uint64(req.PegoutUntil), 32).
 		MustStoreRef(dict.AsCell()).
 		EndCell()
 }
@@ -90,6 +92,7 @@ func BuildSendSignaturesBody(ttl int64, req *SignaturesRequest) *cell.Cell {
 		MustStoreUInt(uint64(time.Now().Unix()+ttl), 32).
 		MustStoreUInt(uint64(req.ValidatorIdx), 16).
 		MustStoreUInt(req.PegoutID, 64).
+		MustStoreUInt(uint64(req.PegoutUntil), 32).
 		MustStoreRef(dict.AsCell()).
 		EndCell()
 }
@@ -100,6 +103,7 @@ func BuildSendSigningClaimBody(ttl int64, req *SigningClaimRequest) *cell.Cell {
 		MustStoreUInt(uint64(time.Now().Unix()+ttl), 32).
 		MustStoreUInt(uint64(req.ValidatorIdx), 16).
 		MustStoreUInt(req.PegoutID, 64).
+		MustStoreUInt(uint64(req.PegoutUntil), 32).
 		MustStoreUInt(uint64(req.culpritIdx), 16).
 		EndCell()
 }

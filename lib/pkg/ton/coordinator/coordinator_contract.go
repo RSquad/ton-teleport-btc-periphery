@@ -49,24 +49,28 @@ type Coordinator interface {
 
 	SendCommitments(
 		pegoutID uint64,
+		pegoutUntil int64,
 		validatorIdx uint16,
 		commitments []byte,
 	) (*tlb.Transaction, error)
 
 	SendSigningShare(
 		pegoutID uint64,
+		pegoutUntil int64,
 		validatorIdx uint16,
 		signingShares [][]byte,
 	) (*tlb.Transaction, error)
 
 	SendSignatures(
 		pegoutID uint64,
+		pegoutUntil int64,
 		validatorIdx uint16,
 		signatures [][]byte,
 	) (*tlb.Transaction, error)
 
 	SendSigningClaim(
 		pegoutID uint64,
+		pegoutUntil int64,
 		validatorIdx uint16,
 		culpritIdx uint16,
 	) (*tlb.Transaction, error)
