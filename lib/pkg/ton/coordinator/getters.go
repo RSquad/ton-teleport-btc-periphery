@@ -2,7 +2,6 @@ package coordinator
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
@@ -220,7 +219,6 @@ func (c *coordinatorContract) GetStorage(block *tonutils.BlockIDExt) (Storage, e
 	if err != nil {
 		return Storage{}, err
 	}
-	fmt.Println("prevDKG SLICE: ", prevDkgSlice)
 	if prevDkgSlice == nil {
 		prevDkg = &DKG{}
 	} else {
