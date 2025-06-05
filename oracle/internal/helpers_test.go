@@ -459,17 +459,26 @@ const (
 	DKG_R2_CORRUPT_PACKAGES_COUNT_INC generateDkgR2PackagesFlag = 1 << iota
 	DKG_R2_CORRUPT_PACKAGES_COUNT_DEC
 	DKG_R2_CORRUPT_SEND_PACKAGE_TO_SELF
-	DKG_R2_CORRUPT_VALIDATOR_IDX
+	DKG_R2_CORRUPT_TO_VALIDATOR_IDX
 	DKG_R2_CORRUPT_PACKAGE_PAYLOAD_INC
 	DKG_R2_CORRUPT_PACKAGE_PAYLOAD_DEC
 	DKG_R2_CORRUPT_IGNORE_VSET
 )
 
-func generateDkgR2Packages(validatorsCount uint16, culpritIdx int, vSetMask *big.Int, flags generateDkgR2PackagesFlag) map[uint16][]byte {
+func generateDkgR2Packages(culpritIdx int, vSetMask *big.Int, flags generateDkgR2PackagesFlag) map[uint16][]byte {
 	r2Packages := make(map[uint16][]byte)
 	tmpBuf := make([]byte, 2)
 
-	for fromValidatorIdx := 0; fromValidatorIdx < int(validatorsCount); fromValidatorIdx++ {
+	maxValidatorsCount := uint16(vSetMask.BitLen())
+
+	packagesCount := uint16(0)
+	for i := 0; i < int(maxValidatorsCount); i++ {
+		if vSetMask.Bit(i) == 1 {
+			packagesCount++
+		}
+	}
+
+	for fromValidatorIdx := 0; fromValidatorIdx < int(maxValidatorsCount); fromValidatorIdx++ {
 		if vSetMask.Bit(fromValidatorIdx) == 0 {
 			continue
 		}
@@ -477,22 +486,22 @@ func generateDkgR2Packages(validatorsCount uint16, culpritIdx int, vSetMask *big
 		data := make([]byte, 0)
 
 		// Packages count
-		binary.BigEndian.PutUint16(tmpBuf, validatorsCount-1)
+		binary.BigEndian.PutUint16(tmpBuf, packagesCount-1)
 		if fromValidatorIdx == culpritIdx {
 			if flags&DKG_R2_CORRUPT_PACKAGES_COUNT_INC != 0 {
-				binary.BigEndian.PutUint16(tmpBuf, validatorsCount*2)
+				binary.BigEndian.PutUint16(tmpBuf, packagesCount*2)
 			} else if flags&DKG_R2_CORRUPT_PACKAGES_COUNT_DEC != 0 {
-				binary.BigEndian.PutUint16(tmpBuf, validatorsCount/2)
+				binary.BigEndian.PutUint16(tmpBuf, packagesCount/2)
 			} else if flags&DKG_R2_CORRUPT_SEND_PACKAGE_TO_SELF != 0 {
-				binary.BigEndian.PutUint16(tmpBuf, validatorsCount)
+				binary.BigEndian.PutUint16(tmpBuf, packagesCount)
 			}
 		}
 		data = append(data, tmpBuf...)
 
 		// Packages
-		for toValidatorIdx := uint16(0); toValidatorIdx < validatorsCount; toValidatorIdx++ {
+		for toValidatorIdx := uint16(0); toValidatorIdx < maxValidatorsCount; toValidatorIdx++ {
 			if fromValidatorIdx == culpritIdx {
-				if flags&DKG_R2_CORRUPT_VALIDATOR_IDX == 0 {
+				if flags&DKG_R2_CORRUPT_IGNORE_VSET == 0 {
 					if vSetMask.Bit(int(toValidatorIdx)) == 0 {
 						continue
 					}
@@ -518,8 +527,8 @@ func generateDkgR2Packages(validatorsCount uint16, culpritIdx int, vSetMask *big
 			// To validator idx
 			binary.BigEndian.PutUint16(tmpBuf, toValidatorIdx)
 			if fromValidatorIdx == culpritIdx {
-				if flags&DKG_R2_CORRUPT_VALIDATOR_IDX != 0 {
-					binary.BigEndian.PutUint16(tmpBuf, toValidatorIdx>>3)
+				if flags&DKG_R2_CORRUPT_TO_VALIDATOR_IDX != 0 {
+					binary.BigEndian.PutUint16(tmpBuf, (toValidatorIdx+1)<<4)
 				}
 			}
 			data = append(data, tmpBuf...)
@@ -539,44 +548,79 @@ func generateDkgR2Packages(validatorsCount uint16, culpritIdx int, vSetMask *big
 			data = append(data, r2Package...)
 		}
 
-		//
 		r2Packages[uint16(fromValidatorIdx)] = data
 	}
-
-	//fmt.Printf("len(r2Packages) = %d", len(r2Packages))
 
 	return r2Packages
 }
 
 func TestDeserializeDkgR2(t *testing.T) {
 	tests := []struct {
-		maxSigners    uint16
 		vsetMask      *big.Int
 		culpritIdx    int
 		flags         generateDkgR2PackagesFlag
 		expectedError string
 	}{
-		/*{
-			maxSigners:    uint16(3),
-			vsetMask:      big.NewInt(0b111),
-			culpritIdx:    -1,
-			flags:         0,
-			expectedError: "",
-		},*/
 		{
-			maxSigners:    uint16(2),
-			vsetMask:      big.NewInt(0b101),
+			vsetMask:      big.NewInt(0b11111111),
 			culpritIdx:    -1,
 			flags:         0,
 			expectedError: "",
-			//expectedError: "toValidatorIdx is not in VSet",
+		},
+		{
+			vsetMask:      big.NewInt(0b11111101),
+			culpritIdx:    -1,
+			flags:         0,
+			expectedError: "",
+		},
+		{
+			vsetMask:      big.NewInt(0b11111101),
+			culpritIdx:    2,
+			flags:         DKG_R2_CORRUPT_IGNORE_VSET,
+			expectedError: "incorrect package size",
+		},
+		{
+			vsetMask:      big.NewInt(0b11111101),
+			culpritIdx:    2,
+			flags:         DKG_R2_CORRUPT_TO_VALIDATOR_IDX,
+			expectedError: "toValidatorIdx is not in VSet",
+		},
+		{
+			vsetMask:      big.NewInt(0b11111101),
+			culpritIdx:    2,
+			flags:         DKG_R2_CORRUPT_PACKAGES_COUNT_INC,
+			expectedError: "incorrect package size",
+		},
+		{
+			vsetMask:      big.NewInt(0b11111101),
+			culpritIdx:    2,
+			flags:         DKG_R2_CORRUPT_PACKAGES_COUNT_DEC,
+			expectedError: "incorrect package size",
+		},
+		{
+			vsetMask:      big.NewInt(0b11111101),
+			culpritIdx:    2,
+			flags:         DKG_R2_CORRUPT_SEND_PACKAGE_TO_SELF,
+			expectedError: "toValidatorIdx 2 is the same as fromValidatorIdx 2",
+		},
+		{
+			vsetMask:      big.NewInt(0b11111101),
+			culpritIdx:    2,
+			flags:         DKG_R2_CORRUPT_PACKAGE_PAYLOAD_INC,
+			expectedError: "incorrect package size",
+		},
+		{
+			vsetMask:      big.NewInt(0b11111101),
+			culpritIdx:    2,
+			flags:         DKG_R2_CORRUPT_PACKAGE_PAYLOAD_DEC,
+			expectedError: "incorrect package size",
 		},
 	}
 
-	for _, tt := range tests {
-		r2Packages := generateDkgR2Packages(tt.maxSigners, tt.culpritIdx, tt.vsetMask, tt.flags)
+	for ii, tt := range tests {
+		r2Packages := generateDkgR2Packages(tt.culpritIdx, tt.vsetMask, tt.flags)
 
-		_, isCulprit, culpritId, err := DeserializeDkgR2(r2Packages, tt.vsetMask, tt.maxSigners)
+		resMap, isCulprit, culpritId, err := DeserializeDkgR2(r2Packages, tt.vsetMask)
 
 		if tt.culpritIdx >= 0 {
 			if !isCulprit || culpritId != uint16(tt.culpritIdx) {
@@ -598,17 +642,16 @@ func TestDeserializeDkgR2(t *testing.T) {
 
 			if strings.Contains(err.Error(), tt.expectedError) == false {
 				t.Errorf("Expected error `%s`, but got `%s`", tt.expectedError, err.Error())
-				continue
 			}
+
+			continue
 		}
 
-		/*
-			// Verify resMap
-			if len(resMap) != 3 {
-				t.Errorf("len(resMap) = %d expected to be %d", len(resMap), 3)
-				return
-			}
-		*/
+		// Verify resMap
+		if len(resMap) != len(r2Packages) {
+			t.Errorf("len(resMap) = %d expected to be %d, ii = %d", len(resMap), len(r2Packages), ii)
+			return
+		}
 	}
 }
 

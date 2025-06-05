@@ -76,7 +76,7 @@ func SerializeR2Packages(r2Packages map[uint16][]byte) []byte {
 	return serializedData
 }
 
-func DeserializeDkgR2(r2Packages map[uint16][]byte /*map[FROM]data*/, vsetMask *big.Int, maxSigners uint16) (
+func DeserializeDkgR2(r2Packages map[uint16][]byte /*map[FROM]data*/, vSetMask *big.Int) (
 	map[uint16]map[uint16][]byte, /*map[FROM]map[TO]data*/
 	bool, /*is culprit was found*/
 	uint16, /*culprit*/
@@ -94,7 +94,7 @@ func DeserializeDkgR2(r2Packages map[uint16][]byte /*map[FROM]data*/, vsetMask *
 		serializedToPkgs := r2Packages[fromValidatorIdx]
 		packagesSize := len(serializedToPkgs)
 
-		if vsetMask.Bit(int(fromValidatorIdx)) == 0 {
+		if vSetMask.Bit(int(fromValidatorIdx)) == 0 {
 			return nil, true, fromValidatorIdx, fmt.Errorf("fromValidatorIdx %d in not in VSet", fromValidatorIdx)
 		}
 
@@ -105,8 +105,9 @@ func DeserializeDkgR2(r2Packages map[uint16][]byte /*map[FROM]data*/, vsetMask *
 
 		packagesCount := int(binary.BigEndian.Uint16(serializedToPkgs[0:2]))
 
-		if (packagesSize - 2) != packagesCount*(2 /*validator idx*/ +EncryptedFrostDkgR2PackageSize) {
-			return nil, true, fromValidatorIdx, errors.New("not enough bytes in package")
+		expectedSize := packagesCount * (2 /*validator idx*/ + EncryptedFrostDkgR2PackageSize)
+		if (packagesSize - 2) != expectedSize {
+			return nil, true, fromValidatorIdx, fmt.Errorf("incorrect package size, expected size = %d, actual size = %d", expectedSize, packagesSize-2)
 		}
 
 		var readOffset = 2
@@ -117,7 +118,7 @@ func DeserializeDkgR2(r2Packages map[uint16][]byte /*map[FROM]data*/, vsetMask *
 			readOffset += 2
 
 			// Check VSet
-			if vsetMask.Bit(int(toValidatorIdx)) == 0 {
+			if vSetMask.Bit(int(toValidatorIdx)) == 0 {
 				return nil, true, fromValidatorIdx, fmt.Errorf("toValidatorIdx is not in VSet. fromValidatorIdx %d, toValidatorIdx %d", fromValidatorIdx, toValidatorIdx)
 			}
 
@@ -136,8 +137,16 @@ func DeserializeDkgR2(r2Packages map[uint16][]byte /*map[FROM]data*/, vsetMask *
 			readOffset += EncryptedFrostDkgR2PackageSize
 		}
 
-		if len(toValidatorData) != int(maxSigners-1 /*ourself*/) {
-			return nil, true, fromValidatorIdx, fmt.Errorf("valid packages count %d from Validator %d is not equal to maxSigners: expected %d", len(toValidatorData), fromValidatorIdx, maxSigners)
+		// Count vSet size
+		vSetSize := 0
+		for i := 0; i < vSetMask.BitLen(); i++ {
+			if vSetMask.Bit(i) == 1 {
+				vSetSize++
+			}
+		}
+
+		if len(toValidatorData) != int(vSetSize-1 /*ourself*/) {
+			return nil, true, fromValidatorIdx, fmt.Errorf("valid packages count %d from Validator %d is not equal to vSetSize: expected %d", len(toValidatorData), fromValidatorIdx, vSetSize)
 		}
 
 		deserializedData[fromValidatorIdx] = toValidatorData
