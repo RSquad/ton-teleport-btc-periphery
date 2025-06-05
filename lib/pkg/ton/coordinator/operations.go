@@ -68,12 +68,25 @@ func (c *coordinatorContract) SendDKGClaim(
 func (c *coordinatorContract) SendPubkeyPackage(
 	validatorIdx uint16,
 	dkgUntil int64,
-	sessionPublicKey []byte,
+	sessionSigner signer.Signer,
 	pubkeyPackage []byte,
 ) (*tlb.Transaction, error) {
-	return c.sendBodyCell(BuildSendRound3Body(
-		int64(c.ttl.Seconds()), validatorIdx, dkgUntil, sessionPublicKey, pubkeyPackage,
-	), "SendPubkeyPackage")
+	if sessionSigner == nil {
+		return nil, fmt.Errorf("session signer is nil")
+	}
+
+	unsignedBody := BuildSendRound3Body(
+		int64(c.ttl.Seconds()),
+		validatorIdx,
+		dkgUntil,
+		sessionSigner.PublicKey(),
+		pubkeyPackage,
+	)
+	body, err := attachSessionSignatureToCell(unsignedBody, sessionSigner.SignCell(unsignedBody))
+	if err != nil {
+		return nil, fmt.Errorf("failed to attach session signature: %w", err)
+	}
+	return c.sendBodyCell(body, "SendPubkeyPackage")
 }
 
 func (c *coordinatorContract) SendCommitments(

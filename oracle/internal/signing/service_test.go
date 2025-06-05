@@ -43,9 +43,6 @@ func newCoordinatorContractMock() *coordinator.CoordinatorMock {
 		SendDKGClaimFunc: func(validatorIdx uint16, dkgUntil int64, culpritIdx uint16) (*tlb.Transaction, error) {
 			panic("mock out the SendDKGClaim method")
 		},
-		SendPubkeyPackageFunc: func(validatorIdx uint16, dkgUntil int64, sessionPublicKey []byte, pubkeyPackage []byte) (*tlb.Transaction, error) {
-			panic("mock out the SendPubkeyPackage method")
-		},
 		SendResetPegoutSigningFunc: func(pegoutID uint64, validatorIdx uint16) (*tlb.Transaction, error) {
 			panic("mock out the SendResetPegoutSigning method")
 		},
