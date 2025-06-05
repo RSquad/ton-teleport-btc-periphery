@@ -17,7 +17,8 @@ const (
 	TvmExitCodeDifferentPubkeyPackages = 152
 	DifferentPegoutSignatures          = 168
 	FrostDkgR2PackageSize              = 37 /*FROST R2 package to single validator*/
-	EncryptedFrostDkgR2PackageSize     = 24 /*nonce for encryption*/ + 16 /*encryption header*/ + FrostDkgR2PackageSize
+	FrostDkgR2PackageForEncryptionSize = 8 /*DKG until*/ + 2 /*from validator idx*/ + FrostDkgR2PackageSize
+	EncryptedFrostDkgR2PackageSize     = 24 /*nonce for encryption*/ + 16 /*encryption header*/ + FrostDkgR2PackageForEncryptionSize
 	SizeOfSingleDkgR2Package           = 2 /*ToValidatorId*/ + EncryptedFrostDkgR2PackageSize
 )
 
