@@ -16,7 +16,7 @@ import (
 type ContractCoordinatorData struct {
 	Initiated           bool
 	StandaloneMode      bool
-	Id                  uint16
+	Id                  uint32
 	ConfiguratorAddr    string
 	Enabled             bool
 	Dkg                 *coordinator.DKG

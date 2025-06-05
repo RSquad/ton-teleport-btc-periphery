@@ -2,6 +2,7 @@ package coordinator
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
@@ -30,7 +31,7 @@ const DefaultDGKTTL = time.Minute
 type Storage struct {
 	Initiated           bool
 	StandaloneMode      bool
-	Id                  uint16
+	Id                  uint32
 	ConfiguratorAddr    *address.Address
 	Enabled             bool
 	Dkg                 *DKG
@@ -198,10 +199,19 @@ func (c *coordinatorContract) GetStorage(block *tonutils.BlockIDExt) (Storage, e
 
 	initiated := storage.MustLoadBoolBit()
 	standaloneMode := storage.MustLoadBoolBit()
-	id := uint16(storage.MustLoadUInt(16))
+	id := uint32(storage.MustLoadUInt(32))
 	configuratorAddr := storage.MustLoadAddr()
 	enabled := storage.MustLoadBoolBit()
-	dkg, err := parseDGKSlice(storage.MustLoadRef())
+	dkgSlice, err := storage.LoadMaybeRef()
+	if err != nil {
+		return Storage{}, err
+	}
+	var dkg *DKG
+	if dkgSlice == nil {
+		dkg = &DKG{}
+	} else {
+		dkg, err = parseDGKSlice(dkgSlice)
+	}
 	if err != nil {
 		return Storage{}, err
 	}
@@ -210,6 +220,7 @@ func (c *coordinatorContract) GetStorage(block *tonutils.BlockIDExt) (Storage, e
 	if err != nil {
 		return Storage{}, err
 	}
+	fmt.Println("prevDKG SLICE: ", prevDkgSlice)
 	if prevDkgSlice == nil {
 		prevDkg = &DKG{}
 	} else {
