@@ -51,8 +51,8 @@ type ExecutionArtifacts struct {
 func (a *ExecutionArtifacts) Cleanup() {
 	if a.r1 != nil && a.r1.secret.ptr != 0 {
 		frost.FreeR1Secret(a.r1.secret.ptr)
-		a.SafeCleanPrivateX25519()
 	}
+	a.SafeCleanPrivateX25519()
 	if a.r2 != nil && a.r2.secret.ptr != 0 {
 		frost.FreeR2Secret(a.r2.secret.ptr)
 	}
@@ -418,6 +418,7 @@ func (e *Executor) executeR3(dkg *coordinator.DKG) bool {
 			publicKeyPackage: publicKeyPackage,
 			publicKey:        publicKey,
 		}
+		e.artifacts.SafeCleanPrivateX25519()
 		err = e.keystore.StoreSecret(publicKey[1:], keyPackage)
 		if err != nil {
 			e.logError(dkg, "failed to store secret", err)
@@ -437,8 +438,6 @@ func (e *Executor) executeR3(dkg *coordinator.DKG) bool {
 		}
 		e.logSendPubkeyPackageFailed(dkg, err)
 	}
-
-	e.artifacts.SafeCleanPrivateX25519()
 
 	return false
 }
