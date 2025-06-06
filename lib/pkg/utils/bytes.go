@@ -7,6 +7,10 @@ import (
 )
 
 func BytesPadTo(input []byte, size int) []byte {
+	if len(input) >= size {
+		return input[:size]
+	}
+
 	padded := make([]byte, size)
 	copy(padded[size-len(input):], input)
 	return padded
