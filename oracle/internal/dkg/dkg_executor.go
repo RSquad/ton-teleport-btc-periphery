@@ -370,7 +370,6 @@ func (e *Executor) executeR3(dkg *coordinator.DKG) bool {
 		r2Packages, isCulpritFound, culpritIdx, err := helpers.DeserializeDkgR2(
 			dkg.GetR2Packages(),
 			dkg.VSetMask,
-			dkg.MaxSigners,
 		)
 
 		if isCulpritFound {
