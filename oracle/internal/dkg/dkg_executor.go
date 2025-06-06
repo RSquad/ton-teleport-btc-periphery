@@ -287,7 +287,7 @@ func (e *Executor) executeR2(dkg *coordinator.DKG, validatorIdx uint16) bool {
 			r2PublicKeysX25519,
 			e.artifacts.r1.r2PrivateX25519,
 			dkg.Until,
-			e.validatorIdx,
+			validatorIdx,
 		)
 		if err != nil {
 			e.logError(dkg, "Failed to encrypt R2 packages", err)
