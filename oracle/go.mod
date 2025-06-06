@@ -12,6 +12,7 @@ require (
 	github.com/rsquad/ton-teleport-btc-periphery/lib v0.0.0-00010101000000-000000000000
 	github.com/xssnick/tonutils-go v1.13.0
 	golang.org/x/crypto v0.38.0
+	golang.org/x/exp v0.0.0-20250531010427-b6e5de432a8b
 )
 
 require (
