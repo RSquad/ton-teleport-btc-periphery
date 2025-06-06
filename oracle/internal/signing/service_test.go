@@ -2,6 +2,8 @@ package signing
 
 import (
 	"bytes"
+	"context"
+	"crypto/ed25519"
 	"crypto/rand"
 	"math/big"
 	"testing"
@@ -10,6 +12,7 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/frost"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/pegoutcontract"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/signer"
 	helpers "github.com/rsquad/ton-teleport-btc-periphery/oracle/internal"
 	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/keystore"
 	"github.com/xssnick/tonutils-go/address"
@@ -339,4 +342,253 @@ func TestPegoutUntil(t *testing.T) {
 	service.SendSignatures(pegout, validatorIdx, signatures)
 
 	service.executeClaim(pegout, validatorIdx, 1)
+}
+
+func TestNonceAndCommitmentCleanupOnExpiredAtChange(t *testing.T) {
+	maxSigners := uint16(3)
+	minSigners := uint16(2)
+
+	// Generate frost group key
+	keyPackages, publicKeyPackage := generateFrostKey(minSigners, maxSigners)
+	groupPublicKey, err := frost.ExtractPublicKeyFromPackage(publicKeyPackage)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	originalExpiredAt := time.Now().Add(time.Hour)
+
+	unsignedPegout := &coordinator.PegoutRecord{
+		ID:              1,
+		Commitments:     map[uint16][]byte{},
+		CommitmentsMask: make([]byte, 32),
+		MaxSigners:      maxSigners,
+		ExpiredAt:       originalExpiredAt,
+		SigningMask:     big.NewInt(7),
+	}
+	// Prepare cached pegout with initial ExpiredAt
+	pegout := &CachedPegout{
+		ID:      1,
+		addrStr: address.NewAddress(0, 0, make([]byte, 32)).String(),
+		inputs: []pegoutcontract.TxInput{{
+			TxHash: make([]byte, 32),
+			Data: &pegoutcontract.TxPartsInput{
+				Amount: big.NewInt(10000),
+				Index:  0,
+			},
+		}},
+		tx: &pegoutcontract.TxParts{
+			InternalKey: groupPublicKey,
+		},
+		artifacts: &coordinator.PegoutRecord{
+			ID:              1,
+			Commitments:     map[uint16][]byte{},
+			CommitmentsMask: make([]byte, 32),
+			MaxSigners:      maxSigners,
+			ExpiredAt:       originalExpiredAt,
+			SigningMask:     big.NewInt(7),
+		},
+		commitments: nil,
+		nonces:      nil,
+		signingHashes: [][]byte{
+			make([]byte, 32),
+		},
+	}
+
+	dkgUntil := time.Now().Add(time.Hour)
+	publicKey, secret, err := ed25519.GenerateKey(rand.Reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Create keystore mock
+	cleanupCalled := false
+	keystore := &keystore.KeystoreMock{
+		LoadSecretFunc: func(pubKey []byte) []byte {
+			return keyPackages[0]
+		},
+		CleanupFunc: func() {
+			cleanupCalled = true
+		},
+		LoadSessionFunc: func(dkgUntil int64) []byte {
+			return secret
+		},
+	}
+
+	prevDKG := &coordinator.DKG{
+		State: coordinator.DKGStateFinished,
+		VSet: coordinator.VSet{
+			0: make([]byte, 32),
+			1: make([]byte, 32),
+			2: make([]byte, 32),
+		},
+		MaxSigners: maxSigners,
+		VSetMask:   big.NewInt(1<<maxSigners - 1),
+		SessionKeys: &coordinator.SessionKeys{
+			PubKeys: coordinator.SessionPubKeys{
+				0: publicKey[:],
+				1: make([]byte, 32),
+				2: make([]byte, 32),
+			},
+		},
+		Until: dkgUntil,
+		R3: &coordinator.DKGR3{
+			Mask:  big.NewInt(1<<maxSigners - 1),
+			Count: maxSigners,
+			Data: &coordinator.PubkeyData{
+				PubkeyPackage: publicKeyPackage,
+				InternalKey:   groupPublicKey,
+			},
+		},
+	}
+
+	coordinator := &coordinator.CoordinatorMock{
+		SendCommitmentsFunc: func(pegoutID uint64, pegoutUntil int64, validatorIdx uint16, commitments []byte) (*tlb.Transaction, error) {
+			pegout.artifacts.Commitments[validatorIdx] = commitments
+			mask := big.NewInt(0).SetBytes(pegout.artifacts.CommitmentsMask)
+			mask.SetBit(mask, int(validatorIdx), 1)
+			pegout.artifacts.CommitmentsMask = mask.FillBytes(make([]byte, 32))
+			return nil, nil
+		},
+		GetUnsignedPegoutsFunc: func() ([]coordinator.PegoutRecord, error) {
+			return []coordinator.PegoutRecord{*unsignedPegout}, nil
+		},
+		GetPrevDKGFunc: func() (*coordinator.DKG, error) {
+			return prevDKG, nil
+		},
+		SendSignaturesFunc: func(pegoutID uint64, pegoutUntil int64, validatorIdx uint16, signatures [][]byte) (*tlb.Transaction, error) {
+			return nil, nil
+		},
+		ConnectSignerFunc: func(signer signer.Signer) {
+		},
+	}
+
+	// Create service instance
+	service := NewService(keystore, coordinator, nil, 0)
+	service.cachedPegout = pegout
+	validatorIdx := uint16(0)
+
+	t.Run("Generate initial commitments and nonces", func(t *testing.T) {
+		// Generate commitments to populate nonces and commitments
+		service.execute(context.Background(), prevDKG)
+
+		// Verify commitments and nonces are generated
+		if len(pegout.commitments) == 0 {
+			t.Fatal("commitments should be generated")
+		}
+		if len(pegout.nonces) == 0 {
+			t.Fatal("nonces should be generated")
+		}
+		if !pegout.artifacts.HasCommitment(validatorIdx) {
+			t.Fatal("commitment should be set in artifacts")
+		}
+	})
+
+	t.Run("Run execute again to be sure the nonces and commitments are not regenerated", func(t *testing.T) {
+		originalCommitments := make([][]byte, len(pegout.commitments))
+		copy(originalCommitments, pegout.commitments)
+		originalNonces := make([][]byte, len(pegout.nonces))
+		copy(originalNonces, pegout.nonces)
+
+		service.execute(context.Background(), prevDKG)
+		for i, newNonce := range pegout.nonces {
+			if !bytes.Equal(newNonce, originalNonces[i]) {
+				t.Fatalf("nonces should be the same after execute. Original: %x, New: %x", originalNonces[i], newNonce)
+			}
+		}
+		for i, newCommitment := range pegout.commitments {
+			if !bytes.Equal(newCommitment, originalCommitments[i]) {
+				t.Fatalf("commitments should be the same after execute. Original: %x, New: %x", originalCommitments[i], newCommitment)
+			}
+		}
+	})
+
+	t.Run("ExpiredAt change should drop nonces and commitments", func(t *testing.T) {
+		// Store original values for comparison
+		originalCommitments := make([][]byte, len(pegout.commitments))
+		copy(originalCommitments, pegout.commitments)
+		originalNonces := make([][]byte, len(pegout.nonces))
+		copy(originalNonces, pegout.nonces)
+
+		// Change ExpiredAt to simulate restart/time change scenario
+		unsignedPegout.ExpiredAt = originalExpiredAt.Add(time.Hour)
+		// reset commitments and commitments mask
+		unsignedPegout.Commitments = map[uint16][]byte{}
+		unsignedPegout.CommitmentsMask = make([]byte, 32)
+
+		// Verify nonces and commitments exist before cleanup
+		if pegout.commitments == nil {
+			t.Fatal("commitments should exist before cleanup")
+		}
+		if pegout.nonces == nil {
+			t.Fatal("nonces should exist before cleanup")
+		}
+
+		service.execute(context.Background(), prevDKG)
+
+		// Verify that nonces and commitments were regenerated (different from original)
+		if len(pegout.commitments) == 0 {
+			t.Fatal("new commitments should be generated after ExpiredAt change")
+		}
+		if len(pegout.nonces) == 0 {
+			t.Fatal("new nonces should be generated after ExpiredAt change")
+		}
+
+		if !cleanupCalled {
+			t.Fatal("cleanup should be called")
+		}
+
+		// Verify that new nonces are different from original ones (preventing reuse)
+		for i, newNonce := range pegout.nonces {
+			if i < len(originalNonces) && bytes.Equal(newNonce, originalNonces[i]) {
+				t.Fatalf("nonces should be different after ExpiredAt change to prevent reuse attacks. Original: %x, New: %x", originalNonces[i], newNonce)
+			}
+		}
+
+		// Verify that new commitments are different from original ones
+		for i, newCommitment := range pegout.commitments {
+			if i < len(originalCommitments) && bytes.Equal(newCommitment, originalCommitments[i]) {
+				t.Fatal("commitments should be different after ExpiredAt change")
+			}
+		}
+	})
+
+	t.Run("Multiple ExpiredAt changes should always generate new nonces", func(t *testing.T) {
+		// Store the current nonces
+		firstNonces := make([][]byte, len(pegout.nonces))
+		copy(firstNonces, pegout.nonces)
+
+		// Change ExpiredAt again
+		unsignedPegout.ExpiredAt = time.Now().Add(2 * time.Hour)
+		unsignedPegout.Commitments = map[uint16][]byte{}
+		unsignedPegout.CommitmentsMask = make([]byte, 32)
+
+		service.execute(context.Background(), prevDKG)
+
+		// Store the second set of nonces
+		secondNonces := make([][]byte, len(pegout.nonces))
+		copy(secondNonces, pegout.nonces)
+
+		// Verify second nonces are different from first nonces
+		for i, secondNonce := range secondNonces {
+			if i < len(firstNonces) && bytes.Equal(secondNonce, firstNonces[i]) {
+				t.Fatal("nonces should be different on each ExpiredAt change")
+			}
+		}
+
+		// Change ExpiredAt a third time
+		unsignedPegout.ExpiredAt = time.Now().Add(3 * time.Hour)
+		unsignedPegout.Commitments = map[uint16][]byte{}
+		unsignedPegout.CommitmentsMask = make([]byte, 32)
+		service.execute(context.Background(), prevDKG)
+
+		// Verify third nonces are different from both first and second nonces
+		for i, thirdNonce := range pegout.nonces {
+			if i < len(firstNonces) && bytes.Equal(thirdNonce, firstNonces[i]) {
+				t.Fatal("third nonces should be different from first nonces")
+			}
+			if i < len(secondNonces) && bytes.Equal(thirdNonce, secondNonces[i]) {
+				t.Fatal("third nonces should be different from second nonces")
+			}
+		}
+	})
 }
