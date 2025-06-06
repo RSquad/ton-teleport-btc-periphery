@@ -282,7 +282,13 @@ func (e *Executor) executeR2(dkg *coordinator.DKG, validatorIdx uint16) bool {
 		}
 
 		// Encrypt R2 packages
-		r2EncryptedPackages, err := EncryptR2Packages(r2Packages, r2PublicKeysX25519, e.artifacts.r1.r2PrivateX25519)
+		r2EncryptedPackages, err := EncryptR2Packages(
+			r2Packages,
+			r2PublicKeysX25519,
+			e.artifacts.r1.r2PrivateX25519,
+			dkg.Until,
+			validatorIdx,
+		)
 		if err != nil {
 			e.logError(dkg, "Failed to encrypt R2 packages", err)
 			return false
@@ -370,6 +376,7 @@ func (e *Executor) executeR3(dkg *coordinator.DKG, validatorIdx uint16) bool {
 			validatorIdx,
 			r2PublicKeysX25519,
 			e.artifacts.r1.r2PrivateX25519,
+			dkg.Until,
 		)
 
 		if isCulpritFound {
