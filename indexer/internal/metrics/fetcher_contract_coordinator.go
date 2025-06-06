@@ -10,7 +10,6 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
-	"github.com/xssnick/tonutils-go/tvm/cell"
 )
 
 type ContractCoordinatorData struct {
@@ -19,10 +18,7 @@ type ContractCoordinatorData struct {
 	Id                  uint32
 	ConfiguratorAddr    string
 	Enabled             bool
-	Dkg                 *coordinator.DKG
-	PrevDkg             *coordinator.DKG
 	UnsignedPegouts     []coordinator.PegoutRecord
-	PegoutTxCode        *cell.Cell
 	MinClaimsPercent    uint16
 	MinSignersThreshold uint16
 	DkgLifetime         uint32
@@ -82,10 +78,7 @@ func (fetcher *FetcherContractCoordinator) Fetch() {
 		Id:                  storage.Id,
 		ConfiguratorAddr:    utils.AddrToRawString(storage.ConfiguratorAddr),
 		Enabled:             storage.Enabled,
-		Dkg:                 storage.Dkg,
-		PrevDkg:             storage.PrevDkg,
 		UnsignedPegouts:     storage.UnsignedPegouts,
-		PegoutTxCode:        storage.PegoutTxCode,
 		MinClaimsPercent:    storage.MinClaimsPercent,
 		MinSignersThreshold: storage.MinSignersThreshold,
 		DkgLifetime:         storage.DkgLifetime,
