@@ -672,8 +672,7 @@ func TestNonceAndCommitmentCleanupOnExpiredAtChange(t *testing.T) {
 
 	t.Run("Multiple ExpiredAt changes should always generate new nonces", func(t *testing.T) {
 		// Store the current nonces
-		firstNonces := make([][]byte, len(pegout.nonces))
-		copy(firstNonces, pegout.nonces)
+		firstNonces := deepCopy2dSlice(pegout.nonces)
 
 		// Change ExpiredAt again
 		unsignedPegout.ExpiredAt = time.Now().Add(2 * time.Hour)
@@ -683,8 +682,7 @@ func TestNonceAndCommitmentCleanupOnExpiredAtChange(t *testing.T) {
 		service.execute(context.Background(), prevDKG)
 
 		// Store the second set of nonces
-		secondNonces := make([][]byte, len(pegout.nonces))
-		copy(secondNonces, pegout.nonces)
+		secondNonces := deepCopy2dSlice(pegout.nonces)
 
 		// Verify second nonces are different from first nonces
 		for i, secondNonce := range secondNonces {
