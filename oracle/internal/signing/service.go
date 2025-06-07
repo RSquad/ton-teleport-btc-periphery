@@ -100,11 +100,24 @@ func (s *SignService) cleanupNonces() {
 	s.cachedPegout.nonces = nil
 }
 
+func (s *SignService) cleanupCommitments() {
+	if s.cachedPegout == nil || s.cachedPegout.commitments == nil {
+		return
+	}
+	s.cachedPegout.commitments = nil
+}
+
 func (s *SignService) cachePegout(
 	ctx context.Context,
 	unsignedPegout *coordinator.PegoutRecord,
 ) (*CachedPegout, error) {
 	if s.cachedPegout != nil && s.cachedPegout.ID == unsignedPegout.ID {
+		// If the pegout expired, cleanup the nonces, commitments and signing shares
+		if !s.cachedPegout.artifacts.ExpiredAt.Equal(unsignedPegout.ExpiredAt) {
+			s.cleanupNonces()
+			s.cleanupCommitments()
+			s.keyStore.Cleanup()
+		}
 		s.cachedPegout.artifacts = unsignedPegout
 		return s.cachedPegout, nil
 	}
