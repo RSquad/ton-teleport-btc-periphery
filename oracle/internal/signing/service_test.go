@@ -344,6 +344,15 @@ func TestPegoutUntil(t *testing.T) {
 	service.executeClaim(pegout, validatorIdx, 1)
 }
 
+func deepCopy2dSlice[T any](slice [][]T) [][]T {
+	copied := make([][]T, len(slice))
+	for i, row := range slice {
+		copied[i] = make([]T, len(row))
+		copy(copied[i], row)
+	}
+	return copied
+}
+
 func TestNonceAndCommitmentCleanupOnExpiredAtChange(t *testing.T) {
 	maxSigners := uint16(3)
 	minSigners := uint16(2)
@@ -484,10 +493,8 @@ func TestNonceAndCommitmentCleanupOnExpiredAtChange(t *testing.T) {
 	})
 
 	t.Run("Run execute again to be sure the nonces and commitments are not regenerated", func(t *testing.T) {
-		originalCommitments := make([][]byte, len(pegout.commitments))
-		copy(originalCommitments, pegout.commitments)
-		originalNonces := make([][]byte, len(pegout.nonces))
-		copy(originalNonces, pegout.nonces)
+		originalCommitments := deepCopy2dSlice(pegout.commitments)
+		originalNonces := deepCopy2dSlice(pegout.nonces)
 
 		service.execute(context.Background(), prevDKG)
 		for i, newNonce := range pegout.nonces {
@@ -504,10 +511,8 @@ func TestNonceAndCommitmentCleanupOnExpiredAtChange(t *testing.T) {
 
 	t.Run("ExpiredAt change should drop nonces and commitments", func(t *testing.T) {
 		// Store original values for comparison
-		originalCommitments := make([][]byte, len(pegout.commitments))
-		copy(originalCommitments, pegout.commitments)
-		originalNonces := make([][]byte, len(pegout.nonces))
-		copy(originalNonces, pegout.nonces)
+		originalCommitments := deepCopy2dSlice(pegout.commitments)
+		originalNonces := deepCopy2dSlice(pegout.nonces)
 
 		// Change ExpiredAt to simulate restart/time change scenario
 		unsignedPegout.ExpiredAt = originalExpiredAt.Add(time.Hour)
