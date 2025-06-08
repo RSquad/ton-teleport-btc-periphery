@@ -1,3 +1,5 @@
+//go:generate moq -out keystore_mock.go . Keystore
+
 package keystore
 
 import (
