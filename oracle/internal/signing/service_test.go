@@ -22,6 +22,8 @@ import (
 	tonutils "github.com/xssnick/tonutils-go/ton"
 )
 
+var sendSigningClaimCounter int = 0
+
 func newCoordinatorContractMock() *coordinator.CoordinatorMock {
 	return &coordinator.CoordinatorMock{
 		ConnectSignerFunc: func(signerMoqParam signer.Signer) {
@@ -72,6 +74,9 @@ func newCoordinatorContractMock() *coordinator.CoordinatorMock {
 				panic(fmt.Sprintf("Wrong culpritIdx: expected 0, but got %d", culpritIdx))
 			}
 
+			// Update counter
+			sendSigningClaimCounter++
+
 			// Emulate a successful send claim to the coordinator contract
 			return nil, nil
 		},
@@ -109,9 +114,18 @@ func TestSignService_SendSignatures_Success(t *testing.T) {
 	validatorIdx := uint16(0)
 	pegout := newCachedPegout()
 
+	sendSigningClaimCounter = 0
+
 	resCode := service.SendSignatures(pegout, validatorIdx, nil)
 	if resCode != 0 {
-		t.Fatalf("expected resCode = 0, got %d", resCode)
+		t.Errorf("expected resCode = 0, got %d", resCode)
+		return
+
+	}
+
+	if sendSigningClaimCounter != 0 {
+		t.Errorf("expected sendSigningClaimCounter = 0, got %d", sendSigningClaimCounter)
+		return
 	}
 }
 
@@ -121,10 +135,17 @@ func TestSignService_SendSignatures_ERROR_DifferentPegoutSignatures(t *testing.T
 
 	validatorIdx := uint16(1)
 	pegout := newCachedPegout()
+	sendSigningClaimCounter = 0
 
 	resCode := service.SendSignatures(pegout, validatorIdx, nil)
 	if resCode != helpers.DifferentPegoutSignatures {
-		t.Fatalf("expected resCode = %d (DifferentPegoutSignatures), got %d", helpers.DifferentPegoutSignatures, resCode)
+		t.Errorf("expected resCode = %d (DifferentPegoutSignatures), got %d", helpers.DifferentPegoutSignatures, resCode)
+		return
+	}
+
+	if sendSigningClaimCounter != 1 {
+		t.Errorf("expected sendSigningClaimCounter = 1, got %d", sendSigningClaimCounter)
+		return
 	}
 }
 
