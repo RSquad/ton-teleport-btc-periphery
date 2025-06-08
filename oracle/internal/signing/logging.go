@@ -104,7 +104,8 @@ func (s *SignService) logSignatureSent(pegoutID uint64) {
 }
 
 func (s *SignService) logSignaturesSent(pegoutID uint64, sentSignsCount uint16, totalCount uint16) {
-	infoEventWithPegoutID(pegoutID).Msgf("The signature has already been sent. Waiting for other oracles (ready %d of %d)", sentSignsCount, 2*totalCount/3)
+	minSigners, _ := helpers.CalcMinSigners(totalCount)
+	infoEventWithPegoutID(pegoutID).Msgf("The signature has already been sent. Waiting for other oracles (ready %d of %d)", sentSignsCount, minSigners)
 }
 
 func (s *SignService) logSignatureSendError(pegoutID uint64, err error) {
