@@ -43,7 +43,7 @@ type Coordinator interface {
 	SendPubkeyPackage(
 		validatorIdx uint16,
 		dkgUntil int64,
-		sessionPublicKey []byte,
+		sessionSigner signer.Signer,
 		pubkeyPackage []byte,
 	) (*tlb.Transaction, error)
 
