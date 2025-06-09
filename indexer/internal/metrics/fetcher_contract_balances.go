@@ -7,8 +7,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/config"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
@@ -65,14 +63,6 @@ func (fetcher *FetcherContractBalances) Work(ctx context.Context, wg *sync.WaitG
 
 	defer logger.Log.Info().Msg("FetcherContractBalances: stopped")
 	logger.DefaultLogStartWork("FetcherContractBalances: starting...")
-
-	contractBalances := promauto.NewGaugeVec(
-		prometheus.GaugeOpts{
-			Name: "contract_balance",
-			Help: "Contract balance",
-		},
-		[]string{"addr", "name"},
-	)
 
 	for {
 		select {
