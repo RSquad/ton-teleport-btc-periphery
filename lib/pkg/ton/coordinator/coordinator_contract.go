@@ -18,6 +18,7 @@ type Coordinator interface {
 	GetDkg(block *tonutils.BlockIDExt) (*DKG, error)
 	GetPrevDKG() (*DKG, error)
 	GetUnsignedPegouts() ([]PegoutRecord, error)
+	GetStorage(block *tonutils.BlockIDExt) (Storage, error)
 
 	SendStartDKG() (*tlb.Transaction, error)
 	SendRound1(
