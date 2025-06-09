@@ -46,22 +46,11 @@ FROM alpine:latest
 # Install runtime dependencies if any
 RUN apk add --no-cache ca-certificates libgcc libstdc++
 
-# Create oracle user and group
-RUN addgroup -S oracle && adduser -S oracle -G oracle
-
-# Create necessary directories
-RUN mkdir -p /app/keystore/secrets /app/keystore/temp && \
-    chown -R oracle:oracle /app/keystore && \
-    chmod 700 /app/keystore
-
 # Copy the binary from builder
 COPY --from=go-builder /app/bin /app/
 
 # Set working directory
 WORKDIR /app
-
-# Switch to oracle user
-USER oracle
 
 # Command to run the oracle
 CMD ["./bin"] 
