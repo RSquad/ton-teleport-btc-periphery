@@ -209,6 +209,11 @@ func (e *Executor) executeR1(dkg *coordinator.DKG) bool {
 		return false
 	}
 
+	if e.cfg.TestSkipR1 {
+		e.logDebug("Skip R1 stage")
+		return false
+	}
+
 	if e.artifacts.r1 == nil {
 		e.logMessage(dkg, "Generating R1 artifacts")
 		minSigners, err := helpers.CalcMinSigners(dkg.MaxSigners)
@@ -286,6 +291,11 @@ func (e *Executor) executeR2(dkg *coordinator.DKG) bool {
 	if r, cnt := dkg.CheckR2Mask(e.validatorIdx); r {
 		e.logDKGProcess(dkg, fmt.Sprintf("R2 packages already stored in DKG. Waiting for other Oracles (ready %d of %d)...", cnt, dkg.MaxSigners))
 		return false
+	}
+
+	if e.cfg.TestSkipR2 {
+		e.logDebug("Skip R2 stage")
+		return true
 	}
 
 	localIdentifier := helpers.ValidatorIdxToFrost(e.validatorIdx)
@@ -393,6 +403,11 @@ func (e *Executor) executeR3(dkg *coordinator.DKG) bool {
 	if r, cnt := dkg.CheckR3Mask(e.validatorIdx); r {
 		e.logDKGProcess(dkg, fmt.Sprintf("R3 packages already stored in DKG. Waiting for other Oracles (ready %d of %d)...", cnt, dkg.MaxSigners))
 		return false
+	}
+
+	if e.cfg.TestSkipR3 {
+		e.logDebug("Skip R3 stage")
+		return true
 	}
 
 	localIdentifier := helpers.ValidatorIdxToFrost(e.validatorIdx)

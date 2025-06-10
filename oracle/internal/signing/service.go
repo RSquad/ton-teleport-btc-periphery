@@ -3,6 +3,7 @@ package signing
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
 	"errors"
 	"fmt"
 	"sync"
@@ -15,6 +16,7 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/pegoutcontract"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
 	helpers "github.com/rsquad/ton-teleport-btc-periphery/oracle/internal"
+	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/cfg"
 	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/keystore"
 	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/validator"
 	"github.com/xssnick/tonutils-go/ton"
@@ -39,6 +41,7 @@ type SignService struct {
 	executeSignPeriod int64 // `period` in seconds to call the ExecuteSign() function
 	dkgUntil          time.Time
 	sessionSigner     *validator.SessionSigner
+	cfg               *cfg.Cfg
 }
 
 func NewService(
@@ -273,6 +276,10 @@ func (s *SignService) doCommit(
 			s.logMessage("Commitment round completed")
 			return true
 		}
+		if s.cfg.TestSignSkipR1 {
+			s.logMessage("Test mode: skipping commitment round")
+			return true
+		}
 		s.logMessage("Waiting for other oracles to commit")
 		return false
 	}
@@ -315,6 +322,11 @@ func (s *SignService) doSign(
 		return false
 	}
 
+	if s.cfg.TestSignSkipR2 {
+		s.logMessage("Test mode: skipping signing round")
+		return true
+	}
+
 	// Check if oracle already generated signing shares
 	signShares := s.keyStore.LoadSigningShares(pegout.addrStr)
 	if signShares == nil {
@@ -331,6 +343,14 @@ func (s *SignService) doSign(
 			if err != nil {
 				s.logSignError(i, err)
 				return false
+			}
+			if s.cfg.TestSignBadShares {
+				// Test mode: generate bad signing share
+				_, err := rand.Read(signShare)
+				if err != nil {
+					s.logError("failed to generate random bytes for signing share", err)
+					return false
+				}
 			}
 			signShares = append(signShares, signShare)
 		}
@@ -356,6 +376,11 @@ func (s *SignService) doAggregate(
 		return
 	}
 
+	if s.cfg.TestSignSkipR3 {
+		s.logMessage("Test mode: skipping aggregate round")
+		return
+	}
+
 	signatures := make([][]byte, 0, len(pegout.signingHashes))
 
 	for i := range pegout.inputs {
@@ -363,6 +388,14 @@ func (s *SignService) doAggregate(
 		if err != nil {
 			s.logAggregateSignSharesError(i, err)
 			return
+		}
+		if s.cfg.TestSignBadAggregatedSignatures {
+			// Test mode: generate bad aggregated signature
+			_, err := rand.Read(signature)
+			if err != nil {
+				s.logError("failed to generate random bytes for aggregated signature", err)
+				return
+			}
 		}
 		signatures = append(signatures, signature)
 	}
@@ -495,6 +528,29 @@ func (s *SignService) Commit(publicKey []byte, inputsCount int) ([][]byte, [][]b
 		nonces[i], commitments[i], err = frost.Commit(frostPackage)
 		if err != nil {
 			return nil, nil, err
+		}
+	}
+	if s.cfg.TestSignBadNonces {
+		// Test mode: generate bad nonces
+		for i := range nonces {
+			nonces[i] = make([]byte, len(nonces[i]))
+			_, err := rand.Read(nonces[i])
+			if err != nil {
+				return nil, nil, fmt.Errorf("failed to generate random bytes for nonce: %w", err)
+			}
+			for j := range nonces[i] {
+				nonces[i][j] = 0xFF // Fill with 0xFF to simulate bad nonce
+			}
+		}
+	}
+	if s.cfg.TestSignBadCommitments {
+		// Test mode: generate bad commitments
+		for i := range commitments {
+			commitments[i] = make([]byte, len(commitments[i]))
+			_, err := rand.Read(commitments[i])
+			if err != nil {
+				return nil, nil, fmt.Errorf("failed to generate random bytes for commitments: %w", err)
+			}
 		}
 	}
 	return nonces, commitments, nil
