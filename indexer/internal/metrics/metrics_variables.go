@@ -20,4 +20,25 @@ var (
 		},
 		[]string{"addr", "name"},
 	)
+	unsignedPegoutRestart = promauto.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "pegout_restart",
+			Help: "Pegout restart",
+		},
+		[]string{"restart?"},
+	)
+	unsignedPegoutsLen = promauto.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "pegouts_len",
+			Help: "Pegouts len",
+		},
+		[]string{"len"},
+	)
+	unsignedPegoutDelayed = promauto.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "pegout_delayed",
+			Help: "Pegout delayed",
+		},
+		[]string{"delayed?"},
+	)
 )
