@@ -248,3 +248,79 @@ func TestExtractPublicKeyFromPackage(t *testing.T) {
 		t.Error("Public key is not equal to the last 32 bytes of the package")
 	}
 }
+
+func TestDkgInvalidNumberOfCommitmentsR2(t *testing.T) {
+	fmt.Printf("%s\n", t.Name())
+	identifiers := [3]string{
+		"87c848293689b356a7cf032b1c97d56955c0e1ba5d87ed36c4d6557520c3e0e6",
+		"900924ca1a6d37bd613419f55038d4e210c4e347cf9a8f128181c823684a212f", // <--- Culprit
+		"29573dedfaa8f3ac724687387289224816d16fa934b4f5fd6ebcffe55a1f0c28",
+	}
+	var maxSigners uint16 = 3
+	var minSigners uint16 = 2
+	var predefinedCulpritIdx uint16 = 1
+	r1Secrets := make(map[Identifier]uintptr)
+	receivedR1Packages := make(map[Identifier]map[Identifier]Package)
+
+	// DKG Round 1
+	for i := uint16(0); i < maxSigners; i++ {
+		sender, err := DecodeIdentifier(identifiers[i])
+		if err != nil {
+			t.Error(err)
+		}
+
+		// Emulate culprit
+		localMinSigners := minSigners
+		if i == predefinedCulpritIdx {
+			localMinSigners = maxSigners
+		}
+
+		pkg, sp, err := DkgPart1(*sender, localMinSigners, maxSigners)
+		if err != nil {
+			t.Error(err)
+		}
+		r1Secrets[*sender] = sp
+		for j := uint16(0); j < maxSigners; j++ {
+			if i != j {
+				receiver, _ := DecodeIdentifier(identifiers[j])
+				incomePackages, ok := receivedR1Packages[*receiver]
+				if !ok {
+					incomePackages = make(map[Identifier]Package)
+				}
+				incomePackages[*sender] = Package{pkg}
+				receivedR1Packages[*receiver] = incomePackages
+			}
+		}
+	}
+
+	// DKG Round 2
+	for i := uint16(0); i < maxSigners; i++ {
+		if i == predefinedCulpritIdx {
+			continue
+		}
+
+		sender, _ := DecodeIdentifier(identifiers[i])
+		secret := r1Secrets[*sender]
+		_, _, culpritIdx, err := DkgPart2(secret, receivedR1Packages[*sender])
+
+		if err == nil {
+			t.Error("Expected error IncorrectNumberOfCommitments")
+			return
+		}
+
+		if culpritIdx == nil {
+			t.Error("Expected culpritIdx != nil")
+			return
+		}
+
+		culpritIdxHex := hex.EncodeToString(culpritIdx.ToBytes())
+		if culpritIdxHex != identifiers[predefinedCulpritIdx] {
+			t.Errorf("Expected culpritId '%s' but get '%s'", identifiers[predefinedCulpritIdx], culpritIdxHex)
+			return
+		}
+
+		// free r1 secret manually
+		FreeR1Secret(secret)
+		delete(r1Secrets, *sender)
+	}
+}

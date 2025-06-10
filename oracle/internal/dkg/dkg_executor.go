@@ -10,6 +10,7 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/frost"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/signer"
 	helpers "github.com/rsquad/ton-teleport-btc-periphery/oracle/internal"
 	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/cfg"
 	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/keystore"
@@ -53,12 +54,21 @@ func (a *ExecutionArtifacts) Cleanup() {
 	if a.r1 != nil && a.r1.secret.ptr != 0 {
 		frost.FreeR1Secret(a.r1.secret.ptr)
 	}
+	a.SafeCleanPrivateX25519()
 	if a.r2 != nil && a.r2.secret.ptr != 0 {
 		frost.FreeR2Secret(a.r2.secret.ptr)
 	}
 	a.r1 = nil
 	a.r2 = nil
 	a.r3 = nil
+}
+
+func (a *ExecutionArtifacts) SafeCleanPrivateX25519() {
+	if a.r1 == nil {
+		return
+	}
+
+	*a.r1.r2PrivateX25519 = [32]byte{}
 }
 
 func (a *ExecutionArtifacts) IsEmpty() bool {
@@ -72,7 +82,7 @@ type Executor struct {
 	artifacts           ExecutionArtifacts
 	keystore            keystore.Keystore
 	validator           *validator.Validator
-	sessionPublicKey    []byte
+	sessionSigner       signer.Signer
 	validatorIdx        uint16
 	cfg                 *cfg.Cfg
 }
@@ -91,6 +101,7 @@ func NewExecutor(
 		artifacts:           ExecutionArtifacts{},
 		keystore:            keystore,
 		validator:           validator,
+		sessionSigner:       nil,
 		validatorIdx:        255,
 		cfg:                 cfg,
 	}
@@ -118,21 +129,20 @@ func (e *Executor) Work(ctx context.Context, wg *sync.WaitGroup) {
 
 func (e *Executor) Cleanup() {
 	e.artifacts.Cleanup()
-	e.sessionPublicKey = nil
+	e.sessionSigner = nil
 }
 
 func (e *Executor) OnStartNewDKG(dkg *coordinator.DKG) bool {
 	e.Cleanup()
 
 	// Get session public key
-	{
-		sessionSigner, err := validator.NewSessionSigner(e.keystore, dkg.Until.Unix())
-		if err != nil {
-			e.logDKGProcess(dkg, fmt.Sprintf("Failed to create SessionSigner: %v", err))
-			return false
-		}
-		e.sessionPublicKey = sessionSigner.PublicKey()
+
+	sessionSigner, err := validator.NewSessionSigner(e.keystore, dkg.Until.Unix())
+	if err != nil {
+		e.logDKGProcess(dkg, fmt.Sprintf("Failed to create SessionSigner: %v", err))
+		return false
 	}
+	e.sessionSigner = sessionSigner
 
 	e.until = dkg.Until
 	e.logNewDKGStarted(dkg)
@@ -322,7 +332,13 @@ func (e *Executor) executeR2(dkg *coordinator.DKG) bool {
 		}
 
 		// Encrypt R2 packages
-		r2EncryptedPackages, err := EncryptR2Packages(r2Packages, r2PublicKeysX25519, e.artifacts.r1.r2PrivateX25519)
+		r2EncryptedPackages, err := EncryptR2Packages(
+			r2Packages,
+			r2PublicKeysX25519,
+			e.artifacts.r1.r2PrivateX25519,
+			dkg.Until,
+			e.validatorIdx,
+		)
 		if err != nil {
 			e.logError(dkg, "Failed to encrypt R2 packages", err)
 			return false
@@ -368,6 +384,7 @@ func (e *Executor) executeR3(dkg *coordinator.DKG) bool {
 	e.logExecuteR3(dkg)
 
 	if dkg.Round3Completed() {
+		e.artifacts.SafeCleanPrivateX25519()
 		e.logDKGProcess(dkg, "R3 completed")
 		return true
 	}
@@ -399,7 +416,6 @@ func (e *Executor) executeR3(dkg *coordinator.DKG) bool {
 		r2Packages, isCulpritFound, culpritIdx, err := helpers.DeserializeDkgR2(
 			dkg.GetR2Packages(),
 			dkg.VSetMask,
-			dkg.MaxSigners,
 		)
 
 		if isCulpritFound {
@@ -419,6 +435,7 @@ func (e *Executor) executeR3(dkg *coordinator.DKG) bool {
 			e.validatorIdx,
 			r2PublicKeysX25519,
 			e.artifacts.r1.r2PrivateX25519,
+			dkg.Until,
 		)
 
 		if isCulpritFound {
@@ -465,6 +482,7 @@ func (e *Executor) executeR3(dkg *coordinator.DKG) bool {
 			publicKeyPackage: publicKeyPackage,
 			publicKey:        publicKey,
 		}
+		e.artifacts.SafeCleanPrivateX25519()
 		err = e.keystore.StoreSecret(publicKey[1:], keyPackage)
 		if err != nil {
 			e.logError(dkg, "failed to store secret", err)
@@ -475,7 +493,7 @@ func (e *Executor) executeR3(dkg *coordinator.DKG) bool {
 	if _, err := e.coordinatorContract.SendPubkeyPackage(
 		e.validatorIdx,
 		dkg.Until.Unix(),
-		e.sessionPublicKey,
+		e.sessionSigner,
 		e.artifacts.r3.publicKeyPackage,
 	); err != nil {
 		exitCode, _ := helpers.ExtractExitCode(err.Error())
@@ -484,6 +502,7 @@ func (e *Executor) executeR3(dkg *coordinator.DKG) bool {
 		}
 		e.logSendPubkeyPackageFailed(dkg, err)
 	}
+
 	return false
 }
 
