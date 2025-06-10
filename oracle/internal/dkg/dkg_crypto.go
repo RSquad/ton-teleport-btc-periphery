@@ -108,11 +108,13 @@ func DecryptR2Packages(
 
 	// Search packages to thisValidatorIdx from all other validators
 
-	for fromValidatorIdx, toPackages := range packages {
+	for _, fromValidatorIdx := range helpers.ExtractSortedKeysFromMap(packages) {
 		// Skip our own packages
 		if fromValidatorIdx == thisValidatorIdx {
 			continue
 		}
+
+		toPackages := packages[fromValidatorIdx]
 
 		// Try to find a package for this validator
 		toPackage, ok := toPackages[thisValidatorIdx]
