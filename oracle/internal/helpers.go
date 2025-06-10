@@ -16,7 +16,12 @@ import (
 )
 
 const (
+	ErrDkgClosed                       = 112
+	ErrPackageAlreadyExist             = 114
+	ErrCommitmentsThresholdReached     = 145
 	TvmExitCodeDifferentPubkeyPackages = 152
+	ErrClaimAlreadyExists              = 160
+	ErrPegoutIsNotExpired              = 166
 	DifferentPegoutSignatures          = 168
 	FrostDkgR2PackageSize              = 37 /*FROST R2 package to single validator*/
 	FrostDkgR2PackageForEncryptionSize = 8 /*DKG until*/ + 2 /*from validator idx*/ + FrostDkgR2PackageSize
@@ -277,6 +282,8 @@ func HandleTvmError(tvmError error) string {
 		return "Culprit not found"
 	case 161:
 		return "Unauthorized validator"
+	case 162:
+		return "Not enough validators"
 	case 166:
 		return "Pegout is not expired"
 	case 171:
