@@ -71,8 +71,6 @@ func (s *Service) Work(ctx context.Context, wg *sync.WaitGroup, keystore keystor
 					errCode, _ := helpers.ExtractExitCode(err.Error())
 					if errCode == helpers.ErrDkgClosed {
 						logger.Log.Debug().Msgf("Unable to Start DKG: DKG closed")
-					} else {
-						logger.Log.Error().Msgf("Start DKG error: %v", err)
 					}
 				}
 			}

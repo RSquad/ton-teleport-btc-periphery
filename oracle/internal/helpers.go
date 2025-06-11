@@ -288,6 +288,8 @@ func HandleTvmError(tvmError error) string {
 		return "Pegout is not expired"
 	case 171:
 		return "Pegout id does not match expected pegout to sign"
+	case 180:
+		return "Invalid pegout timestamp"
 	default:
 		return fmt.Sprintf("Unknown error: %d", exitCode)
 	}
