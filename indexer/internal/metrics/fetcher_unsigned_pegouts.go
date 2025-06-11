@@ -2,7 +2,6 @@ package metrics
 
 import (
 	"context"
-	"database/sql"
 	"sync"
 	"time"
 
@@ -15,15 +14,11 @@ import (
 
 type FetcherUnsignedPegouts struct {
 	tonClient           *tonclient.TonClient
-	db                  *sql.DB
 	coordinatorContract coordinator.Coordinator
+	expiredAt           map[uint64]time.Time
 }
 
-type PegoutTime struct {
-	CreateAt time.Time
-	UpdateAt time.Time
-	result   ContractCoordinatorData
-}
+// var expiredAt map[uint64]time.Time
 
 func NewFetcherUnsignedPegouts(tonClient *tonclient.TonClient, coordinator coordinator.Coordinator) *FetcherUnsignedPegouts {
 	return &FetcherUnsignedPegouts{
@@ -32,87 +27,75 @@ func NewFetcherUnsignedPegouts(tonClient *tonclient.TonClient, coordinator coord
 	}
 }
 
-func (f *FetcherUnsignedPegouts) getPegoutTime() (PegoutTime, error) {
-	rows, err := f.db.Query(
-		`SELECT 
-			create_at,
-			update_at,
-			jsonb_build_object(
-				'contractCoordinator', (
-					payload::json
-				)
-			) AS result
-		FROM 
-			metrics_data
-		WHERE 
-			type_id = 5
-		ORDER BY id DESC
-		LIMIT 1`,
-	)
-	if err != nil {
-		return PegoutTime{}, err
-	}
-
-	defer rows.Close()
-
-	var data PegoutTime
-	if rows.Next() {
-		err = rows.Scan(&data.CreateAt, &data.UpdateAt, &data.result)
-		if err != nil {
-			return PegoutTime{}, err
+func (f *FetcherUnsignedPegouts) updateUnsignedPegouts(pegouts []coordinator.PegoutRecord) {
+	for _, pegout := range pegouts {
+		if oldExpiredAt, exists := f.expiredAt[pegout.ID]; exists {
+			if oldExpiredAt.Equal(pegout.ExpiredAt) {
+				if time.Now().After(pegout.ExpiredAt.Add(PEGOUT_MAX_DELAY)) {
+					unsignedPegoutDelayed.WithLabelValues(fmt.Sprint(pegout.ID)).Set(1)
+				}
+			}
+		} else {
+			f.expiredAt[pegout.ID] = pegout.ExpiredAt
 		}
 	}
-
-	return data, nil
 }
 
-func (fetcher *FetcherUnsignedPegouts) Work(ctx context.Context, wg *sync.WaitGroup) (err error) {
+func (f *FetcherUnsignedPegouts) deleteSignedPegouts(pegouts []coordinator.PegoutRecord) {
+	for key, _ := range f.expiredAt {
+		isSigned := false
+		for i, pegout := range pegouts {
+			if key == pegout.ID {
+				break
+			}
+			if i == len(pegouts)-1 {
+				isSigned = true
+			}
+		}
+		if isSigned {
+			delete(f.expiredAt, key)
+		}
+	}
+}
+
+func (f *FetcherUnsignedPegouts) Fetch() {
+	unsignedPegouts, err := f.coordinatorContract.GetUnsignedPegouts()
+	if err != nil {
+		logger.Log.Error().Err(err).
+			Str("component", "FetcherUnsignedPegouts").
+			Msg("fetch failed")
+	}
+
+	if unsignedPegouts == nil {
+		logger.Log.Debug().Msg("FetcherUnsignedPegouts: Contract returns unsignedPegouts is null")
+	}
+
+	if len(unsignedPegouts) == 0 {
+		logger.Log.Debug().Msg("FetcherUnsignedPegouts: Contract returns unsignedPegouts is empty")
+	}
+
+	unsignedPegoutsLen.WithLabelValues("Unsigned pegouts length").Set(float64(len(unsignedPegouts)))
+
+	f.updateUnsignedPegouts(unsignedPegouts)
+	f.deleteSignedPegouts(unsignedPegouts)
+}
+
+func (fetcher *FetcherUnsignedPegouts) Work(ctx context.Context, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	defer logger.Log.Info().Msg("FetcherUnsignedPegouts: stopped")
 	logger.DefaultLogStartWork("FetcherUnsignedPegouts: starting...")
 
+	ticker := time.NewTicker(TICKER_INTERVAL)
+	defer ticker.Stop()
+
 	for {
 		select {
 		case <-ctx.Done():
-			return ctx.Err()
-		default:
-			unsignedPegouts, err := fetcher.coordinatorContract.GetUnsignedPegouts()
-			if err != nil {
-				return err
-			}
-
-			if unsignedPegouts == nil {
-				logger.Log.Debug().Msg("FetcherUnsignedPegouts: Contract returns unsignedPegouts is null")
-				return nil
-			}
-
-			if len(unsignedPegouts) == 0 {
-				logger.Log.Debug().Msg("FetcherUnsignedPegouts: Contract returns unsignedPegouts is empty")
-				return nil
-			}
-
-			pegoutTime, err := fetcher.getPegoutTime()
-			if err != nil {
-				return err
-			}
-
-			for _, value := range pegoutTime.result.UnsignedPegouts {
-				if time.Now().After(pegoutTime.UpdateAt.Add(time.Minute * 20)) {
-					unsignedPegoutDelayed.WithLabelValues(fmt.Sprint(value.ID)).Set(1)
-				}
-			}
-
-			for _, value := range unsignedPegouts {
-				if value.ExpiredAt.After(time.Now()) {
-					unsignedPegoutRestart.WithLabelValues(fmt.Sprint(value.ID)).Set(1)
-				}
-			}
-
-			unsignedPegoutsLen.WithLabelValues("Unsigned pegouts length").Set(float64(len(unsignedPegouts)))
-
-			// TODO: reimplement with time.NewTicker
-			time.Sleep(10 * time.Second)
+			logger.Log.Info().Msg("Unsigned Pegouts Fetcher received shutdown signal...")
+			return
+		case <-ticker.C:
+			fetcher.Fetch()
 		}
 	}
 }

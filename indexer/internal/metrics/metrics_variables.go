@@ -20,13 +20,6 @@ var (
 		},
 		[]string{"addr", "name"},
 	)
-	unsignedPegoutRestart = promauto.NewGaugeVec(
-		prometheus.GaugeOpts{
-			Name: "pegout_restart",
-			Help: "Pegout restart",
-		},
-		[]string{"restart?"},
-	)
 	unsignedPegoutsLen = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "pegouts_len",
