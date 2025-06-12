@@ -109,7 +109,7 @@ func TestSignService_SendSignatures_Success(t *testing.T) {
 	validatorIdx := uint16(0)
 	pegout := newCachedPegout()
 
-	resCode, _ := service.SendSignatures(pegout, validatorIdx, nil)
+	resCode := service.SendSignatures(pegout, validatorIdx, nil)
 	if resCode != 0 {
 		t.Fatalf("expected resCode = 0, got %d", resCode)
 	}
@@ -122,7 +122,7 @@ func TestSignService_SendSignatures_ERROR_DifferentPegoutSignatures(t *testing.T
 	validatorIdx := uint16(1)
 	pegout := newCachedPegout()
 
-	resCode, _ := service.SendSignatures(pegout, validatorIdx, nil)
+	resCode := service.SendSignatures(pegout, validatorIdx, nil)
 	if resCode != helpers.DifferentPegoutSignatures {
 		t.Fatalf("expected resCode = %d (DifferentPegoutSignatures), got %d", helpers.DifferentPegoutSignatures, resCode)
 	}
@@ -480,12 +480,14 @@ func TestNonceAndCommitmentCleanupOnExpiredAtChange(t *testing.T) {
 	originalExpiredAt := time.Now().Add(time.Hour)
 
 	unsignedPegout := &coordinator.PegoutRecord{
-		ID:              1,
-		Commitments:     map[uint16][]byte{},
-		CommitmentsMask: make([]byte, 32),
-		MaxSigners:      maxSigners,
-		ExpiredAt:       originalExpiredAt,
-		SigningMask:     big.NewInt(7),
+		ID:                1,
+		Commitments:       map[uint16][]byte{},
+		CommitmentsMask:   make([]byte, 32),
+		SigningShares:     map[uint16]map[uint16][]byte{},
+		SigningSharesMask: make([]byte, 32),
+		MaxSigners:        maxSigners,
+		ExpiredAt:         time.Unix(0, 0),
+		SigningMask:       big.NewInt(7),
 	}
 	// Prepare cached pegout with initial ExpiredAt
 	pegout := &CachedPegout{
@@ -506,7 +508,7 @@ func TestNonceAndCommitmentCleanupOnExpiredAtChange(t *testing.T) {
 			Commitments:     map[uint16][]byte{},
 			CommitmentsMask: make([]byte, 32),
 			MaxSigners:      maxSigners,
-			ExpiredAt:       originalExpiredAt,
+			ExpiredAt:       time.Unix(0, 0),
 			SigningMask:     big.NewInt(7),
 		},
 		commitments: nil,
@@ -533,6 +535,12 @@ func TestNonceAndCommitmentCleanupOnExpiredAtChange(t *testing.T) {
 		},
 		LoadSessionFunc: func(dkgUntil int64) []byte {
 			return secret
+		},
+		LoadSigningSharesFunc: func(name string) [][]byte {
+			return nil
+		},
+		StoreSigningSharesFunc: func(name string, shares [][]byte) error {
+			return nil
 		},
 	}
 
@@ -565,10 +573,22 @@ func TestNonceAndCommitmentCleanupOnExpiredAtChange(t *testing.T) {
 
 	coordinator := &coordinator.CoordinatorMock{
 		SendCommitmentsFunc: func(pegoutID uint64, pegoutUntil int64, validatorIdx uint16, commitments []byte) (*tlb.Transaction, error) {
-			pegout.artifacts.Commitments[validatorIdx] = commitments
+			unsignedPegout.Commitments[validatorIdx] = commitments
 			mask := big.NewInt(0).SetBytes(pegout.artifacts.CommitmentsMask)
 			mask.SetBit(mask, int(validatorIdx), 1)
-			pegout.artifacts.CommitmentsMask = mask.FillBytes(make([]byte, 32))
+			unsignedPegout.CommitmentsMask = mask.FillBytes(make([]byte, 32))
+			if unsignedPegout.ExpiredAt == time.Unix(0, 0) {
+				unsignedPegout.ExpiredAt = originalExpiredAt
+			}
+			return nil, nil
+		},
+		SendSigningShareFunc: func(pegoutID uint64, pegoutUntil int64, validatorIdx uint16, signShares [][]byte) (*tlb.Transaction, error) {
+			unsignedPegout.SigningShares[validatorIdx] = map[uint16][]byte{
+				0: signShares[0],
+			}
+			mask := big.NewInt(0).SetBytes(pegout.artifacts.SigningSharesMask)
+			mask.SetBit(mask, int(validatorIdx), 1)
+			unsignedPegout.SigningSharesMask = mask.FillBytes(make([]byte, 32))
 			return nil, nil
 		},
 		GetUnsignedPegoutsFunc: func() ([]coordinator.PegoutRecord, error) {
@@ -590,6 +610,10 @@ func TestNonceAndCommitmentCleanupOnExpiredAtChange(t *testing.T) {
 	validatorIdx := uint16(0)
 
 	t.Run("Generate initial commitments and nonces", func(t *testing.T) {
+		if pegout.artifacts.ExpiredAt != time.Unix(0, 0) {
+			t.Fatalf("cachedPegout ExpiredAt should be zero, got %s", pegout.artifacts.ExpiredAt)
+		}
+
 		// Generate commitments to populate nonces and commitments
 		service.execute(context.Background(), prevDKG)
 
@@ -609,7 +633,71 @@ func TestNonceAndCommitmentCleanupOnExpiredAtChange(t *testing.T) {
 		originalCommitments := deepCopy2dSlice(pegout.commitments)
 		originalNonces := deepCopy2dSlice(pegout.nonces)
 
+		if pegout.artifacts.ExpiredAt != time.Unix(0, 0) {
+			t.Fatalf("cachedPegout ExpiredAt should be zero, got %s", pegout.artifacts.ExpiredAt)
+		}
+		if unsignedPegout.ExpiredAt == time.Unix(0, 0) {
+			t.Fatalf("unsignedPegout ExpiredAt should NOT be zero, got %s", unsignedPegout.ExpiredAt)
+		}
+
 		service.execute(context.Background(), prevDKG)
+
+		if pegout.artifacts.ExpiredAt == time.Unix(0, 0) {
+			t.Fatal("cachedPegout ExpiredAt should be updated")
+		}
+
+		if !unsignedPegout.ExpiredAt.Equal(pegout.artifacts.ExpiredAt) {
+			t.Fatalf("unsignedPegout ExpiredAt should be equal to cachedPegout ExpiredAt, got %s", unsignedPegout.ExpiredAt)
+		}
+
+		if len(pegout.nonces) == 0 {
+			t.Fatal("nonces should be generated")
+		}
+
+		if len(pegout.commitments) == 0 {
+			t.Fatal("commitments should be generated")
+		}
+
+		for i, newNonce := range pegout.nonces {
+			if !bytes.Equal(newNonce, originalNonces[i]) {
+				t.Fatalf("nonces should be the same after execute. Original: %x, New: %x", originalNonces[i], newNonce)
+			}
+		}
+		for i, newCommitment := range pegout.commitments {
+			if !bytes.Equal(newCommitment, originalCommitments[i]) {
+				t.Fatalf("commitments should be the same after execute. Original: %x, New: %x", originalCommitments[i], newCommitment)
+			}
+		}
+	})
+
+	t.Run("Complete commitments step and send signing share", func(t *testing.T) {
+		originalCommitments := deepCopy2dSlice(pegout.commitments)
+		originalNonces := deepCopy2dSlice(pegout.nonces)
+
+		commitments := make([][]byte, 1)
+		_, commitments[0], err = frost.Commit(frost.NewPackage(keyPackages[1]))
+		if err != nil {
+			t.Fatal(err)
+		}
+		serialized, err := helpers.SerializeCommitments(commitments, helpers.FrostCommitmentLength)
+		if err != nil {
+			t.Fatal(err)
+		}
+		coordinator.SendCommitments(unsignedPegout.ID, pegout.artifacts.ExpiredAt.Unix(), 1, serialized)
+
+		service.execute(context.Background(), prevDKG)
+		if !unsignedPegout.HasSigningShare(0) {
+			t.Fatal("Signing share should be set")
+		}
+
+		if len(pegout.nonces) == 0 {
+			t.Fatal("nonces should be generated")
+		}
+
+		if len(pegout.commitments) == 0 {
+			t.Fatal("commitments should be generated")
+		}
+
 		for i, newNonce := range pegout.nonces {
 			if !bytes.Equal(newNonce, originalNonces[i]) {
 				t.Fatalf("nonces should be the same after execute. Original: %x, New: %x", originalNonces[i], newNonce)
@@ -626,6 +714,7 @@ func TestNonceAndCommitmentCleanupOnExpiredAtChange(t *testing.T) {
 		// Store original values for comparison
 		originalCommitments := deepCopy2dSlice(pegout.commitments)
 		originalNonces := deepCopy2dSlice(pegout.nonces)
+		cleanupCalled = false
 
 		// Change ExpiredAt to simulate restart/time change scenario
 		unsignedPegout.ExpiredAt = originalExpiredAt.Add(time.Hour)
@@ -634,10 +723,10 @@ func TestNonceAndCommitmentCleanupOnExpiredAtChange(t *testing.T) {
 		unsignedPegout.CommitmentsMask = make([]byte, 32)
 
 		// Verify nonces and commitments exist before cleanup
-		if pegout.commitments == nil {
+		if len(pegout.commitments) == 0 {
 			t.Fatal("commitments should exist before cleanup")
 		}
-		if pegout.nonces == nil {
+		if len(pegout.nonces) == 0 {
 			t.Fatal("nonces should exist before cleanup")
 		}
 
@@ -673,6 +762,7 @@ func TestNonceAndCommitmentCleanupOnExpiredAtChange(t *testing.T) {
 	t.Run("Multiple ExpiredAt changes should always generate new nonces", func(t *testing.T) {
 		// Store the current nonces
 		firstNonces := deepCopy2dSlice(pegout.nonces)
+		cleanupCalled = false
 
 		// Change ExpiredAt again
 		unsignedPegout.ExpiredAt = time.Now().Add(2 * time.Hour)
@@ -705,173 +795,6 @@ func TestNonceAndCommitmentCleanupOnExpiredAtChange(t *testing.T) {
 			if i < len(secondNonces) && bytes.Equal(thirdNonce, secondNonces[i]) {
 				t.Fatal("third nonces should be different from second nonces")
 			}
-		}
-	})
-}
-
-func TestNonceAndCommitmentCleanupOnExpiredAtZero(t *testing.T) {
-	maxSigners := uint16(3)
-	minSigners := uint16(2)
-
-	// Generate frost group key
-	keyPackages, publicKeyPackage := generateFrostKey(minSigners, maxSigners)
-	groupPublicKey, err := frost.ExtractPublicKeyFromPackage(publicKeyPackage)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	originalExpiredAt := time.Now().Add(time.Hour)
-
-	unsignedPegout := &coordinator.PegoutRecord{
-		ID:              1,
-		Commitments:     map[uint16][]byte{},
-		CommitmentsMask: make([]byte, 32),
-		MaxSigners:      maxSigners,
-		ExpiredAt:       time.Unix(0, 0),
-		SigningMask:     big.NewInt(7),
-	}
-	// Prepare cached pegout with initial ExpiredAt
-	cachedPegout := &CachedPegout{
-		ID:      1,
-		addrStr: address.NewAddress(0, 0, make([]byte, 32)).String(),
-		inputs: []pegoutcontract.TxInput{{
-			TxHash: make([]byte, 32),
-			Data: &pegoutcontract.TxPartsInput{
-				Amount: big.NewInt(10000),
-				Index:  0,
-			},
-		}},
-		tx: &pegoutcontract.TxParts{
-			InternalKey: groupPublicKey,
-		},
-		artifacts: &coordinator.PegoutRecord{
-			ID:              1,
-			Commitments:     map[uint16][]byte{},
-			CommitmentsMask: make([]byte, 32),
-			MaxSigners:      maxSigners,
-			ExpiredAt:       time.Unix(0, 0),
-			SigningMask:     big.NewInt(7),
-		},
-		commitments: nil,
-		nonces:      nil,
-		signingHashes: [][]byte{
-			make([]byte, 32),
-		},
-	}
-
-	dkgUntil := time.Now().Add(time.Hour)
-	publicKey, secret, err := ed25519.GenerateKey(rand.Reader)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Create keystore mock
-	keystore := &keystore.KeystoreMock{
-		LoadSecretFunc: func(pubKey []byte) []byte {
-			return keyPackages[0]
-		},
-		CleanupFunc: func() {
-		},
-		LoadSessionFunc: func(dkgUntil int64) []byte {
-			return secret
-		},
-		LoadSigningSharesFunc: func(name string) [][]byte {
-			return nil
-		},
-		StoreSigningSharesFunc: func(name string, pkgs [][]byte) error {
-			return nil
-		},
-	}
-
-	prevDKG := &coordinator.DKG{
-		State: coordinator.DKGStateFinished,
-		VSet: coordinator.VSet{
-			0: make([]byte, 32),
-			1: make([]byte, 32),
-			2: make([]byte, 32),
-		},
-		MaxSigners: maxSigners,
-		VSetMask:   big.NewInt(1<<maxSigners - 1),
-		SessionKeys: &coordinator.SessionKeys{
-			PubKeys: coordinator.SessionPubKeys{
-				0: publicKey[:],
-				1: make([]byte, 32),
-				2: make([]byte, 32),
-			},
-		},
-		Until: dkgUntil,
-		R3: &coordinator.DKGR3{
-			Mask:  big.NewInt(1<<maxSigners - 1),
-			Count: maxSigners,
-			Data: &coordinator.PubkeyData{
-				PubkeyPackage: publicKeyPackage,
-				InternalKey:   groupPublicKey,
-			},
-		},
-	}
-
-	var isSendSigningShare = false
-
-	coordinator := &coordinator.CoordinatorMock{
-		SendCommitmentsFunc: func(pegoutID uint64, pegoutUntil int64, validatorIdx uint16, commitments []byte) (*tlb.Transaction, error) {
-			cachedPegout.artifacts.Commitments[validatorIdx] = commitments
-			mask := big.NewInt(0).SetBytes(cachedPegout.artifacts.CommitmentsMask)
-			mask.SetBit(mask, int(validatorIdx), 1)
-			cachedPegout.artifacts.CommitmentsMask = mask.FillBytes(make([]byte, 32))
-			return nil, nil
-		},
-		GetUnsignedPegoutsFunc: func() ([]coordinator.PegoutRecord, error) {
-			return []coordinator.PegoutRecord{*unsignedPegout}, nil
-		},
-		SendSignaturesFunc: func(pegoutID uint64, pegoutUntil int64, validatorIdx uint16, signatures [][]byte) (*tlb.Transaction, error) {
-			return nil, nil
-		},
-		ConnectSignerFunc: func(signer signer.Signer) {
-		},
-		SendSigningShareFunc: func(pegoutID uint64, pegoutUntil int64, validatorIdx uint16, signingShares [][]byte) (*tlb.Transaction, error) {
-			isSendSigningShare = true
-			return nil, nil
-		},
-	}
-
-	// Create service instance
-	service := NewService(keystore, coordinator, nil, 0)
-
-	service.cachedPegout = cachedPegout
-	validatorIdx := uint16(0)
-
-	t.Run("Test ExpiredAt=0 and nonce clear", func(t *testing.T) {
-		// Generate commitments to populate nonces and commitments (it will execute `s.doCommit`)
-		service.execute(context.Background(), prevDKG)
-
-		// Verify commitments and nonces are generated
-		if len(cachedPegout.commitments) == 0 {
-			t.Fatal("commitments should be generated")
-		}
-		if len(cachedPegout.nonces) == 0 {
-			t.Fatal("nonces should be generated")
-		}
-		if !cachedPegout.artifacts.HasCommitment(validatorIdx) {
-			t.Fatal("commitment should be set in artifacts")
-		}
-
-		// Simulate updating `unsignedPegout` in the contract
-		unsignedPegout.ExpiredAt = originalExpiredAt
-
-		// It will keep executing `s.doCommit`
-		service.execute(context.Background(), prevDKG)
-
-		// Simulate that all commitments have been sent to the Coordinator (to satisfy pegout.artifacts.CommitmentsCount() >= minSigners)
-		cachedPegout.artifacts.Commitments[1] = cachedPegout.artifacts.Commitments[0]
-
-		// It will excecute `s.doSign`
-		err := service.execute(context.Background(), prevDKG)
-		if err != nil {
-			t.Fatalf("%v", err)
-		}
-
-		if !isSendSigningShare {
-			t.Fatal("Expected SendSigningShare to be called")
 		}
 	})
 }
