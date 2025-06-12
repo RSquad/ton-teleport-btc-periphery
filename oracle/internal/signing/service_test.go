@@ -367,12 +367,14 @@ func TestNonceAndCommitmentCleanupOnExpiredAtChange(t *testing.T) {
 	originalExpiredAt := time.Now().Add(time.Hour)
 
 	unsignedPegout := &coordinator.PegoutRecord{
-		ID:              1,
-		Commitments:     map[uint16][]byte{},
-		CommitmentsMask: make([]byte, 32),
-		MaxSigners:      maxSigners,
-		ExpiredAt:       originalExpiredAt,
-		SigningMask:     big.NewInt(7),
+		ID:                1,
+		Commitments:       map[uint16][]byte{},
+		CommitmentsMask:   make([]byte, 32),
+		SigningShares:     map[uint16]map[uint16][]byte{},
+		SigningSharesMask: make([]byte, 32),
+		MaxSigners:        maxSigners,
+		ExpiredAt:         time.Unix(0, 0),
+		SigningMask:       big.NewInt(7),
 	}
 	// Prepare cached pegout with initial ExpiredAt
 	pegout := &CachedPegout{
@@ -393,7 +395,7 @@ func TestNonceAndCommitmentCleanupOnExpiredAtChange(t *testing.T) {
 			Commitments:     map[uint16][]byte{},
 			CommitmentsMask: make([]byte, 32),
 			MaxSigners:      maxSigners,
-			ExpiredAt:       originalExpiredAt,
+			ExpiredAt:       time.Unix(0, 0),
 			SigningMask:     big.NewInt(7),
 		},
 		commitments: nil,
@@ -420,6 +422,12 @@ func TestNonceAndCommitmentCleanupOnExpiredAtChange(t *testing.T) {
 		},
 		LoadSessionFunc: func(dkgUntil int64) []byte {
 			return secret
+		},
+		LoadSigningSharesFunc: func(name string) [][]byte {
+			return nil
+		},
+		StoreSigningSharesFunc: func(name string, shares [][]byte) error {
+			return nil
 		},
 	}
 
@@ -452,10 +460,22 @@ func TestNonceAndCommitmentCleanupOnExpiredAtChange(t *testing.T) {
 
 	coordinator := &coordinator.CoordinatorMock{
 		SendCommitmentsFunc: func(pegoutID uint64, pegoutUntil int64, validatorIdx uint16, commitments []byte) (*tlb.Transaction, error) {
-			pegout.artifacts.Commitments[validatorIdx] = commitments
+			unsignedPegout.Commitments[validatorIdx] = commitments
 			mask := big.NewInt(0).SetBytes(pegout.artifacts.CommitmentsMask)
 			mask.SetBit(mask, int(validatorIdx), 1)
-			pegout.artifacts.CommitmentsMask = mask.FillBytes(make([]byte, 32))
+			unsignedPegout.CommitmentsMask = mask.FillBytes(make([]byte, 32))
+			if unsignedPegout.ExpiredAt == time.Unix(0, 0) {
+				unsignedPegout.ExpiredAt = originalExpiredAt
+			}
+			return nil, nil
+		},
+		SendSigningShareFunc: func(pegoutID uint64, pegoutUntil int64, validatorIdx uint16, signShares [][]byte) (*tlb.Transaction, error) {
+			unsignedPegout.SigningShares[validatorIdx] = map[uint16][]byte{
+				0: signShares[0],
+			}
+			mask := big.NewInt(0).SetBytes(pegout.artifacts.SigningSharesMask)
+			mask.SetBit(mask, int(validatorIdx), 1)
+			unsignedPegout.SigningSharesMask = mask.FillBytes(make([]byte, 32))
 			return nil, nil
 		},
 		GetUnsignedPegoutsFunc: func() ([]coordinator.PegoutRecord, error) {
@@ -477,6 +497,10 @@ func TestNonceAndCommitmentCleanupOnExpiredAtChange(t *testing.T) {
 	validatorIdx := uint16(0)
 
 	t.Run("Generate initial commitments and nonces", func(t *testing.T) {
+		if pegout.artifacts.ExpiredAt != time.Unix(0, 0) {
+			t.Fatalf("cachedPegout ExpiredAt should be zero, got %s", pegout.artifacts.ExpiredAt)
+		}
+
 		// Generate commitments to populate nonces and commitments
 		service.execute(context.Background(), prevDKG)
 
@@ -496,7 +520,71 @@ func TestNonceAndCommitmentCleanupOnExpiredAtChange(t *testing.T) {
 		originalCommitments := deepCopy2dSlice(pegout.commitments)
 		originalNonces := deepCopy2dSlice(pegout.nonces)
 
+		if pegout.artifacts.ExpiredAt != time.Unix(0, 0) {
+			t.Fatalf("cachedPegout ExpiredAt should be zero, got %s", pegout.artifacts.ExpiredAt)
+		}
+		if unsignedPegout.ExpiredAt == time.Unix(0, 0) {
+			t.Fatalf("unsignedPegout ExpiredAt should NOT be zero, got %s", unsignedPegout.ExpiredAt)
+		}
+
 		service.execute(context.Background(), prevDKG)
+
+		if pegout.artifacts.ExpiredAt == time.Unix(0, 0) {
+			t.Fatal("cachedPegout ExpiredAt should be updated")
+		}
+
+		if !unsignedPegout.ExpiredAt.Equal(pegout.artifacts.ExpiredAt) {
+			t.Fatalf("unsignedPegout ExpiredAt should be equal to cachedPegout ExpiredAt, got %s", unsignedPegout.ExpiredAt)
+		}
+
+		if len(pegout.nonces) == 0 {
+			t.Fatal("nonces should be generated")
+		}
+
+		if len(pegout.commitments) == 0 {
+			t.Fatal("commitments should be generated")
+		}
+
+		for i, newNonce := range pegout.nonces {
+			if !bytes.Equal(newNonce, originalNonces[i]) {
+				t.Fatalf("nonces should be the same after execute. Original: %x, New: %x", originalNonces[i], newNonce)
+			}
+		}
+		for i, newCommitment := range pegout.commitments {
+			if !bytes.Equal(newCommitment, originalCommitments[i]) {
+				t.Fatalf("commitments should be the same after execute. Original: %x, New: %x", originalCommitments[i], newCommitment)
+			}
+		}
+	})
+
+	t.Run("Complete commitments step and send signing share", func(t *testing.T) {
+		originalCommitments := deepCopy2dSlice(pegout.commitments)
+		originalNonces := deepCopy2dSlice(pegout.nonces)
+
+		commitments := make([][]byte, 1)
+		_, commitments[0], err = frost.Commit(frost.NewPackage(keyPackages[1]))
+		if err != nil {
+			t.Fatal(err)
+		}
+		serialized, err := helpers.SerializeCommitments(commitments, helpers.FrostCommitmentLength)
+		if err != nil {
+			t.Fatal(err)
+		}
+		coordinator.SendCommitments(unsignedPegout.ID, pegout.artifacts.ExpiredAt.Unix(), 1, serialized)
+
+		service.execute(context.Background(), prevDKG)
+		if !unsignedPegout.HasSigningShare(0) {
+			t.Fatal("Signing share should be set")
+		}
+
+		if len(pegout.nonces) == 0 {
+			t.Fatal("nonces should be generated")
+		}
+
+		if len(pegout.commitments) == 0 {
+			t.Fatal("commitments should be generated")
+		}
+
 		for i, newNonce := range pegout.nonces {
 			if !bytes.Equal(newNonce, originalNonces[i]) {
 				t.Fatalf("nonces should be the same after execute. Original: %x, New: %x", originalNonces[i], newNonce)
@@ -513,6 +601,7 @@ func TestNonceAndCommitmentCleanupOnExpiredAtChange(t *testing.T) {
 		// Store original values for comparison
 		originalCommitments := deepCopy2dSlice(pegout.commitments)
 		originalNonces := deepCopy2dSlice(pegout.nonces)
+		cleanupCalled = false
 
 		// Change ExpiredAt to simulate restart/time change scenario
 		unsignedPegout.ExpiredAt = originalExpiredAt.Add(time.Hour)
@@ -521,10 +610,10 @@ func TestNonceAndCommitmentCleanupOnExpiredAtChange(t *testing.T) {
 		unsignedPegout.CommitmentsMask = make([]byte, 32)
 
 		// Verify nonces and commitments exist before cleanup
-		if pegout.commitments == nil {
+		if len(pegout.commitments) == 0 {
 			t.Fatal("commitments should exist before cleanup")
 		}
-		if pegout.nonces == nil {
+		if len(pegout.nonces) == 0 {
 			t.Fatal("nonces should exist before cleanup")
 		}
 
@@ -559,8 +648,8 @@ func TestNonceAndCommitmentCleanupOnExpiredAtChange(t *testing.T) {
 
 	t.Run("Multiple ExpiredAt changes should always generate new nonces", func(t *testing.T) {
 		// Store the current nonces
-		firstNonces := make([][]byte, len(pegout.nonces))
-		copy(firstNonces, pegout.nonces)
+		firstNonces := deepCopy2dSlice(pegout.nonces)
+		cleanupCalled = false
 
 		// Change ExpiredAt again
 		unsignedPegout.ExpiredAt = time.Now().Add(2 * time.Hour)
@@ -570,8 +659,7 @@ func TestNonceAndCommitmentCleanupOnExpiredAtChange(t *testing.T) {
 		service.execute(context.Background(), prevDKG)
 
 		// Store the second set of nonces
-		secondNonces := make([][]byte, len(pegout.nonces))
-		copy(secondNonces, pegout.nonces)
+		secondNonces := deepCopy2dSlice(pegout.nonces)
 
 		// Verify second nonces are different from first nonces
 		for i, secondNonce := range secondNonces {
