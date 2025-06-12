@@ -355,6 +355,12 @@ func (s *SignService) doAggregate(
 	s.logAggregateSignShares()
 	s.cleanupNonces()
 
+	// Check if the signatures have already been sent
+	if checkSignaturesMask(pegout, validatorIdx) {
+		s.logSignaturesSent(pegout.ID, pegout.artifacts.Signatures.Count, pegout.artifacts.MaxSigners)
+		return
+	}
+
 	signatures := make([][]byte, 0, len(pegout.signingHashes))
 
 	for i := range pegout.inputs {
@@ -398,7 +404,7 @@ func (s *SignService) sendSigningShares(pegout *CachedPegout, validatorIdx uint1
 	}
 }
 
-func (s *SignService) SendSignatures(pegout *CachedPegout, validatorIdx uint16, signatures [][]byte) {
+func (s *SignService) SendSignatures(pegout *CachedPegout, validatorIdx uint16, signatures [][]byte) int {
 	_, err := s.coordinator.SendSignatures(
 		pegout.ID,
 		pegout.artifacts.ExpiredAt.Unix(),
@@ -406,8 +412,18 @@ func (s *SignService) SendSignatures(pegout *CachedPegout, validatorIdx uint16, 
 		signatures,
 	)
 	if err != nil {
-		s.logSignatureSendError(err)
+		exitCode, _ := helpers.ExtractExitCode(err.Error())
+		if exitCode == helpers.DifferentPegoutSignatures {
+			s.sendClaimBySignatureMask(pegout, validatorIdx)
+		} else {
+			s.logSignatureSendError(pegout.ID, err)
+		}
+
+		return exitCode
 	}
+
+	s.logSignatureSent(pegout.ID)
+	return 0
 }
 
 func (s *SignService) generateCommitments() error {
@@ -574,4 +590,23 @@ func (s *SignService) executeResetPegoutSigning(pegoutID uint64, validatorIdx ui
 
 func (s *SignService) ClaimCompleted(pegout *CachedPegout, validatorIdx uint16) bool {
 	return pegout.artifacts.ClaimsMask.Bit(int(validatorIdx)) > 0
+}
+
+func (s *SignService) sendClaimBySignatureMask(pegout *CachedPegout, validatorIdx uint16) {
+	mask := pegout.artifacts.Signatures.Mask.BitLen()
+	if mask == 0 {
+		return
+	}
+
+	// Culprit Oracle id = index of the highest (most significant) set bit in pegout.artifacts.Signatures.Mask
+	//Every validator in pegout.artifacts.Signatures.Mask who sends a signature is assumed to be a culprit. Only one culprit can be claimed per round.
+	culpritIdx := mask - 1
+	s.logError(fmt.Sprintf("Signature sending failed. Culprit validator identified: %d. The signature sent by the culprit validator differs from the calculated signature", culpritIdx), nil)
+
+	// Sent claim
+	s.executeClaim(pegout, validatorIdx, uint16(culpritIdx))
+}
+
+func checkSignaturesMask(pegout *CachedPegout, validatorIdx uint16) bool {
+	return pegout.artifacts.Signatures.Mask.Bit(int(validatorIdx)) == 1
 }
