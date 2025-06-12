@@ -34,4 +34,11 @@ var (
 		},
 		[]string{"delayed?"},
 	)
+	unprocessedPegout = promauto.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "unprocessed_pegout",
+			Help: "Unprocessed pegout",
+		},
+		[]string{"pegout_addr", "bitcoin_tx_id"},
+	)
 )
