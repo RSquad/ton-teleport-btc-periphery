@@ -574,7 +574,7 @@ func TestNonceAndCommitmentCleanupOnExpiredAtChange(t *testing.T) {
 	coordinator := &coordinator.CoordinatorMock{
 		SendCommitmentsFunc: func(pegoutID uint64, pegoutUntil int64, validatorIdx uint16, commitments []byte) (*tlb.Transaction, error) {
 			unsignedPegout.Commitments[validatorIdx] = commitments
-			mask := big.NewInt(0).SetBytes(pegout.artifacts.CommitmentsMask)
+			mask := big.NewInt(0).SetBytes(unsignedPegout.CommitmentsMask)
 			mask.SetBit(mask, int(validatorIdx), 1)
 			unsignedPegout.CommitmentsMask = mask.FillBytes(make([]byte, 32))
 			if unsignedPegout.ExpiredAt == time.Unix(0, 0) {
@@ -586,7 +586,7 @@ func TestNonceAndCommitmentCleanupOnExpiredAtChange(t *testing.T) {
 			unsignedPegout.SigningShares[validatorIdx] = map[uint16][]byte{
 				0: signShares[0],
 			}
-			mask := big.NewInt(0).SetBytes(pegout.artifacts.SigningSharesMask)
+			mask := big.NewInt(0).SetBytes(unsignedPegout.SigningSharesMask)
 			mask.SetBit(mask, int(validatorIdx), 1)
 			unsignedPegout.SigningSharesMask = mask.FillBytes(make([]byte, 32))
 			return nil, nil
