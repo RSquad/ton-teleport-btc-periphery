@@ -183,25 +183,25 @@ func (s *SignService) ExecuteSign(ctx context.Context) {
 	s.execute(ctx, dkg)
 }
 
-func (s *SignService) execute(ctx context.Context, dkg *coordinator.DKG) error {
+func (s *SignService) execute(ctx context.Context, dkg *coordinator.DKG) {
 	pegoutRecords, err := s.coordinator.GetUnsignedPegouts()
 	if err != nil {
 		s.logUnsignedPegoutsError(err)
-		return err
+		return
 	}
 
 	s.logSigningRequestsCount(len(pegoutRecords))
 
 	if len(pegoutRecords) == 0 {
 		s.logMessage("No sign requests")
-		return nil
+		return
 	}
 
 	if (s.dkgUntil != dkg.Until) || (s.sessionSigner == nil) {
 		sessionSigner, err := validator.LoadSessionSigner(s.keyStore, dkg.Until.Unix())
 		if err != nil {
 			s.logError("Failed to create SessionSigner", err)
-			return err
+			return
 		}
 
 		s.sessionSigner = sessionSigner
@@ -212,7 +212,7 @@ func (s *SignService) execute(ctx context.Context, dkg *coordinator.DKG) error {
 	validatorIdx, err := s.FindValidatorIdx(dkg, s.sessionSigner.PublicKey())
 	if err != nil {
 		s.logError("failed to get validator idx from session key and VSet", err)
-		return err
+		return
 	}
 
 	// Get oldest unsigned pegout record
@@ -222,7 +222,7 @@ func (s *SignService) execute(ctx context.Context, dkg *coordinator.DKG) error {
 	// Check mask
 	if !unsignedPegout.CheckSigningMask(validatorIdx) {
 		s.logOracleEvictedFromSigning(unsignedPegout.ID)
-		return nil
+		return
 	}
 
 	pubkeyPackage := dkg.R3.Data.PubkeyPackage
@@ -231,14 +231,14 @@ func (s *SignService) execute(ctx context.Context, dkg *coordinator.DKG) error {
 	if (unsignedPegout.ExpiredAt != time.Unix(0, 0)) && (unsignedPegout.ExpiredAt.Before(time.Now())) {
 		s.executeResetPegoutSigning(unsignedPegout.ID, validatorIdx)
 		s.cachePegoutClear()
-		return nil
+		return
 	}
 
 	// Try caching the pegout
 	cachedPegout, err := s.cachePegout(ctx, &unsignedPegout)
 	if err != nil {
 		s.logError("failed to cache pegout", err)
-		return err
+		return
 	}
 	if cachedPegout == nil {
 		panic("cached pegout is nil")
@@ -249,36 +249,21 @@ func (s *SignService) execute(ctx context.Context, dkg *coordinator.DKG) error {
 	minSigners, err := helpers.CalcMinSigners(dkg.MaxSigners)
 	if err != nil {
 		s.logError("failed to calculate min signers", err)
-		return err
+		return
 	}
 
 	// Execute signing steps
-	next, err := s.doCommit(validatorIdx, minSigners)
-	if err != nil {
-		return err
-	}
-
-	if next {
-		next, err := s.doSign(validatorIdx, minSigners)
-		if err != nil {
-			return err
-		}
-
-		if next {
-			err := s.doAggregate(validatorIdx, pubkeyPackage)
-			if err != nil {
-				return err
-			}
+	if s.doCommit(validatorIdx, minSigners) {
+		if s.doSign(validatorIdx, minSigners) {
+			s.doAggregate(validatorIdx, pubkeyPackage)
 		}
 	}
-
-	return nil
 }
 
 func (s *SignService) doCommit(
 	validatorIdx uint16,
 	minSigners uint16,
-) (bool, error) {
+) bool {
 	pegout := s.cachedPegout
 	s.logCommitPegout(pegout.ID)
 
@@ -286,48 +271,48 @@ func (s *SignService) doCommit(
 		s.logMessage("Commitment already exists")
 		if pegout.artifacts.CommitmentsCount() >= minSigners {
 			s.logMessage("Commitment round completed")
-			return true, nil
+			return true
 		}
 		s.logMessage("Waiting for other oracles to commit")
-		return false, nil
+		return false
 	}
 
 	err := s.generateCommitments()
 	if err != nil {
 		s.logError("failed to generate commitments", err)
-		return false, err
+		return false
 	}
 
-	err = s.sendCommitments(pegout, validatorIdx)
+	s.sendCommitments(pegout, validatorIdx)
 
-	return false, err
+	return false
 }
 
 func (s *SignService) doSign(
 	validatorIdx uint16,
 	minSigners uint16,
-) (bool, error) {
+) bool {
 	pegout := s.cachedPegout
 	s.logSignPegout(pegout.ID)
 
 	if !pegout.artifacts.HasCommitment(validatorIdx) {
 		s.logErrNoOracleCommitments(pegout.ID)
-		return false, nil
+		return false
 	}
 
 	if pegout.artifacts.SigningSharesCount() >= int(minSigners) {
 		s.logMinimalSharesReached(pegout.ID)
-		return true, nil
+		return true
 	}
 
 	if pegout.artifacts.HasSigningShare(validatorIdx) {
 		s.logSigningShareAlreadyExists(pegout.ID)
-		return false, nil
+		return false
 	}
 
 	if len(pegout.signingHashes) == 0 {
 		s.logErrNothingToSign(pegout.ID)
-		return false, nil
+		return false
 	}
 
 	// Check if oracle already generated signing shares
@@ -345,7 +330,7 @@ func (s *SignService) doSign(
 			signShare, err := s.SignInput(validatorIdx, i)
 			if err != nil {
 				s.logSignError(i, err)
-				return false, err
+				return false
 			}
 			signShares = append(signShares, signShare)
 		}
@@ -354,13 +339,13 @@ func (s *SignService) doSign(
 
 	s.sendSigningShares(pegout, validatorIdx, signShares)
 
-	return false, nil
+	return false
 }
 
 func (s *SignService) doAggregate(
 	validatorIdx uint16,
 	pubkeyPackage []byte,
-) error {
+) {
 	pegout := s.cachedPegout
 	s.logAggregateSignShares()
 	s.cleanupNonces()
@@ -368,7 +353,7 @@ func (s *SignService) doAggregate(
 	// Check if the signatures have already been sent
 	if checkSignaturesMask(pegout, validatorIdx) {
 		s.logSignaturesSent(pegout.ID, pegout.artifacts.Signatures.Count, pegout.artifacts.MaxSigners)
-		return nil
+		return
 	}
 
 	signatures := make([][]byte, 0, len(pegout.signingHashes))
@@ -377,21 +362,20 @@ func (s *SignService) doAggregate(
 		signature, err := s.aggregateSignatureForInput(i, validatorIdx, pubkeyPackage)
 		if err != nil {
 			s.logAggregateSignSharesError(i, err)
-			return err
+			return
 		}
 		signatures = append(signatures, signature)
 	}
 
 	// Send signatures
-	_, err := s.SendSignatures(pegout, validatorIdx, signatures)
-	return err
+	s.SendSignatures(pegout, validatorIdx, signatures)
 }
 
-func (s *SignService) sendCommitments(pegout *CachedPegout, validatorIdx uint16) error {
+func (s *SignService) sendCommitments(pegout *CachedPegout, validatorIdx uint16) {
 	packedCommitments, err := helpers.SerializeCommitments(pegout.commitments, helpers.FrostCommitmentLength)
 	if err != nil {
 		s.logError("failed to serialize commitments", err)
-		return err
+		return
 	}
 	s.logSendCommitments(pegout.ID)
 	if _, err := s.coordinator.SendCommitments(
@@ -401,11 +385,9 @@ func (s *SignService) sendCommitments(pegout *CachedPegout, validatorIdx uint16)
 		packedCommitments,
 	); err != nil {
 		s.logSendCommitmentsError(pegout.ID, err)
-		return err
+	} else {
+		s.logCommitSent(pegout.ID)
 	}
-
-	s.logCommitSent(pegout.ID)
-	return nil
 }
 
 func (s *SignService) sendSigningShares(pegout *CachedPegout, validatorIdx uint16, signShares [][]byte) {
@@ -422,7 +404,7 @@ func (s *SignService) sendSigningShares(pegout *CachedPegout, validatorIdx uint1
 	}
 }
 
-func (s *SignService) SendSignatures(pegout *CachedPegout, validatorIdx uint16, signatures [][]byte) (int, error) {
+func (s *SignService) SendSignatures(pegout *CachedPegout, validatorIdx uint16, signatures [][]byte) int {
 	_, err := s.coordinator.SendSignatures(
 		pegout.ID,
 		pegout.artifacts.ExpiredAt.Unix(),
@@ -437,11 +419,11 @@ func (s *SignService) SendSignatures(pegout *CachedPegout, validatorIdx uint16, 
 			s.logSignatureSendError(pegout.ID, err)
 		}
 
-		return exitCode, err
+		return exitCode
 	}
 
 	s.logSignatureSent(pegout.ID)
-	return 0, nil
+	return 0
 }
 
 func (s *SignService) generateCommitments() error {
