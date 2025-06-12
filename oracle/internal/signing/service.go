@@ -116,7 +116,7 @@ func (s *SignService) cachePegout(
 ) (*CachedPegout, error) {
 	if s.cachedPegout != nil && s.cachedPegout.ID == unsignedPegout.ID {
 		// If the pegout expired, cleanup the nonces, commitments and signing shares
-		if !s.cachedPegout.artifacts.ExpiredAt.Equal(unsignedPegout.ExpiredAt) {
+		if (s.cachedPegout.artifacts.ExpiredAt != time.Unix(0, 0)) && !s.cachedPegout.artifacts.ExpiredAt.Equal(unsignedPegout.ExpiredAt) {
 			s.cleanupNonces()
 			s.cleanupCommitments()
 			s.keyStore.Cleanup()
