@@ -6,13 +6,12 @@ import (
 	"sync"
 	"time"
 
-	"fmt"
-
 	bu "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/bitcoinutils"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
 )
 
 type FetcherPegouts struct {
@@ -40,6 +39,7 @@ func NewFetcherPegouts(
 		bitcoinClient:       bitcoinClient,
 		db:                  db,
 		coordinatorContract: coordinator,
+		expiredAt:           make(map[uint64]time.Time),
 	}
 }
 
@@ -48,7 +48,7 @@ func (f *FetcherPegouts) setDelayedMetric(pegouts []coordinator.PegoutRecord) {
 		if oldExpiredAt, exists := f.expiredAt[pegout.ID]; exists {
 			if oldExpiredAt.Equal(pegout.ExpiredAt) {
 				if time.Now().After(pegout.ExpiredAt.Add(PEGOUT_MAX_DELAY)) {
-					unsignedPegoutDelayed.WithLabelValues(fmt.Sprint(pegout.ID)).Set(1)
+					unsignedPegoutDelayed.WithLabelValues(utils.AddrToRawString(pegout.PegoutAddress)).Set(1)
 				}
 			}
 		} else {
@@ -79,15 +79,12 @@ func (f *FetcherPegouts) getSignedPegouts() ([]SignedPegout, error) {
 		`SELECT 
 			tt.created_at,
 			p.addr AS pegout_addr,
-			p.bitcoin_tx_id AS bitcoin_tx_id,
-			p.status AS status
+			p.bitcoin_tx_id AS bitcoin_tx_id
 		FROM burns AS b
 		JOIN ton_txes AS tt ON tt.id = b.ton_tx_burn
 		JOIN pegouts AS p ON p.id = b.pegout_burn
 		WHERE 
-			status = 'SIGNED'
-		AND 
-			created_at < NOW() - INTERVAL '1 hour'
+			p.status = 'SIGNED'
 		AND 
 			created_at > NOW() - INTERVAL '1 day'
 		ORDER BY created_at DESC
@@ -110,11 +107,13 @@ func (f *FetcherPegouts) getSignedPegouts() ([]SignedPegout, error) {
 	return pegouts, nil
 }
 
-func (f *FetcherPegouts) checkBitcoinTx(pegouts []SignedPegout) {
+func (f *FetcherPegouts) setBitcoinTxExistsMetric(pegouts []SignedPegout) {
 	for _, pegout := range pegouts {
 		txExists, _, _ := bu.BitcoinTxExists(f.bitcoinClient, pegout.bitcoinTxId)
 		if !txExists {
 			unprocessedPegout.WithLabelValues(pegout.pegoutAddr, pegout.bitcoinTxId).Set(1)
+		} else {
+			unprocessedPegout.WithLabelValues(pegout.pegoutAddr, pegout.bitcoinTxId).Set(0)
 		}
 
 	}
@@ -146,7 +145,7 @@ func (f *FetcherPegouts) Fetch() {
 			Str("component", "FetcherPegouts").
 			Msg("fetch failed")
 	}
-	f.checkBitcoinTx(signedPegouts)
+	f.setBitcoinTxExistsMetric(signedPegouts)
 }
 
 func (fetcher *FetcherPegouts) Work(ctx context.Context, wg *sync.WaitGroup) {

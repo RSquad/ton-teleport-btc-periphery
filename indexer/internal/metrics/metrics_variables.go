@@ -32,7 +32,7 @@ var (
 			Name: "pegout_delayed",
 			Help: "Pegout delayed",
 		},
-		[]string{"delayed?"},
+		[]string{"pegout_addr"},
 	)
 	unprocessedPegout = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
