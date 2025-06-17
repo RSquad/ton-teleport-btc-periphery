@@ -125,8 +125,14 @@ func (s *SignService) logSendCommitments(pegoutID uint64) {
 }
 
 func (s *SignService) logSendCommitmentsError(pegoutID uint64, err error) {
-	msg := helpers.HandleTvmError(err)
-	errorEventWithPegoutID(pegoutID).Err(err).Msg("failed to send commitments: " + msg)
+	errCode, _ := helpers.ExtractExitCode(err.Error())
+
+	if errCode == helpers.ErrCommitmentsThresholdReached {
+		infoEventWithPegoutID(pegoutID).Msg("Unable to send commitments: commitments threshold reached")
+	} else {
+		msg := helpers.HandleTvmError(err)
+		errorEventWithPegoutID(pegoutID).Err(err).Msg("failed to send commitments: " + msg)
+	}
 }
 
 func (s *SignService) logSendSigningShare(pegoutID uint64, signShares [][]byte) {
@@ -134,8 +140,14 @@ func (s *SignService) logSendSigningShare(pegoutID uint64, signShares [][]byte) 
 }
 
 func (s *SignService) logSendSigningShareError(pegoutID uint64, err error) {
-	msg := helpers.HandleTvmError(err)
-	errorEventWithPegoutID(pegoutID).Err(err).Msg("failed to send signing share: " + msg)
+	errCode, _ := helpers.ExtractExitCode(err.Error())
+
+	if errCode == helpers.ErrPackageAlreadyExist {
+		infoEventWithPegoutID(pegoutID).Msg("Unable to send signing share. Package already sent")
+	} else {
+		msg := helpers.HandleTvmError(err)
+		errorEventWithPegoutID(pegoutID).Err(err).Msg("failed to send signing share: " + msg)
+	}
 }
 
 func (s *SignService) logExecuteClaim(pegoutID uint64) {
@@ -151,7 +163,14 @@ func (s *SignService) logSigningClaimSent(pegoutID uint64) {
 }
 
 func (s *SignService) logSigningClaimSentError(pegoutID uint64, err error) {
-	errorEventWithPegoutID(pegoutID).Err(err).Msg("failed to send signing claim")
+	errCode, _ := helpers.ExtractExitCode(err.Error())
+
+	if errCode == helpers.ErrClaimAlreadyExists {
+		infoEventWithPegoutID(pegoutID).Msg("Unable to send signing claim. Claim already exists")
+	} else {
+		msg := helpers.HandleTvmError(err)
+		errorEventWithPegoutID(pegoutID).Err(err).Msgf("failed to send signing claim: %s", msg)
+	}
 }
 
 func (s *SignService) logSendResetPegoutSigning(pegoutID uint64) {
@@ -163,5 +182,11 @@ func (s *SignService) logResetPegoutSigningSent(pegoutID uint64) {
 }
 
 func (s *SignService) logResetPegoutSigningSentError(pegoutID uint64, err error) {
-	errorEventWithPegoutID(pegoutID).Err(err).Msg("failed to send reset pegout signing")
+	errCode, _ := helpers.ExtractExitCode(err.Error())
+
+	if errCode == helpers.ErrPegoutIsNotExpired {
+		infoEventWithPegoutID(pegoutID).Msg("Pegout is not expired")
+	} else {
+		errorEventWithPegoutID(pegoutID).Err(err).Msg("failed to send reset pegout signing")
+	}
 }

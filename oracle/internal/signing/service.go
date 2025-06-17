@@ -113,7 +113,7 @@ func (s *SignService) cachePegout(
 ) (*CachedPegout, error) {
 	if s.cachedPegout != nil && s.cachedPegout.ID == unsignedPegout.ID {
 		// If the pegout expired, cleanup the nonces, commitments and signing shares
-		if !s.cachedPegout.artifacts.ExpiredAt.Equal(unsignedPegout.ExpiredAt) {
+		if (s.cachedPegout.artifacts.ExpiredAt != time.Unix(0, 0)) && !s.cachedPegout.artifacts.ExpiredAt.Equal(unsignedPegout.ExpiredAt) {
 			s.cleanupNonces()
 			s.cleanupCommitments()
 			s.keyStore.Cleanup()
@@ -458,6 +458,22 @@ func (s *SignService) SignInput(validatorIdx uint16, inputIndex int) ([]byte, er
 	inputCommitments, err := helpers.DeserializeInputCommitmentForAll(pegout.artifacts.Commitments, len(pegout.inputs), inputIndex)
 	if err != nil {
 		return nil, fmt.Errorf("failed to deserialize input commitments: %w", err)
+	}
+
+	// Validate inputIndex
+	pegoutSigningHashesLen := len(pegout.signingHashes)
+	if pegoutSigningHashesLen <= inputIndex {
+		return nil, fmt.Errorf("len(pegout.signingHashes)(%d) <= inputIndex(%d)", pegoutSigningHashesLen, inputIndex)
+	}
+
+	pegoutNoncesLen := len(pegout.nonces)
+	if pegoutNoncesLen <= inputIndex {
+		return nil, fmt.Errorf("len(pegout.nonces)(%d) <= inputIndex(%d)", pegoutNoncesLen, inputIndex)
+	}
+
+	pegoutInputsLen := len(pegout.inputs)
+	if pegoutInputsLen <= inputIndex {
+		return nil, fmt.Errorf("len(pegout.inputs)(%d) <= inputIndex(%d)", pegoutInputsLen, inputIndex)
 	}
 
 	secretPackage := s.keyStore.LoadSecret(publicKey)
