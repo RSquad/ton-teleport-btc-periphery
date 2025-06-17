@@ -23,6 +23,7 @@ const (
 	ErrClaimAlreadyExists              = 160
 	ErrPegoutIsNotExpired              = 166
 	DifferentPegoutSignatures          = 168
+	ErrDkgExpired                      = 182
 	FrostDkgR2PackageSize              = 37 /*FROST R2 package to single validator*/
 	FrostDkgR2PackageForEncryptionSize = 8 /*DKG until*/ + 2 /*from validator idx*/ + FrostDkgR2PackageSize
 	EncryptedFrostDkgR2PackageSize     = 24 /*nonce for encryption*/ + 16 /*encryption header*/ + FrostDkgR2PackageForEncryptionSize
@@ -119,7 +120,7 @@ func DeserializeDkgR2(r2Packages map[uint16][]byte /*map[FROM]data*/, vSetMask *
 			return nil, true, fromValidatorIdx, fmt.Errorf("incorrect package size, expected size = %d, actual size = %d", expectedSize, packagesSize-2)
 		}
 
-		var readOffset = 2
+		readOffset := 2
 
 		for range packagesCount {
 			// To validator idx
@@ -295,6 +296,10 @@ func HandleTvmError(tvmError error) string {
 		return "Pegout id does not match expected pegout to sign"
 	case 180:
 		return "Invalid pegout timestamp"
+	case 181:
+		return "Invalid session signature"
+	case 182:
+		return "DKG expired"
 	default:
 		return fmt.Sprintf("Unknown error: %d", exitCode)
 	}
