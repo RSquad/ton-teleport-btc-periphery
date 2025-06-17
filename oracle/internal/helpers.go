@@ -19,6 +19,7 @@ const (
 	ErrDkgClosed                       = 112
 	ErrPackageAlreadyExist             = 114
 	ErrCommitmentsThresholdReached     = 145
+	ErrDkgAlreadyExecuted              = 146
 	TvmExitCodeDifferentPubkeyPackages = 152
 	ErrClaimAlreadyExists              = 160
 	ErrPegoutIsNotExpired              = 166
@@ -266,6 +267,8 @@ func HandleTvmError(tvmError error) string {
 	}
 
 	switch exitCode {
+	case 112:
+		return "Dkg closed"
 	case 113:
 		return "invalid signature"
 	case 114:
@@ -280,18 +283,26 @@ func HandleTvmError(tvmError error) string {
 		return "pegout not found"
 	case 145:
 		return "Commitments threshold is reached"
+	case 146:
+		return "Dkg already executed"
 	case 147:
 		return "R1 is already completed"
 	case 150:
 		return "Coordinator balance is not enough to continue"
 	case 151:
 		return "Culprit not found"
+	case 152:
+		return "Different pubkey packages"
+	case 160:
+		return "Claim already exists"
 	case 161:
 		return "Unauthorized validator"
 	case 162:
 		return "Not enough validators"
 	case 166:
 		return "Pegout is not expired"
+	case 168:
+		return "Different pegout signatures"
 	case 171:
 		return "Pegout id does not match expected pegout to sign"
 	case 180:
