@@ -49,6 +49,7 @@ func NewService(
 	coordinator coordinator.Coordinator,
 	tonclient *tonclient.TonClient,
 	executeSignPeriod int64,
+	cfg *cfg.Cfg,
 ) *SignService {
 	return &SignService{
 		keyStore:          keyStore,
@@ -57,6 +58,7 @@ func NewService(
 		executeSignPeriod: executeSignPeriod,
 		dkgUntil:          time.Unix(0, 0),
 		sessionSigner:     nil,
+		cfg:               cfg,
 	}
 }
 
