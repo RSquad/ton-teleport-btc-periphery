@@ -16,7 +16,12 @@ import (
 )
 
 const (
+	ErrDkgClosed                       = 112
+	ErrPackageAlreadyExist             = 114
+	ErrCommitmentsThresholdReached     = 145
 	TvmExitCodeDifferentPubkeyPackages = 152
+	ErrClaimAlreadyExists              = 160
+	ErrPegoutIsNotExpired              = 166
 	DifferentPegoutSignatures          = 168
 	FrostDkgR2PackageSize              = 37 /*FROST R2 package to single validator*/
 	FrostDkgR2PackageForEncryptionSize = 8 /*DKG until*/ + 2 /*from validator idx*/ + FrostDkgR2PackageSize
@@ -41,7 +46,9 @@ func DeserializeDkgR1(origMap map[uint16][]byte) (map[frost.Identifier]frost.Pac
 	frostMap := make(map[frost.Identifier]frost.Package)
 	pubKeysMap := make(map[uint16][]byte)
 
-	for validatorIdx, pkgData := range origMap {
+	for _, validatorIdx := range ExtractSortedKeysFromMap(origMap) {
+		pkgData := origMap[validatorIdx]
+
 		if len(pkgData) < 33 { // 32 - public key; at least 1 byte of data
 			return nil, nil, validatorIdx, errors.New("wrong package len")
 		}
@@ -64,7 +71,9 @@ func SerializeR2Packages(r2Packages map[uint16][]byte) []byte {
 	binary.BigEndian.PutUint16(tmpBuf, uint16(len(r2Packages)))
 	serializedData = append(serializedData, tmpBuf...)
 
-	for toValidatorIdx, r2pkg := range r2Packages {
+	for _, toValidatorIdx := range ExtractSortedKeysFromMap(r2Packages) {
+		r2pkg := r2Packages[toValidatorIdx]
+
 		// Serialize validator idx
 		binary.BigEndian.PutUint16(tmpBuf, toValidatorIdx)
 		serializedData = append(serializedData, tmpBuf...)
@@ -216,7 +225,8 @@ func DeserializeInputCommitmentForAll(
 
 func ConvertMapToFrostPackages(origMap map[uint16][]byte) (frostMap map[frost.Identifier]frost.Package) {
 	frostMap = make(map[frost.Identifier]frost.Package)
-	for k, v := range origMap {
+	for _, k := range ExtractSortedKeysFromMap(origMap) {
+		v := origMap[k]
 		id := ValidatorIdxToFrost(k)
 		frostMap[id] = frost.NewPackage(v)
 	}
@@ -277,10 +287,14 @@ func HandleTvmError(tvmError error) string {
 		return "Culprit not found"
 	case 161:
 		return "Unauthorized validator"
+	case 162:
+		return "Not enough validators"
 	case 166:
 		return "Pegout is not expired"
 	case 171:
 		return "Pegout id does not match expected pegout to sign"
+	case 180:
+		return "Invalid pegout timestamp"
 	default:
 		return fmt.Sprintf("Unknown error: %d", exitCode)
 	}
