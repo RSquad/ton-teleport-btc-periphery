@@ -57,6 +57,11 @@ type getBlockHeaderResult struct {
 	Height int64 `json:"height"`
 }
 
+type TxChildrenCount struct {
+	ParentTxID    *chainhash.Hash
+	ChildrenCount int
+}
+
 func NewClient(host string, user string, pass string) (*Client, error) {
 	// Legacy RPC Client setup
 	connCfg := &rpcclient.ConnConfig{
@@ -284,6 +289,50 @@ func (c *Client) GetRawTransactionVerbose(txHash *chainhash.Hash) (*btcjson.TxRa
 	}
 
 	return &txResult, nil
+}
+
+func (c *Client) GetTxChildrenCount(parentHash *chainhash.Hash) (*TxChildrenCount, error) {
+	_, err := c.RPCClient.GetRawTransaction(parentHash)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get parent transaction: %v", err)
+	}
+
+	mempool, err := c.RPCClient.GetRawMempool()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get mempool: %v", err)
+	}
+
+	childrenCount := 0
+
+	for _, txID := range mempool {
+		txHash, err := chainhash.NewHashFromStr(txID.String())
+		if err != nil {
+			continue
+		}
+
+		tx, err := c.RPCClient.GetRawTransaction(txHash)
+		if err != nil {
+			continue
+		}
+
+		var inputsFromParent int
+		for _, txIn := range tx.MsgTx().TxIn {
+			if txIn.PreviousOutPoint.Hash.IsEqual(parentHash) {
+				inputsFromParent++
+			}
+		}
+
+		if inputsFromParent > 0 {
+			childrenCount++
+		}
+	}
+
+	result := &TxChildrenCount{
+		ParentTxID:    parentHash,
+		ChildrenCount: childrenCount,
+	}
+
+	return result, nil
 }
 
 func (c *Client) SendRawTransaction(tx *wire.MsgTx, allowHighFees bool) (*chainhash.Hash, error) {

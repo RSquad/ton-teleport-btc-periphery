@@ -6,7 +6,6 @@ import (
 	"sync"
 	"time"
 
-	bu "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/bitcoinutils"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
@@ -20,12 +19,6 @@ type FetcherPegouts struct {
 	coordinatorContract coordinator.Coordinator
 	db                  *sql.DB
 	expiredAt           map[uint64]time.Time
-}
-
-type SignedPegout struct {
-	createdAt   time.Time
-	pegoutAddr  string
-	bitcoinTxId string
 }
 
 func NewFetcherPegouts(
@@ -74,51 +67,6 @@ func (f *FetcherPegouts) deleteSignedPegouts(pegouts []coordinator.PegoutRecord)
 	}
 }
 
-func (f *FetcherPegouts) getSignedPegouts() ([]SignedPegout, error) {
-	rows, err := f.db.Query(
-		`SELECT 
-			tt.created_at,
-			p.addr AS pegout_addr,
-			p.bitcoin_tx_id AS bitcoin_tx_id
-		FROM burns AS b
-		JOIN ton_txes AS tt ON tt.id = b.ton_tx_burn
-		JOIN pegouts AS p ON p.id = b.pegout_burn
-		WHERE 
-			p.status = 'SIGNED'
-		AND 
-			created_at > NOW() - INTERVAL '1 day'
-		ORDER BY created_at DESC
-	`)
-	if err != nil {
-		return []SignedPegout{}, err
-	}
-
-	defer rows.Close()
-
-	var pegouts []SignedPegout
-	for rows.Next() {
-		var pegout SignedPegout
-		err = rows.Scan(&pegout.createdAt, &pegout.pegoutAddr, &pegout.bitcoinTxId)
-		if err != nil {
-			return []SignedPegout{}, err
-		}
-		pegouts = append(pegouts, pegout)
-	}
-	return pegouts, nil
-}
-
-func (f *FetcherPegouts) setBitcoinTxExistsMetric(pegouts []SignedPegout) {
-	for _, pegout := range pegouts {
-		txExists, _, _ := bu.BitcoinTxExists(f.bitcoinClient, pegout.bitcoinTxId)
-		if !txExists {
-			unprocessedPegout.WithLabelValues(pegout.pegoutAddr, pegout.bitcoinTxId).Set(1)
-		} else {
-			unprocessedPegout.WithLabelValues(pegout.pegoutAddr, pegout.bitcoinTxId).Set(0)
-		}
-
-	}
-}
-
 func (f *FetcherPegouts) Fetch() {
 	unsignedPegouts, err := f.coordinatorContract.GetUnsignedPegouts()
 	if err != nil {
@@ -139,13 +87,6 @@ func (f *FetcherPegouts) Fetch() {
 
 	f.setDelayedMetric(unsignedPegouts)
 	f.deleteSignedPegouts(unsignedPegouts)
-	signedPegouts, err := f.getSignedPegouts()
-	if err != nil {
-		logger.Log.Error().Err(err).
-			Str("component", "FetcherPegouts").
-			Msg("fetch failed")
-	}
-	f.setBitcoinTxExistsMetric(signedPegouts)
 }
 
 func (fetcher *FetcherPegouts) Work(ctx context.Context, wg *sync.WaitGroup) {
@@ -160,7 +101,7 @@ func (fetcher *FetcherPegouts) Work(ctx context.Context, wg *sync.WaitGroup) {
 	for {
 		select {
 		case <-ctx.Done():
-			logger.Log.Info().Msg("Unsigned Pegouts Fetcher received shutdown signal...")
+			logger.Log.Info().Msg("Pegouts Fetcher received shutdown signal...")
 			return
 		case <-ticker.C:
 			fetcher.Fetch()
