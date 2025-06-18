@@ -21,6 +21,7 @@ const (
 	ErrCommitmentsThresholdReached     = 145
 	ErrDkgAlreadyExecuted              = 146
 	TvmExitCodeDifferentPubkeyPackages = 152
+	ErrSigningIsInProgress             = 155
 	ErrClaimAlreadyExists              = 160
 	ErrPegoutIsNotExpired              = 166
 	DifferentPegoutSignatures          = 168
@@ -293,6 +294,8 @@ func HandleTvmError(tvmError error) string {
 		return "Culprit not found"
 	case 152:
 		return "Different pubkey packages"
+	case 155:
+		return "Signing is in progress"
 	case 160:
 		return "Claim already exists"
 	case 161:
