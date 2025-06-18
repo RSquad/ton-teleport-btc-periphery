@@ -64,6 +64,8 @@ func (fetcher *FetcherDKG) FetchDKG() {
 		return
 	}
 
+	dkgStatus.WithLabelValues(dkg.State.String()).Set(float64(dkg.State))
+
 	// Serialize
 	jsonData, err := json.Marshal(dkg)
 	if err != nil {
