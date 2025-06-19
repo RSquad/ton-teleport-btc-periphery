@@ -228,6 +228,8 @@ func (s *SignService) execute(ctx context.Context, dkg *coordinator.DKG) {
 	pubkeyPackage := dkg.R3.Data.PubkeyPackage
 
 	// Check for signing restart
+	s.coordinator.ConnectSigner(s.sessionSigner)
+
 	if (unsignedPegout.ExpiredAt != time.Unix(0, 0)) && (unsignedPegout.ExpiredAt.Before(time.Now())) {
 		s.executeResetPegoutSigning(unsignedPegout.ID, validatorIdx)
 		s.cachePegoutClear()
@@ -243,8 +245,6 @@ func (s *SignService) execute(ctx context.Context, dkg *coordinator.DKG) {
 	if cachedPegout == nil {
 		panic("cached pegout is nil")
 	}
-
-	s.coordinator.ConnectSigner(s.sessionSigner)
 
 	minSigners, err := helpers.CalcMinSigners(dkg.MaxSigners)
 	if err != nil {
@@ -572,7 +572,7 @@ func (s *SignService) executeClaim(pegout *CachedPegout, validatorIdx uint16, cu
 	s.logExecuteClaim(pegout.ID)
 
 	if s.ClaimCompleted(pegout, validatorIdx) {
-		s.logMessage("claim completed")
+		s.logMessage("claim completed (it has already been sent)")
 		return
 	}
 

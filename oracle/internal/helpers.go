@@ -17,7 +17,9 @@ import (
 
 const (
 	ErrDkgClosed                       = 112
+	ErrInvalidSignature                = 113
 	ErrPackageAlreadyExist             = 114
+	ErrSignatureExists                 = 117
 	ErrCommitmentsThresholdReached     = 145
 	ErrDkgAlreadyExecuted              = 146
 	TvmExitCodeDifferentPubkeyPackages = 152
@@ -271,7 +273,7 @@ func HandleTvmError(tvmError error) string {
 	case 112:
 		return "Dkg closed"
 	case 113:
-		return "invalid signature"
+		return "Invalid signature"
 	case 114:
 		return "package already sent"
 	case 117:
