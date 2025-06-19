@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/btcsuite/btcd/btcjson"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	bu "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/bitcoinutils"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
@@ -70,6 +71,52 @@ func (fb *FetcherBitcoin) getSignedPegouts() ([]SignedPegout, error) {
 	return pegouts, nil
 }
 
+func (fb *FetcherBitcoin) getBaseSVB() (float64, error) {
+	rows, err := fb.db.Query(
+		`SELECT jsonb_build_object(
+				'contractTeleport', (
+						SELECT payload::json
+						FROM metrics_data
+						WHERE type_id = 4
+						ORDER BY id DESC
+						LIMIT 1
+				)
+		) AS result;`,
+	)
+	if err != nil {
+		return 0, err
+	}
+
+	defer rows.Close()
+
+	var data string
+	if rows.Next() {
+		err = rows.Scan(&data)
+		if err != nil {
+			return 0, err
+		}
+	}
+
+	var storage teleportcontract.Storage
+	err = json.Unmarshal([]byte(data), &storage)
+	if err != nil {
+		return 0, err
+	}
+	return float64(storage.BaseSVB), nil
+}
+
+func (fb *FetcherBitcoin) getSVB(blockCount int, mode *btcjson.EstimateSmartFeeMode) (float64, error) {
+	if mode == nil {
+		mode = &btcjson.EstimateModeEconomical
+	}
+	fee, err := fb.bitcoinClient.EstimateFee(blockCount, mode)
+	if err != nil {
+		return 0, err
+	}
+
+	return fee, nil
+}
+
 func (fb *FetcherBitcoin) getLastPegoutId() (*chainhash.Hash, error) {
 	rows, err := fb.db.Query(
 		`SELECT jsonb_build_object(
@@ -130,6 +177,14 @@ func (fb *FetcherBitcoin) setCPFPCountMetric(count bitcoin.TxChildrenCount) {
 	}
 }
 
+func (fb *FetcherBitcoin) setSVBExceededMetric(exceeded bool) {
+	if exceeded {
+		svbExceeded.Set(1)
+		return
+	}
+	svbExceeded.Set(0)
+}
+
 func (fb *FetcherBitcoin) Fetch() {
 	signedPegouts, err := fb.getSignedPegouts()
 	if err != nil {
@@ -152,6 +207,19 @@ func (fb *FetcherBitcoin) Fetch() {
 			Msg("fetch failed")
 	}
 	fb.setCPFPCountMetric(*cpfpCount)
+	baseSvb, err := fb.getBaseSVB()
+	if err != nil {
+		logger.Log.Error().Err(err).
+			Str("component", "FetcherBitcoin").
+			Msg("fetch failed")
+	}
+	svb, err := fb.getSVB(1, nil)
+	if err != nil {
+		logger.Log.Error().Err(err).
+			Str("component", "FetcherBitcoin").
+			Msg("fetch failed")
+	}
+	fb.setSVBExceededMetric(svb > baseSvb)
 }
 
 func (fb *FetcherBitcoin) Work(ctx context.Context, wg *sync.WaitGroup) {
