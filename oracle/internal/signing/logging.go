@@ -108,8 +108,14 @@ func (s *SignService) logSignaturesSent(pegoutID uint64, sentSignsCount uint16, 
 }
 
 func (s *SignService) logSignatureSendError(pegoutID uint64, err error) {
-	msg := helpers.HandleTvmError(err)
-	errorEventWithPegoutID(pegoutID).Err(err).Msg("failed to send signatures: " + msg)
+	errCode, _ := helpers.ExtractExitCode(err.Error())
+
+	if errCode == helpers.ErrSignatureExists {
+		infoEventWithPegoutID(pegoutID).Msg("Signature exists")
+	} else {
+		msg := helpers.HandleTvmError(err)
+		errorEventWithPegoutID(pegoutID).Err(err).Msg("failed to send signatures: " + msg)
+	}
 }
 
 func (s *SignService) logSignError(inputIndex int, err error) {

@@ -86,16 +86,26 @@ func startAndWaitForStop() error {
 	// Coordinator contract
 	logger.Log.Info().Msgf("Create a new Coordinator contract wrapper with address `%s`", cfg.CoordinatorContractAddr)
 	apiCallTimeout := helpers.ParseIntWithDefaultVal(cfg.ApiCallTimeout, 30, "API call timeout")
-	coordinatorContract := coordinator.New(coordinatorContractAddr, tonClient, nil, ctx, apiCallTimeout)
 
 	// DKG service
 	fetchPeriod := helpers.ParseIntWithDefaultVal(cfg.FetchPeriod, 6, "DKG fetcher period")
 	sendStartDKGPeriod := helpers.ParseIntWithDefaultVal(cfg.SendStartDKGPeriod, 10, "SendStartDKG period")
-	dkgService := dkg.NewService(coordinatorContract, validator, fetchPeriod, sendStartDKGPeriod)
+	dkgService := dkg.NewService(
+		coordinator.New(coordinatorContractAddr, tonClient, nil, ctx, apiCallTimeout),
+		validator,
+		fetchPeriod,
+		sendStartDKGPeriod,
+	)
 
 	// FROST sign service
 	executeSignPeriod := helpers.ParseIntWithDefaultVal(cfg.ExecuteSignPeriod, 10, "ExecuteSign period")
-	signService := signing.NewService(keystore, coordinatorContract, tonClient, executeSignPeriod, &cfg)
+	signService := signing.NewService(
+		keystore,
+		coordinator.New(coordinatorContractAddr, tonClient, nil, ctx, apiCallTimeout),
+		tonClient,
+		executeSignPeriod,
+		&cfg,
+	)
 
 	wg.Add(1)
 	go dkgService.Work(ctx, &wg, keystore, &cfg)
