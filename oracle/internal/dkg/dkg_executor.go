@@ -176,6 +176,10 @@ func (e *Executor) Execute(dkg *coordinator.DKG) {
 
 	e.validatorIdx = keyInfo.VsetIdx
 
+	if dkg.Claims.Count > 0 {
+		e.logDKGClaims(dkg)
+	}
+
 	if !dkg.CheckVSetMask(e.validatorIdx) {
 		e.logDKGProcess(dkg, "The Oracle has been EVICTED from DKG")
 		return
@@ -195,7 +199,7 @@ func (e *Executor) Execute(dkg *coordinator.DKG) {
 func (e *Executor) executeR1(dkg *coordinator.DKG) bool {
 	e.logExecuteR1(dkg)
 	if dkg.Round1Completed() {
-		e.logDKGProcess(dkg, "R1 completed")
+		e.logDKGProcess(dkg, fmt.Sprintf("R1 completed (ready %d of %d)...", dkg.R1.Count, dkg.MaxSigners))
 		return true
 	}
 
@@ -255,7 +259,7 @@ func (e *Executor) executeR1(dkg *coordinator.DKG) bool {
 func (e *Executor) executeR2(dkg *coordinator.DKG) bool {
 	e.logExecuteR2(dkg)
 	if dkg.Round2Completed() {
-		e.logDKGProcess(dkg, "R2 completed")
+		e.logDKGProcess(dkg, fmt.Sprintf("R2 completed (ready %d of %d)...", dkg.R2.Count, dkg.MaxSigners))
 		return true
 	}
 
@@ -339,7 +343,7 @@ func (e *Executor) executeR3(dkg *coordinator.DKG) bool {
 
 	if dkg.Round3Completed() {
 		e.artifacts.SafeCleanPrivateX25519()
-		e.logDKGProcess(dkg, "R3 completed")
+		e.logDKGProcess(dkg, fmt.Sprintf("R3 completed (ready %d of %d)...", dkg.R3.Count, dkg.MaxSigners))
 		return true
 	}
 
