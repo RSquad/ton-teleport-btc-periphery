@@ -2,6 +2,7 @@ package signing
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/rs/zerolog"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
@@ -15,6 +16,10 @@ func strPegoutID(pegoutID uint64) string {
 
 func infoEvent() *zerolog.Event {
 	return logger.Log.Info().Str("component", "SignService")
+}
+
+func debugEvent() *zerolog.Event {
+	return logger.Log.Debug().Str("component", "SignService")
 }
 
 func infoEventWithPegoutID(pegoutID uint64) *zerolog.Event {
@@ -31,6 +36,10 @@ func errorEventWithPegoutID(pegoutID uint64) *zerolog.Event {
 
 func errorEvent() *zerolog.Event {
 	return logger.Log.Error().Str("component", "SignService")
+}
+
+func (s *SignService) logDebug(msg string) {
+	debugEvent().Msg(msg)
 }
 
 func (s *SignService) logMessage(msg string) {
@@ -83,8 +92,20 @@ func (s *SignService) logCommitSent(pegoutID uint64) {
 	infoEventWithPegoutID(pegoutID).Msg("Commit sent")
 }
 
-func (s *SignService) logMinimalSharesReached(pegoutID uint64) {
-	infoEventWithPegoutID(pegoutID).Msg("Minimal required number of signing shares is reached")
+func (s *SignService) logMinimalCommitmentsReached(pegout *CachedPegout, minSigners uint16) {
+	infoEventWithPegoutID(pegout.ID).Msgf("Minimal required number of Commitments is reached (ready %d of %d)...", pegout.artifacts.CommitmentsCount(), minSigners)
+}
+
+func (s *SignService) logMinimalCommitmentsWaitingForOtherOracles(pegout *CachedPegout, minSigners uint16) {
+	infoEventWithPegoutID(pegout.ID).Msgf("Waiting for other oracles to send their Commitments (ready %d of %d)...", pegout.artifacts.CommitmentsCount(), minSigners)
+}
+
+func (s *SignService) logMinimalSharesReached(pegout *CachedPegout, minSigners uint16) {
+	infoEventWithPegoutID(pegout.ID).Msgf("Minimal required number of Signing Shares is reached (ready %d of %d)...", pegout.artifacts.SigningSharesCount(), minSigners)
+}
+
+func (s *SignService) logMinimalSharesWaitingForOtherOracles(pegout *CachedPegout, minSigners uint16) {
+	infoEventWithPegoutID(pegout.ID).Msgf("Waiting for other oracles to send their Signing Shares (ready %d of %d)...", pegout.artifacts.SigningSharesCount(), minSigners)
 }
 
 func (s *SignService) logSigningShareAlreadyExists(pegoutID uint64) {
@@ -195,4 +216,32 @@ func (s *SignService) logResetPegoutSigningSentError(pegoutID uint64, err error)
 	} else {
 		errorEventWithPegoutID(pegoutID).Err(err).Msg("failed to send reset pegout signing")
 	}
+}
+
+func (s *SignService) logClaims(pegout *CachedPegout, minSigners uint16, maxSigners uint16) {
+	claimsCount := pegout.artifacts.ClaimsCount
+
+	if claimsCount == 0 {
+		return
+	}
+
+	culprits := make(map[uint16]uint16)
+
+	for _, culpritIdx := range pegout.artifacts.ClaimsCounters {
+		culprits[culpritIdx]++
+	}
+
+	var culpritStrBuilder strings.Builder
+
+	for culpritIdx, count := range culprits {
+		culpritStrBuilder.WriteString(fmt.Sprintf("[idx: %d]: votes %d", culpritIdx, count))
+	}
+
+	infoEventWithPegoutID(pegout.ID).Msgf(
+		"Total claims count %d (minSigners = %d). Mask: %s. Culprits:\n%s",
+		claimsCount,
+		minSigners,
+		helpers.BigIntToBinaryWithPadding(pegout.artifacts.ClaimsMask, int(maxSigners)),
+		culpritStrBuilder.String(),
+	)
 }
