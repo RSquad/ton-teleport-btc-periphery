@@ -253,17 +253,22 @@ func (s *SignService) execute(ctx context.Context, dkg *coordinator.DKG) {
 	}
 
 	// Execute signing steps
+	s.logMessage("Executing the signing steps ...")
 	if s.doCommit(validatorIdx, minSigners) {
 		if s.doSign(validatorIdx, minSigners) {
 			s.doAggregate(validatorIdx, pubkeyPackage)
 		}
 	}
+	s.logMessage("Executing the signing steps done.")
 }
 
 func (s *SignService) doCommit(
 	validatorIdx uint16,
 	minSigners uint16,
 ) bool {
+	// log 1st stage
+	s.logMessage("Processing sign stage 1 ...")
+
 	pegout := s.cachedPegout
 	s.logCommitPegout(pegout.ID)
 
@@ -292,6 +297,9 @@ func (s *SignService) doSign(
 	validatorIdx uint16,
 	minSigners uint16,
 ) bool {
+	// log 2nd stage
+	s.logMessage("Processing sign stage 2 ...")
+
 	pegout := s.cachedPegout
 	s.logSignPegout(pegout.ID)
 
@@ -346,6 +354,9 @@ func (s *SignService) doAggregate(
 	validatorIdx uint16,
 	pubkeyPackage []byte,
 ) {
+	// log 3rd stage
+	s.logMessage("Processing sign stage 3 ...")
+
 	pegout := s.cachedPegout
 	s.logAggregateSignShares()
 	s.cleanupNonces()
