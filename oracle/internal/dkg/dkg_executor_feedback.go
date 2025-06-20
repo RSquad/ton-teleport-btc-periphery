@@ -98,6 +98,8 @@ func (e *Executor) logSendRound1Package(dkg *coordinator.DKG, err error) {
 
 	if errCode == helpers.ErrDkgExpired {
 		infoEventWithDkg(dkg, e.validatorIdx).Msg("DKG Expired")
+	} else if errCode == helpers.ErrPackageAlreadyExist {
+		infoEventWithDkg(dkg, e.validatorIdx).Msg("Package already exist")
 	} else {
 		msg := helpers.HandleTvmError(err)
 		errorEventWithDkg(dkg, e.validatorIdx).Err(err).Msg("failed to send round1 package: " + msg)
@@ -105,9 +107,16 @@ func (e *Executor) logSendRound1Package(dkg *coordinator.DKG, err error) {
 }
 
 func (e *Executor) logSendRound2Package(dkg *coordinator.DKG, err error) {
-	msg := helpers.HandleTvmError(err)
-	errorEventWithDkg(dkg, e.validatorIdx).
-		Msg("R2 packages sent with errors: " + msg)
+	errCode, _ := helpers.ExtractExitCode(err.Error())
+
+	if errCode == helpers.ErrDkgExpired {
+		infoEventWithDkg(dkg, e.validatorIdx).Msg("DKG Expired")
+	} else if errCode == helpers.ErrPackageAlreadyExist {
+		infoEventWithDkg(dkg, e.validatorIdx).Msg("Package already exist")
+	} else {
+		msg := helpers.HandleTvmError(err)
+		errorEventWithDkg(dkg, e.validatorIdx).Msg("R2 packages sent with errors: " + msg)
+	}
 }
 
 func (e *Executor) logSendClaimFailed(dkg *coordinator.DKG, culpritIdx uint16, err error) {
@@ -119,8 +128,16 @@ func (e *Executor) logSendClaimFailed(dkg *coordinator.DKG, culpritIdx uint16, e
 }
 
 func (e *Executor) logSendPubkeyPackageFailed(dkg *coordinator.DKG, err error) {
-	msg := helpers.HandleTvmError(err)
-	errorEventWithDkg(dkg, e.validatorIdx).Msg("failed to send pubkey package: " + msg)
+	errCode, _ := helpers.ExtractExitCode(err.Error())
+
+	if errCode == helpers.ErrDkgExpired {
+		infoEventWithDkg(dkg, e.validatorIdx).Msg("DKG Expired")
+	} else if errCode == helpers.ErrPackageAlreadyExist {
+		infoEventWithDkg(dkg, e.validatorIdx).Msg("Package already exist")
+	} else {
+		msg := helpers.HandleTvmError(err)
+		errorEventWithDkg(dkg, e.validatorIdx).Msg("failed to send pubkey package: " + msg)
+	}
 }
 
 func (e *Executor) logDKGClaims(dkg *coordinator.DKG) {

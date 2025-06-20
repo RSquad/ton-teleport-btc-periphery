@@ -448,6 +448,8 @@ func (e *Executor) executeR3(dkg *coordinator.DKG) bool {
 			e.claimCulpritByR3Mask(dkg)
 		}
 		e.logSendPubkeyPackageFailed(dkg, err)
+	} else {
+		e.logDKGProcess(dkg, "R3 packages sent")
 	}
 
 	return false
