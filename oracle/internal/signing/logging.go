@@ -2,7 +2,6 @@ package signing
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/rs/zerolog"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
@@ -216,32 +215,4 @@ func (s *SignService) logResetPegoutSigningSentError(pegoutID uint64, err error)
 	} else {
 		errorEventWithPegoutID(pegoutID).Err(err).Msg("failed to send reset pegout signing")
 	}
-}
-
-func (s *SignService) logClaims(pegout *CachedPegout, minSigners uint16, maxSigners uint16) {
-	claimsCount := pegout.artifacts.ClaimsCount
-
-	if claimsCount == 0 {
-		return
-	}
-
-	culprits := make(map[uint16]uint16)
-
-	for _, culpritIdx := range pegout.artifacts.ClaimsCounters {
-		culprits[culpritIdx]++
-	}
-
-	var culpritStrBuilder strings.Builder
-
-	for culpritIdx, count := range culprits {
-		culpritStrBuilder.WriteString(fmt.Sprintf("[idx: %d]: votes %d", culpritIdx, count))
-	}
-
-	infoEventWithPegoutID(pegout.ID).Msgf(
-		"Total claims count %d (minSigners = %d). Mask: %s. Culprits:\n%s",
-		claimsCount,
-		minSigners,
-		helpers.BigIntToBinaryWithPadding(pegout.artifacts.ClaimsMask, int(maxSigners)),
-		culpritStrBuilder.String(),
-	)
 }

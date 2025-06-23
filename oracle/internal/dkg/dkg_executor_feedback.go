@@ -2,7 +2,6 @@ package dkg
 
 import (
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/rs/zerolog"
@@ -138,38 +137,4 @@ func (e *Executor) logSendPubkeyPackageFailed(dkg *coordinator.DKG, err error) {
 		msg := helpers.HandleTvmError(err)
 		errorEventWithDkg(dkg, e.validatorIdx).Msg("failed to send pubkey package: " + msg)
 	}
-}
-
-func (e *Executor) logDKGClaims(dkg *coordinator.DKG) {
-	claimsCount := dkg.Claims.Count
-
-	if claimsCount == 0 {
-		return
-	}
-
-	culprits := make(map[uint16]uint16)
-
-	for _, culpritIdx := range dkg.Claims.Counters {
-		culprits[culpritIdx]++
-	}
-
-	var culpritStrBuilder strings.Builder
-
-	for culpritIdx, count := range culprits {
-		culpritStrBuilder.WriteString(fmt.Sprintf("[idx: %d]: votes %d", culpritIdx, count))
-	}
-
-	minSigners, err := helpers.CalcMinSigners(dkg.MaxSigners)
-	if err != nil {
-		e.logDKGProcess(dkg, fmt.Sprintf("Failed to calculate min signers: %v", err))
-		return
-	}
-
-	infoEventWithDkg(dkg, e.validatorIdx).Msgf(
-		"Total claims count %d (minSigners = %d). Mask: %s. Culprits:\n%s",
-		claimsCount,
-		minSigners,
-		helpers.BigIntToBinaryWithPadding(dkg.Claims.Mask, int(dkg.MaxSigners)),
-		culpritStrBuilder.String(),
-	)
 }

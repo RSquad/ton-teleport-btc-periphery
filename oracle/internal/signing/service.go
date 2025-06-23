@@ -252,10 +252,6 @@ func (s *SignService) execute(ctx context.Context, dkg *coordinator.DKG) {
 		return
 	}
 
-	if cachedPegout.artifacts.ClaimsCount > 0 {
-		s.logClaims(cachedPegout, minSigners, dkg.MaxSigners)
-	}
-
 	// Execute signing steps
 	s.logDebug("Try running the Pegout Signing rounds")
 

@@ -344,8 +344,3 @@ func ParseIntWithDefaultVal(str string, defaultValue int64, name string) int64 {
 
 	return value
 }
-
-func BigIntToBinaryWithPadding(n *big.Int, length int) string {
-	binStr := n.Text(2)
-	return fmt.Sprintf("%0*s", length, binStr)
-}

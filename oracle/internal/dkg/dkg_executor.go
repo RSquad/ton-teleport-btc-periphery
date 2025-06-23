@@ -176,10 +176,6 @@ func (e *Executor) Execute(dkg *coordinator.DKG) {
 
 	e.validatorIdx = keyInfo.VsetIdx
 
-	if dkg.Claims.Count > 0 {
-		e.logDKGClaims(dkg)
-	}
-
 	if !dkg.CheckVSetMask(e.validatorIdx) {
 		e.logDKGProcess(dkg, "The Oracle has been EVICTED from DKG")
 		return
