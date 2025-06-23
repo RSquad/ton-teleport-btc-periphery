@@ -381,6 +381,11 @@ func (s *SignService) doAggregate(
 	validatorIdx uint16,
 	pubkeyPackage []byte,
 ) {
+	if s.cfg.TestSignSkipR2 {
+		s.logMessage("Test mode: signing round skipped, so aggregate is also skipped")
+		return
+	}
+
 	s.logDebug("Try running the Pegout Signing round (Aggregate)")
 	pegout := s.cachedPegout
 	s.logAggregateSignShares()
