@@ -195,7 +195,7 @@ func (e *Executor) Execute(dkg *coordinator.DKG) {
 func (e *Executor) executeR1(dkg *coordinator.DKG) bool {
 	e.logExecuteR1(dkg)
 	if dkg.Round1Completed() {
-		e.logDKGProcess(dkg, fmt.Sprintf("R1 completed (ready %d of %d)...", dkg.R1.Count, dkg.MaxSigners))
+		e.logDKGR1Completed(dkg)
 		return true
 	}
 
@@ -255,7 +255,7 @@ func (e *Executor) executeR1(dkg *coordinator.DKG) bool {
 func (e *Executor) executeR2(dkg *coordinator.DKG) bool {
 	e.logExecuteR2(dkg)
 	if dkg.Round2Completed() {
-		e.logDKGProcess(dkg, fmt.Sprintf("R2 completed (ready %d of %d)...", dkg.R2.Count, dkg.MaxSigners))
+		e.logDKGR2Completed(dkg)
 		return true
 	}
 
@@ -339,7 +339,7 @@ func (e *Executor) executeR3(dkg *coordinator.DKG) bool {
 
 	if dkg.Round3Completed() {
 		e.artifacts.SafeCleanPrivateX25519()
-		e.logDKGProcess(dkg, fmt.Sprintf("R3 completed (ready %d of %d)...", dkg.R3.Count, dkg.MaxSigners))
+		e.logDKGR3Completed(dkg)
 		return true
 	}
 
