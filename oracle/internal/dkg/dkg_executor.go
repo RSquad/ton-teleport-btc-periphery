@@ -201,7 +201,7 @@ func (e *Executor) executeR1(dkg *coordinator.DKG) bool {
 
 	// Check R1 mask
 	if r, cnt := dkg.CheckR1Mask(e.validatorIdx); r {
-		e.logDKGProcess(dkg, fmt.Sprintf("R1 package already stored in DKG. Waiting for other Oracles (ready %d of %d)...", cnt, dkg.MaxSigners))
+		e.logDKGProcess(dkg, fmt.Sprintf("R1 package already stored in DKG. Waiting for other Oracles (ready %d of %d)", cnt, dkg.MaxSigners))
 		return false
 	}
 
@@ -261,7 +261,7 @@ func (e *Executor) executeR2(dkg *coordinator.DKG) bool {
 
 	// Check R2 mask
 	if r, cnt := dkg.CheckR2Mask(e.validatorIdx); r {
-		e.logDKGProcess(dkg, fmt.Sprintf("R2 packages already stored in DKG. Waiting for other Oracles (ready %d of %d)...", cnt, dkg.MaxSigners))
+		e.logDKGProcess(dkg, fmt.Sprintf("R2 packages already stored in DKG. Waiting for other Oracles (ready %d of %d)", cnt, dkg.MaxSigners))
 		return false
 	}
 
@@ -345,7 +345,7 @@ func (e *Executor) executeR3(dkg *coordinator.DKG) bool {
 
 	// Check R3 mask
 	if r, cnt := dkg.CheckR3Mask(e.validatorIdx); r {
-		e.logDKGProcess(dkg, fmt.Sprintf("R3 packages already stored in DKG. Waiting for other Oracles (ready %d of %d)...", cnt, dkg.MaxSigners))
+		e.logDKGProcess(dkg, fmt.Sprintf("R3 packages already stored in DKG. Waiting for other Oracles (ready %d of %d)", cnt, dkg.MaxSigners))
 		return false
 	}
 

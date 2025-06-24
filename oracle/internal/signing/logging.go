@@ -92,19 +92,19 @@ func (s *SignService) logCommitSent(pegoutID uint64) {
 }
 
 func (s *SignService) logMinimalCommitmentsReached(pegout *CachedPegout, minSigners uint16) {
-	infoEventWithPegoutID(pegout.ID).Msgf("Minimal required number of Commitments is reached (ready %d of %d)...", pegout.artifacts.CommitmentsCount(), minSigners)
+	infoEventWithPegoutID(pegout.ID).Msgf("Minimal required number of Commitments is reached (ready %d of %d)", pegout.artifacts.CommitmentsCount(), minSigners)
 }
 
 func (s *SignService) logMinimalCommitmentsWaitingForOtherOracles(pegout *CachedPegout, minSigners uint16) {
-	infoEventWithPegoutID(pegout.ID).Msgf("Waiting for other oracles to send their Commitments (ready %d of %d)...", pegout.artifacts.CommitmentsCount(), minSigners)
+	infoEventWithPegoutID(pegout.ID).Msgf("Waiting for other oracles to send their Commitments (ready %d of %d)", pegout.artifacts.CommitmentsCount(), minSigners)
 }
 
 func (s *SignService) logMinimalSharesReached(pegout *CachedPegout, minSigners uint16) {
-	infoEventWithPegoutID(pegout.ID).Msgf("Minimal required number of Signing Shares is reached (ready %d of %d)...", pegout.artifacts.SigningSharesCount(), minSigners)
+	infoEventWithPegoutID(pegout.ID).Msgf("Minimal required number of Signing Shares is reached (ready %d of %d)", pegout.artifacts.SigningSharesCount(), minSigners)
 }
 
 func (s *SignService) logMinimalSharesWaitingForOtherOracles(pegout *CachedPegout, minSigners uint16) {
-	infoEventWithPegoutID(pegout.ID).Msgf("Waiting for other oracles to send their Signing Shares (ready %d of %d)...", pegout.artifacts.SigningSharesCount(), minSigners)
+	infoEventWithPegoutID(pegout.ID).Msgf("Waiting for other oracles to send their Signing Shares (ready %d of %d)", pegout.artifacts.SigningSharesCount(), minSigners)
 }
 
 func (s *SignService) logSigningShareAlreadyExists(pegoutID uint64) {
