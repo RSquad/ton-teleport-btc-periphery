@@ -94,25 +94,25 @@ func (e *Executor) logExecuteR3(dkg *coordinator.DKG) {
 
 func (e *Executor) logDKGR1Completed(dkg *coordinator.DKG) {
 	if dkg.R1.Count == uint64(dkg.MaxSigners) {
-		e.logMessage(dkg, fmt.Sprintf("R1 completed (ready %d)...", dkg.R1.Count))
+		e.logMessage(dkg, fmt.Sprintf("R1 completed (ready %d)", dkg.R1.Count))
 	} else {
-		e.logError(dkg, fmt.Sprintf("R1 completed, but MaxSigners(%d) != R1.Count(%d)...", dkg.MaxSigners, dkg.R1.Count), nil)
+		e.logError(dkg, fmt.Sprintf("R1 completed, but MaxSigners(%d) != R1.Count(%d)", dkg.MaxSigners, dkg.R1.Count), nil)
 	}
 }
 
 func (e *Executor) logDKGR2Completed(dkg *coordinator.DKG) {
 	if dkg.R2.Count == uint64(dkg.MaxSigners) {
-		e.logMessage(dkg, fmt.Sprintf("R2 completed (ready %d)...", dkg.R2.Count))
+		e.logMessage(dkg, fmt.Sprintf("R2 completed (ready %d)", dkg.R2.Count))
 	} else {
-		e.logError(dkg, fmt.Sprintf("R2 completed, but MaxSigners(%d) != R2.Count(%d)...", dkg.MaxSigners, dkg.R2.Count), nil)
+		e.logError(dkg, fmt.Sprintf("R2 completed, but MaxSigners(%d) != R2.Count(%d)", dkg.MaxSigners, dkg.R2.Count), nil)
 	}
 }
 
 func (e *Executor) logDKGR3Completed(dkg *coordinator.DKG) {
 	if dkg.R3.Count == dkg.MaxSigners {
-		e.logMessage(dkg, fmt.Sprintf("R3 completed (ready %d)...", dkg.R3.Count))
+		e.logMessage(dkg, fmt.Sprintf("R3 completed (ready %d)", dkg.R3.Count))
 	} else {
-		e.logError(dkg, fmt.Sprintf("R3 completed, but MaxSigners(%d) != R3.Count(%d)...", dkg.MaxSigners, dkg.R3.Count), nil)
+		e.logError(dkg, fmt.Sprintf("R3 completed, but MaxSigners(%d) != R3.Count(%d)", dkg.MaxSigners, dkg.R3.Count), nil)
 	}
 }
 
