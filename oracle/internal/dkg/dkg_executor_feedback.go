@@ -93,8 +93,16 @@ func (e *Executor) logExecuteR3(dkg *coordinator.DKG) {
 }
 
 func (e *Executor) logSendRound1Package(dkg *coordinator.DKG, err error) {
-	msg := helpers.HandleTvmError(err)
-	errorEventWithDkg(dkg, e.validatorIdx).Err(err).Msg("failed to send round1 package: " + msg)
+	errCode, _ := helpers.ExtractExitCode(err.Error())
+
+	if errCode == helpers.ErrDkgExpired {
+		infoEventWithDkg(dkg, e.validatorIdx).Msg("DKG Expired")
+	} else if errCode == helpers.ErrRound1Completed {
+		infoEventWithDkg(dkg, e.validatorIdx).Msg("DKG Round1 completed")
+	} else {
+		msg := helpers.HandleTvmError(err)
+		errorEventWithDkg(dkg, e.validatorIdx).Err(err).Msg("failed to send round1 package: " + msg)
+	}
 }
 
 func (e *Executor) logSendRound2Package(dkg *coordinator.DKG, err error) {
