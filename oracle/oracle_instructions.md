@@ -35,7 +35,7 @@ upgrade --btc-teleport [branch]
 
 ## Configuration
 
-The oracle uses environment variables loaded from /usr/src/ton-teleport-btc-periphery/out/.env file. And then list the values which descriptions.
+The oracle uses environment variables loaded from /usr/src/ton-teleport-btc-periphery/out/.env file.
 
 ### Common Variables
 
