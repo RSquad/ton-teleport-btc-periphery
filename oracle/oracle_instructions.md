@@ -35,7 +35,7 @@ upgrade --btc-teleport [branch]
 
 ## Configuration
 
-The Oracle uses environment variables for configuration. Create a `.env` file in the directory containing the Oracle executable (`/usr/src/ton-teleport-btc-periphery/out/.env`).
+The oracle uses environment variables loaded from /usr/src/ton-teleport-btc-periphery/out/.env file. And then list the values which descriptions.
 
 ### Common Variables
 
@@ -61,14 +61,14 @@ The Oracle uses environment variables for configuration. Create a `.env` file in
 
 ### Periodic Events and API Timeouts
 
-- `ORACLE_DKG_FETCH_PERIOD` - Specifies the interval, in seconds, at which the periodic event `DKG_FETCH` is triggered. If not set, the default value is 6 seconds.
+- `ORACLE_DKG_FETCH_PERIOD` - Specifies the interval, in seconds, at which the periodic event `DKG_FETCH` is triggered. If not set, the default value is 10 seconds.
 - `ORACLE_SEND_START_DKG_PERIOD` - Specifies the interval, in seconds, at which the periodic event `SEND_START_DKG` is triggered. If not set, the default value is 10 seconds.
 - `ORACLE_EXECUTE_SIGN_PERIOD` - Specifies the interval, in seconds, at which the periodic event `EXECUTE_SIGN` is triggered. If not set, the default value is 10 seconds.
-- `API_CALL_TIMEOUT` - Defines the maximum time (in seconds) to wait for an API call to complete. If the API does not respond within this period, the request will be terminated.
+- `API_CALL_TIMEOUT` - Defines the maximum time (in seconds) to wait for an API call to complete. If the API does not respond within this period, the request will be terminated. If not set, the default value is 30 seconds.
 
 ### Log
-If not set, the default value is 10 seconds.
-- `LOG_LEVEL` - Minimum log level. Possible values: DEBUG, INFO, WARN, ERROR.
+
+- `LOG_LEVEL` - Minimum log level. Possible values: DEBUG, INFO, WARN, ERROR. If not set, the default value is INFO.
 - `LOG_FILE` - Path to the log file. A full path including the file name must be specified. If not set, logs will be written only to standard output (stdout).
 - `LOG_FILE_MAX_SIZE` - Maximum size of each log file, in megabytes (default 100).
 - `LOG_FILE_MAX_BACKUPS` - Maximum number of backup files to retain (default 50).
