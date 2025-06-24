@@ -23,7 +23,7 @@ type MetricsService struct {
 	fetcherContractTeleport      *FetcherContractTeleport
 	fetcherContractCoordinator   *FetcherContractCoordinator
 	fetcherPegouts               *FetcherPegouts
-	fetcherBitcoin               *FetcherBitcoin
+	fetcherBitcoinTx             *FetcherBitcoinTx
 }
 
 func NewService(
@@ -60,8 +60,11 @@ func NewService(
 	// Fetcher: ContractCoordinator
 	fetcherContractCoordinator := NewFetcherContractCoordinator(writerDbChan, coordinatorContract, 59) // TODO: move 60 to config
 
+	// Fetcher: Pegouts
 	fetcherPegouts := NewFetcherPegouts(tonClient, bitcoinClient, coordinatorContract, db)
-	fetcherBitcoin := NewFetcherBitcoin(bitcoinClient, db)
+
+	// Fetcher: Bitcoin Txes
+	fetcherBitcoinTx := NewFetcherBitcoinTx(bitcoinClient, db)
 
 	return &MetricsService{
 		writerDB:                     writerDB,
@@ -72,7 +75,7 @@ func NewService(
 		fetcherContractTeleport:      fetcherContractTeleport,
 		fetcherContractCoordinator:   fetcherContractCoordinator,
 		fetcherPegouts:               fetcherPegouts,
-		fetcherBitcoin:               fetcherBitcoin,
+		fetcherBitcoinTx:             fetcherBitcoinTx,
 	}, nil
 }
 
@@ -128,6 +131,12 @@ func (s *MetricsService) Work(ctx context.Context) {
 	wg.Add(1)
 	go func() {
 		s.fetcherPegouts.Work(ctx, &wg)
+	}()
+
+	// Fetcher BitcoinTx
+	wg.Add(1)
+	go func() {
+		s.fetcherBitcoinTx.Work(ctx, &wg)
 	}()
 
 	wg.Wait()

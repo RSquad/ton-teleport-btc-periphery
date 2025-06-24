@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"sync"
 	"time"
 
@@ -15,7 +16,7 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/teleportcontract"
 )
 
-type FetcherBitcoin struct {
+type FetcherBitcoinTx struct {
 	bitcoinClient *bitcoin.Client
 	db            *sql.DB
 	expiredAt     map[uint64]time.Time
@@ -27,18 +28,18 @@ type SignedPegout struct {
 	bitcoinTxId string
 }
 
-func NewFetcherBitcoin(
+func NewFetcherBitcoinTx(
 	bitcoinClient *bitcoin.Client,
 	db *sql.DB,
-) *FetcherBitcoin {
-	return &FetcherBitcoin{
+) *FetcherBitcoinTx {
+	return &FetcherBitcoinTx{
 		bitcoinClient: bitcoinClient,
 		db:            db,
 		expiredAt:     make(map[uint64]time.Time),
 	}
 }
 
-func (fb *FetcherBitcoin) getSignedPegouts() ([]SignedPegout, error) {
+func (fb *FetcherBitcoinTx) getSignedPegouts() ([]SignedPegout, error) {
 	rows, err := fb.db.Query(
 		`SELECT 
 			tt.created_at,
@@ -71,7 +72,7 @@ func (fb *FetcherBitcoin) getSignedPegouts() ([]SignedPegout, error) {
 	return pegouts, nil
 }
 
-func (fb *FetcherBitcoin) getBaseSVB() (float64, error) {
+func (fb *FetcherBitcoinTx) getBaseSVB() (float64, error) {
 	rows, err := fb.db.Query(
 		`SELECT jsonb_build_object(
 				'contractTeleport', (
@@ -105,7 +106,7 @@ func (fb *FetcherBitcoin) getBaseSVB() (float64, error) {
 	return float64(storage.BaseSVB), nil
 }
 
-func (fb *FetcherBitcoin) getSVB(blockCount int, mode *btcjson.EstimateSmartFeeMode) (float64, error) {
+func (fb *FetcherBitcoinTx) getSVB(blockCount int, mode *btcjson.EstimateSmartFeeMode) (float64, error) {
 	if mode == nil {
 		mode = &btcjson.EstimateModeEconomical
 	}
@@ -117,17 +118,15 @@ func (fb *FetcherBitcoin) getSVB(blockCount int, mode *btcjson.EstimateSmartFeeM
 	return fee, nil
 }
 
-func (fb *FetcherBitcoin) getLastPegoutId() (*chainhash.Hash, error) {
+func (fb *FetcherBitcoinTx) getLastPegoutId() (*chainhash.Hash, error) {
 	rows, err := fb.db.Query(
-		`SELECT jsonb_build_object(
-				'contractTeleport', (
+		`
 						SELECT payload::json
 						FROM metrics_data
 						WHERE type_id = 4
 						ORDER BY id DESC
 						LIMIT 1
-				)
-		) AS result;`,
+		`,
 	)
 	if err != nil {
 		return &chainhash.Hash{}, err
@@ -143,7 +142,7 @@ func (fb *FetcherBitcoin) getLastPegoutId() (*chainhash.Hash, error) {
 		}
 	}
 
-	var storage teleportcontract.Storage
+	var storage ContractTeleportData
 	err = json.Unmarshal([]byte(data), &storage)
 	if err != nil {
 		return &chainhash.Hash{}, err
@@ -151,7 +150,7 @@ func (fb *FetcherBitcoin) getLastPegoutId() (*chainhash.Hash, error) {
 	return storage.LastPegoutTxID, nil
 }
 
-func (fb FetcherBitcoin) getCPFPCount(pegoutId *chainhash.Hash) (*bitcoin.TxChildrenCount, error) {
+func (fb FetcherBitcoinTx) getCPFPCount(pegoutId *chainhash.Hash) (*bitcoin.TxChildrenCount, error) {
 	txChildrenCount, err := fb.bitcoinClient.GetTxChildrenCount(pegoutId)
 	if err != nil {
 		return &bitcoin.TxChildrenCount{}, err
@@ -159,7 +158,7 @@ func (fb FetcherBitcoin) getCPFPCount(pegoutId *chainhash.Hash) (*bitcoin.TxChil
 	return txChildrenCount, nil
 }
 
-func (fb *FetcherBitcoin) setBitcoinTxExistsMetric(pegouts []SignedPegout) {
+func (fb *FetcherBitcoinTx) setBitcoinTxExistsMetric(pegouts []SignedPegout) {
 	for _, pegout := range pegouts {
 		txExists, _, _ := bu.BitcoinTxExists(fb.bitcoinClient, pegout.bitcoinTxId)
 		if !txExists {
@@ -171,62 +170,68 @@ func (fb *FetcherBitcoin) setBitcoinTxExistsMetric(pegouts []SignedPegout) {
 	}
 }
 
-func (fb *FetcherBitcoin) setCPFPCountMetric(count bitcoin.TxChildrenCount) {
+func (fb *FetcherBitcoinTx) setCPFPCountMetric(count bitcoin.TxChildrenCount) {
 	if count.ParentTxID != nil {
 		cpfpCounter.WithLabelValues(count.ParentTxID.String()).Set(float64(count.ChildrenCount))
 	}
 }
 
-func (fb *FetcherBitcoin) setSVBExceededMetric(exceeded bool) {
+func (fb *FetcherBitcoinTx) setSVBExceededMetric(exceeded bool) {
 	if exceeded {
-		svbExceeded.Set(1)
+		svbExceeded.Set(0)
 		return
 	}
-	svbExceeded.Set(0)
+	svbExceeded.Set(1)
 }
 
-func (fb *FetcherBitcoin) Fetch() {
+func (fb *FetcherBitcoinTx) Fetch() {
+	fmt.Println("SOME STRING LOG 1")
 	signedPegouts, err := fb.getSignedPegouts()
 	if err != nil {
 		logger.Log.Error().Err(err).
-			Str("component", "FetcherBitcoin").
-			Msg("fetch failed")
+			Str("component", "FetcherBitcoinTx").
+			Msg("fetch failed at get signed pegouts")
 	}
-	fb.setBitcoinTxExistsMetric(signedPegouts)
 
+	fb.setBitcoinTxExistsMetric(signedPegouts)
+	fmt.Println("SOME STRING LOG 2")
 	LastPegoutTxID, err := fb.getLastPegoutId()
 	if err != nil {
 		logger.Log.Error().Err(err).
-			Str("component", "FetcherBitcoin").
-			Msg("fetch failed")
+			Str("component", "FetcherBitcoinTx").
+			Msg("fetch failed at get last pegout id")
 	}
+	fmt.Println("SOME STRING LOG 3")
 	cpfpCount, err := fb.getCPFPCount(LastPegoutTxID)
 	if err != nil {
 		logger.Log.Error().Err(err).
-			Str("component", "FetcherBitcoin").
-			Msg("fetch failed")
+			Str("component", "FetcherBitcoinTx").
+			Msg("fetch failed at get cpfp count")
 	}
+	fmt.Println("SOME STRING LOG 4")
 	fb.setCPFPCountMetric(*cpfpCount)
 	baseSvb, err := fb.getBaseSVB()
 	if err != nil {
 		logger.Log.Error().Err(err).
-			Str("component", "FetcherBitcoin").
-			Msg("fetch failed")
+			Str("component", "FetcherBitcoinTx").
+			Msg("fetch failed at get base svb")
 	}
+	fmt.Println("SOME STRING LOG 5")
 	svb, err := fb.getSVB(1, nil)
 	if err != nil {
 		logger.Log.Error().Err(err).
-			Str("component", "FetcherBitcoin").
-			Msg("fetch failed")
+			Str("component", "FetcherBitcoinTx").
+			Msg("fetch failed at get svb")
 	}
-	fb.setSVBExceededMetric(svb > baseSvb)
+	fmt.Println("svb: ", svb, "baseSvb: ", baseSvb)
+	fb.setSVBExceededMetric((svb + SVB_TRESHOLD) > baseSvb)
 }
 
-func (fb *FetcherBitcoin) Work(ctx context.Context, wg *sync.WaitGroup) {
+func (fb *FetcherBitcoinTx) Work(ctx context.Context, wg *sync.WaitGroup) {
 	defer wg.Done()
 
-	defer logger.Log.Info().Msg("FetcherBitcoin: stopped")
-	logger.DefaultLogStartWork("FetcherBitcoin: starting...")
+	defer logger.Log.Info().Msg("FetcherBitcoinTx: stopped")
+	logger.DefaultLogStartWork("FetcherBitcoinTx starting...")
 
 	ticker := time.NewTicker(TICKER_INTERVAL)
 	defer ticker.Stop()
