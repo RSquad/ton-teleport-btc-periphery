@@ -96,24 +96,28 @@ func (dkg *DKG) CheckVSetMask(validatorIdx uint16) bool {
 // CommitmentRequest represents a request to send commitments
 type CommitmentRequest struct {
 	PegoutID     uint64
+	PegoutUntil  int64
 	ValidatorIdx uint16
 	Commitments  []byte
 }
 
 type SigningShareRequest struct {
 	PegoutID      uint64
+	PegoutUntil   int64
 	ValidatorIdx  uint16
 	SigningShares [][]byte
 }
 
 type SignaturesRequest struct {
 	PegoutID     uint64
+	PegoutUntil  int64
 	ValidatorIdx uint16
 	Signatures   [][]byte
 }
 
 type SigningClaimRequest struct {
 	PegoutID     uint64
+	PegoutUntil  int64
 	ValidatorIdx uint16
 	culpritIdx   uint16
 }
@@ -124,9 +128,9 @@ type ResetPegoutSigningRequest struct {
 }
 
 type PegoutSignatures struct {
-	mask  *big.Int
-	count uint16
-	hash  []byte
+	Mask  *big.Int
+	Count uint16
+	Hash  []byte
 }
 
 type PegoutRecord struct {

@@ -5,10 +5,7 @@ import (
 	"time"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/parseddict"
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/signer"
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
 	"github.com/xssnick/tonutils-go/address"
 	tonutils "github.com/xssnick/tonutils-go/ton"
@@ -30,26 +27,22 @@ const (
 
 const DefaultDGKTTL = time.Minute
 
-type CoordinatorContract struct {
-	ton.Contract
-	signer            signer.Signer
-	tonClient         *tonclient.TonClient
-	ctx               context.Context
-	ttl               time.Duration
-	tonApiCallTimeout int64
-}
-
-func New(
-	addr *address.Address,
-	tonClient *tonclient.TonClient,
-	signer signer.Signer,
-	ctx context.Context,
-	tonApiCallTimeout int64,
-) *CoordinatorContract {
-	ttl := DefaultDGKTTL
-	return &CoordinatorContract{
-		ton.Contract{Addr: addr}, signer, tonClient, ctx, ttl, tonApiCallTimeout,
-	}
+type Storage struct {
+	Initiated           bool
+	StandaloneMode      bool
+	Id                  uint32
+	ConfiguratorAddr    *address.Address
+	Enabled             bool
+	Dkg                 *DKG
+	PrevDkg             *DKG
+	UnsignedPegouts     []PegoutRecord
+	PegoutTxCode        *cell.Cell
+	MinClaimsPercent    uint16
+	MinSignersThreshold uint16
+	DkgLifetime         uint32
+	SigningTimeout      uint32
+	NextPegoutIdx       uint64
+	TeleportAddr        *address.Address
 }
 
 func CallApiWithTimeout[T any](fn func(ctx context.Context) (T, error), parentCtx context.Context, timeout int64, name string) (T, error) {
@@ -65,7 +58,7 @@ func CallApiWithTimeout[T any](fn func(ctx context.Context) (T, error), parentCt
 	return res, err
 }
 
-func (c *CoordinatorContract) GetDkg(block *tonutils.BlockIDExt) (*DKG, error) {
+func (c *coordinatorContract) GetDkg(block *tonutils.BlockIDExt) (*DKG, error) {
 	if block == nil {
 		var err error
 
@@ -111,7 +104,7 @@ func (c *CoordinatorContract) GetDkg(block *tonutils.BlockIDExt) (*DKG, error) {
 	return dkg, nil
 }
 
-func (c *CoordinatorContract) GetPrevDKG() (*DKG, error) {
+func (c *coordinatorContract) GetPrevDKG() (*DKG, error) {
 	block, err := CallApiWithTimeout(
 		func(apiCallCtx context.Context) (*tonutils.BlockIDExt, error) {
 			return c.tonClient.API.CurrentMasterchainInfo(apiCallCtx)
@@ -148,7 +141,7 @@ func (c *CoordinatorContract) GetPrevDKG() (*DKG, error) {
 	return parseDGKSlice(result.MustCell(0).BeginParse())
 }
 
-func (c *CoordinatorContract) GetUnsignedPegouts() ([]PegoutRecord, error) {
+func (c *coordinatorContract) GetUnsignedPegouts() ([]PegoutRecord, error) {
 	block, err := CallApiWithTimeout(
 		func(apiCallCtx context.Context) (*tonutils.BlockIDExt, error) {
 			return c.tonClient.API.CurrentMasterchainInfo(apiCallCtx)
@@ -186,7 +179,97 @@ func (c *CoordinatorContract) GetUnsignedPegouts() ([]PegoutRecord, error) {
 	if err != nil {
 		return nil, err
 	}
-	dict, err := cell.BeginParse().ToDict(64)
+	return parseUnsignedPegouts(cell)
+}
+
+func (c *coordinatorContract) GetStorage(block *tonutils.BlockIDExt) (Storage, error) {
+	if block == nil {
+		var err error
+		block, err = c.tonClient.API.CurrentMasterchainInfo(c.ctx)
+		if err != nil {
+			return Storage{}, err
+		}
+	}
+	acc, err := c.tonClient.FetchAcc(c.Addr, block)
+	if err != nil {
+		return Storage{}, err
+	}
+	storage := acc.Data.BeginParse()
+
+	initiated := storage.MustLoadBoolBit()
+	standaloneMode := storage.MustLoadBoolBit()
+	id := uint32(storage.MustLoadUInt(32))
+	configuratorAddr := storage.MustLoadAddr()
+	enabled := storage.MustLoadBoolBit()
+	dkgSlice, err := storage.LoadMaybeRef()
+	if err != nil {
+		return Storage{}, err
+	}
+	var dkg *DKG
+	if dkgSlice == nil {
+		dkg = &DKG{}
+	} else {
+		dkg, err = parseDGKSlice(dkgSlice)
+	}
+	if err != nil {
+		return Storage{}, err
+	}
+	var prevDkg *DKG
+	prevDkgSlice, err := storage.LoadMaybeRef()
+	if err != nil {
+		return Storage{}, err
+	}
+	if prevDkgSlice == nil {
+		prevDkg = &DKG{}
+	} else {
+		prevDkg, err = parseDGKSlice(prevDkgSlice)
+	}
+	if err != nil {
+		return Storage{}, err
+	}
+
+	var unsignedPegouts []PegoutRecord
+	unsignedPegoutsSlice, err := storage.LoadMaybeRef()
+	if err != nil {
+		return Storage{}, err
+	}
+	if unsignedPegoutsSlice == nil {
+		unsignedPegouts = []PegoutRecord{}
+	} else {
+		unsignedPegouts, err = parseUnsignedPegouts(unsignedPegoutsSlice.MustToCell())
+	}
+	if err != nil {
+		return Storage{}, err
+	}
+	pegoutTxCode := storage.MustLoadRef().MustToCell()
+	minClaimsPercent := uint16(storage.MustLoadUInt(16))
+	minSignersThreshold := uint16(storage.MustLoadUInt(16))
+	dkgLifetime := uint32(storage.MustLoadUInt(32))
+	signingTimeout := uint32(storage.MustLoadUInt(32))
+	nextPegoutIdx := storage.MustLoadUInt(64)
+	teleportAddr := storage.MustLoadAddr()
+
+	return Storage{
+		Initiated:           initiated,
+		StandaloneMode:      standaloneMode,
+		Id:                  id,
+		ConfiguratorAddr:    configuratorAddr,
+		Enabled:             enabled,
+		Dkg:                 dkg,
+		PrevDkg:             prevDkg,
+		UnsignedPegouts:     unsignedPegouts,
+		PegoutTxCode:        pegoutTxCode,
+		MinClaimsPercent:    minClaimsPercent,
+		MinSignersThreshold: minSignersThreshold,
+		DkgLifetime:         dkgLifetime,
+		SigningTimeout:      signingTimeout,
+		NextPegoutIdx:       nextPegoutIdx,
+		TeleportAddr:        teleportAddr,
+	}, nil
+}
+
+func parseUnsignedPegouts(pegoutsCell *cell.Cell) ([]PegoutRecord, error) {
+	dict, err := pegoutsCell.BeginParse().ToDict(64)
 	if err != nil {
 		return nil, err
 	}
@@ -198,7 +281,7 @@ func (c *CoordinatorContract) GetUnsignedPegouts() ([]PegoutRecord, error) {
 	pegouts := make([]PegoutRecord, 0, len(entries))
 	for _, kv := range entries {
 
-		ID := kv.Key.MustLoadUInt(64) // TODO:
+		ID := kv.Key.MustLoadUInt(64)
 		value := kv.Value.MustLoadRef()
 
 		MaxSigners := uint16(value.MustLoadUInt(16))
@@ -234,9 +317,9 @@ func (c *CoordinatorContract) GetUnsignedPegouts() ([]PegoutRecord, error) {
 
 		sigSlice := value.MustLoadRef()
 		Signatures := PegoutSignatures{
-			mask:  sigSlice.MustLoadBigUInt(256),
-			count: uint16(sigSlice.MustLoadUInt(16)),
-			hash:  sigSlice.MustLoadSlice(256),
+			Mask:  sigSlice.MustLoadBigUInt(256),
+			Count: uint16(sigSlice.MustLoadUInt(16)),
+			Hash:  sigSlice.MustLoadSlice(256),
 		}
 
 		refSlice := value.MustLoadRef()

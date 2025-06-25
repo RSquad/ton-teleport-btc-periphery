@@ -7,19 +7,20 @@ import (
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
+	helpers "github.com/rsquad/ton-teleport-btc-periphery/oracle/internal"
 	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/keystore"
 	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/validator"
 )
 
 type Service struct {
-	coordinatorContract *coordinator.CoordinatorContract
+	coordinatorContract coordinator.Coordinator
 	validator           *validator.Validator
 	fetchPeriod         int64 // Fetch period (in seconds)
 	sendStartDKGPeriod  int64 // sendStartDKG period (in seconds)
 }
 
 func NewService(
-	coordinatorContract *coordinator.CoordinatorContract,
+	coordinatorContract coordinator.Coordinator,
 	validator *validator.Validator,
 	fetchPeriod int64,
 	sendStartDKGPeriod int64,
@@ -65,7 +66,19 @@ func (s *Service) Work(ctx context.Context, wg *sync.WaitGroup, keystore keystor
 					logger.Log.Warn().Msg("Start DKG ticker closed")
 					return
 				}
-				s.coordinatorContract.SendStartDKG()
+				_, err := s.coordinatorContract.SendStartDKG()
+				if err != nil {
+					errCode, _ := helpers.ExtractExitCode(err.Error())
+					if errCode == helpers.ErrDkgClosed {
+						logger.Log.Debug().Msgf("Unable to Start DKG: DKG closed")
+					} else if errCode == helpers.ErrSigningIsInProgress {
+						logger.Log.Debug().Msgf("Unable to Start DKG: Signing is in progress")
+					} else if errCode == helpers.ErrDkgAlreadyExecuted {
+						logger.Log.Debug().Msgf("Unable to Start DKG: DKG already executed")
+					} else {
+						logger.Log.Error().Msgf("Start DKG error: %v", err)
+					}
+				}
 			}
 		}
 	}()
