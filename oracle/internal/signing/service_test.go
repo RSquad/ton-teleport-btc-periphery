@@ -192,7 +192,7 @@ func TestPegoutUntil(t *testing.T) {
 	commitments := make([]byte, 32)
 	rand.Read(commitments)
 
-	service.sendCommitments(pegout, validatorIdx, commitments)
+	service.sendCommitments(pegout, validatorIdx)
 
 	signShares := make([][]byte, 1)
 	signShares[0] = make([]byte, 32)

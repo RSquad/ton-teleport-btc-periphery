@@ -29,8 +29,19 @@ func startAndWaitForStop() error {
 	}
 
 	// Setup logger
-	if err := logger.Init(cfg.LogFile); err != nil {
-		return err
+	{
+		logMaxSize := helpers.ParseIntWithDefaultVal(cfg.LogMaxSize, 100, "Log max size")
+		logMaxBackups := helpers.ParseIntWithDefaultVal(cfg.LogMaxBackups, 50, "Max backups file count")
+		logMaxBackupAge := helpers.ParseIntWithDefaultVal(cfg.LogMaxBackupAge, 365, "Max backup file age")
+
+		logLevel, err := logger.ParseLevel(cfg.LogLevel, logger.InfoLevel)
+		if err != nil {
+			return err
+		}
+
+		if err := logger.Init(cfg.LogFile, logLevel, int(logMaxSize), int(logMaxBackups), int(logMaxBackupAge)); err != nil {
+			return err
+		}
 	}
 
 	logger.Log.Info().
@@ -75,16 +86,25 @@ func startAndWaitForStop() error {
 	// Coordinator contract
 	logger.Log.Info().Msgf("Create a new Coordinator contract wrapper with address `%s`", cfg.CoordinatorContractAddr)
 	apiCallTimeout := helpers.ParseIntWithDefaultVal(cfg.ApiCallTimeout, 30, "API call timeout")
-	coordinatorContract := coordinator.New(coordinatorContractAddr, tonClient, nil, ctx, apiCallTimeout)
 
 	// DKG service
-	fetchPeriod := helpers.ParseIntWithDefaultVal(cfg.FetchPeriod, 6, "DKG fetcher period")
+	fetchPeriod := helpers.ParseIntWithDefaultVal(cfg.FetchPeriod, 10, "DKG fetcher period")
 	sendStartDKGPeriod := helpers.ParseIntWithDefaultVal(cfg.SendStartDKGPeriod, 10, "SendStartDKG period")
-	dkgService := dkg.NewService(coordinatorContract, validator, fetchPeriod, sendStartDKGPeriod)
+	dkgService := dkg.NewService(
+		coordinator.New(coordinatorContractAddr, tonClient, nil, ctx, apiCallTimeout),
+		validator,
+		fetchPeriod,
+		sendStartDKGPeriod,
+	)
 
 	// FROST sign service
 	executeSignPeriod := helpers.ParseIntWithDefaultVal(cfg.ExecuteSignPeriod, 10, "ExecuteSign period")
-	signService := signing.NewService(keystore, coordinatorContract, tonClient, executeSignPeriod)
+	signService := signing.NewService(
+		keystore,
+		coordinator.New(coordinatorContractAddr, tonClient, nil, ctx, apiCallTimeout),
+		tonClient,
+		executeSignPeriod,
+	)
 
 	wg.Add(1)
 	go dkgService.Work(ctx, &wg, keystore)

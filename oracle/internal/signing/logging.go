@@ -17,6 +17,10 @@ func infoEvent() *zerolog.Event {
 	return logger.Log.Info().Str("component", "SignService")
 }
 
+func debugEvent() *zerolog.Event {
+	return logger.Log.Debug().Str("component", "SignService")
+}
+
 func infoEventWithPegoutID(pegoutID uint64) *zerolog.Event {
 	return logger.Log.Info().
 		Str("component", "SignService").
@@ -31,6 +35,10 @@ func errorEventWithPegoutID(pegoutID uint64) *zerolog.Event {
 
 func errorEvent() *zerolog.Event {
 	return logger.Log.Error().Str("component", "SignService")
+}
+
+func (s *SignService) logDebug(msg string) {
+	debugEvent().Msg(msg)
 }
 
 func (s *SignService) logMessage(msg string) {
@@ -83,8 +91,20 @@ func (s *SignService) logCommitSent(pegoutID uint64) {
 	infoEventWithPegoutID(pegoutID).Msg("Commit sent")
 }
 
-func (s *SignService) logMinimalSharesReached(pegoutID uint64) {
-	infoEventWithPegoutID(pegoutID).Msg("Minimal required number of signing shares is reached")
+func (s *SignService) logMinimalCommitmentsReached(pegout *CachedPegout, minSigners uint16) {
+	infoEventWithPegoutID(pegout.ID).Msgf("Minimal required number of Commitments is reached (ready %d of %d)", pegout.artifacts.CommitmentsCount(), minSigners)
+}
+
+func (s *SignService) logMinimalCommitmentsWaitingForOtherOracles(pegout *CachedPegout, minSigners uint16) {
+	infoEventWithPegoutID(pegout.ID).Msgf("Waiting for other oracles to send their Commitments (ready %d of %d)", pegout.artifacts.CommitmentsCount(), minSigners)
+}
+
+func (s *SignService) logMinimalSharesReached(pegout *CachedPegout, minSigners uint16) {
+	infoEventWithPegoutID(pegout.ID).Msgf("Minimal required number of Signing Shares is reached (ready %d of %d)", pegout.artifacts.SigningSharesCount(), minSigners)
+}
+
+func (s *SignService) logMinimalSharesWaitingForOtherOracles(pegout *CachedPegout, minSigners uint16) {
+	infoEventWithPegoutID(pegout.ID).Msgf("Waiting for other oracles to send their Signing Shares (ready %d of %d)", pegout.artifacts.SigningSharesCount(), minSigners)
 }
 
 func (s *SignService) logSigningShareAlreadyExists(pegoutID uint64) {
@@ -104,13 +124,18 @@ func (s *SignService) logSignatureSent(pegoutID uint64) {
 }
 
 func (s *SignService) logSignaturesSent(pegoutID uint64, sentSignsCount uint16, totalCount uint16) {
-	minSigners, _ := helpers.CalcMinSigners(totalCount)
-	infoEventWithPegoutID(pegoutID).Msgf("The signature has already been sent. Waiting for other oracles (ready %d of %d)", sentSignsCount, minSigners)
+	infoEventWithPegoutID(pegoutID).Msgf("The signature has already been sent. Waiting for other oracles (ready %d of %d)", sentSignsCount, totalCount)
 }
 
 func (s *SignService) logSignatureSendError(pegoutID uint64, err error) {
-	msg := helpers.HandleTvmError(err)
-	errorEventWithPegoutID(pegoutID).Err(err).Msg("failed to send signatures: " + msg)
+	errCode, _ := helpers.ExtractExitCode(err.Error())
+
+	if errCode == helpers.ErrSignatureExists {
+		infoEventWithPegoutID(pegoutID).Msg("Signature exists")
+	} else {
+		msg := helpers.HandleTvmError(err)
+		errorEventWithPegoutID(pegoutID).Err(err).Msg("failed to send signatures: " + msg)
+	}
 }
 
 func (s *SignService) logSignError(inputIndex int, err error) {
@@ -125,17 +150,30 @@ func (s *SignService) logSendCommitments(pegoutID uint64) {
 	infoEventWithPegoutID(pegoutID).Msg("send commitments")
 }
 
+func (s *SignService) logSendCommitmentsError(pegoutID uint64, err error) {
+	errCode, _ := helpers.ExtractExitCode(err.Error())
+
+	if errCode == helpers.ErrCommitmentsThresholdReached {
+		infoEventWithPegoutID(pegoutID).Msg("Unable to send commitments: commitments threshold reached")
+	} else {
+		msg := helpers.HandleTvmError(err)
+		errorEventWithPegoutID(pegoutID).Err(err).Msg("failed to send commitments: " + msg)
+	}
+}
+
 func (s *SignService) logSendSigningShare(pegoutID uint64, signShares [][]byte) {
 	infoEventWithPegoutID(pegoutID).Msgf("send %d signing shares", len(signShares))
 }
 
-func (s *SignService) logSendCommitmentsError(pegoutID uint64, err error) {
-	errorEventWithPegoutID(pegoutID).Err(err).Msg("failed to send commitments")
-}
-
 func (s *SignService) logSendSigningShareError(pegoutID uint64, err error) {
-	msg := helpers.HandleTvmError(err)
-	errorEventWithPegoutID(pegoutID).Err(err).Msg("failed to send signing share: " + msg)
+	errCode, _ := helpers.ExtractExitCode(err.Error())
+
+	if errCode == helpers.ErrPackageAlreadyExist {
+		infoEventWithPegoutID(pegoutID).Msg("Unable to send signing share. Package already sent")
+	} else {
+		msg := helpers.HandleTvmError(err)
+		errorEventWithPegoutID(pegoutID).Err(err).Msg("failed to send signing share: " + msg)
+	}
 }
 
 func (s *SignService) logExecuteClaim(pegoutID uint64) {
@@ -151,7 +189,14 @@ func (s *SignService) logSigningClaimSent(pegoutID uint64) {
 }
 
 func (s *SignService) logSigningClaimSentError(pegoutID uint64, err error) {
-	errorEventWithPegoutID(pegoutID).Err(err).Msg("failed to send signing claim")
+	errCode, _ := helpers.ExtractExitCode(err.Error())
+
+	if errCode == helpers.ErrClaimAlreadyExists {
+		infoEventWithPegoutID(pegoutID).Msg("Unable to send signing claim. Claim already exists")
+	} else {
+		msg := helpers.HandleTvmError(err)
+		errorEventWithPegoutID(pegoutID).Err(err).Msgf("failed to send signing claim: %s", msg)
+	}
 }
 
 func (s *SignService) logSendResetPegoutSigning(pegoutID uint64) {
@@ -163,5 +208,11 @@ func (s *SignService) logResetPegoutSigningSent(pegoutID uint64) {
 }
 
 func (s *SignService) logResetPegoutSigningSentError(pegoutID uint64, err error) {
-	errorEventWithPegoutID(pegoutID).Err(err).Msg("failed to send reset pegout signing")
+	errCode, _ := helpers.ExtractExitCode(err.Error())
+
+	if errCode == helpers.ErrPegoutIsNotExpired {
+		infoEventWithPegoutID(pegoutID).Msg("Pegout is not expired")
+	} else {
+		errorEventWithPegoutID(pegoutID).Err(err).Msg("failed to send reset pegout signing")
+	}
 }

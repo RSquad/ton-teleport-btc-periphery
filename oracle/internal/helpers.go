@@ -16,8 +16,19 @@ import (
 )
 
 const (
+	ErrDkgClosed                       = 112
+	ErrInvalidSignature                = 113
+	ErrPackageAlreadyExist             = 114
+	ErrSignatureExists                 = 117
+	ErrCommitmentsThresholdReached     = 145
+	ErrDkgAlreadyExecuted              = 146
+	ErrRound1Completed                 = 147
 	TvmExitCodeDifferentPubkeyPackages = 152
+	ErrSigningIsInProgress             = 155
+	ErrClaimAlreadyExists              = 160
+	ErrPegoutIsNotExpired              = 166
 	DifferentPegoutSignatures          = 168
+	ErrDkgExpired                      = 182
 	FrostDkgR2PackageSize              = 37 /*FROST R2 package to single validator*/
 	FrostDkgR2PackageForEncryptionSize = 8 /*DKG until*/ + 2 /*from validator idx*/ + FrostDkgR2PackageSize
 	EncryptedFrostDkgR2PackageSize     = 24 /*nonce for encryption*/ + 16 /*encryption header*/ + FrostDkgR2PackageForEncryptionSize
@@ -41,7 +52,9 @@ func DeserializeDkgR1(origMap map[uint16][]byte) (map[frost.Identifier]frost.Pac
 	frostMap := make(map[frost.Identifier]frost.Package)
 	pubKeysMap := make(map[uint16][]byte)
 
-	for validatorIdx, pkgData := range origMap {
+	for _, validatorIdx := range ExtractSortedKeysFromMap(origMap) {
+		pkgData := origMap[validatorIdx]
+
 		if len(pkgData) < 33 { // 32 - public key; at least 1 byte of data
 			return nil, nil, validatorIdx, errors.New("wrong package len")
 		}
@@ -64,7 +77,9 @@ func SerializeR2Packages(r2Packages map[uint16][]byte) []byte {
 	binary.BigEndian.PutUint16(tmpBuf, uint16(len(r2Packages)))
 	serializedData = append(serializedData, tmpBuf...)
 
-	for toValidatorIdx, r2pkg := range r2Packages {
+	for _, toValidatorIdx := range ExtractSortedKeysFromMap(r2Packages) {
+		r2pkg := r2Packages[toValidatorIdx]
+
 		// Serialize validator idx
 		binary.BigEndian.PutUint16(tmpBuf, toValidatorIdx)
 		serializedData = append(serializedData, tmpBuf...)
@@ -110,7 +125,7 @@ func DeserializeDkgR2(r2Packages map[uint16][]byte /*map[FROM]data*/, vSetMask *
 			return nil, true, fromValidatorIdx, fmt.Errorf("incorrect package size, expected size = %d, actual size = %d", expectedSize, packagesSize-2)
 		}
 
-		var readOffset = 2
+		readOffset := 2
 
 		for range packagesCount {
 			// To validator idx
@@ -216,7 +231,8 @@ func DeserializeInputCommitmentForAll(
 
 func ConvertMapToFrostPackages(origMap map[uint16][]byte) (frostMap map[frost.Identifier]frost.Package) {
 	frostMap = make(map[frost.Identifier]frost.Package)
-	for k, v := range origMap {
+	for _, k := range ExtractSortedKeysFromMap(origMap) {
+		v := origMap[k]
 		id := ValidatorIdxToFrost(k)
 		frostMap[id] = frost.NewPackage(v)
 	}
@@ -255,8 +271,10 @@ func HandleTvmError(tvmError error) string {
 	}
 
 	switch exitCode {
+	case 112:
+		return "Dkg closed"
 	case 113:
-		return "invalid signature"
+		return "Invalid signature"
 	case 114:
 		return "package already sent"
 	case 117:
@@ -269,20 +287,36 @@ func HandleTvmError(tvmError error) string {
 		return "pegout not found"
 	case 145:
 		return "Commitments threshold is reached"
+	case 146:
+		return "Dkg already executed"
 	case 147:
 		return "R1 is already completed"
 	case 150:
 		return "Coordinator balance is not enough to continue"
 	case 151:
 		return "Culprit not found"
+	case 152:
+		return "Different pubkey packages"
+	case 155:
+		return "Signing is in progress"
+	case 160:
+		return "Claim already exists"
 	case 161:
 		return "Unauthorized validator"
+	case 162:
+		return "Not enough validators"
 	case 166:
 		return "Pegout is not expired"
+	case 168:
+		return "Different pegout signatures"
 	case 171:
 		return "Pegout id does not match expected pegout to sign"
 	case 180:
 		return "Invalid pegout timestamp"
+	case 181:
+		return "Invalid session signature"
+	case 182:
+		return "DKG expired"
 	default:
 		return fmt.Sprintf("Unknown error: %d", exitCode)
 	}

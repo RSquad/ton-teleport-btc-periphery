@@ -86,12 +86,16 @@ func (c *BitcoinClientContract) GetConfirmationsNeeded() (int64, error) {
 		return 0, err
 	}
 
+	return c.GetConfirmationsNeededFromCell(storageCell), nil
+}
+
+func (c *BitcoinClientContract) GetConfirmationsNeededFromCell(storageCell *cell.Cell) int64 {
 	storageSlice := storageCell.BeginParse()
 	storageSlice.MustLoadRef()
 	storageSlice.MustLoadSlice(256)
 	storageSlice.MustLoadBigUInt(32)
 
-	return storageSlice.MustLoadInt(4), nil
+	return storageSlice.MustLoadInt(4)
 }
 
 func (c *BitcoinClientContract) GetLastConfirmedBlockHash() (*chainhash.Hash, error) {
@@ -100,6 +104,10 @@ func (c *BitcoinClientContract) GetLastConfirmedBlockHash() (*chainhash.Hash, er
 		return nil, err
 	}
 
+	return c.GetLastConfirmedBlockHashFromCell(storageCell)
+}
+
+func (c *BitcoinClientContract) GetLastConfirmedBlockHashFromCell(storageCell *cell.Cell) (*chainhash.Hash, error) {
 	return chainhash.NewHash(storageCell.BeginParse().MustLoadSlice(256))
 }
 
@@ -109,6 +117,10 @@ func (c *BitcoinClientContract) GetCandidateBlockHashes() ([]*chainhash.Hash, er
 		return nil, err
 	}
 
+	return c.GetCandidateBlockHashesFromCell(storageCell)
+}
+
+func (c *BitcoinClientContract) GetCandidateBlockHashesFromCell(storageCell *cell.Cell) ([]*chainhash.Hash, error) {
 	storageSlice := storageCell.BeginParse()
 	storageSlice.MustLoadRef()
 	storageSlice.MustLoadSlice(256 + 32 + 4 + 32 + 32 + 256 + 2 + 32*medianTimeSpan)
@@ -138,12 +150,12 @@ func (c *BitcoinClientContract) GetCandidateBlockHashes() ([]*chainhash.Hash, er
 		}
 	}
 
-	for i := 0; i < len(blockHeaders); i++ {
+	for i := range blockHeaders {
 		blockHeader := blockHeaders[i]
 		blockHeader.MustLoadUInt(32)
 		blockHash, err := chainhash.NewHash(blockHeader.MustLoadSlice(256))
 		if err != nil {
-			panic(err)
+			return nil, err
 		}
 
 		if !bitcoin.SliceOfHashesContains(blockHashes, blockHash) {

@@ -1,0 +1,330 @@
+{
+    "annotations": {
+        "list": [
+            {
+                "builtIn": 1,
+                "datasource": {
+                    "type": "grafana",
+                    "uid": "-- Grafana --"
+                },
+                "enable": true,
+                "hide": true,
+                "iconColor": "rgba(0, 211, 255, 1)",
+                "name": "Annotations & Alerts",
+                "type": "dashboard"
+            }
+        ]
+    },
+    "editable": true,
+    "fiscalYearStartMonth": 0,
+    "graphTooltip": 0,
+    "id": 98,
+    "links": [],
+    "panels": [
+        {
+            "datasource": "yesoreyeram-infinity-datasource",
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "fixedColor": "transparent",
+                        "mode": "fixed"
+                    },
+                    "custom": {
+                        "align": "left",
+                        "cellOptions": {
+                            "type": "auto",
+                            "wrapText": false
+                        },
+                        "inspect": false
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green"
+                            }
+                        ]
+                    }
+                },
+                "overrides": [
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Amount"
+                        },
+                        "properties": [
+                            {
+                                "id": "custom.width",
+                                "value": 175
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Status"
+                        },
+                        "properties": [
+                            {
+                                "id": "custom.width",
+                                "value": 110
+                            },
+                            {
+                                "id": "mappings",
+                                "value": [
+                                    {
+                                        "options": {
+                                            "CONFIRMED": {
+                                                "color": "semi-dark-green",
+                                                "index": 2,
+                                                "text": "CONFIRMED"
+                                            },
+                                            "SIGNED": {
+                                                "color": "semi-dark-yellow",
+                                                "index": 1,
+                                                "text": "SIGNED"
+                                            },
+                                            "SIGNING": {
+                                                "color": "semi-dark-orange",
+                                                "index": 0,
+                                                "text": "SIGNING"
+                                            }
+                                        },
+                                        "type": "value"
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "custom.cellOptions",
+                                "value": {
+                                    "type": "color-text"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Created At"
+                        },
+                        "properties": [
+                            {
+                                "id": "custom.width",
+                                "value": 175
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Pegout Address"
+                        },
+                        "properties": [
+                            {
+                                "id": "links",
+                                "value": [
+                                    {
+                                        "targetBlank": true,
+                                        "title": "tonviewer tx",
+                                        "url": "https://testnet.tonviewer.com/${__value.text}"
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "custom.width"
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Sender Address"
+                        },
+                        "properties": [
+                            {
+                                "id": "links",
+                                "value": [
+                                    {
+                                        "targetBlank": true,
+                                        "title": "tonviewer tx",
+                                        "url": "https://testnet.tonviewer.com/${__value.text}"
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "custom.width"
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Bitcoin Tx"
+                        },
+                        "properties": [
+                            {
+                                "id": "custom.width"
+                            },
+                            {
+                                "id": "links",
+                                "value": [
+                                    {
+                                        "targetBlank": true,
+                                        "title": "mempool",
+                                        "url": "https://mempool.space/signet/tx/${__value.text}"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "TON Tx"
+                        },
+                        "properties": [
+                            {
+                                "id": "custom.width"
+                            },
+                            {
+                                "id": "links",
+                                "value": [
+                                    {
+                                        "targetBlank": true,
+                                        "title": "tonviewer",
+                                        "url": "https://testnet.tonviewer.com/transaction/${__value.text}"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            },
+            "gridPos": {
+                "h": 27,
+                "w": 24,
+                "x": 0,
+                "y": 0
+            },
+            "id": 1,
+            "options": {
+                "cellHeight": "sm",
+                "footer": {
+                    "countRows": false,
+                    "enablePagination": true,
+                    "fields": "",
+                    "reducer": [
+                        "sum"
+                    ],
+                    "show": false
+                },
+                "showHeader": true,
+                "sortBy": []
+            },
+            "pluginVersion": "12.0.0",
+            "targets": [
+                {
+                    "columns": [
+                        {
+                            "selector": "created_at",
+                            "text": "Created At",
+                            "timestampFormat": "2006/01/02 15:04:05",
+                            "type": "timestamp"
+                        },
+                        {
+                            "selector": "amount",
+                            "text": "Amount",
+                            "type": "string"
+                        },
+                        {
+                            "selector": "pegout_addr",
+                            "text": "Pegout Address",
+                            "type": "string"
+                        },
+                        {
+                            "selector": "sender_addr",
+                            "text": "Sender Address",
+                            "type": "string"
+                        },
+                        {
+                            "selector": "bitcoin_tx_id",
+                            "text": "Bitcoin Tx",
+                            "type": "string"
+                        },
+                        {
+                            "selector": "ton_tx",
+                            "text": "TON Tx",
+                            "type": "string"
+                        },
+                        {
+                            "selector": "pegout_status",
+                            "text": "Status",
+                            "type": "string"
+                        },
+                        {
+                            "selector": "bitcoin_tx_raw",
+                            "text": "Bitcoin Tx Raw",
+                            "type": "string"
+                        }
+                    ],
+                    "datasource": "yesoreyeram-infinity-datasource",
+                    "filters": [],
+                    "format": "table",
+                    "global_query_id": "",
+                    "pagination_mode": "none",
+                    "parser": "backend",
+                    "refId": "DemoAPI",
+                    "root_selector": "",
+                    "source": "url",
+                    "type": "json",
+                    "url": "http://indexer/api/metrics?source=burns",
+                    "url_options": {
+                        "data": "",
+                        "method": "GET"
+                    }
+                }
+            ],
+            "title": "",
+            "transformations": [
+                {
+                    "id": "organize",
+                    "options": {
+                        "excludeByName": {
+                            "Status": false
+                        },
+                        "includeByName": {},
+                        "indexByName": {
+                            "Amount": 2,
+                            "Bitcoin Tx": 6,
+                            "Bitcoin Tx Raw": 7,
+                            "Created At": 0,
+                            "Pegout Address": 3,
+                            "Sender Address": 4,
+                            "Status": 1,
+                            "TON Tx": 5
+                        },
+                        "renameByName": {}
+                    }
+                }
+            ],
+            "type": "table"
+        }
+    ],
+    "preload": false,
+    "refresh": "",
+    "schemaVersion": 41,
+    "tags": [],
+    "templating": {
+        "list": []
+    },
+    "time": {
+        "from": "now-6h",
+        "to": "now"
+    },
+    "timepicker": {},
+    "timezone": "browser",
+    "title": "Burns",
+    "uid": "27eca0eb-f25c-473b-aa0a-3622971f19a2",
+    "version": 4
+}

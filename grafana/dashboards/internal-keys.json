@@ -1,0 +1,193 @@
+{
+    "annotations": {
+        "list": [
+            {
+                "builtIn": 1,
+                "datasource": {
+                    "type": "grafana",
+                    "uid": "-- Grafana --"
+                },
+                "enable": true,
+                "hide": true,
+                "iconColor": "rgba(0, 211, 255, 1)",
+                "name": "Annotations & Alerts",
+                "type": "dashboard"
+            }
+        ]
+    },
+    "editable": true,
+    "fiscalYearStartMonth": 0,
+    "graphTooltip": 0,
+    "id": 73,
+    "links": [],
+    "panels": [
+        {
+            "datasource": "yesoreyeram-infinity-datasource",
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "fixedColor": "transparent",
+                        "mode": "fixed"
+                    },
+                    "custom": {
+                        "align": "left",
+                        "cellOptions": {
+                            "type": "auto",
+                            "wrapText": false
+                        },
+                        "inspect": false
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green"
+                            }
+                        ]
+                    }
+                },
+                "overrides": [
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Created At"
+                        },
+                        "properties": [
+                            {
+                                "id": "custom.width",
+                                "value": 175
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "TON Tx"
+                        },
+                        "properties": [
+                            {
+                                "id": "custom.width"
+                            },
+                            {
+                                "id": "links",
+                                "value": [
+                                    {
+                                        "targetBlank": true,
+                                        "title": "tonviewer",
+                                        "url": "https://testnet.tonviewer.com/transaction/${__value.text}"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Internal Key"
+                        },
+                        "properties": [
+                            {
+                                "id": "custom.width"
+                            }
+                        ]
+                    }
+                ]
+            },
+            "gridPos": {
+                "h": 27,
+                "w": 24,
+                "x": 0,
+                "y": 0
+            },
+            "id": 1,
+            "options": {
+                "cellHeight": "sm",
+                "footer": {
+                    "countRows": false,
+                    "enablePagination": true,
+                    "fields": "",
+                    "reducer": [
+                        "sum"
+                    ],
+                    "show": false
+                },
+                "showHeader": true,
+                "sortBy": []
+            },
+            "pluginVersion": "12.0.0",
+            "targets": [
+                {
+                    "columns": [
+                        {
+                            "selector": "completed_at",
+                            "text": "Created At",
+                            "timestampFormat": "2006/01/02 15:04:05",
+                            "type": "timestamp"
+                        },
+                        {
+                            "selector": "internal_key",
+                            "text": "Internal Key",
+                            "type": "string"
+                        },
+                        {
+                            "selector": "ton_tx",
+                            "text": "TON Tx",
+                            "type": "string"
+                        }
+                    ],
+                    "datasource": "yesoreyeram-infinity-datasource",
+                    "filters": [],
+                    "format": "table",
+                    "global_query_id": "",
+                    "pagination_mode": "none",
+                    "parser": "backend",
+                    "refId": "DemoAPI",
+                    "root_selector": "",
+                    "source": "url",
+                    "type": "json",
+                    "url": "http://indexer/api/metrics?source=internal_keys",
+                    "url_options": {
+                        "data": "",
+                        "method": "GET"
+                    }
+                }
+            ],
+            "title": "Internal Keys",
+            "transformations": [
+                {
+                    "id": "organize",
+                    "options": {
+                        "excludeByName": {
+                            "Status": false
+                        },
+                        "includeByName": {},
+                        "indexByName": {
+                            "Created At": 0,
+                            "Internal Key": 1,
+                            "TON Tx": 2
+                        },
+                        "renameByName": {}
+                    }
+                }
+            ],
+            "type": "table"
+        }
+    ],
+    "preload": false,
+    "refresh": "1m",
+    "schemaVersion": 41,
+    "tags": [],
+    "templating": {
+        "list": []
+    },
+    "time": {
+        "from": "now-6h",
+        "to": "now"
+    },
+    "timepicker": {},
+    "timezone": "browser",
+    "title": "Internal Keys",
+    "uid": "efef1812-648d-4e83-a21a-9af219bc392f",
+    "version": 2
+}
