@@ -130,6 +130,13 @@ func (fb *FetcherBitcoin) setCPFPCountMetric(count bitcoin.TxChildrenCount) {
 	}
 }
 
+func (fb *FetcherBitcoin) setLastPegoutExistsMetric(pegoutTxId *chainhash.Hash) {
+	txExists, _, _ := bu.BitcoinTxExists(fb.bitcoinClient, pegoutTxId.String())
+	if !txExists {
+		lastPegout.WithLabelValues(pegoutTxId.String()).Set(1)
+	}
+}
+
 func (fb *FetcherBitcoin) Fetch() {
 	signedPegouts, err := fb.getSignedPegouts()
 	if err != nil {
@@ -152,6 +159,7 @@ func (fb *FetcherBitcoin) Fetch() {
 			Msg("fetch failed")
 	}
 	fb.setCPFPCountMetric(*cpfpCount)
+	fb.setLastPegoutExistsMetric(LastPegoutTxID)
 }
 
 func (fb *FetcherBitcoin) Work(ctx context.Context, wg *sync.WaitGroup) {
