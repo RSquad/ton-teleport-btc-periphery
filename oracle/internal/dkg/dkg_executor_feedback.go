@@ -92,11 +92,37 @@ func (e *Executor) logExecuteR3(dkg *coordinator.DKG) {
 	e.logMessage(dkg, "execute R3")
 }
 
+func (e *Executor) logDKGR1Completed(dkg *coordinator.DKG) {
+	if dkg.R1.Count == uint64(dkg.MaxSigners) {
+		e.logMessage(dkg, fmt.Sprintf("R1 completed (ready %d)", dkg.R1.Count))
+	} else {
+		e.logError(dkg, fmt.Sprintf("R1 completed, but MaxSigners(%d) != R1.Count(%d)", dkg.MaxSigners, dkg.R1.Count), nil)
+	}
+}
+
+func (e *Executor) logDKGR2Completed(dkg *coordinator.DKG) {
+	if dkg.R2.Count == uint64(dkg.MaxSigners) {
+		e.logMessage(dkg, fmt.Sprintf("R2 completed (ready %d)", dkg.R2.Count))
+	} else {
+		e.logError(dkg, fmt.Sprintf("R2 completed, but MaxSigners(%d) != R2.Count(%d)", dkg.MaxSigners, dkg.R2.Count), nil)
+	}
+}
+
+func (e *Executor) logDKGR3Completed(dkg *coordinator.DKG) {
+	if dkg.R3.Count == dkg.MaxSigners {
+		e.logMessage(dkg, fmt.Sprintf("R3 completed (ready %d)", dkg.R3.Count))
+	} else {
+		e.logError(dkg, fmt.Sprintf("R3 completed, but MaxSigners(%d) != R3.Count(%d)", dkg.MaxSigners, dkg.R3.Count), nil)
+	}
+}
+
 func (e *Executor) logSendRound1Package(dkg *coordinator.DKG, err error) {
 	errCode, _ := helpers.ExtractExitCode(err.Error())
 
 	if errCode == helpers.ErrDkgExpired {
 		infoEventWithDkg(dkg, e.validatorIdx).Msg("DKG Expired")
+	} else if errCode == helpers.ErrPackageAlreadyExist {
+		infoEventWithDkg(dkg, e.validatorIdx).Msg("Package already exist")
 	} else if errCode == helpers.ErrRound1Completed {
 		infoEventWithDkg(dkg, e.validatorIdx).Msg("DKG Round1 completed")
 	} else {
@@ -106,9 +132,16 @@ func (e *Executor) logSendRound1Package(dkg *coordinator.DKG, err error) {
 }
 
 func (e *Executor) logSendRound2Package(dkg *coordinator.DKG, err error) {
-	msg := helpers.HandleTvmError(err)
-	errorEventWithDkg(dkg, e.validatorIdx).
-		Msg("R2 packages sent with errors: " + msg)
+	errCode, _ := helpers.ExtractExitCode(err.Error())
+
+	if errCode == helpers.ErrDkgExpired {
+		infoEventWithDkg(dkg, e.validatorIdx).Msg("DKG Expired")
+	} else if errCode == helpers.ErrPackageAlreadyExist {
+		infoEventWithDkg(dkg, e.validatorIdx).Msg("Package already exist")
+	} else {
+		msg := helpers.HandleTvmError(err)
+		errorEventWithDkg(dkg, e.validatorIdx).Msg("R2 packages sent with errors: " + msg)
+	}
 }
 
 func (e *Executor) logSendClaimFailed(dkg *coordinator.DKG, culpritIdx uint16, err error) {
@@ -120,6 +153,14 @@ func (e *Executor) logSendClaimFailed(dkg *coordinator.DKG, culpritIdx uint16, e
 }
 
 func (e *Executor) logSendPubkeyPackageFailed(dkg *coordinator.DKG, err error) {
-	msg := helpers.HandleTvmError(err)
-	errorEventWithDkg(dkg, e.validatorIdx).Msg("failed to send pubkey package: " + msg)
+	errCode, _ := helpers.ExtractExitCode(err.Error())
+
+	if errCode == helpers.ErrDkgExpired {
+		infoEventWithDkg(dkg, e.validatorIdx).Msg("DKG Expired")
+	} else if errCode == helpers.ErrPackageAlreadyExist {
+		infoEventWithDkg(dkg, e.validatorIdx).Msg("Package already exist")
+	} else {
+		msg := helpers.HandleTvmError(err)
+		errorEventWithDkg(dkg, e.validatorIdx).Msg("failed to send pubkey package: " + msg)
+	}
 }

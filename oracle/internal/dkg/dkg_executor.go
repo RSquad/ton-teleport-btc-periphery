@@ -195,7 +195,7 @@ func (e *Executor) Execute(dkg *coordinator.DKG) {
 func (e *Executor) executeR1(dkg *coordinator.DKG) bool {
 	e.logExecuteR1(dkg)
 	if dkg.Round1Completed() {
-		e.logDKGProcess(dkg, "R1 completed")
+		e.logDKGR1Completed(dkg)
 		return true
 	}
 
@@ -255,7 +255,7 @@ func (e *Executor) executeR1(dkg *coordinator.DKG) bool {
 func (e *Executor) executeR2(dkg *coordinator.DKG) bool {
 	e.logExecuteR2(dkg)
 	if dkg.Round2Completed() {
-		e.logDKGProcess(dkg, "R2 completed")
+		e.logDKGR2Completed(dkg)
 		return true
 	}
 
@@ -339,7 +339,7 @@ func (e *Executor) executeR3(dkg *coordinator.DKG) bool {
 
 	if dkg.Round3Completed() {
 		e.artifacts.SafeCleanPrivateX25519()
-		e.logDKGProcess(dkg, "R3 completed")
+		e.logDKGR3Completed(dkg)
 		return true
 	}
 
@@ -444,6 +444,8 @@ func (e *Executor) executeR3(dkg *coordinator.DKG) bool {
 			e.claimCulpritByR3Mask(dkg)
 		}
 		e.logSendPubkeyPackageFailed(dkg, err)
+	} else {
+		e.logDKGProcess(dkg, "R3 packages sent")
 	}
 
 	return false

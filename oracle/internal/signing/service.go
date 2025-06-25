@@ -253,6 +253,8 @@ func (s *SignService) execute(ctx context.Context, dkg *coordinator.DKG) {
 	}
 
 	// Execute signing steps
+	s.logDebug("Try running the Pegout Signing rounds")
+
 	if s.doCommit(validatorIdx, minSigners) {
 		if s.doSign(validatorIdx, minSigners) {
 			s.doAggregate(validatorIdx, pubkeyPackage)
@@ -264,17 +266,20 @@ func (s *SignService) doCommit(
 	validatorIdx uint16,
 	minSigners uint16,
 ) bool {
+	s.logDebug("Pegout Signing: Commit")
 	pegout := s.cachedPegout
 	s.logCommitPegout(pegout.ID)
 
 	if pegout.artifacts.HasCommitment(validatorIdx) {
 		s.logMessage("Commitment already exists")
+
 		if pegout.artifacts.CommitmentsCount() >= minSigners {
-			s.logMessage("Commitment round completed")
+			s.logMinimalCommitmentsReached(pegout, minSigners)
 			return true
+		} else {
+			s.logMinimalCommitmentsWaitingForOtherOracles(pegout, minSigners)
+			return false
 		}
-		s.logMessage("Waiting for other oracles to commit")
-		return false
 	}
 
 	err := s.generateCommitments()
@@ -292,6 +297,7 @@ func (s *SignService) doSign(
 	validatorIdx uint16,
 	minSigners uint16,
 ) bool {
+	s.logDebug("Pegout Signing: Sign")
 	pegout := s.cachedPegout
 	s.logSignPegout(pegout.ID)
 
@@ -300,14 +306,16 @@ func (s *SignService) doSign(
 		return false
 	}
 
-	if pegout.artifacts.SigningSharesCount() >= int(minSigners) {
-		s.logMinimalSharesReached(pegout.ID)
-		return true
-	}
-
 	if pegout.artifacts.HasSigningShare(validatorIdx) {
 		s.logSigningShareAlreadyExists(pegout.ID)
-		return false
+
+		if pegout.artifacts.SigningSharesCount() >= int(minSigners) {
+			s.logMinimalSharesReached(pegout, minSigners)
+			return true
+		} else {
+			s.logMinimalSharesWaitingForOtherOracles(pegout, minSigners)
+			return false
+		}
 	}
 
 	if len(pegout.signingHashes) == 0 {
@@ -346,6 +354,7 @@ func (s *SignService) doAggregate(
 	validatorIdx uint16,
 	pubkeyPackage []byte,
 ) {
+	s.logDebug("Pegout Signing: Aggregate")
 	pegout := s.cachedPegout
 	s.logAggregateSignShares()
 	s.cleanupNonces()
