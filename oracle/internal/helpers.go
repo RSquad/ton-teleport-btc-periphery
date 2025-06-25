@@ -161,7 +161,7 @@ func DeserializeDkgR2(r2Packages map[uint16][]byte /*map[FROM]data*/, vSetMask *
 		}
 
 		if len(toValidatorData) != int(vSetSize-1 /*ourself*/) {
-			return nil, true, fromValidatorIdx, fmt.Errorf("valid packages count %d from Validator %d is not equal to vSetSize: expected %d", len(toValidatorData), fromValidatorIdx, vSetSize)
+			return nil, true, fromValidatorIdx, fmt.Errorf("valid package count %d from Validator %d does not equal vSetSize - 1 (we don't send a package to ourselves): expected %d", len(toValidatorData), fromValidatorIdx, vSetSize-1)
 		}
 
 		deserializedData[fromValidatorIdx] = toValidatorData
