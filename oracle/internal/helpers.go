@@ -22,6 +22,7 @@ const (
 	ErrSignatureExists                 = 117
 	ErrCommitmentsThresholdReached     = 145
 	ErrDkgAlreadyExecuted              = 146
+	ErrRound1Completed                 = 147
 	TvmExitCodeDifferentPubkeyPackages = 152
 	ErrSigningIsInProgress             = 155
 	ErrClaimAlreadyExists              = 160

@@ -88,7 +88,7 @@ func startAndWaitForStop() error {
 	apiCallTimeout := helpers.ParseIntWithDefaultVal(cfg.ApiCallTimeout, 30, "API call timeout")
 
 	// DKG service
-	fetchPeriod := helpers.ParseIntWithDefaultVal(cfg.FetchPeriod, 6, "DKG fetcher period")
+	fetchPeriod := helpers.ParseIntWithDefaultVal(cfg.FetchPeriod, 10, "DKG fetcher period")
 	sendStartDKGPeriod := helpers.ParseIntWithDefaultVal(cfg.SendStartDKGPeriod, 10, "SendStartDKG period")
 	dkgService := dkg.NewService(
 		coordinator.New(coordinatorContractAddr, tonClient, nil, ctx, apiCallTimeout),
