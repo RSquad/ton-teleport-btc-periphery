@@ -275,7 +275,7 @@ func (s *SignService) doCommit(
 	validatorIdx uint16,
 	minSigners uint16,
 ) bool {
-	s.logDebug("Try running the Pegout Signing round (Commit)")
+	s.logDebug("Pegout Signing: Commit")
 	pegout := s.cachedPegout
 	s.logCommitPegout(pegout.ID)
 
@@ -311,7 +311,7 @@ func (s *SignService) doSign(
 	validatorIdx uint16,
 	minSigners uint16,
 ) bool {
-	s.logDebug("Try running the Pegout Signing round (Sign)")
+	s.logDebug("Pegout Signing: Sign")
 	pegout := s.cachedPegout
 	s.logSignPegout(pegout.ID)
 
@@ -386,7 +386,7 @@ func (s *SignService) doAggregate(
 		return
 	}
 
-	s.logDebug("Try running the Pegout Signing round (Aggregate)")
+	s.logDebug("Pegout Signing: Aggregate")
 	pegout := s.cachedPegout
 	s.logAggregateSignShares()
 	s.cleanupNonces()

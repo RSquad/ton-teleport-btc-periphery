@@ -33,6 +33,11 @@ upgrade --btc-teleport [branch]
 
 **Installation Location:** `/usr/src/ton-teleport-btc-periphery/out/oracle`
 
+### Manual Build (Advanced Users)
+
+If you want to manually build the Oracle, follow the [build instructions](https://github.com/RSquad/ton-teleport-btc-periphery/blob/master/oracle/README.md) in the official repository.
+**⚠️ Important:** It is strongly recommended to use MyTonCtrl for Oracle installation and management instead of manual building.
+
 ## Configuration
 
 The oracle uses environment variables loaded from /usr/src/ton-teleport-btc-periphery/out/.env file.
@@ -127,19 +132,19 @@ MyTonCtrl implements automatic re-voting functionality:
 
 ## Troubleshooting
 
-### Common Issues
+First of all check that logs are on and in debug mode:
+1. Open .env file `/usr/src/ton-teleport-btc-periphery/out/.env`
+2. Adjust `LOG_LEVEL` to `DEBUG` for detailed troubleshooting
+3. Set `LOG_FILE` to `/var/log/oracle.txt`
 
-1. **Oracle fails to start**: Check environment variables in `.env` file
-2. **Permission errors**: Ensure Oracle has write access to keystore directory
-3. **Connection issues**: Verify TON config and coordinator contract address
-4. **Removal blocked**: Use `--force` flag if removing from active validator
+```.env
+...
+LOG_LEVEL=DEBUG
+LOG_FILE=/var/log/oracle.txt
+...
+```
 
-### Log Analysis
-
-Monitor Oracle logs to diagnose issues:
-- Check the log file specified in `LOG_FILE`
-- Adjust `LOG_LEVEL` to `DEBUG` for detailed troubleshooting
-- Review log rotation settings if logs are filling up disk space
+Then restart Oracle with MyTonCtrl. See logs for details.
 
 ## Security Considerations
 
