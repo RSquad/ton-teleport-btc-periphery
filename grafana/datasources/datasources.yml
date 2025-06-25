@@ -8,3 +8,17 @@ datasources:
     isDefault: true
     version: 1
     editable: false
+
+  - id: 6
+    uid: "dem2k81ld0veoe"
+    orgId: 1
+    name: "yesoreyeram-infinity-datasource"
+    type: "yesoreyeram-infinity-datasource"
+    url: ""
+    basicAuth: false
+    basicAuthUser: ""
+    isDefault: false
+    jsonData:
+      global_queries: []
+    readOnly: false
+    apiVersion: ""

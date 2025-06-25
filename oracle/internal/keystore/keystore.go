@@ -11,16 +11,18 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 )
 
+const (
+	FileMaskOwnerRWX           = 0o700
+	FileMaskOwnerRW            = 0o600
+	FileMaskOwnerGRoupOtherRWX = 0o777
+)
+
 type Keystore interface {
 	LoadSecret(pubkey []byte) []byte
 	LoadSession(dkgUntilTimestamp int64) []byte
-	LoadNonce(name string) []byte
-	LoadCommitments(name string) []byte
 	LoadSigningShares(name string) [][]byte
 	StoreSecret(pubkey []byte, secret []byte) error
 	StoreSession(dkgUntilTimestamp int64, secret []byte) error
-	StoreNonce(name string, nonce []byte) error
-	StoreCommitments(name string, commitments []byte) error
 	StoreSigningShares(name string, pkgs [][]byte) error
 	Cleanup()
 }
@@ -32,17 +34,17 @@ type FileKeystore struct {
 
 func New(rootPath string) (Keystore, error) {
 	var err error
-	err = os.MkdirAll(filepath.Join(rootPath, "secrets"), 0o700)
+	err = CreateDir(rootPath, "secrets", FileMaskOwnerRWX)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create secrets dir: %w", err)
 	}
 
-	err = os.MkdirAll(filepath.Join(rootPath, "temp"), 0o700)
+	err = CreateDir(rootPath, "temp", FileMaskOwnerRWX)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create temp dir: %w", err)
 	}
 
-	err = os.MkdirAll(filepath.Join(rootPath, "sessions"), 0o700)
+	err = CreateDir(rootPath, "sessions", FileMaskOwnerRWX)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create secrets dir: %w", err)
 	}
@@ -73,14 +75,6 @@ func (ks *FileKeystore) LoadSession(dkgUntilTimestamp int64) []byte {
 	return ks.load("sessions", fileName)
 }
 
-func (ks *FileKeystore) LoadNonce(name string) []byte {
-	return ks.load("temp", "nonce_"+name)
-}
-
-func (ks *FileKeystore) LoadCommitments(name string) []byte {
-	return ks.load("temp", "commitments_"+name)
-}
-
 func (ks *FileKeystore) LoadSigningShares(name string) [][]byte {
 	data := ks.load("temp", "shares_"+name)
 	if data == nil {
@@ -107,7 +101,7 @@ func (ks *FileKeystore) write(filePath string, data []byte) error {
 	ks.mu.Lock()
 	defer ks.mu.Unlock()
 
-	return os.WriteFile(filePath, data, 0o600)
+	return WriteFile(filePath, data, FileMaskOwnerRW)
 }
 
 func (ks *FileKeystore) StoreSecret(pubkey []byte, secret []byte) error {
@@ -120,16 +114,6 @@ func (ks *FileKeystore) StoreSession(dkgUntilTimestamp int64, secret []byte) err
 	fileName := fmt.Sprintf("%d", dkgUntilTimestamp)
 	filePath := filepath.Join(ks.rootPath, "sessions", fileName)
 	return ks.write(filePath, secret)
-}
-
-func (ks *FileKeystore) StoreNonce(name string, nonce []byte) error {
-	filePath := filepath.Join(ks.rootPath, "temp", "nonce_"+name)
-	return ks.write(filePath, nonce)
-}
-
-func (ks *FileKeystore) StoreCommitments(name string, commitments []byte) error {
-	filePath := filepath.Join(ks.rootPath, "temp", "commitments_"+name)
-	return ks.write(filePath, commitments)
 }
 
 func (ks *FileKeystore) StoreSigningShares(name string, pkgs [][]byte) error {
@@ -148,5 +132,81 @@ func (ks *FileKeystore) Cleanup() {
 	defer ks.mu.Unlock()
 
 	os.RemoveAll(filepath.Join(ks.rootPath, "temp"))
-	os.MkdirAll(filepath.Join(ks.rootPath, "temp"), 0o700)
+	CreateDir(ks.rootPath, "temp", FileMaskOwnerRWX)
+}
+
+// Creates a directory with specific access flags
+// basePath: existing path (do not check access flags)
+// subPath: path to create relative to basePath (may or may not exist)
+// flags: desired access permissions
+func CreateDir(
+	basePath string,
+	subPath string,
+	flags os.FileMode,
+) error {
+	// Check if base path exists
+	if _, err := os.Stat(basePath); err != nil {
+		if os.IsNotExist(err) {
+			// Path doesn't exist, create it with specified flags
+			if err := os.MkdirAll(basePath, flags); err != nil {
+				return fmt.Errorf("failed to create directory: %v", err)
+			}
+		} else {
+			return err
+		}
+	}
+
+	resultPath := filepath.Join(basePath, subPath)
+
+	// Check if the sub path already exists
+	if info, err := os.Stat(resultPath); err == nil {
+		// Path exists, check if access flags match
+		if info.Mode().Perm() != flags.Perm() {
+			return fmt.Errorf("directory exists but permissions don't match: expected %v, got %v", flags.Perm(), info.Mode().Perm())
+		}
+
+		// Path exists and flags match, nothing to do
+		return nil
+	} else if !os.IsNotExist(err) {
+		// Some other error occurred
+		return fmt.Errorf("error checking path: %v", err)
+	}
+
+	// Path doesn't exist, create it with specified flags
+	if err := os.MkdirAll(resultPath, flags); err != nil {
+		return fmt.Errorf("failed to create directory: %v", err)
+	}
+
+	return nil
+}
+
+// Writes data to a file with specific access flags
+func WriteFile(
+	filePath string,
+	data []byte,
+	flags os.FileMode,
+) error {
+	// Check if the file already exists
+	if info, err := os.Stat(filePath); err == nil {
+		// File exists, check if access flags match
+		if info.Mode().Perm() != flags.Perm() {
+			// Try to remove file
+			if err := os.Remove(filePath); err != nil {
+				return fmt.Errorf("file exists but permissions don't match: expected %v, got %v, and the file can't be deleted: %v", flags.Perm(), info.Mode().Perm(), err)
+			}
+		}
+
+		// File exists and flags match, write data
+		return os.WriteFile(filePath, data, flags)
+	} else if !os.IsNotExist(err) {
+		// Some other error occurred
+		return fmt.Errorf("error checking file: %v", err)
+	}
+
+	// Create and write file with specified flags
+	if err := os.WriteFile(filePath, data, flags); err != nil {
+		return fmt.Errorf("failed to write file: %v", err)
+	}
+
+	return nil
 }
