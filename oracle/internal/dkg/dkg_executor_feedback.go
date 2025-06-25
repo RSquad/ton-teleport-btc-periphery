@@ -123,6 +123,8 @@ func (e *Executor) logSendRound1Package(dkg *coordinator.DKG, err error) {
 		infoEventWithDkg(dkg, e.validatorIdx).Msg("DKG Expired")
 	} else if errCode == helpers.ErrPackageAlreadyExist {
 		infoEventWithDkg(dkg, e.validatorIdx).Msg("Package already exist")
+	} else if errCode == helpers.ErrRound1Completed {
+		infoEventWithDkg(dkg, e.validatorIdx).Msg("DKG Round1 completed")
 	} else {
 		msg := helpers.HandleTvmError(err)
 		errorEventWithDkg(dkg, e.validatorIdx).Err(err).Msg("failed to send round1 package: " + msg)
