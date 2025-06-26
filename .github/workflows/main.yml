@@ -30,7 +30,6 @@ jobs:
     secrets:
       DOCKER_REGISTRY_USERNAME: ${{ secrets.DOCR_USERNAME }}
       DOCKER_REGISTRY_PASSWORD: ${{ secrets.DOCR_PASSWORD }}
-
   master:
     if: github.ref == 'refs/heads/master'
     uses: ./.github/workflows/build-and-push.yml
