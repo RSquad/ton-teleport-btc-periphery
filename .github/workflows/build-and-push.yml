@@ -40,10 +40,39 @@ jobs:
           docker login "$DOCKER_REGISTRY_URL" \
             --username "$DOCKER_REGISTRY_USERNAME" \
             --password "$DOCKER_REGISTRY_PASSWORD"
-      - name: Build and Push Image for ${{ matrix.app }}
+
+      - name: Build and Push Image for ${{ matrix.app }} (develop)
+        if: github.ref == 'refs/heads/develop'
         run: |
           BUILD_NUM=${{ github.run_number }}
-          IMAGE_NAME="$DOCKER_REGISTRY_URL/${{ matrix.app }}-${STAGE}"
+          REGISTRY_PREFIX=registry.digitalocean.com/rsquad-dev
+          IMAGE_NAME="$REGISTRY_PREFIX/${{ matrix.app }}-dev"
+          docker build -f ${{ matrix.app }}/Dockerfile \
+            --platform linux/amd64 \
+            -t $IMAGE_NAME:latest \
+            -t $IMAGE_NAME:$BUILD_NUM .
+          docker push $IMAGE_NAME:latest
+          docker push $IMAGE_NAME:$BUILD_NUM
+
+      - name: Build and Push Image for ${{ matrix.app }} (sandbox)
+        if: github.ref == 'refs/heads/sandbox'
+        run: |
+          BUILD_NUM=${{ github.run_number }}
+          REGISTRY_PREFIX=registry.digitalocean.com/rsquad-dev
+          IMAGE_NAME="$REGISTRY_PREFIX/${{ matrix.app }}-sandbox"
+          docker build -f ${{ matrix.app }}/Dockerfile \
+            --platform linux/amd64 \
+            -t $IMAGE_NAME:latest \
+            -t $IMAGE_NAME:$BUILD_NUM .
+          docker push $IMAGE_NAME:latest
+          docker push $IMAGE_NAME:$BUILD_NUM
+
+      - name: Build and Push Image for ${{ matrix.app }} (master)
+        if: github.ref == 'refs/heads/master'
+        run: |
+          BUILD_NUM=${{ github.run_number }}
+          REGISTRY_PREFIX=registry.digitalocean.com/rsquad-prod
+          IMAGE_NAME="$REGISTRY_PREFIX/${{ matrix.app }}-prod"
           docker build -f ${{ matrix.app }}/Dockerfile \
             --platform linux/amd64 \
             -t $IMAGE_NAME:latest \
