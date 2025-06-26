@@ -280,9 +280,9 @@ func HandleTvmError(tvmError error) string {
 	case 117:
 		return "signature exists"
 	case 127:
-		return "R1 is not completed yet"
+		return "R1 is not completed yet (or maybe R2 is already complete)"
 	case 128:
-		return "R2 is not completed yet"
+		return "R2 is not completed yet (or maybe R3 is already complete)"
 	case 135:
 		return "pegout not found"
 	case 145:
