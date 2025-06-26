@@ -61,6 +61,15 @@ func (fetcher *FetcherContractBitcoinClient) Work(ctx context.Context, wg *sync.
 	}
 }
 
+func (fetcher *FetcherContractBitcoinClient) setConfirmedBlockHashMismatchMetric(contractBlockHash string, networkBlockHash string) {
+	isMatch := contractBlockHash == networkBlockHash
+	if !isMatch {
+		confirmedBlockMismatch.WithLabelValues(contractBlockHash, networkBlockHash).Set(1)
+		return
+	}
+	confirmedBlockMismatch.WithLabelValues(contractBlockHash, networkBlockHash).Set(0)
+}
+
 func (fetcher *FetcherContractBitcoinClient) Fetch() {
 	storageCell, err := fetcher.bitcoinClientContract.GetStorageCell()
 	if err != nil {
@@ -91,6 +100,15 @@ func (fetcher *FetcherContractBitcoinClient) Fetch() {
 		logger.Log.Error().Msg(fmt.Sprintf("FetcherContractBitcoinClient: failed to retrieve LastConfirmedBlockHeight, error: %v", err))
 		return
 	}
+
+	info, err := fetcher.bitcoinClient.GetBlockChainInfo()
+	if err != nil {
+		logger.Log.Error().Msg(fmt.Sprintf("FetcherContractBitcoinClient: failed to retrieve BlockChainInfo, error: %v", err))
+		return
+	}
+
+	// Check if LastConfirmedBlockHashes is match
+	fetcher.setConfirmedBlockHashMismatchMetric(lastConfirmedBlockHash.String(), info.BestBlockHash)
 
 	data := &ContractBitcoinClientData{
 		CandidateBlockHashes:     candidateBlockHashes,
