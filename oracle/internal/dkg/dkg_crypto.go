@@ -85,7 +85,6 @@ func EncryptR2Packages(
 			r2PrivateX25519,
 			(*[32]byte)(r2PublicKeyX25519[:]),
 		)
-
 		if err != nil {
 			return nil, fmt.Errorf("Failed to encrypt R2 packages for Oracle {%d}. %w", toValidatorIdx, err)
 		}
@@ -103,7 +102,6 @@ func DecryptR2Packages(
 	r2PrivateX25519 *[32]byte,
 	dkgUntil time.Time,
 ) (map[frost.Identifier]frost.Package /*map[FROM]*/, bool, uint16 /*culprit*/, error) {
-
 	resultPackages := make(map[frost.Identifier]frost.Package)
 
 	// Search packages to thisValidatorIdx from all other validators

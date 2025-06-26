@@ -6,8 +6,7 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 )
 
-type AlertService struct {
-}
+type AlertService struct{}
 
 func NewAlertService() (*AlertService, error) {
 	return &AlertService{}, nil

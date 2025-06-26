@@ -686,8 +686,14 @@ func (s *SignService) ClaimCompleted(pegout *CachedPegout, validatorIdx uint16) 
 }
 
 func (s *SignService) sendClaimBySignatureMask(pegout *CachedPegout, validatorIdx uint16) {
-	// Culprit Oracle id = index of the first non zero bit in pegout.artifacts.Signatures.Mask
-	culpritIdx := pegout.artifacts.Signatures.Mask.BitLen() - 1
+	mask := pegout.artifacts.Signatures.Mask.BitLen()
+	if mask == 0 {
+		return
+	}
+
+	// Culprit Oracle id = index of the highest (most significant) set bit in pegout.artifacts.Signatures.Mask
+	// Every validator in pegout.artifacts.Signatures.Mask who sends a signature is assumed to be a culprit. Only one culprit can be claimed per round.
+	culpritIdx := mask - 1
 	s.logError(fmt.Sprintf("Signature sending failed. Culprit validator identified: %d. The signature sent by the culprit validator differs from the calculated signature", culpritIdx), nil)
 
 	// Sent claim
