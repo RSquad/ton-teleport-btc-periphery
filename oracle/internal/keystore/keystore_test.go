@@ -67,7 +67,6 @@ func VerifyExists(filePath string, flags os.FileMode, t *testing.T) {
 func ClearAndCreate(t *testing.T) Keystore {
 	ClearTmp(t)
 	ks, err := New(TmpRootPath())
-
 	if err != nil {
 		t.Errorf("%v", err)
 		return nil
@@ -102,7 +101,6 @@ func TestKeystoreFolderCreationWithExistedFolders_Success(t *testing.T) {
 
 	// Create again
 	_, err := New(TmpRootPath())
-
 	if err != nil {
 		t.Errorf("%v", err)
 		return

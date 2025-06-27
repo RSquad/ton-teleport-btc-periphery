@@ -58,14 +58,14 @@ The Oracle is configured using environment variables. You can set these in a `.e
 
 #### Periodic Events and API Timeouts
 
-- `ORACLE_DKG_FETCH_PERIOD` - Specifies the interval, in seconds, at which the periodic event `DKG_FETCH` is triggered. If not set, the default value is 6 seconds.
+- `ORACLE_DKG_FETCH_PERIOD` - Specifies the interval, in seconds, at which the periodic event `DKG_FETCH` is triggered. If not set, the default value is 10 seconds.
 - `ORACLE_SEND_START_DKG_PERIOD` - Specifies the interval, in seconds, at which the periodic event `SEND_START_DKG` is triggered. If not set, the default value is 10 seconds.
 - `ORACLE_EXECUTE_SIGN_PERIOD` - Specifies the interval, in seconds, at which the periodic event `EXECUTE_SIGN` is triggered. If not set, the default value is 10 seconds.
-- `API_CALL_TIMEOUT` - Defines the maximum time (in seconds) to wait for an API call to complete. If the API does not respond within this period, the request will be terminated.
+- `API_CALL_TIMEOUT` - Defines the maximum time (in seconds) to wait for an API call to complete. If the API does not respond within this period, the request will be terminated. If not set, the default value is 30 seconds.
 
 #### Log
-If not set, the default value is 10 seconds.
-- `LOG_LEVEL` - Minimum log level. Possible values: DEBUG, INFO, WARN, ERROR.
+
+- `LOG_LEVEL` - Minimum log level. Possible values: DEBUG, INFO, WARN, ERROR. If not set, the default value is INFO.
 - `LOG_FILE` - Path to the log file. A full path including the file name must be specified. If not set, logs will be written only to standard output (stdout).
 - `LOG_FILE_MAX_SIZE` - Maximum size of each log file, in megabytes (default 100).
 - `LOG_FILE_MAX_BACKUPS` - Maximum number of backup files to retain (default 50).
@@ -85,12 +85,12 @@ ORACLE_SERVER_PUBLIC_KEY_PATH=
 ORACLE_CLIENT_PRIVATE_KEY_PATH=
 ORACLE_VALIDATOR_SERVER_ADDR=
 ORACLE_KEYSTORE_PATH=/path/to/keystore
-ORACLE_DKG_FETCH_PERIOD=6
+ORACLE_DKG_FETCH_PERIOD=10
 ORACLE_SEND_START_DKG_PERIOD=10
 ORACLE_EXECUTE_SIGN_PERIOD=10
 API_CALL_TIMEOUT=30
 LOG_LEVEL=DEBUG
-LOG_FILE=/var/logs/oracle.txt
+LOG_FILE=/var/log/oracle.txt
 LOG_FILE_MAX_SIZE=100
 LOG_FILE_MAX_BACKUPS=1000
 LOG_FILE_MAX_BACKUP_AGE=365
@@ -108,12 +108,12 @@ ORACLE_SERVER_PUBLIC_KEY_PATH=/path/to/certs/server.pub
 ORACLE_CLIENT_PRIVATE_KEY_PATH=/path/to/certs/client
 ORACLE_VALIDATOR_SERVER_ADDR=127.0.0.1:4441
 ORACLE_KEYSTORE_PATH=/path/to/keystore
-ORACLE_DKG_FETCH_PERIOD=6
+ORACLE_DKG_FETCH_PERIOD=10
 ORACLE_SEND_START_DKG_PERIOD=10
 ORACLE_EXECUTE_SIGN_PERIOD=10
 API_CALL_TIMEOUT=30
 LOG_LEVEL=DEBUG
-LOG_FILE=/var/logs/oracle.txt
+LOG_FILE=/var/log/oracle.txt
 LOG_FILE_MAX_SIZE=100
 LOG_FILE_MAX_BACKUPS=1000
 LOG_FILE_MAX_BACKUP_AGE=365

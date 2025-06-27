@@ -26,7 +26,6 @@ generated.go
 *_testmain.go
 *_mock.go
 
-
 /vendor/
 
 /.cache/
