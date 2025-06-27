@@ -58,18 +58,14 @@ func (f *FetcherPegouts) setDelayedMetric(pegouts []coordinator.PegoutRecord) {
 }
 
 func (f *FetcherPegouts) deleteSignedPegouts(pegouts []coordinator.PegoutRecord) {
-	for key, _ := range f.expiredAt {
-		isSigned := false
-		for i, pegout := range pegouts {
-			if key == pegout.ID {
-				break
-			}
-			if i == len(pegouts)-1 {
-				isSigned = true
-			}
-		}
-		if isSigned {
-			delete(f.expiredAt, key)
+	unsignedPegouts := make(map[uint64]struct{}, len(pegouts))
+	for _, pegout := range pegouts {
+		unsignedPegouts[pegout.ID] = struct{}{}
+	}
+
+	for ID := range f.expiredAt {
+		if _, exists := unsignedPegouts[ID]; !exists {
+			delete(f.expiredAt, ID) // Delete signed transactions
 		}
 	}
 }
@@ -160,7 +156,7 @@ func (fetcher *FetcherPegouts) Work(ctx context.Context, wg *sync.WaitGroup) {
 	for {
 		select {
 		case <-ctx.Done():
-			logger.Log.Info().Msg("Unsigned Pegouts Fetcher received shutdown signal...")
+			logger.Log.Info().Msg("Pegouts Fetcher received shutdown signal...")
 			return
 		case <-ticker.C:
 			fetcher.Fetch()
