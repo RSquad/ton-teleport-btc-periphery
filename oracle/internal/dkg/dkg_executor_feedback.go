@@ -29,7 +29,7 @@ func infoEventWithDkg(dkg *coordinator.DKG, validatorIdx uint16) *zerolog.Event 
 	return infoEvent().
 		Str("validator_idx", validatorIdxStr).
 		Str("dkg_state", dkg.State.String()).
-		Str("dkg_until", dkg.Until.Format(time.RFC3339))
+		Str("dkg_until", fmt.Sprintf("%s, (%d)", dkg.Until.Format(time.RFC3339), dkg.Until.Unix()))
 }
 
 func errorEventWithDkg(dkg *coordinator.DKG, validatorIdx uint16) *zerolog.Event {
@@ -41,7 +41,7 @@ func errorEventWithDkg(dkg *coordinator.DKG, validatorIdx uint16) *zerolog.Event
 	return errorEvent().
 		Str("validator_idx", validatorIdxStr).
 		Str("state", dkg.State.String()).
-		Str("until", dkg.Until.Format(time.RFC3339))
+		Str("until", fmt.Sprintf("%s, (%d)", dkg.Until.Format(time.RFC3339), dkg.Until.Unix()))
 }
 
 func (e *Executor) logMessage(dkg *coordinator.DKG, msg string) {

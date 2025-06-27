@@ -309,6 +309,8 @@ func HandleTvmError(tvmError error) string {
 		return "Pegout is not expired"
 	case 168:
 		return "Different pegout signatures"
+	case 170:
+		return "Invalid dkg timestamp"
 	case 171:
 		return "Pegout id does not match expected pegout to sign"
 	case 180:
