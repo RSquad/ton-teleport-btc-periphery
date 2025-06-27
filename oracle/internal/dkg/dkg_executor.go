@@ -247,7 +247,7 @@ func (e *Executor) executeR1(dkg *coordinator.DKG) bool {
 	if err != nil {
 		e.logSendRound1Package(dkg, err)
 	} else {
-		e.logDKGProcess(dkg, "R1 package sent")
+		e.logDKGProcess(dkg, fmt.Sprintf("R1 package sent, dkg.Until = %d", dkg.Until.Unix()))
 	}
 	return false
 }
