@@ -12,6 +12,7 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
+	"github.com/xssnick/tonutils-go/address"
 )
 
 type FetcherPegouts struct {
@@ -44,6 +45,10 @@ func NewFetcherPegouts(
 }
 
 func (f *FetcherPegouts) setDelayedMetric(pegouts []coordinator.PegoutRecord) {
+	if len(pegouts) == 0 {
+		unsignedPegoutDelayed.WithLabelValues(utils.AddrToRawString(&address.Address{})).Set(0)
+		return
+	}
 	now := time.Now()
 	for _, pegout := range pegouts {
 		if oldExpiredAt, exists := f.expiredAt[pegout.ID]; exists {
@@ -128,10 +133,6 @@ func (f *FetcherPegouts) Fetch() {
 
 	if unsignedPegouts == nil {
 		logger.Log.Debug().Msg("FetcherPegouts: Contract returns unsignedPegouts is null")
-	}
-
-	if len(unsignedPegouts) == 0 {
-		logger.Log.Debug().Msg("FetcherPegouts: Contract returns unsignedPegouts is empty")
 	}
 
 	unsignedPegoutsLen.WithLabelValues("Unsigned pegouts length").Set(float64(len(unsignedPegouts)))
