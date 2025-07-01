@@ -8,12 +8,14 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/btcsuite/btcd/btcjson"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/rpcclient"
 	"github.com/btcsuite/btcd/wire"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 )
 
 const (
@@ -292,47 +294,87 @@ func (c *Client) GetRawTransactionVerbose(txHash *chainhash.Hash) (*btcjson.TxRa
 }
 
 func (c *Client) GetTxChildrenCount(parentHash *chainhash.Hash) (*TxChildrenCount, error) {
+	// 1. Verify parent exists first
 	_, err := c.RPCClient.GetRawTransaction(parentHash)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get parent transaction: %v", err)
 	}
 
+	// 2. Get mempool (string IDs)
 	mempool, err := c.RPCClient.GetRawMempool()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get mempool: %v", err)
 	}
 
-	childrenCount := 0
+	// 3. Batch get all mempool transactions
+	type job struct {
+		txID string
+		idx  int
+	}
+	type result struct {
+		inputs int
+		err    error
+	}
 
-	for _, txID := range mempool {
-		txHash, err := chainhash.NewHashFromStr(txID.String())
-		if err != nil {
-			continue
-		}
+	workers := 8 // Tune based on your RPC server capacity
+	jobChan := make(chan job, len(mempool))
+	resultChan := make(chan result, len(mempool))
 
-		tx, err := c.RPCClient.GetRawTransaction(txHash)
-		if err != nil {
-			continue
-		}
+	// Worker pool
+	var wg sync.WaitGroup
+	for i := 0; i < workers; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for j := range jobChan {
+				txHash, err := chainhash.NewHashFromStr(j.txID)
+				if err != nil {
+					resultChan <- result{err: fmt.Errorf("failed to parse txID %s: %v", j.txID, err)}
+					continue
+				}
 
-		var inputsFromParent int
-		for _, txIn := range tx.MsgTx().TxIn {
-			if txIn.PreviousOutPoint.Hash.IsEqual(parentHash) {
-				inputsFromParent++
+				tx, err := c.RPCClient.GetRawTransaction(txHash)
+				if err != nil {
+					resultChan <- result{err: fmt.Errorf("failed to get tx %s: %v", txHash, err)}
+					continue
+				}
+
+				inputs := 0
+				for _, txIn := range tx.MsgTx().TxIn {
+					if txIn.PreviousOutPoint.Hash.IsEqual(parentHash) {
+						inputs++
+					}
+				}
+				resultChan <- result{inputs: inputs}
 			}
-		}
+		}()
+	}
 
-		if inputsFromParent > 0 {
+	// Feed jobs
+	for i, txID := range mempool {
+		jobChan <- job{txID: txID.String(), idx: i}
+	}
+	close(jobChan)
+	wg.Wait()
+	close(resultChan)
+
+	// Process results
+	childrenCount := 0
+	for res := range resultChan {
+		fmt.Printf("tx %d inputs\n", res.inputs)
+		if res.err != nil {
+			logger.Log.Error().Err(res.err).Msg("tx processing error")
+			continue
+		}
+		if res.inputs > 0 {
 			childrenCount++
 		}
 	}
 
-	result := &TxChildrenCount{
+	return &TxChildrenCount{
 		ParentTxID:    parentHash,
 		ChildrenCount: childrenCount,
-	}
-
-	return result, nil
+	}, nil
 }
 
 func (c *Client) SendRawTransaction(tx *wire.MsgTx, allowHighFees bool) (*chainhash.Hash, error) {

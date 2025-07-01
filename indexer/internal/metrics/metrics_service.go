@@ -23,7 +23,6 @@ type MetricsService struct {
 	fetcherContractTeleport      *FetcherContractTeleport
 	fetcherContractCoordinator   *FetcherContractCoordinator
 	fetcherPegouts               *FetcherPegouts
-	fetcherBitcoin               *FetcherBitcoin
 }
 
 func NewService(
@@ -52,7 +51,7 @@ func NewService(
 	fetcherContractBitcoinClient := NewFetcherContractBitcoinClient(writerDbChan, bitcoinClient, bitcoinClientContract, 60) // TODO: move 60 to config
 
 	// Fetcher: BitcoinNetwork
-	fetcherBitcoinNetwork := NewFetcherBitcoinNetwork(writerDbChan, bitcoinClient, 59) // TODO: move 60 to config
+	fetcherBitcoinNetwork := NewFetcherBitcoinNetwork(writerDbChan, db, bitcoinClient, 59) // TODO: move 60 to config
 
 	// Fetcher: ContractTeleport
 	fetcherContractTeleport := NewFetcherContractTeleport(writerDbChan, teleportContract, 27) // TODO: move 5 to config
@@ -60,8 +59,8 @@ func NewService(
 	// Fetcher: ContractCoordinator
 	fetcherContractCoordinator := NewFetcherContractCoordinator(writerDbChan, coordinatorContract, 59) // TODO: move 60 to config
 
-	fetcherPegouts := NewFetcherPegouts(tonClient, bitcoinClient, coordinatorContract, db)
-	fetcherBitcoin := NewFetcherBitcoin(bitcoinClient, db)
+	// Fetcher: Pegouts
+	fetcherPegouts := NewFetcherPegouts(tonClient, bitcoinClient, coordinatorContract, db, 59) // TODO: move 60 to config
 
 	return &MetricsService{
 		writerDB:                     writerDB,
@@ -72,7 +71,6 @@ func NewService(
 		fetcherContractTeleport:      fetcherContractTeleport,
 		fetcherContractCoordinator:   fetcherContractCoordinator,
 		fetcherPegouts:               fetcherPegouts,
-		fetcherBitcoin:               fetcherBitcoin,
 	}, nil
 }
 
