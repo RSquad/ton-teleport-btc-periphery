@@ -41,11 +41,14 @@ func NewFetcherPegouts(
 }
 
 func (f *FetcherPegouts) setDelayedMetric(pegouts []coordinator.PegoutRecord) {
+	now := time.Now()
 	for _, pegout := range pegouts {
 		if oldExpiredAt, exists := f.expiredAt[pegout.ID]; exists {
 			if oldExpiredAt.Equal(pegout.ExpiredAt) {
-				if time.Now().After(pegout.ExpiredAt.Add(PEGOUT_MAX_DELAY)) {
+				if now.After(pegout.ExpiredAt.Add(PEGOUT_MAX_DELAY)) {
 					unsignedPegoutDelayed.WithLabelValues(utils.AddrToRawString(pegout.PegoutAddress)).Set(1)
+				} else {
+					unsignedPegoutDelayed.WithLabelValues(utils.AddrToRawString(pegout.PegoutAddress)).Set(0)
 				}
 			}
 		} else {
