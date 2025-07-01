@@ -112,6 +112,10 @@ func (f *FetcherPegouts) getSignedPegouts() ([]SignedPegout, error) {
 }
 
 func (f *FetcherPegouts) setBitcoinTxExistsMetric(pegouts []SignedPegout) {
+	if len(pegouts) == 0 {
+		unprocessedPegout.WithLabelValues(utils.AddrToRawString(&address.Address{}), "").Set(0)
+		return
+	}
 	for _, pegout := range pegouts {
 		txExists, _, _ := bu.BitcoinTxExists(f.bitcoinClient, pegout.bitcoinTxId)
 		if !txExists {
