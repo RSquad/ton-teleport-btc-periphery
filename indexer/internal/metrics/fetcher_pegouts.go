@@ -12,6 +12,7 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
+	"github.com/xssnick/tonutils-go/address"
 )
 
 type FetcherPegouts struct {
@@ -45,7 +46,7 @@ func NewFetcherPegouts(
 
 func (f *FetcherPegouts) setDelayedMetric(pegouts []coordinator.PegoutRecord) {
 	if len(pegouts) == 0 {
-		unsignedPegoutDelayed.WithLabelValues("").Set(0)
+		unsignedPegoutDelayed.WithLabelValues(utils.AddrToRawString(&address.Address{})).Set(0)
 		return
 	}
 	now := time.Now()
