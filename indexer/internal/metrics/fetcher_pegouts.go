@@ -52,6 +52,7 @@ func (f *FetcherPegouts) setDelayedMetric(pegouts []coordinator.PegoutRecord) {
 				}
 			}
 		} else {
+			unsignedPegoutDelayed.WithLabelValues(utils.AddrToRawString(pegout.PegoutAddress)).Set(0)
 			f.expiredAt[pegout.ID] = pegout.ExpiredAt
 		}
 	}
