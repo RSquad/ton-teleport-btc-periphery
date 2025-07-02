@@ -210,7 +210,7 @@ func (c *TeleportContract) GetStorage(block *tonutils.BlockIDExt) (Storage, erro
 
 	// Deposits
 	depositsCell, _ := storage.Cell(storageIndexDeposits)
-	var deposits = map[uint64]DepositData{}
+	deposits := map[uint64]DepositData{}
 	if depositsCell != nil {
 		deposits, err = loadDepositsMap(depositsCell)
 		if err != nil {
@@ -220,7 +220,7 @@ func (c *TeleportContract) GetStorage(block *tonutils.BlockIDExt) (Storage, erro
 
 	// UTXO set
 	utxoSetCell, _ := storage.Cell(storageIndexUTXOset)
-	var utxoSet = map[string]UTXOData{}
+	utxoSet := map[string]UTXOData{}
 	if utxoSetCell != nil {
 		utxoSet, err = loadUTXOset(utxoSetCell)
 		if err != nil {
