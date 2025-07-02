@@ -130,6 +130,20 @@ func (fetcher *FetcherBitcoinNetwork) setBitcoinTxExistsMetric(pegouts []SignedP
 	}
 }
 
+func (fetcher *FetcherBitcoinNetwork) setLastPegoutExistsMetric(pegoutId *chainhash.Hash) error {
+	txExists, _, err := bu.BitcoinTxExists(fetcher.bitcoinClient, pegoutId.String())
+	if err != nil {
+		lastPegout.WithLabelValues(pegoutId.String()).Set(1)
+		return err
+	}
+	if !txExists {
+		lastPegout.WithLabelValues(pegoutId.String()).Set(1)
+	} else {
+		lastPegout.WithLabelValues(pegoutId.String()).Set(0)
+	}
+	return nil
+}
+
 func (fetcher *FetcherBitcoinNetwork) setCPFPCountMetric(count bitcoin.TxChildrenCount) {
 	if count.ParentTxID != nil {
 		cpfpCounter.WithLabelValues(count.ParentTxID.String()).Set(float64(count.ChildrenCount))
@@ -158,11 +172,14 @@ func (fetcher *FetcherBitcoinNetwork) Fetch() {
 			Str("component", "FetcherBitcoinNetwork").
 			Msg("fetch failed")
 	}
+
+	err = fetcher.setLastPegoutExistsMetric(LastPegoutTxID)
 	if err != nil {
 		logger.Log.Error().Err(err).
 			Str("component", "FetcherBitcoinNetwork").
 			Msg("fetch failed")
 	}
+
 	cpfpCount, err := fetcher.getCPFPCount(LastPegoutTxID)
 	if err != nil {
 		logger.Log.Error().Err(err).

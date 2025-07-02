@@ -45,5 +45,13 @@ var (
 		prometheus.GaugeOpts{
 			Name: "cpfp_count",
 			Help: "CPFP Count",
-		}, []string{"tx_id"})
+		}, []string{"tx_id"},
+	)
+	lastPegout = promauto.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "last_pegout_exists",
+			Help: "Last pegout exists",
+		},
+		[]string{"pegout_tx_id"},
+	)
 )
