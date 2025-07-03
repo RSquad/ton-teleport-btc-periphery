@@ -34,14 +34,19 @@ func NewRelayerFactory(bitcoinClient *bitcoin.Client, tonClient *tonclient.TonCl
 func (c *RelayerFactory) CreateRelayer(
 	relayerType string,
 	sender *jwv4r2contract.JWV4R2Contract,
-	bitcoinClientContractAddr string,
-	teleportContractAddr string,
+	bitcoinClientContractAddrStr string,
+	teleportContractAddrStr string,
 ) (
 	Relayer,
 	error,
 ) {
+	bitcoinClientContractAddr, err := address.ParseAddr(bitcoinClientContractAddrStr)
+	if err != nil {
+		return nil, fmt.Errorf("parsing the Bitcoin Client Contract address '%s' failed", bitcoinClientContractAddrStr)
+	}
+
 	bitcoinClientContract := bitcoinclientcontract.NewBitcoinClientContract(
-		address.MustParseAddr(bitcoinClientContractAddr),
+		bitcoinClientContractAddr,
 		c.tonClient,
 		sender,
 		context.Background(),
@@ -50,8 +55,13 @@ func (c *RelayerFactory) CreateRelayer(
 	case "block":
 		return blockrelayer.NewBlockRelayer(c.bitcoinClient, bitcoinClientContract)
 	case "pegout":
+		teleportContractAddr, err := address.ParseAddr(teleportContractAddrStr)
+		if err != nil {
+			return nil, fmt.Errorf("parsing the Teleport Contract address '%s' failed", teleportContractAddrStr)
+		}
+
 		teleportContract := teleportcontract.New(
-			address.MustParseAddr(teleportContractAddr),
+			teleportContractAddr,
 			c.tonClient,
 			sender,
 			context.Background(),
