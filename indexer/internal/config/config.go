@@ -7,8 +7,8 @@ import (
 
 type IndexerConfig struct {
 	BitcoinRpcHost                          string `env:"COMMON_BITCOIN_RPC_HOST,required"`
-	BitcoinRpcUser                          string `env:"COMMON_BITCOIN_RPC_USER,required"`
-	BitcoinRpcPass                          string `env:"COMMON_BITCOIN_RPC_PASS,required"`
+	BitcoinRpcUser                          string `env:"COMMON_BITCOIN_RPC_USER"`
+	BitcoinRpcPass                          string `env:"COMMON_BITCOIN_RPC_PASS"`
 	TonConfigUrl                            string `env:"COMMON_TON_CONFIG_URL,required"`
 	TeleportContractAddr                    string `env:"COMMON_TON_CONTRACT_TELEPORT_ADDR"`
 	CoordinatorContractAddr                 string `env:"COMMON_TON_CONTRACT_COORDINATOR"`
