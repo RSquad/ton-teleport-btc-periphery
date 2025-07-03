@@ -87,7 +87,11 @@ func initialize() (*App, error) {
 
 	var teleportContract *teleportcontract.TeleportContract = nil
 	if len(indexerConfig.TeleportContractAddr) > 0 {
-		teleportContractAddr := address.MustParseAddr(indexerConfig.TeleportContractAddr)
+		teleportContractAddr, err := address.ParseAddr(indexerConfig.TeleportContractAddr)
+		if err != nil {
+			return nil, fmt.Errorf("parsing the Teleport Contract address '%s' failed", indexerConfig.TeleportContractAddr)
+		}
+
 		teleportContract = teleportcontract.New(
 			teleportContractAddr,
 			tonClient,
@@ -98,7 +102,11 @@ func initialize() (*App, error) {
 
 	var coordinatorContract coordinator.Coordinator = nil
 	if len(indexerConfig.CoordinatorContractAddr) > 0 {
-		coordinatorContractAddr := address.MustParseAddr(indexerConfig.CoordinatorContractAddr)
+		coordinatorContractAddr, err := address.ParseAddr(indexerConfig.CoordinatorContractAddr)
+		if err != nil {
+			return nil, fmt.Errorf("parsing the Coordinator Contract address '%s' failed", indexerConfig.CoordinatorContractAddr)
+		}
+
 		coordinatorContract = coordinator.New(
 			coordinatorContractAddr,
 			tonClient,
@@ -110,7 +118,11 @@ func initialize() (*App, error) {
 
 	var bitcoinClientContract *bitcoinclientcontract.BitcoinClientContract = nil
 	if len(indexerConfig.BitcoinClientContractAddr) > 0 {
-		bitcoinClientContractAddr := address.MustParseAddr(indexerConfig.BitcoinClientContractAddr)
+		bitcoinClientContractAddr, err := address.ParseAddr(indexerConfig.BitcoinClientContractAddr)
+		if err != nil {
+			return nil, fmt.Errorf("parsing the Bitcoin Client Contract address '%s' failed", indexerConfig.BitcoinClientContractAddr)
+		}
+
 		bitcoinClientContract = bitcoinclientcontract.NewBitcoinClientContract(
 			bitcoinClientContractAddr,
 			tonClient,
