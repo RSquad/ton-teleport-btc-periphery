@@ -5,22 +5,16 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"net/http"
 	"sync"
 
-	"entgo.io/contrib/entgql"
 	"entgo.io/ent/dialect"
 
-	"github.com/99designs/gqlgen/graphql/handler"
-	"github.com/99designs/gqlgen/graphql/playground"
 	_ "github.com/lib/pq"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/rs/cors"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/config"
 	ent "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated/migrate"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/events"
-	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/gql"
+	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/httpservice"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/metrics"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/mintservice"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/pegoutmanager"
@@ -45,7 +39,9 @@ type App struct {
 	PegoutManager         *pegoutmanager.PegoutManager
 	MintService           *mintservice.MintService
 	MetricsService        *metrics.MetricsService
+	HttpService           *httpservice.HttpService
 	Db                    *sql.DB
+	IndexerConfig         *config.IndexerConfig
 }
 
 func main() {
@@ -89,30 +85,39 @@ func initialize() (*App, error) {
 		return nil, fmt.Errorf("failed to create ton client: %w", err)
 	}
 
-	teleportContractAddr := address.MustParseAddr(indexerConfig.TeleportContractAddr)
-	teleportContract := teleportcontract.New(
-		teleportContractAddr,
-		tonClient,
-		nil,
-		context.Background(),
-	)
+	var teleportContract *teleportcontract.TeleportContract = nil
+	if len(indexerConfig.TeleportContractAddr) > 0 {
+		teleportContractAddr := address.MustParseAddr(indexerConfig.TeleportContractAddr)
+		teleportContract = teleportcontract.New(
+			teleportContractAddr,
+			tonClient,
+			nil,
+			context.Background(),
+		)
+	}
 
-	coordinatorContractAddr := address.MustParseAddr(indexerConfig.CoordinatorContractAddr)
-	coordinatorContract := coordinator.New(
-		coordinatorContractAddr,
-		tonClient,
-		nil,
-		context.Background(),
-		30,
-	)
+	var coordinatorContract coordinator.Coordinator = nil
+	if len(indexerConfig.CoordinatorContractAddr) > 0 {
+		coordinatorContractAddr := address.MustParseAddr(indexerConfig.CoordinatorContractAddr)
+		coordinatorContract = coordinator.New(
+			coordinatorContractAddr,
+			tonClient,
+			nil,
+			context.Background(),
+			30,
+		)
+	}
 
-	bitcoinClientContractAddr := address.MustParseAddr(indexerConfig.BitcoinClientContractAddr)
-	bitcoinClientContract := bitcoinclientcontract.NewBitcoinClientContract(
-		bitcoinClientContractAddr,
-		tonClient,
-		nil,
-		context.Background(),
-	)
+	var bitcoinClientContract *bitcoinclientcontract.BitcoinClientContract = nil
+	if len(indexerConfig.BitcoinClientContractAddr) > 0 {
+		bitcoinClientContractAddr := address.MustParseAddr(indexerConfig.BitcoinClientContractAddr)
+		bitcoinClientContract = bitcoinclientcontract.NewBitcoinClientContract(
+			bitcoinClientContractAddr,
+			tonClient,
+			nil,
+			context.Background(),
+		)
+	}
 
 	repo, err := ent.Open(dialect.Postgres, indexerConfig.DatabaseURL)
 	if err != nil {
@@ -128,30 +133,73 @@ func initialize() (*App, error) {
 		log.Fatalf("failed creating repos schema: %v", err)
 	}
 
-	mintService := mintservice.New(
-		repo,
-		bitcoinClient,
-		tonClient,
-		teleportContract,
-	)
-
-	pegoutManager, err := pegoutmanager.New(
-		context.Background(),
-		repo,
-		bitcoinClient,
-		tonClient,
-		teleportContract,
-	)
+	runMintService, err := config.ParseBoolWithDefaultVal(indexerConfig.RunMintService, true, "RunMintService")
 	if err != nil {
-		return nil, fmt.Errorf("failed to create pegout manager: %w", err)
+		logger.Log.Error().Str("component", "main").Err(err)
+		return nil, err
 	}
 
-	eventService := events.NewEventService(
-		tonClient,
-		repo,
-		teleportContract,
-		coordinatorContract,
-	)
+	var mintService *mintservice.MintService = nil
+	if runMintService {
+		if teleportContract == nil {
+			return nil, fmt.Errorf("Failed to start MintService: TeleportContract is null. Please set the COMMON_TON_CONTRACT_TELEPORT_ADDR value in the .env")
+		}
+
+		mintService = mintservice.New(
+			repo,
+			bitcoinClient,
+			tonClient,
+			teleportContract,
+		)
+	}
+
+	runPegoutManager, err := config.ParseBoolWithDefaultVal(indexerConfig.RunPegoutManager, true, "RunPegoutManager")
+	if err != nil {
+		logger.Log.Error().Str("component", "main").Err(err)
+		return nil, err
+	}
+
+	var pegoutManager *pegoutmanager.PegoutManager = nil
+	if runPegoutManager {
+		if teleportContract == nil {
+			return nil, fmt.Errorf("Failed to start PegoutManager: TeleportContract is null. Please set the COMMON_TON_CONTRACT_TELEPORT_ADDR value in the .env")
+		}
+
+		pegoutManager, err = pegoutmanager.New(
+			context.Background(),
+			repo,
+			bitcoinClient,
+			tonClient,
+			teleportContract,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create pegout manager: %w", err)
+		}
+	}
+
+	runEventService, err := config.ParseBoolWithDefaultVal(indexerConfig.RunEventService, true, "RunEventService")
+	if err != nil {
+		logger.Log.Error().Str("component", "main").Err(err)
+		return nil, err
+	}
+
+	var eventService *events.EventService = nil
+	if runEventService {
+		if teleportContract == nil {
+			return nil, fmt.Errorf("Failed to start EventService: TeleportContract is null. Please set the COMMON_TON_CONTRACT_TELEPORT_ADDR value in the .env")
+		}
+
+		if coordinatorContract == nil {
+			return nil, fmt.Errorf("Failed to start MintService: CoordinatorContract is null. Please set the COMMON_TON_CONTRACT_COORDINATOR value in the .env")
+		}
+
+		eventService = events.NewEventService(
+			tonClient,
+			repo,
+			teleportContract,
+			coordinatorContract,
+		)
+	}
 
 	// Open DB connection
 	var db *sql.DB = nil
@@ -168,17 +216,43 @@ func initialize() (*App, error) {
 		db.SetConnMaxIdleTime(-1)
 	}
 
-	metricsService, err := metrics.NewService(
-		coordinatorContract,
-		bitcoinClientContract,
-		teleportContract,
-		bitcoinClient,
-		tonClient,
-		indexerConfig,
-		db,
-	)
+	runMetricsService, err := config.ParseBoolWithDefaultVal(indexerConfig.RunMetricsService, true, "RunMetricsService")
 	if err != nil {
-		return nil, fmt.Errorf("failed to create matrics manager: %w", err)
+		logger.Log.Error().Str("component", "main").Err(err)
+		return nil, err
+	}
+
+	var metricsService *metrics.MetricsService = nil
+	if runMetricsService {
+		metricsService, err = metrics.NewService(
+			coordinatorContract,
+			bitcoinClientContract,
+			teleportContract,
+			bitcoinClient,
+			tonClient,
+			indexerConfig,
+			db,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create matrics manager: %w", err)
+		}
+	}
+
+	runHttpService, err := config.ParseBoolWithDefaultVal(indexerConfig.RunHttpService, true, "RunHttpService")
+	if err != nil {
+		logger.Log.Error().Str("component", "main").Err(err)
+		return nil, err
+	}
+
+	var httpService *httpservice.HttpService = nil
+	if runHttpService {
+		httpService = httpservice.New(
+			repo,
+			bitcoinClient,
+			tonClient,
+			teleportContract,
+			db,
+		)
 	}
 
 	logger.Log.Info().
@@ -195,6 +269,7 @@ func initialize() (*App, error) {
 		MintService:         mintService,
 		EventService:        eventService,
 		MetricsService:      metricsService,
+		HttpService:         httpService,
 		Db:                  db,
 	}, nil
 }
@@ -204,63 +279,45 @@ func run(app *App) error {
 
 	var wg sync.WaitGroup
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		srv := handler.NewDefaultServer(
-			gql.NewSchema(app.Repo, app.BitcoinClient, app.TeleportContract, app.TonClient),
-		)
-		srv.Use(entgql.Transactioner{TxOpener: app.Repo})
+	if app.EventService != nil {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			app.EventService.Work(context.Background())
+		}()
+	}
 
-		mux := http.NewServeMux()
-		mux.Handle("/indexer/graphql", srv)
-		mux.Handle("/", playground.ApolloSandboxHandler("Indexer", "/indexer/graphql"))
-		mux.Handle("/metrics", promhttp.Handler())
-		mux.Handle("/api/metrics", metrics.NewJsonApiHandler(app.Db))
+	if app.PegoutManager != nil {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			app.PegoutManager.Run()
+		}()
+	}
 
-		c := cors.New(cors.Options{
-			AllowedOrigins:   []string{"*"},
-			AllowedMethods:   []string{"POST", "OPTIONS"},
-			AllowedHeaders:   []string{"*"},
-			AllowCredentials: true,
-		})
+	if app.MintService != nil {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			app.MintService.Work(context.Background())
+		}()
+	}
 
-		handlerWithCORS := c.Handler(mux)
+	if app.MetricsService != nil {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			app.MetricsService.Work(context.Background(), app.IndexerConfig)
+		}()
+	}
 
-		logger.Log.Info().
-			Str("component", "main").
-			Msg("listening on :3000")
-		if err := http.ListenAndServe(":3000", handlerWithCORS); err != nil {
-			logger.Log.Error().
-				Str("component", "main").
-				Err(err).
-				Msg("http server terminated")
-		}
-	}()
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		app.EventService.Work(context.Background())
-	}()
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		app.PegoutManager.Run()
-	}()
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		app.MintService.Work(context.Background())
-	}()
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		app.MetricsService.Work(context.Background())
-	}()
+	if app.HttpService != nil {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			app.HttpService.Work(context.Background())
+		}()
+	}
 
 	wg.Wait()
 
