@@ -87,7 +87,11 @@ func initialize() (*App, error) {
 
 	var teleportContract *teleportcontract.TeleportContract = nil
 	if len(indexerConfig.TeleportContractAddr) > 0 {
-		teleportContractAddr := address.MustParseAddr(indexerConfig.TeleportContractAddr)
+		teleportContractAddr, err := address.ParseAddr(indexerConfig.TeleportContractAddr)
+		if err != nil {
+			return nil, fmt.Errorf("parsing the Teleport Contract address '%s' failed", indexerConfig.TeleportContractAddr)
+		}
+
 		teleportContract = teleportcontract.New(
 			teleportContractAddr,
 			tonClient,
@@ -98,7 +102,11 @@ func initialize() (*App, error) {
 
 	var coordinatorContract coordinator.Coordinator = nil
 	if len(indexerConfig.CoordinatorContractAddr) > 0 {
-		coordinatorContractAddr := address.MustParseAddr(indexerConfig.CoordinatorContractAddr)
+		coordinatorContractAddr, err := address.ParseAddr(indexerConfig.CoordinatorContractAddr)
+		if err != nil {
+			return nil, fmt.Errorf("parsing the Coordinator Contract address '%s' failed", indexerConfig.CoordinatorContractAddr)
+		}
+
 		coordinatorContract = coordinator.New(
 			coordinatorContractAddr,
 			tonClient,
@@ -110,7 +118,11 @@ func initialize() (*App, error) {
 
 	var bitcoinClientContract *bitcoinclientcontract.BitcoinClientContract = nil
 	if len(indexerConfig.BitcoinClientContractAddr) > 0 {
-		bitcoinClientContractAddr := address.MustParseAddr(indexerConfig.BitcoinClientContractAddr)
+		bitcoinClientContractAddr, err := address.ParseAddr(indexerConfig.BitcoinClientContractAddr)
+		if err != nil {
+			return nil, fmt.Errorf("parsing the Bitcoin Client Contract address '%s' failed", indexerConfig.BitcoinClientContractAddr)
+		}
+
 		bitcoinClientContract = bitcoinclientcontract.NewBitcoinClientContract(
 			bitcoinClientContractAddr,
 			tonClient,
@@ -142,7 +154,7 @@ func initialize() (*App, error) {
 	var mintService *mintservice.MintService = nil
 	if runMintService {
 		if teleportContract == nil {
-			return nil, fmt.Errorf("Failed to start MintService: TeleportContract is null. Please set the COMMON_TON_CONTRACT_TELEPORT_ADDR value in the .env")
+			return nil, fmt.Errorf("failed to start MintService: TeleportContract is null. Please set the COMMON_TON_CONTRACT_TELEPORT_ADDR value in the .env")
 		}
 
 		mintService = mintservice.New(
@@ -162,7 +174,7 @@ func initialize() (*App, error) {
 	var pegoutManager *pegoutmanager.PegoutManager = nil
 	if runPegoutManager {
 		if teleportContract == nil {
-			return nil, fmt.Errorf("Failed to start PegoutManager: TeleportContract is null. Please set the COMMON_TON_CONTRACT_TELEPORT_ADDR value in the .env")
+			return nil, fmt.Errorf("failed to start PegoutManager: TeleportContract is null. Please set the COMMON_TON_CONTRACT_TELEPORT_ADDR value in the .env")
 		}
 
 		pegoutManager, err = pegoutmanager.New(
@@ -186,11 +198,11 @@ func initialize() (*App, error) {
 	var eventService *events.EventService = nil
 	if runEventService {
 		if teleportContract == nil {
-			return nil, fmt.Errorf("Failed to start EventService: TeleportContract is null. Please set the COMMON_TON_CONTRACT_TELEPORT_ADDR value in the .env")
+			return nil, fmt.Errorf("failed to start EventService: TeleportContract is null. Please set the COMMON_TON_CONTRACT_TELEPORT_ADDR value in the .env")
 		}
 
 		if coordinatorContract == nil {
-			return nil, fmt.Errorf("Failed to start MintService: CoordinatorContract is null. Please set the COMMON_TON_CONTRACT_COORDINATOR value in the .env")
+			return nil, fmt.Errorf("failed to start EventService: CoordinatorContract is null. Please set the COMMON_TON_CONTRACT_COORDINATOR value in the .env")
 		}
 
 		eventService = events.NewEventService(
@@ -271,6 +283,7 @@ func initialize() (*App, error) {
 		MetricsService:      metricsService,
 		HttpService:         httpService,
 		Db:                  db,
+		IndexerConfig:       &indexerConfig,
 	}, nil
 }
 
