@@ -224,6 +224,7 @@ func initialize() (*App, error) {
 		}
 	}
 
+	// HTTP service
 	var httpService *httpservice.HttpService = nil
 	if config.RunServices.RunHttpService {
 		httpService = httpservice.New(

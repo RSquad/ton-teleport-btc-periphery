@@ -40,6 +40,10 @@ func (fetcher *FetcherContractBalances) GetBalances() (map[string]float64, error
 	for name, contractAddr := range fetcher.contractAddrs {
 		balances[name] = -1.0 // Default value
 
+		if contractAddr == nil {
+			continue
+		}
+
 		balance, err := fetcher.tonClient.GetBalance(contractAddr)
 		if err != nil {
 			logger.Log.Error().
@@ -78,7 +82,10 @@ func (fetcher *FetcherContractBalances) Work(ctx context.Context, wg *sync.WaitG
 
 			for name, value := range balances {
 				contractAddr := fetcher.contractAddrs[name]
-				contractBalances.WithLabelValues(utils.AddrToRawString(contractAddr), name).Set(value)
+
+				if contractAddr != nil {
+					contractBalances.WithLabelValues(utils.AddrToRawString(contractAddr), name).Set(value)
+				}
 			}
 
 			// TODO: reimplement with time.NewTicker
