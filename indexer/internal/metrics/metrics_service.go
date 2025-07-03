@@ -157,7 +157,13 @@ func NewService(
 			return nil, fmt.Errorf("failed to start FetcherContractCoordinator: CoordinatorContract is null. Please set the COMMON_TON_CONTRACT_COORDINATOR value in the .env")
 		}
 
-		fetcherContractCoordinator = NewFetcherContractCoordinator(writerDbChan, coordinatorContract, 59) // TODO: move 60 to config
+		coordinatorContractFetchPeriod, err := config.ParseIntWithDefaultVal(cfg.MetricsCoordinatorContractFetchPeriod, 59, "MetricsCoordinatorContractFetchPeriod")
+		if err != nil {
+			logger.Log.Error().Str("component", "metrics").Err(err)
+			return nil, err
+		}
+
+		fetcherContractCoordinator = NewFetcherContractCoordinator(writerDbChan, coordinatorContract, coordinatorContractFetchPeriod)
 	}
 
 	// Fetcher: Pegouts

@@ -142,7 +142,7 @@ func initialize() (*App, error) {
 	var mintService *mintservice.MintService = nil
 	if runMintService {
 		if teleportContract == nil {
-			return nil, fmt.Errorf("Failed to start MintService: TeleportContract is null. Please set the COMMON_TON_CONTRACT_TELEPORT_ADDR value in the .env")
+			return nil, fmt.Errorf("failed to start MintService: TeleportContract is null. Please set the COMMON_TON_CONTRACT_TELEPORT_ADDR value in the .env")
 		}
 
 		mintService = mintservice.New(
@@ -162,7 +162,7 @@ func initialize() (*App, error) {
 	var pegoutManager *pegoutmanager.PegoutManager = nil
 	if runPegoutManager {
 		if teleportContract == nil {
-			return nil, fmt.Errorf("Failed to start PegoutManager: TeleportContract is null. Please set the COMMON_TON_CONTRACT_TELEPORT_ADDR value in the .env")
+			return nil, fmt.Errorf("failed to start PegoutManager: TeleportContract is null. Please set the COMMON_TON_CONTRACT_TELEPORT_ADDR value in the .env")
 		}
 
 		pegoutManager, err = pegoutmanager.New(
@@ -186,11 +186,11 @@ func initialize() (*App, error) {
 	var eventService *events.EventService = nil
 	if runEventService {
 		if teleportContract == nil {
-			return nil, fmt.Errorf("Failed to start EventService: TeleportContract is null. Please set the COMMON_TON_CONTRACT_TELEPORT_ADDR value in the .env")
+			return nil, fmt.Errorf("failed to start EventService: TeleportContract is null. Please set the COMMON_TON_CONTRACT_TELEPORT_ADDR value in the .env")
 		}
 
 		if coordinatorContract == nil {
-			return nil, fmt.Errorf("Failed to start MintService: CoordinatorContract is null. Please set the COMMON_TON_CONTRACT_COORDINATOR value in the .env")
+			return nil, fmt.Errorf("failed to start EventService: CoordinatorContract is null. Please set the COMMON_TON_CONTRACT_COORDINATOR value in the .env")
 		}
 
 		eventService = events.NewEventService(
@@ -271,6 +271,7 @@ func initialize() (*App, error) {
 		MetricsService:      metricsService,
 		HttpService:         httpService,
 		Db:                  db,
+		IndexerConfig:       &indexerConfig,
 	}, nil
 }
 
