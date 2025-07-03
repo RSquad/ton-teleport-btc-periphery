@@ -16,17 +16,20 @@ import (
 
 type FetcherContractBalances struct {
 	tonClient     *tonclient.TonClient
-	contractAddrs map[string]string
+	contractAddrs map[string]*address.Address
 }
 
-func NewFetcherContractBalances(tonClient *tonclient.TonClient, config config.IndexerConfig) *FetcherContractBalances {
+func NewFetcherContractBalances(
+	tonClient *tonclient.TonClient,
+	cfg *config.ServicesConfig,
+) *FetcherContractBalances {
 	return &FetcherContractBalances{
 		tonClient: tonClient,
-		contractAddrs: map[string]string{
-			"teleport":    config.TeleportContractAddr,
-			"coordinator": config.CoordinatorContractAddr,
-			"bitclient":   config.BitcoinClientContractAddr,
-			"minter":      config.JettonMinterContractAddr,
+		contractAddrs: map[string]*address.Address{
+			"teleport":    cfg.ExternalServices.TeleportContractAddr,
+			"coordinator": cfg.ExternalServices.CoordinatorContractAddr,
+			"bitclient":   cfg.ExternalServices.BitcoinClientContractAddr,
+			"minter":      cfg.ExternalServices.JettonMinterContractAddr,
 		},
 	}
 }
@@ -34,13 +37,8 @@ func NewFetcherContractBalances(tonClient *tonclient.TonClient, config config.In
 func (fetcher *FetcherContractBalances) GetBalances() (map[string]float64, error) {
 	balances := make(map[string]float64)
 
-	for key, value := range fetcher.contractAddrs {
-		balances[key] = -1.0 // Default value
-
-		contractAddr, err := address.ParseAddr(value)
-		if err != nil {
-			return nil, fmt.Errorf("parsing the Contract address '%s' failed", value)
-		}
+	for name, contractAddr := range fetcher.contractAddrs {
+		balances[name] = -1.0 // Default value
 
 		balance, err := fetcher.tonClient.GetBalance(contractAddr)
 		if err != nil {
@@ -56,7 +54,7 @@ func (fetcher *FetcherContractBalances) GetBalances() (map[string]float64, error
 			continue
 		}
 
-		balances[key] = balanceFloat
+		balances[name] = balanceFloat
 	}
 
 	return balances, nil
@@ -78,13 +76,9 @@ func (fetcher *FetcherContractBalances) Work(ctx context.Context, wg *sync.WaitG
 				return err
 			}
 
-			for key, value := range balances {
-				contractAddr, err := address.ParseAddr(fetcher.contractAddrs[key])
-				if err != nil {
-					return fmt.Errorf("parsing the Contract address '%s' failed", fetcher.contractAddrs[key])
-				}
-
-				contractBalances.WithLabelValues(utils.AddrToRawString(contractAddr), key).Set(value)
+			for name, value := range balances {
+				contractAddr := fetcher.contractAddrs[name]
+				contractBalances.WithLabelValues(utils.AddrToRawString(contractAddr), name).Set(value)
 			}
 
 			// TODO: reimplement with time.NewTicker
