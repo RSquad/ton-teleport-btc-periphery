@@ -65,6 +65,8 @@ func (fetcher *FetcherDKG) FetchDKG() {
 	}
 
 	dkgStatus.WithLabelValues(dkg.State.String()).Set(float64(dkg.State))
+	dkgMaxSigners.Set(float64(dkg.MaxSigners))
+	totalValidatorsCount.Set(float64(TOTAL_VALIDATORS))
 
 	// Serialize
 	jsonData, err := json.Marshal(dkg)

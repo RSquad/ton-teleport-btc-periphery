@@ -41,4 +41,16 @@ var (
 		},
 		[]string{"pegout_addr", "bitcoin_tx_id"},
 	)
+	dkgMaxSigners = promauto.NewGauge(
+		prometheus.GaugeOpts{
+			Name: "dkg_signers_count",
+			Help: "DKG signers count",
+		},
+	)
+	totalValidatorsCount = promauto.NewGauge(
+		prometheus.GaugeOpts{
+			Name: "total_validators_count",
+			Help: "Total validators count",
+		},
+	)
 )
