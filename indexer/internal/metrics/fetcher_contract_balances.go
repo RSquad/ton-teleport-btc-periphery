@@ -37,7 +37,11 @@ func (fetcher *FetcherContractBalances) GetBalances() (map[string]float64, error
 	for key, value := range fetcher.contractAddrs {
 		balances[key] = -1.0 // Default value
 
-		contractAddr := address.MustParseAddr(value)
+		contractAddr, err := address.ParseAddr(value)
+		if err != nil {
+			return nil, fmt.Errorf("parsing the Contract address '%s' failed", value)
+		}
+
 		balance, err := fetcher.tonClient.GetBalance(contractAddr)
 		if err != nil {
 			logger.Log.Error().
@@ -75,7 +79,12 @@ func (fetcher *FetcherContractBalances) Work(ctx context.Context, wg *sync.WaitG
 			}
 
 			for key, value := range balances {
-				contractBalances.WithLabelValues(utils.AddrToRawString(address.MustParseAddr(fetcher.contractAddrs[key])), key).Set(value)
+				contractAddr, err := address.ParseAddr(fetcher.contractAddrs[key])
+				if err != nil {
+					return fmt.Errorf("parsing the Contract address '%s' failed", fetcher.contractAddrs[key])
+				}
+
+				contractBalances.WithLabelValues(utils.AddrToRawString(contractAddr), key).Set(value)
 			}
 
 			// TODO: reimplement with time.NewTicker

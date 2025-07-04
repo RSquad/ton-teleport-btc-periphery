@@ -75,7 +75,7 @@ func (s *Service) Work(ctx context.Context, wg *sync.WaitGroup, keystore keystor
 						logger.Log.Debug().Msgf("Unable to Start DKG: Signing is in progress")
 					} else if errCode == helpers.ErrDkgAlreadyExecuted {
 						logger.Log.Debug().Msgf("Unable to Start DKG: DKG already executed")
-					} else {
+					} else if errCode != 0 {
 						logger.Log.Error().Msgf("Start DKG error: %v", err)
 					}
 				}
