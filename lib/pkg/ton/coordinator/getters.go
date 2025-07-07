@@ -2,6 +2,7 @@ package coordinator
 
 import (
 	"context"
+	"math/big"
 	"time"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
@@ -288,7 +289,17 @@ func parseUnsignedPegouts(pegoutsCell *cell.Cell) ([]PegoutRecord, error) {
 		ExpiredAt := time.Unix(int64(value.MustLoadUInt(32)), 0)
 		SigningMask := value.MustLoadBigUInt(256)
 
-		CommitmentsMask := value.MustLoadSlice(256)
+		commitmentsMask := value.MustLoadBigUInt(256)
+		// Mask for lower 100 bits: (1 << 100) - 1
+		mask100 := new(big.Int).Lsh(big.NewInt(1), 100)
+		mask100.Sub(mask100, big.NewInt(1))
+
+		// CommitmentsMaskAccepted [0..99] bits
+		CommitmentsMaskAccepted := new(big.Int).And(commitmentsMask, mask100)
+		// CommitmentsMaskOther [100..199] bits
+		CommitmentsMaskOther := new(big.Int).Rsh(commitmentsMask, 100)
+		CommitmentsMaskOther.And(CommitmentsMaskOther, mask100)
+
 		value.MustLoadUInt(16)
 		commitmentsDict := value.MustLoadDict(16)
 		commitmentsPtr, err := parseddict.ParseDict(
@@ -348,7 +359,8 @@ func parseUnsignedPegouts(pegoutsCell *cell.Cell) ([]PegoutRecord, error) {
 			InternalKey,
 			IsAutopegout,
 			Commitments,
-			CommitmentsMask,
+			CommitmentsMaskAccepted,
+			CommitmentsMaskOther,
 			SigningShares,
 			SigningSharesMask,
 			Signatures,
