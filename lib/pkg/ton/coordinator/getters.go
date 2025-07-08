@@ -468,7 +468,10 @@ func readBuffer(value *cell.Slice) ([]byte, error) {
 }
 
 func loadSharesMap(value *cell.Slice) (map[uint16][]byte, error) {
-	dict := value.MustLoadRef().MustLoadDict(64)
+	dict, err := value.MustLoadRef().ToDict(64)
+	if err != nil {
+		return nil, err
+	}
 	sharesMap, err := parseddict.ParseDict(
 		dict,
 		parseddict.ParseKeyUI16,

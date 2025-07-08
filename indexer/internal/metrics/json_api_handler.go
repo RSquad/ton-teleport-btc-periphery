@@ -94,7 +94,6 @@ func (apiHandler JsonApiHandler) GetMints() (string, error) {
 		) AS result;`,
 		limit,
 	)
-
 	if err != nil {
 		return "", err
 	}
@@ -134,7 +133,6 @@ func (apiHandler JsonApiHandler) GetBurns() (string, error) {
 		) AS result;`,
 		limit,
 	)
-
 	if err != nil {
 		return "", err
 	}
@@ -173,7 +171,6 @@ func (apiHandler JsonApiHandler) GetReinits() (string, error) {
 		) AS result;`,
 		limit,
 	)
-
 	if err != nil {
 		return "", err
 	}
@@ -207,7 +204,6 @@ func (apiHandler JsonApiHandler) GetInternalKeys() (string, error) {
 		) AS result;`,
 		limit,
 	)
-
 	if err != nil {
 		return "", err
 	}
@@ -251,7 +247,6 @@ func (apiHandler JsonApiHandler) GetInfo() (string, error) {
 				)
 		) AS result;`,
 	)
-
 	if err != nil {
 		return "", err
 	}
@@ -283,7 +278,6 @@ func (apiHandler JsonApiHandler) PlotMinted() (string, error) {
 			) SELECT day, minted/100000000 AS minted, count FROM data_by_days ORDER BY day ASC
 		) AS result;`,
 	)
-
 	if err != nil {
 		return "", err
 	}
@@ -317,7 +311,6 @@ func (apiHandler JsonApiHandler) PlotBurned() (string, error) {
   		) SELECT day, burned/100000000 AS burned, count FROM data_by_days ORDER BY day ASC
 		) AS result;`,
 	)
-
 	if err != nil {
 		return "", err
 	}
@@ -371,7 +364,6 @@ func (apiHandler JsonApiHandler) PlotTotalSupply() (string, error) {
 			ORDER BY day
 		) AS result;`,
 	)
-
 	if err != nil {
 		return "", err
 	}
@@ -406,7 +398,6 @@ func (apiHandler JsonApiHandler) GetPlotsSummary() (string, error) {
 				)
 		) AS result;`,
 	)
-
 	if err != nil {
 		return "", err
 	}

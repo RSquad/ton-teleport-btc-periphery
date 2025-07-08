@@ -18,7 +18,6 @@ func NewWriterDB(
 	ch chan PayloadDB,
 	db *sql.DB,
 ) (*WriterDB, error) {
-
 	// Create writer
 	writer := WriterDB{
 		ch: ch,
