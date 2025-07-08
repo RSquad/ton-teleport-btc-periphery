@@ -33,6 +33,7 @@ type IndexerConfig struct {
 	MetricsBitcoinNetworkFetchPeriod        string `env:"METRICS_BITCOIN_NETWORK_FETCH_PERIOD"`
 	MetricsTeleportContractFetchPeriod      string `env:"METRICS_TELEPORT_CONTRACT_FETCH_PERIOD"`
 	MetricsCoordinatorContractFetchPeriod   string `env:"METRICS_COORDINATOR_CONTRACT_FETCH_PERIOD"`
+	MetricsPegoutsFetchPeriod               string `env:"METRICS_PEGOUTS_FETCH_PERIOD"`
 }
 
 func ParseIntWithDefaultVal(str string, defaultValue int64, name string) (int64, error) {
