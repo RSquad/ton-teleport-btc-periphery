@@ -270,7 +270,7 @@ func (s *SignService) doCommit(
 	pegout := s.cachedPegout
 	s.logCommitPegout(pegout.ID)
 
-	if pegout.artifacts.HasCommitmentAccepted(validatorIdx) {
+	if pegout.artifacts.HasCommitment(validatorIdx) {
 		s.logMessage("Commitment already exists")
 
 		if pegout.artifacts.CommitmentsCount() >= minSigners {
@@ -306,7 +306,7 @@ func (s *SignService) doSign(
 	pegout := s.cachedPegout
 	s.logSignPegout(pegout.ID)
 
-	if !pegout.artifacts.HasCommitmentAccepted(validatorIdx) {
+	if !pegout.artifacts.HasCommitment(validatorIdx) {
 		s.logErrNoOracleCommitments(pegout.ID)
 		return false
 	}

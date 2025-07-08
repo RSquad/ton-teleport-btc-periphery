@@ -152,7 +152,7 @@ type PegoutRecord struct {
 	SigningMask             *big.Int
 }
 
-func (p *PegoutRecord) HasCommitmentAccepted(idx uint16) bool {
+func (p *PegoutRecord) HasCommitment(idx uint16) bool {
 	_, exists := p.Commitments[idx]
 	return exists
 }
