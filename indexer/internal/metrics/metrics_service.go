@@ -268,11 +268,5 @@ func (s *MetricsService) Work(ctx context.Context, indexerConfig *config.Indexer
 		}()
 	}
 
-	// Fetcher BitcoinTx
-	wg.Add(1)
-	go func() {
-		s.fetcherBitcoinTx.Work(ctx, &wg)
-	}()
-
 	wg.Wait()
 }
