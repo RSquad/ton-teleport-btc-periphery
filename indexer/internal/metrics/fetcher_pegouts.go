@@ -12,6 +12,7 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
+	"github.com/xssnick/tonutils-go/address"
 )
 
 type FetcherPegouts struct {
@@ -44,11 +45,18 @@ func NewFetcherPegouts(
 }
 
 func (f *FetcherPegouts) setDelayedMetric(pegouts []coordinator.PegoutRecord) {
+	if len(pegouts) == 0 {
+		unsignedPegoutDelayed.WithLabelValues(utils.AddrToRawString(&address.Address{})).Set(0)
+		return
+	}
+	now := time.Now()
 	for _, pegout := range pegouts {
 		if oldExpiredAt, exists := f.expiredAt[pegout.ID]; exists {
 			if oldExpiredAt.Equal(pegout.ExpiredAt) {
-				if time.Now().After(pegout.ExpiredAt.Add(PEGOUT_MAX_DELAY)) {
+				if now.After(pegout.ExpiredAt.Add(PEGOUT_MAX_DELAY)) {
 					unsignedPegoutDelayed.WithLabelValues(utils.AddrToRawString(pegout.PegoutAddress)).Set(1)
+				} else {
+					unsignedPegoutDelayed.WithLabelValues(utils.AddrToRawString(pegout.PegoutAddress)).Set(0)
 				}
 			}
 		} else {
@@ -104,6 +112,10 @@ func (f *FetcherPegouts) getSignedPegouts() ([]SignedPegout, error) {
 }
 
 func (f *FetcherPegouts) setBitcoinTxExistsMetric(pegouts []SignedPegout) {
+	if len(pegouts) == 0 {
+		unprocessedPegout.WithLabelValues(utils.AddrToRawString(&address.Address{}), "").Set(0)
+		return
+	}
 	for _, pegout := range pegouts {
 		txExists, _, _ := bu.BitcoinTxExists(f.bitcoinClient, pegout.bitcoinTxId)
 		if !txExists {
@@ -125,10 +137,6 @@ func (f *FetcherPegouts) Fetch() {
 
 	if unsignedPegouts == nil {
 		logger.Log.Debug().Msg("FetcherPegouts: Contract returns unsignedPegouts is null")
-	}
-
-	if len(unsignedPegouts) == 0 {
-		logger.Log.Debug().Msg("FetcherPegouts: Contract returns unsignedPegouts is empty")
 	}
 
 	unsignedPegoutsLen.WithLabelValues("Unsigned pegouts length").Set(float64(len(unsignedPegouts)))

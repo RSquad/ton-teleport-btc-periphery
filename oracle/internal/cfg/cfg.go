@@ -20,7 +20,6 @@ type Cfg struct {
 	LogMaxSize                      string `env:"LOG_FILE_MAX_SIZE"`
 	LogMaxBackups                   string `env:"LOG_FILE_MAX_BACKUPS"`
 	LogMaxBackupAge                 string `env:"LOG_FILE_MAX_BACKUP_AGE"`
-	LogDKG                          string `env:"LOG_DKG"`
 	TestSkipR1                      bool   `env:"TEST_SKIP_R1"`
 	TestSkipR2                      bool   `env:"TEST_SKIP_R2"`
 	TestSkipR3                      bool   `env:"TEST_SKIP_R3"`
