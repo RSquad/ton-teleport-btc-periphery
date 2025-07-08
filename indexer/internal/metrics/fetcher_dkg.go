@@ -53,7 +53,7 @@ func (fetcher *FetcherDKG) FetchDKG() {
 	dkg, err := fetcher.coordinatorContract.GetDkg(nil)
 	if err != nil {
 		dkgStatus.Reset()
-		dkgStatus.WithLabelValues("DKG error").Set(float64(-1))
+		dkgStatus.WithLabelValues("DKG_ERROR").Set(float64(-1))
 		logger.Log.Error().Err(err).
 			Str("component", "FetcherDKG").
 			Msg("fetch failed")
@@ -63,7 +63,7 @@ func (fetcher *FetcherDKG) FetchDKG() {
 
 	if dkg == nil {
 		dkgStatus.Reset()
-		dkgStatus.WithLabelValues("null").Set(float64(-1))
+		dkgStatus.WithLabelValues("NULL").Set(float64(-1))
 		logger.Log.Debug().Msg("FetcherDKG: Contract returns dkg==null")
 		return
 	}
