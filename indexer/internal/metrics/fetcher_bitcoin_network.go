@@ -158,11 +158,7 @@ func (fetcher *FetcherBitcoinNetwork) Fetch() {
 			Str("component", "FetcherBitcoinNetwork").
 			Msg("fetch failed")
 	}
-	if err != nil {
-		logger.Log.Error().Err(err).
-			Str("component", "FetcherBitcoinNetwork").
-			Msg("fetch failed")
-	}
+
 	cpfpCount, err := fetcher.getCPFPCount(LastPegoutTxID)
 	if err != nil {
 		logger.Log.Error().Err(err).
@@ -199,7 +195,7 @@ func (fetcher *FetcherBitcoinNetwork) Work(ctx context.Context, wg *sync.WaitGro
 	defer logger.Log.Info().Msg("FetcherBitcoinNetwork: stopped")
 	logger.DefaultLogStartWork("FetcherBitcoinNetwork: starting...")
 
-	ticker := time.NewTicker(time.Duration(fetcher.period))
+	ticker := time.NewTicker(time.Duration(fetcher.period) * time.Second)
 	defer ticker.Stop()
 
 	for {

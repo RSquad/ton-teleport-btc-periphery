@@ -361,7 +361,6 @@ func (c *Client) GetTxChildrenCount(parentHash *chainhash.Hash) (*TxChildrenCoun
 	// Process results
 	childrenCount := 0
 	for res := range resultChan {
-		fmt.Printf("tx %d inputs\n", res.inputs)
 		if res.err != nil {
 			logger.Log.Error().Err(res.err).Msg("tx processing error")
 			continue
