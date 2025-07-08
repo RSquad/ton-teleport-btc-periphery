@@ -96,6 +96,10 @@ func (s *SignService) logMinimalCommitmentsReached(pegout *CachedPegout, minSign
 	infoEventWithPegoutID(pegout.ID).Msgf("Minimal required number of Commitments is reached (ready %d of %d)", pegout.artifacts.CommitmentsCount(), minSigners)
 }
 
+func (s *SignService) logHasCommitmentOther(pegout *CachedPegout, minSigners uint16) {
+	infoEventWithPegoutID(pegout.ID).Msgf("This orace sent commitment, but minimal required number of Commitments is reached (ready %d of %d)", pegout.artifacts.CommitmentsCount(), minSigners)
+}
+
 func (s *SignService) logMinimalCommitmentsWaitingForOtherOracles(pegout *CachedPegout, minSigners uint16) {
 	infoEventWithPegoutID(pegout.ID).Msgf("Waiting for other oracles to send their Commitments (ready %d of %d)", pegout.artifacts.CommitmentsCount(), minSigners)
 }
