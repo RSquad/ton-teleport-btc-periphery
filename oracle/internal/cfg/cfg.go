@@ -20,5 +20,4 @@ type Cfg struct {
 	LogMaxSize                 string `env:"LOG_FILE_MAX_SIZE"`
 	LogMaxBackups              string `env:"LOG_FILE_MAX_BACKUPS"`
 	LogMaxBackupAge            string `env:"LOG_FILE_MAX_BACKUP_AGE"`
-	LogDKG                     string `env:"LOG_DKG"`
 }
