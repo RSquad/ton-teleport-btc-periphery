@@ -14,6 +14,9 @@ type FetcherDKG struct {
 	chDB                chan PayloadDB
 	coordinatorContract coordinator.Coordinator
 	period              int64 // Fetch period (in seconds)
+	restartCounter      int64
+	state               coordinator.DKGState
+	until               time.Time
 }
 
 func NewFetcherDKG(
@@ -25,6 +28,7 @@ func NewFetcherDKG(
 		chDB:                chDB,
 		coordinatorContract: coordinatorContract,
 		period:              period,
+		restartCounter:      0,
 	}
 }
 
@@ -61,12 +65,22 @@ func (fetcher *FetcherDKG) FetchDKG() {
 	}
 
 	if dkg == nil {
+		fetcher.restartCounter = 0
 		dkgStatus.WithLabelValues("DKG == null").Set(float64(-1))
 		logger.Log.Debug().Msg("FetcherDKG: Contract returns dkg==null")
 		return
 	}
 
 	dkgStatus.WithLabelValues(dkg.State.String()).Set(float64(dkg.State))
+
+	if fetcher.state != coordinator.DKGStateFinished &&
+		!dkg.Until.Equal(fetcher.until) {
+		fetcher.restartCounter++
+	}
+	dkgRestartCount.Set(float64(fetcher.restartCounter))
+
+	fetcher.state = dkg.State
+	fetcher.until = dkg.Until
 
 	// Serialize
 	jsonData, err := json.Marshal(dkg)

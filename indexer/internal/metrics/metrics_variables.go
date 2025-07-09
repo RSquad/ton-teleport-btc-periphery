@@ -41,4 +41,10 @@ var (
 		},
 		[]string{"pegout_addr", "bitcoin_tx_id"},
 	)
+	dkgRestartCount = promauto.NewGauge(
+		prometheus.GaugeOpts{
+			Name: "dkg_restart_count",
+			Help: "DKG restart count",
+		},
+	)
 )
