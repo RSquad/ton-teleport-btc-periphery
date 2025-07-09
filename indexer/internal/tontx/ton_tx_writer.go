@@ -27,10 +27,14 @@ func NewTonTxWriter(
 func (ew *TonTxWriter) Write(
 	rawEvent *ton.RawEvent,
 ) (*ent.TonTx, error) {
-	return ew.repo.TonTx.Create().
-		SetHash(fmt.Sprintf("%x", rawEvent.TxHash)).
-		SetCreatedAt(rawEvent.TxUtime).
-		Save(ew.ctx)
+	tonTx, err := ew.repo.TonTx.Query().Where(tontx.Hash(fmt.Sprintf("%x", rawEvent.TxHash))).First(ew.ctx)
+	if ent.IsNotFound(err) {
+		return ew.repo.TonTx.Create().
+			SetHash(fmt.Sprintf("%x", rawEvent.TxHash)).
+			SetCreatedAt(rawEvent.TxUtime).
+			Save(ew.ctx)
+	}
+	return tonTx, err
 }
 
 func (ew *TonTxWriter) GetTonTxWithoutRelationsByHash(hash string) (*ent.TonTx, error) {
