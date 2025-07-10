@@ -23,6 +23,7 @@ type MetricsConfig struct {
 	BitcoinNetworkFetchPeriod        int
 	TeleportContractFetchPeriod      int
 	CoordinatorContractFetchPeriod   int
+	MetricsPegoutsFetchPeriod        int
 }
 
 type RunServicesConfig struct {
@@ -188,6 +189,7 @@ func ParseMetrics(indexerConfig *IndexerConfig) (*MetricsConfig, error) {
 		BitcoinNetworkFetchPeriod:        59,
 		TeleportContractFetchPeriod:      27,
 		CoordinatorContractFetchPeriod:   59,
+		MetricsPegoutsFetchPeriod:        59,
 	}
 
 	// Run fetchers
@@ -258,6 +260,8 @@ func ParseMetrics(indexerConfig *IndexerConfig) (*MetricsConfig, error) {
 				cfg.TeleportContractFetchPeriod = value
 			case "COORDINATOR_CONTRACT_FETCH_PERIOD":
 				cfg.CoordinatorContractFetchPeriod = value
+			case "METRICS_PEGOUTS_FETCH_PERIOD":
+				cfg.MetricsPegoutsFetchPeriod = value
 
 			default:
 				return nil, fmt.Errorf("unknonwn `METRICS_ARGS` .env argument name '%s'", name)
