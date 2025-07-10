@@ -44,7 +44,7 @@ The oracle uses environment variables loaded from /usr/src/ton-teleport-btc-peri
 
 ### Common Variables
 
-- `COMMON_TON_CONFIG` - TON configuration URL or local path to TON config json
+- `COMMON_TON_CONFIG` - The URL or local path to the TON configuration JSON file. By default, the mainnet configuration will be used (https://ton.org/global-config.json).
 - `COMMON_TON_CONTRACT_COORDINATOR` - Address of the Coordinator contract on TON
 
 ### Oracle-specific Variables
