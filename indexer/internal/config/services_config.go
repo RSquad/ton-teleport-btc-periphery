@@ -260,7 +260,7 @@ func ParseMetrics(indexerConfig *IndexerConfig) (*MetricsConfig, error) {
 				cfg.CoordinatorContractFetchPeriod = value
 
 			default:
-				return nil, fmt.Errorf("unknonwn `METRICS` .env argument name '%s'", name)
+				return nil, fmt.Errorf("unknonwn `METRICS_ARGS` .env argument name '%s'", name)
 			}
 		}
 	}
