@@ -15,11 +15,38 @@ use frost_secp256k1_tr::{
 };
 use rand::thread_rng;
 use std::{collections::BTreeMap, ffi::c_void, ptr};
+use thiserror::Error as ThisError;
 
 enum ReturnCode {
     Success = 0,
     NullArgument = -126,
     Unknown = -127,
+}
+
+#[derive(ThisError, Debug)]
+pub enum FrostError {
+    #[error(transparent)]
+    Frost(Error),
+    #[error("invalid number of commitments")]
+    InvalidNumberOfCommitments { culprit: Identifier },
+}
+
+impl FrostError {
+    pub fn culprit(&self) -> Option<Identifier> {
+        match self {
+            FrostError::Frost(e) => e.culprit(),
+            FrostError::InvalidNumberOfCommitments { culprit } => Some(*culprit),
+        }
+    }
+
+    pub fn code(&self) -> i32 {
+        match self {
+            FrostError::Frost(e) => frost_err_to_code(*e),
+            FrostError::InvalidNumberOfCommitments { .. } => {
+                frost_err_to_code(Error::IncorrectNumberOfCommitments)
+            }
+        }
+    }
 }
 
 pub fn frost_err_to_code(ref err: Error) -> i32 {
@@ -58,7 +85,7 @@ pub fn frost_err_to_code(ref err: Error) -> i32 {
     }
 }
 
-fn culprit_id_to_bytes(ref culprit: Identifier) -> [u8; 32] {
+fn culprit_id_to_bytes(culprit: Identifier) -> [u8; 32] {
     let mut culprit_bytes: [u8; 32] = [0; 32];
     let culprit_data = culprit.serialize();
 
@@ -69,16 +96,8 @@ fn culprit_id_to_bytes(ref culprit: Identifier) -> [u8; 32] {
     culprit_bytes
 }
 
-pub fn get_culprit_bytes(ref err: Error) -> Option<[u8; 32]> {
-    match err {
-        Error::InvalidSignatureShare { culprit } => Some(culprit_id_to_bytes(*culprit)),
-        Error::InvalidProofOfKnowledge { culprit } => Some(culprit_id_to_bytes(*culprit)),
-        Error::InvalidSecretShare { culprit } => match culprit {
-            Some(culprit_val) => Some(culprit_id_to_bytes(*culprit_val)),
-            None => None,
-        },
-        _ => None,
-    }
+pub fn get_culprit_bytes(err: Error) -> Option<[u8; 32]> {
+    err.culprit().map(culprit_id_to_bytes)
 }
 
 #[inline]
@@ -220,20 +239,35 @@ pub extern "C" fn dkg_part2(
         return ReturnCode::NullArgument as i32;
     }
 
-    let result = (|| -> Result<i32, Error> {
-        let r1_secret_box_tmp = from_void(r1_secret);
+    let result = (|| -> Result<i32, FrostError> {
+        let r1_secret_box_tmp: Box<Round1SecretPackage> = from_void(r1_secret);
         let r1_secret_box = Box::clone(&r1_secret_box_tmp);
         // Prevent r2_secret_box from being freed. It must be freed manually.
         Box::leak(r1_secret_box_tmp);
 
-        let map = Round1Package::make_map(r1_pkgs_ptr, r1_pkgs_len)?;
-        let (s, r2_map) = frost_dkg_part2(*r1_secret_box, &map)?;
+        let round1_packages =
+            Round1Package::make_map(r1_pkgs_ptr, r1_pkgs_len).map_err(|e| FrostError::Frost(e))?;
+        let min_signers = r1_secret_box.min_signers().clone();
+        let (s, r2_map) = frost_dkg_part2(*r1_secret_box, &round1_packages).map_err(|e| {
+            // Handle edge case for commitment count mismatch.
+            // The FROST library doesn't provide a culprit identifier for this error,
+            // requiring manual identification of the problematic participant
+            if e == Error::IncorrectNumberOfCommitments {
+                for (identifier, package) in round1_packages.iter() {
+                    if package.commitment().coefficients().len() != min_signers as usize {
+                        return FrostError::InvalidNumberOfCommitments {
+                            culprit: *identifier,
+                        };
+                    }
+                }
+            }
+            FrostError::Frost(e)
+        })?;
+
         let mut r2_vec = Vec::with_capacity(r2_map.len());
 
         for (id, pkg) in r2_map {
-            let mut p = pkg
-                .serialize()
-                .map_err(|_| Error::InvalidProofOfKnowledge { culprit: id })?;
+            let mut p = pkg.serialize().map_err(|e| FrostError::Frost(e))?;
             let mut identifier = [0u8; 32];
             identifier.copy_from_slice(&id.serialize());
 
@@ -256,10 +290,10 @@ pub extern "C" fn dkg_part2(
 
     match result {
         Err(err) => {
-            if let Some(culprit_idx) = get_culprit_bytes(err) {
+            if let Some(culprit_idx) = err.culprit().map(culprit_id_to_bytes) {
                 *r2_culprit_idx_out = culprit_idx;
             }
-            frost_err_to_code(err)
+            err.code()
         }
         Ok(count) => count,
     }

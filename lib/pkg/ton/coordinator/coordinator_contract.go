@@ -18,6 +18,7 @@ type Coordinator interface {
 	GetDkg(block *tonutils.BlockIDExt) (*DKG, error)
 	GetPrevDKG() (*DKG, error)
 	GetUnsignedPegouts() ([]PegoutRecord, error)
+	GetStorage(block *tonutils.BlockIDExt) (Storage, error)
 
 	SendStartDKG() (*tlb.Transaction, error)
 	SendRound1(
@@ -42,30 +43,34 @@ type Coordinator interface {
 	SendPubkeyPackage(
 		validatorIdx uint16,
 		dkgUntil int64,
-		sessionPublicKey []byte,
+		sessionSigner signer.Signer,
 		pubkeyPackage []byte,
 	) (*tlb.Transaction, error)
 
 	SendCommitments(
 		pegoutID uint64,
+		pegoutUntil int64,
 		validatorIdx uint16,
 		commitments []byte,
 	) (*tlb.Transaction, error)
 
 	SendSigningShare(
 		pegoutID uint64,
+		pegoutUntil int64,
 		validatorIdx uint16,
 		signingShares [][]byte,
 	) (*tlb.Transaction, error)
 
 	SendSignatures(
 		pegoutID uint64,
+		pegoutUntil int64,
 		validatorIdx uint16,
 		signatures [][]byte,
 	) (*tlb.Transaction, error)
 
 	SendSigningClaim(
 		pegoutID uint64,
+		pegoutUntil int64,
 		validatorIdx uint16,
 		culpritIdx uint16,
 	) (*tlb.Transaction, error)

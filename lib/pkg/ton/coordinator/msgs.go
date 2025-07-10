@@ -1,6 +1,7 @@
 package coordinator
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
@@ -25,6 +26,19 @@ func BuildSendRound2Body(ttl int64, validatorIdx uint16, dkgUntil int64, round2P
 		MustStoreUInt(uint64(dkgUntil), 32).
 		MustStoreRef(utils.SplitBytesToCells(round2Packages)).
 		EndCell()
+}
+
+func attachSessionSignatureToCell(body *cell.Cell, signature []byte) (*cell.Cell, error) {
+	if body == nil {
+		return nil, fmt.Errorf("body is nil")
+	}
+	if len(signature) != 64 {
+		return nil, fmt.Errorf("session signature must be 64 bytes")
+	}
+	return cell.BeginCell().
+		MustStoreRef(cell.BeginCell().MustStoreSlice(signature, 512).EndCell()).
+		MustStoreBuilder(body.ToBuilder()).
+		EndCell(), nil
 }
 
 func BuildSendRound3Body(ttl int64, validatorIdx uint16, dkgUntil int64, sessionPublicKey []byte, pubkeyPackage []byte) *cell.Cell {
@@ -54,6 +68,7 @@ func BuildSendCommitmentsBody(ttl int64, req *CommitmentRequest) *cell.Cell {
 		MustStoreUInt(uint64(time.Now().Unix()+ttl), 32).
 		MustStoreUInt(uint64(req.ValidatorIdx), 16).
 		MustStoreUInt(req.PegoutID, 64).
+		MustStoreUInt(uint64(req.PegoutUntil), 32).
 		MustStoreRef(utils.SplitBytesToCells(req.Commitments)).
 		EndCell()
 }
@@ -72,6 +87,7 @@ func BuildSendSigningShareBody(ttl int64, req *SigningShareRequest) *cell.Cell {
 		MustStoreUInt(uint64(time.Now().Unix()+ttl), 32).
 		MustStoreUInt(uint64(req.ValidatorIdx), 16).
 		MustStoreUInt(req.PegoutID, 64).
+		MustStoreUInt(uint64(req.PegoutUntil), 32).
 		MustStoreRef(dict.AsCell()).
 		EndCell()
 }
@@ -90,6 +106,7 @@ func BuildSendSignaturesBody(ttl int64, req *SignaturesRequest) *cell.Cell {
 		MustStoreUInt(uint64(time.Now().Unix()+ttl), 32).
 		MustStoreUInt(uint64(req.ValidatorIdx), 16).
 		MustStoreUInt(req.PegoutID, 64).
+		MustStoreUInt(uint64(req.PegoutUntil), 32).
 		MustStoreRef(dict.AsCell()).
 		EndCell()
 }
@@ -100,6 +117,7 @@ func BuildSendSigningClaimBody(ttl int64, req *SigningClaimRequest) *cell.Cell {
 		MustStoreUInt(uint64(time.Now().Unix()+ttl), 32).
 		MustStoreUInt(uint64(req.ValidatorIdx), 16).
 		MustStoreUInt(req.PegoutID, 64).
+		MustStoreUInt(uint64(req.PegoutUntil), 32).
 		MustStoreUInt(uint64(req.culpritIdx), 16).
 		EndCell()
 }

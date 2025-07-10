@@ -7,6 +7,7 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/parseddict"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
+	"github.com/xssnick/tonutils-go/address"
 	tonutils "github.com/xssnick/tonutils-go/ton"
 	"github.com/xssnick/tonutils-go/tvm/cell"
 )
@@ -25,6 +26,24 @@ const (
 )
 
 const DefaultDGKTTL = time.Minute
+
+type Storage struct {
+	Initiated           bool
+	StandaloneMode      bool
+	Id                  uint32
+	ConfiguratorAddr    *address.Address
+	Enabled             bool
+	Dkg                 *DKG
+	PrevDkg             *DKG
+	UnsignedPegouts     []PegoutRecord
+	PegoutTxCode        *cell.Cell
+	MinClaimsPercent    uint16
+	MinSignersThreshold uint16
+	DkgLifetime         uint32
+	SigningTimeout      uint32
+	NextPegoutIdx       uint64
+	TeleportAddr        *address.Address
+}
 
 func CallApiWithTimeout[T any](fn func(ctx context.Context) (T, error), parentCtx context.Context, timeout int64, name string) (T, error) {
 	startTs := time.Now()
@@ -160,7 +179,97 @@ func (c *coordinatorContract) GetUnsignedPegouts() ([]PegoutRecord, error) {
 	if err != nil {
 		return nil, err
 	}
-	dict, err := cell.BeginParse().ToDict(64)
+	return parseUnsignedPegouts(cell)
+}
+
+func (c *coordinatorContract) GetStorage(block *tonutils.BlockIDExt) (Storage, error) {
+	if block == nil {
+		var err error
+		block, err = c.tonClient.API.CurrentMasterchainInfo(c.ctx)
+		if err != nil {
+			return Storage{}, err
+		}
+	}
+	acc, err := c.tonClient.FetchAcc(c.Addr, block)
+	if err != nil {
+		return Storage{}, err
+	}
+	storage := acc.Data.BeginParse()
+
+	initiated := storage.MustLoadBoolBit()
+	standaloneMode := storage.MustLoadBoolBit()
+	id := uint32(storage.MustLoadUInt(32))
+	configuratorAddr := storage.MustLoadAddr()
+	enabled := storage.MustLoadBoolBit()
+	dkgSlice, err := storage.LoadMaybeRef()
+	if err != nil {
+		return Storage{}, err
+	}
+	var dkg *DKG
+	if dkgSlice == nil {
+		dkg = &DKG{}
+	} else {
+		dkg, err = parseDGKSlice(dkgSlice)
+	}
+	if err != nil {
+		return Storage{}, err
+	}
+	var prevDkg *DKG
+	prevDkgSlice, err := storage.LoadMaybeRef()
+	if err != nil {
+		return Storage{}, err
+	}
+	if prevDkgSlice == nil {
+		prevDkg = &DKG{}
+	} else {
+		prevDkg, err = parseDGKSlice(prevDkgSlice)
+	}
+	if err != nil {
+		return Storage{}, err
+	}
+
+	var unsignedPegouts []PegoutRecord
+	unsignedPegoutsSlice, err := storage.LoadMaybeRef()
+	if err != nil {
+		return Storage{}, err
+	}
+	if unsignedPegoutsSlice == nil {
+		unsignedPegouts = []PegoutRecord{}
+	} else {
+		unsignedPegouts, err = parseUnsignedPegouts(unsignedPegoutsSlice.MustToCell())
+	}
+	if err != nil {
+		return Storage{}, err
+	}
+	pegoutTxCode := storage.MustLoadRef().MustToCell()
+	minClaimsPercent := uint16(storage.MustLoadUInt(16))
+	minSignersThreshold := uint16(storage.MustLoadUInt(16))
+	dkgLifetime := uint32(storage.MustLoadUInt(32))
+	signingTimeout := uint32(storage.MustLoadUInt(32))
+	nextPegoutIdx := storage.MustLoadUInt(64)
+	teleportAddr := storage.MustLoadAddr()
+
+	return Storage{
+		Initiated:           initiated,
+		StandaloneMode:      standaloneMode,
+		Id:                  id,
+		ConfiguratorAddr:    configuratorAddr,
+		Enabled:             enabled,
+		Dkg:                 dkg,
+		PrevDkg:             prevDkg,
+		UnsignedPegouts:     unsignedPegouts,
+		PegoutTxCode:        pegoutTxCode,
+		MinClaimsPercent:    minClaimsPercent,
+		MinSignersThreshold: minSignersThreshold,
+		DkgLifetime:         dkgLifetime,
+		SigningTimeout:      signingTimeout,
+		NextPegoutIdx:       nextPegoutIdx,
+		TeleportAddr:        teleportAddr,
+	}, nil
+}
+
+func parseUnsignedPegouts(pegoutsCell *cell.Cell) ([]PegoutRecord, error) {
+	dict, err := pegoutsCell.BeginParse().ToDict(64)
 	if err != nil {
 		return nil, err
 	}
@@ -179,7 +288,8 @@ func (c *coordinatorContract) GetUnsignedPegouts() ([]PegoutRecord, error) {
 		ExpiredAt := time.Unix(int64(value.MustLoadUInt(32)), 0)
 		SigningMask := value.MustLoadBigUInt(256)
 
-		CommitmentsMask := value.MustLoadSlice(256)
+		CommitmentsMaskAccepted := value.MustLoadBigUInt(128)
+		CommitmentsMaskOther := value.MustLoadBigUInt(128)
 		value.MustLoadUInt(16)
 		commitmentsDict := value.MustLoadDict(16)
 		commitmentsPtr, err := parseddict.ParseDict(
@@ -239,7 +349,8 @@ func (c *coordinatorContract) GetUnsignedPegouts() ([]PegoutRecord, error) {
 			InternalKey,
 			IsAutopegout,
 			Commitments,
-			CommitmentsMask,
+			CommitmentsMaskAccepted,
+			CommitmentsMaskOther,
 			SigningShares,
 			SigningSharesMask,
 			Signatures,
@@ -359,7 +470,10 @@ func readBuffer(value *cell.Slice) ([]byte, error) {
 }
 
 func loadSharesMap(value *cell.Slice) (map[uint16][]byte, error) {
-	dict, _ := value.MustLoadRef().ToDict(64)
+	dict, err := value.MustLoadRef().ToDict(64)
+	if err != nil {
+		return nil, err
+	}
 	sharesMap, err := parseddict.ParseDict(
 		dict,
 		parseddict.ParseKeyUI16,
