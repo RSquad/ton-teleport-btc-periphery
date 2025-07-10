@@ -1,6 +1,7 @@
 package metrics
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"sync"
@@ -15,7 +16,7 @@ type FetcherDKG struct {
 	coordinatorContract coordinator.Coordinator
 	period              int64 // Fetch period (in seconds)
 	restartCounter      int64
-	state               coordinator.DKGState
+	cfgHash             []byte
 	until               time.Time
 }
 
@@ -66,20 +67,27 @@ func (fetcher *FetcherDKG) FetchDKG() {
 
 	if dkg == nil {
 		fetcher.restartCounter = 0
+		fetcher.cfgHash = nil
+		fetcher.until = time.Time{}
 		dkgStatus.WithLabelValues("DKG == null").Set(float64(-1))
 		logger.Log.Debug().Msg("FetcherDKG: Contract returns dkg==null")
 		return
 	}
 
+	if fetcher.until.Equal(time.Time{}) {
+		fetcher.until = dkg.Until
+		fetcher.cfgHash = dkg.CfgHash
+	}
+
 	dkgStatus.WithLabelValues(dkg.State.String()).Set(float64(dkg.State))
 
-	if fetcher.state != coordinator.DKGStateFinished &&
+	if bytes.Equal(fetcher.cfgHash, dkg.CfgHash) &&
 		!dkg.Until.Equal(fetcher.until) {
 		fetcher.restartCounter++
 	}
 	dkgRestartCount.Set(float64(fetcher.restartCounter))
 
-	fetcher.state = dkg.State
+	fetcher.cfgHash = dkg.CfgHash
 	fetcher.until = dkg.Until
 
 	// Serialize
