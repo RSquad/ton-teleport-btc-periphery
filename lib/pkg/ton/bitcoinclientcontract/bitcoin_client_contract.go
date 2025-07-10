@@ -150,7 +150,7 @@ func (c *BitcoinClientContract) GetCandidateBlockHashesFromCell(storageCell *cel
 		}
 	}
 
-	for i := range blockHeaders {
+	for i := 0; i < len(blockHeaders); i++ {
 		blockHeader := blockHeaders[i]
 		blockHeader.MustLoadUInt(32)
 		blockHash, err := chainhash.NewHash(blockHeader.MustLoadSlice(256))

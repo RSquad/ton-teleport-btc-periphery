@@ -57,7 +57,8 @@ func (fetcher *FetcherDKG) Work(ctx context.Context, wg *sync.WaitGroup) {
 func (fetcher *FetcherDKG) FetchDKG() {
 	dkg, err := fetcher.coordinatorContract.GetDkg(nil)
 	if err != nil {
-		dkgStatus.WithLabelValues("DKG error").Set(float64(-1))
+		dkgStatus.Reset()
+		dkgStatus.WithLabelValues("DKG_ERROR").Set(float64(-1))
 		logger.Log.Error().Err(err).
 			Str("component", "FetcherDKG").
 			Msg("fetch failed")
@@ -69,7 +70,8 @@ func (fetcher *FetcherDKG) FetchDKG() {
 		fetcher.restartCounter = 0
 		fetcher.cfgHash = nil
 		fetcher.until = time.Time{}
-		dkgStatus.WithLabelValues("DKG == null").Set(float64(-1))
+		dkgStatus.Reset()
+		dkgStatus.WithLabelValues("NULL").Set(float64(-1))
 		logger.Log.Debug().Msg("FetcherDKG: Contract returns dkg==null")
 		return
 	}
@@ -79,6 +81,7 @@ func (fetcher *FetcherDKG) FetchDKG() {
 		fetcher.cfgHash = dkg.CfgHash
 	}
 
+	dkgStatus.Reset()
 	dkgStatus.WithLabelValues(dkg.State.String()).Set(float64(dkg.State))
 
 	if bytes.Equal(fetcher.cfgHash, dkg.CfgHash) &&
