@@ -134,26 +134,31 @@ type PegoutSignatures struct {
 }
 
 type PegoutRecord struct {
-	ID                uint64
-	PegoutAddress     *address.Address
-	InternalKey       []byte
-	IsAutopegout      bool
-	Commitments       map[uint16][]byte
-	CommitmentsMask   []byte
-	SigningShares     map[uint16]map[uint16][]byte
-	SigningSharesMask []byte
-	Signatures        PegoutSignatures
-	ClaimsMask        *big.Int
-	ClaimsCount       uint16
-	ClaimsCounters    map[uint16]uint16
-	MaxSigners        uint16
-	ExpiredAt         time.Time
-	SigningMask       *big.Int
+	ID                      uint64
+	PegoutAddress           *address.Address
+	InternalKey             []byte
+	IsAutopegout            bool
+	Commitments             map[uint16][]byte
+	CommitmentsMaskAccepted *big.Int
+	CommitmentsMaskOther    *big.Int
+	SigningShares           map[uint16]map[uint16][]byte
+	SigningSharesMask       []byte
+	Signatures              PegoutSignatures
+	ClaimsMask              *big.Int
+	ClaimsCount             uint16
+	ClaimsCounters          map[uint16]uint16
+	MaxSigners              uint16
+	ExpiredAt               time.Time
+	SigningMask             *big.Int
 }
 
 func (p *PegoutRecord) HasCommitment(idx uint16) bool {
 	_, exists := p.Commitments[idx]
 	return exists
+}
+
+func (p *PegoutRecord) HasCommitmentOther(idx uint16) bool {
+	return p.CommitmentsMaskOther.Bit(int(idx)) != 0
 }
 
 func (p *PegoutRecord) CommitmentsCount() uint16 {

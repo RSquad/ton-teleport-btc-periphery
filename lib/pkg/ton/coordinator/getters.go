@@ -288,7 +288,8 @@ func parseUnsignedPegouts(pegoutsCell *cell.Cell) ([]PegoutRecord, error) {
 		ExpiredAt := time.Unix(int64(value.MustLoadUInt(32)), 0)
 		SigningMask := value.MustLoadBigUInt(256)
 
-		CommitmentsMask := value.MustLoadSlice(256)
+		CommitmentsMaskAccepted := value.MustLoadBigUInt(128)
+		CommitmentsMaskOther := value.MustLoadBigUInt(128)
 		value.MustLoadUInt(16)
 		commitmentsDict := value.MustLoadDict(16)
 		commitmentsPtr, err := parseddict.ParseDict(
@@ -348,7 +349,8 @@ func parseUnsignedPegouts(pegoutsCell *cell.Cell) ([]PegoutRecord, error) {
 			InternalKey,
 			IsAutopegout,
 			Commitments,
-			CommitmentsMask,
+			CommitmentsMaskAccepted,
+			CommitmentsMaskOther,
 			SigningShares,
 			SigningSharesMask,
 			Signatures,
@@ -468,7 +470,10 @@ func readBuffer(value *cell.Slice) ([]byte, error) {
 }
 
 func loadSharesMap(value *cell.Slice) (map[uint16][]byte, error) {
-	dict, _ := value.MustLoadRef().ToDict(64)
+	dict, err := value.MustLoadRef().ToDict(64)
+	if err != nil {
+		return nil, err
+	}
 	sharesMap, err := parseddict.ParseDict(
 		dict,
 		parseddict.ParseKeyUI16,

@@ -280,9 +280,9 @@ func HandleTvmError(tvmError error) string {
 	case 117:
 		return "signature exists"
 	case 127:
-		return "R1 is not completed yet"
+		return "Current DKG round is not R1"
 	case 128:
-		return "R2 is not completed yet"
+		return "Current DKG round is not R2"
 	case 135:
 		return "pegout not found"
 	case 145:
@@ -309,6 +309,8 @@ func HandleTvmError(tvmError error) string {
 		return "Pegout is not expired"
 	case 168:
 		return "Different pegout signatures"
+	case 170:
+		return "Invalid dkg timestamp"
 	case 171:
 		return "Pegout id does not match expected pegout to sign"
 	case 180:

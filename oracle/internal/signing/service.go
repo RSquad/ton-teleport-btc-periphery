@@ -282,6 +282,11 @@ func (s *SignService) doCommit(
 		}
 	}
 
+	if pegout.artifacts.HasCommitmentOther(validatorIdx) {
+		s.logHasCommitmentOther(pegout, minSigners)
+		return false
+	}
+
 	err := s.generateCommitments()
 	if err != nil {
 		s.logError("failed to generate commitments", err)
