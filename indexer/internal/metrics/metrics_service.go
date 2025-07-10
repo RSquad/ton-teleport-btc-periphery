@@ -32,149 +32,71 @@ func NewService(
 	teleportContract *teleportcontract.TeleportContract,
 	bitcoinClient *bitcoin.Client,
 	tonClient *tonclient.TonClient,
-	cfg config.IndexerConfig,
+	cfg *config.ServicesConfig,
 	db *sql.DB,
 ) (*MetricsService, error) {
 	// Writer DB
-	dbChainSize, err := config.ParseIntWithDefaultVal(cfg.MetricsWriterDbChainSize, 5, "MetricsWriterDbChainSize")
-	if err != nil {
-		logger.Log.Error().Str("component", "metrics").Err(err)
-		return nil, err
-	}
-
-	writerDbChan := make(chan PayloadDB, dbChainSize)
+	writerDbChan := make(chan PayloadDB, cfg.Metrics.WriterDbChainSize)
 	writerDB, err := NewWriterDB(writerDbChan, db)
 	if err != nil {
 		return nil, err
 	}
 
 	// Fetcher: Contract DKG
-	runMetricsFetcherDKG, err := config.ParseBoolWithDefaultVal(cfg.RunMetricsFetcherDKG, true, "RunMetricsFetcherDKG")
-	if err != nil {
-		logger.Log.Error().Str("component", "metrics").Err(err)
-		return nil, err
-	}
-
 	var fetcherDKG *FetcherDKG = nil
-	if runMetricsFetcherDKG {
+	if cfg.Metrics.RunFetcherDKG {
 		if coordinatorContract == nil {
 			return nil, fmt.Errorf("failed to start FetcherDKG: CoordinatorContract is null. Please set the COMMON_TON_CONTRACT_COORDINATOR value in the .env")
 		}
 
-		dkgFetchPeriod, err := config.ParseIntWithDefaultVal(cfg.MetricsDkgFetchPeriod, 10, "MetricsDkgFetchPeriod")
-		if err != nil {
-			logger.Log.Error().Str("component", "metrics").Err(err)
-			return nil, err
-		}
-
-		fetcherDKG = NewFetcherDKG(writerDbChan, coordinatorContract, dkgFetchPeriod)
+		fetcherDKG = NewFetcherDKG(writerDbChan, coordinatorContract, int64(cfg.Metrics.DkgFetchPeriod))
 	}
 
 	// Fetcher: Contract balances
-	runMetricsFetcherContractBalances, err := config.ParseBoolWithDefaultVal(cfg.RunMetricsFetcherContractBalances, true, "RunMetricsFetcherContractBalances")
-	if err != nil {
-		logger.Log.Error().Str("component", "metrics").Err(err)
-		return nil, err
-	}
-
 	var fetcherContractBalances *FetcherContractBalances = nil
-	if runMetricsFetcherContractBalances {
+	if cfg.Metrics.RunFetcherContractBalances {
 		fetcherContractBalances = NewFetcherContractBalances(tonClient, cfg)
 	}
 
 	// Fetcher: Contract Bitcoin client
-	runMetricsFetcherContractBitcoinClient, err := config.ParseBoolWithDefaultVal(cfg.RunMetricsFetcherContractBitcoinClient, true, "RunMetricsFetcherContractBitcoinClient")
-	if err != nil {
-		logger.Log.Error().Str("component", "metrics").Err(err)
-		return nil, err
-	}
-
 	var fetcherContractBitcoinClient *FetcherContractBitcoinClient = nil
-	if runMetricsFetcherContractBitcoinClient {
+	if cfg.Metrics.RunFetcherContractBitcoinClient {
 		if bitcoinClientContract == nil {
 			return nil, fmt.Errorf("failed to start FetcherContractBitcoinClient: BitcoinClientContract is null. Please set the COMMON_TON_CONTRACT_BITCLIENT_ADDR value in the .env")
 		}
 
-		bitcoinClientContractFetchPeriod, err := config.ParseIntWithDefaultVal(cfg.MetricsBitcoinClientContractFetchPeriod, 60, "MetricsBitcoinClientContractFetchPeriod")
-		if err != nil {
-			logger.Log.Error().Str("component", "metrics").Err(err)
-			return nil, err
-		}
-
-		fetcherContractBitcoinClient = NewFetcherContractBitcoinClient(writerDbChan, bitcoinClient, bitcoinClientContract, bitcoinClientContractFetchPeriod)
+		fetcherContractBitcoinClient = NewFetcherContractBitcoinClient(writerDbChan, bitcoinClient, bitcoinClientContract, int64(cfg.Metrics.BitcoinClientContractFetchPeriod))
 	}
 
 	// Fetcher: BitcoinNetwork
-	runMetricsFetcherBitcoinNetwork, err := config.ParseBoolWithDefaultVal(cfg.RunMetricsFetcherBitcoinNetwork, true, "RunMetricsFetcherBitcoinNetwork")
-	if err != nil {
-		logger.Log.Error().Str("component", "metrics").Err(err)
-		return nil, err
-	}
-
 	var fetcherBitcoinNetwork *FetcherBitcoinNetwork = nil
-	if runMetricsFetcherBitcoinNetwork {
-		bitcoinNetworkFetchPeriod, err := config.ParseIntWithDefaultVal(cfg.MetricsBitcoinNetworkFetchPeriod, 59, "MetricsBitcoinNetworkFetchPeriod")
-		if err != nil {
-			logger.Log.Error().Str("component", "metrics").Err(err)
-			return nil, err
-		}
-
-		fetcherBitcoinNetwork = NewFetcherBitcoinNetwork(writerDbChan, db, bitcoinClient, bitcoinNetworkFetchPeriod)
+	if cfg.Metrics.RunFetcherBitcoinNetwork {
+		fetcherBitcoinNetwork = NewFetcherBitcoinNetwork(writerDbChan, bitcoinClient, int64(cfg.Metrics.BitcoinNetworkFetchPeriod))
 	}
 
 	// Fetcher: ContractTeleport
-	runMetricsFetcherContractTeleport, err := config.ParseBoolWithDefaultVal(cfg.RunMetricsFetcherContractTeleport, true, "RunMetricsFetcherContractTeleport")
-	if err != nil {
-		logger.Log.Error().Str("component", "metrics").Err(err)
-		return nil, err
-	}
-
 	var fetcherContractTeleport *FetcherContractTeleport = nil
-	if runMetricsFetcherContractTeleport {
+	if cfg.Metrics.RunFetcherContractTeleport {
 		if teleportContract == nil {
 			return nil, fmt.Errorf("failed to start FetcherContractTeleport: TeleportContract is null. Please set the COMMON_TON_CONTRACT_TELEPORT_ADDR value in the .env")
 		}
 
-		teleportContractFetchPeriod, err := config.ParseIntWithDefaultVal(cfg.MetricsTeleportContractFetchPeriod, 27, "MetricsTeleportContractFetchPeriod")
-		if err != nil {
-			logger.Log.Error().Str("component", "metrics").Err(err)
-			return nil, err
-		}
-
-		fetcherContractTeleport = NewFetcherContractTeleport(writerDbChan, teleportContract, teleportContractFetchPeriod)
+		fetcherContractTeleport = NewFetcherContractTeleport(writerDbChan, teleportContract, int64(cfg.Metrics.TeleportContractFetchPeriod))
 	}
 
 	// Fetcher: ContractCoordinator
-	runMetricsFetcherContractCoordinator, err := config.ParseBoolWithDefaultVal(cfg.RunMetricsFetcherContractCoordinator, true, "RunMetricsFetcherContractCoordinator")
-	if err != nil {
-		logger.Log.Error().Str("component", "metrics").Err(err)
-		return nil, err
-	}
-
 	var fetcherContractCoordinator *FetcherContractCoordinator = nil
-	if runMetricsFetcherContractCoordinator {
+	if cfg.Metrics.RunFetcherContractCoordinator {
 		if coordinatorContract == nil {
 			return nil, fmt.Errorf("failed to start FetcherContractCoordinator: CoordinatorContract is null. Please set the COMMON_TON_CONTRACT_COORDINATOR value in the .env")
 		}
 
-		coordinatorContractFetchPeriod, err := config.ParseIntWithDefaultVal(cfg.MetricsCoordinatorContractFetchPeriod, 59, "MetricsCoordinatorContractFetchPeriod")
-		if err != nil {
-			logger.Log.Error().Str("component", "metrics").Err(err)
-			return nil, err
-		}
-
-		fetcherContractCoordinator = NewFetcherContractCoordinator(writerDbChan, coordinatorContract, coordinatorContractFetchPeriod)
+		fetcherContractCoordinator = NewFetcherContractCoordinator(writerDbChan, coordinatorContract, int64(cfg.Metrics.CoordinatorContractFetchPeriod))
 	}
 
 	// Fetcher: Pegouts
-	runMetricsFetcherPegouts, err := config.ParseBoolWithDefaultVal(cfg.RunMetricsFetcherPegouts, true, "RunMetricsFetcherPegouts")
-	if err != nil {
-		logger.Log.Error().Str("component", "metrics").Err(err)
-		return nil, err
-	}
-
 	var fetcherPegouts *FetcherPegouts = nil
-	if runMetricsFetcherPegouts {
+	if cfg.Metrics.RunFetcherPegouts {
 		if coordinatorContract == nil {
 			return nil, fmt.Errorf("failed to start FetcherPegouts: CoordinatorContract is null. Please set the COMMON_TON_CONTRACT_COORDINATOR value in the .env")
 		}
@@ -200,7 +122,7 @@ func NewService(
 	}, nil
 }
 
-func (s *MetricsService) Work(ctx context.Context, indexerConfig *config.IndexerConfig) {
+func (s *MetricsService) Work(ctx context.Context) {
 	defer logger.Log.Info().Msg("MetricsService: stopped")
 	logger.DefaultLogStartWork("MetricsService: starting...")
 
