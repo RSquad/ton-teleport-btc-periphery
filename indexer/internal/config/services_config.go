@@ -135,6 +135,10 @@ func ParseRunServices(envStr string) (*RunServicesConfig, error) {
 		RunMetricsService: true,
 	}
 
+	if len(envStr) == 0 {
+		return cfg, nil
+	}
+
 	parts := strings.Split(envStr, ",")
 
 	for _, part := range parts {
@@ -187,7 +191,7 @@ func ParseMetrics(indexerConfig *IndexerConfig) (*MetricsConfig, error) {
 	}
 
 	// Run fetchers
-	{
+	if len(indexerConfig.Metrics) > 0 {
 		envStr := indexerConfig.Metrics
 		parts := strings.Split(envStr, ",")
 
@@ -225,7 +229,7 @@ func ParseMetrics(indexerConfig *IndexerConfig) (*MetricsConfig, error) {
 	}
 
 	// Fine tune arguments
-	{
+	if len(indexerConfig.MetricsArgs) > 0 {
 		envStr := indexerConfig.MetricsArgs
 		parts := strings.Split(envStr, ",")
 
