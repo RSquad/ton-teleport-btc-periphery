@@ -28,6 +28,7 @@ const (
 	ErrClaimAlreadyExists              = 160
 	ErrPegoutIsNotExpired              = 166
 	DifferentPegoutSignatures          = 168
+	ErrInvalidPegoutTimestamp          = 180
 	ErrDkgExpired                      = 182
 	FrostDkgR2PackageSize              = 37 /*FROST R2 package to single validator*/
 	FrostDkgR2PackageForEncryptionSize = 8 /*DKG until*/ + 2 /*from validator idx*/ + FrostDkgR2PackageSize

@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math/big"
 	"sync"
 	"time"
 
@@ -386,6 +387,11 @@ func (s *SignService) doAggregate(
 }
 
 func (s *SignService) sendCommitments(pegout *CachedPegout, validatorIdx uint16) {
+	if (pegout.artifacts.ExpiredAt.Unix() == 0) && (pegout.artifacts.CommitmentsMaskAccepted.Cmp(big.NewInt(0)) == 1) {
+		s.logSendCommitmentsInfo(pegout.ID, "Unable to send commitments: since ExpiredAt == 0 and we are not the first to send commitments, we need to update the pegout information")
+		return
+	}
+
 	packedCommitments, err := helpers.SerializeCommitments(pegout.commitments, helpers.FrostCommitmentLength)
 	if err != nil {
 		s.logError("failed to serialize commitments", err)
