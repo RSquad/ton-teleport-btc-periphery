@@ -155,11 +155,17 @@ func (s *SignService) logSendCommitments(pegoutID uint64) {
 	infoEventWithPegoutID(pegoutID).Msg("send commitments")
 }
 
+func (s *SignService) logSendCommitmentsInfo(pegoutID uint64, msg string) {
+	infoEventWithPegoutID(pegoutID).Msg(msg)
+}
+
 func (s *SignService) logSendCommitmentsError(pegoutID uint64, err error) {
 	errCode, _ := helpers.ExtractExitCode(err.Error())
 
 	if errCode == helpers.ErrCommitmentsThresholdReached {
 		infoEventWithPegoutID(pegoutID).Msg("Unable to send commitments: commitments threshold reached")
+	} else if errCode == helpers.ErrPackageAlreadyExist {
+		infoEventWithPegoutID(pegoutID).Msg("Unable to send commitments: package already sent")
 	} else {
 		msg := helpers.HandleTvmError(err)
 		errorEventWithPegoutID(pegoutID).Err(err).Msg("failed to send commitments: " + msg)
