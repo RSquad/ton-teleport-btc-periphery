@@ -15,7 +15,8 @@ type Pegout struct {
 func (Pegout) Fields() []ent.Field {
 	return []ent.Field{
 		field.Text("addr").
-			NotEmpty().
+			Optional().
+			Unique().
 			Immutable(),
 		field.Enum("status").
 			NamedValues(
@@ -27,7 +28,8 @@ func (Pegout) Fields() []ent.Field {
 		field.Text("bitcoin_tx_raw").
 			Default(""),
 		field.Text("bitcoin_tx_id").
-			Default(""),
+			Unique().
+			Optional(),
 		field.Text("bitcoin_block_hash").
 			Default(""),
 	}

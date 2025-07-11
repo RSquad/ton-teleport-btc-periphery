@@ -16,6 +16,7 @@ func (InternalKey) Fields() []ent.Field {
 	return []ent.Field{
 		field.Text("key").
 			NotEmpty().
+			Unique().
 			Immutable(),
 		field.Time("completed_at").
 			Immutable(),

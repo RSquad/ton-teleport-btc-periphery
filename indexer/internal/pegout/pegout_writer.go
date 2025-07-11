@@ -37,7 +37,7 @@ func (ew *PegoutWriter) WriteFromEvent(
 	pegout, err := ew.repo.Pegout.Create().
 		SetAddr(func() string {
 			if event.GetPegoutAddr().IsAddrNone() {
-				return "NONE"
+				return ""
 			}
 			return utils.AddrToRawString(event.GetPegoutAddr())
 		}()).
