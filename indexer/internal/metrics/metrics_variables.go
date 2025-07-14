@@ -20,6 +20,13 @@ var (
 		},
 		[]string{"addr", "name"},
 	)
+	confirmedBlockMismatch = promauto.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "confirmed_block_mismatch",
+			Help: "Confirmed block mismatch",
+		},
+		[]string{"contract_block", "network_block"},
+	)
 	unsignedPegoutsLen = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "pegouts_len",
