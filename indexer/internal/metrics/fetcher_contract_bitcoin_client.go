@@ -107,6 +107,7 @@ func (fetcher *FetcherContractBitcoinClient) Fetch() {
 		return
 	}
 
+	// TODO: check in runtime. The correct comparison should be against the Bitcoin network's block hash at lastConfirmedBlockHeight.
 	// Check if LastConfirmedBlockHashes is match
 	fetcher.setConfirmedBlockHashMismatchMetric(lastConfirmedBlockHash.String(), info.BestBlockHash)
 
