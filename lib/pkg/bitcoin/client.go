@@ -8,12 +8,14 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/btcsuite/btcd/btcjson"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/rpcclient"
 	"github.com/btcsuite/btcd/wire"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 )
 
 const (
@@ -55,6 +57,11 @@ type jsonRPCResponse struct {
 // getBlockHeaderResult is used to unmarshal the relevant part of a getblock response.
 type getBlockHeaderResult struct {
 	Height int64 `json:"height"`
+}
+
+type TxChildrenCount struct {
+	ParentTxID    *chainhash.Hash
+	ChildrenCount int
 }
 
 func NewClient(host string, user string, pass string) (*Client, error) {
@@ -286,6 +293,101 @@ func (c *Client) GetRawTransactionVerbose(txHash *chainhash.Hash) (*btcjson.TxRa
 	return &txResult, nil
 }
 
+func (c *Client) GetTxChildrenCount(parentHash *chainhash.Hash) (*TxChildrenCount, error) {
+	// 1. Verify parent exists first
+	_, err := c.RPCClient.GetRawTransaction(parentHash)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get parent transaction: %v", err)
+	}
+
+	// 2. Get mempool (string IDs)
+	mempool, err := c.RPCClient.GetRawMempool()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get mempool: %v", err)
+	}
+
+	// 3. Batch get all mempool transactions
+	type job struct {
+		txID string
+		idx  int
+	}
+	type result struct {
+		inputs int
+		err    error
+	}
+
+	workers := 8 // Tune based on your RPC server capacity
+	jobChan := make(chan job, len(mempool))
+	resultChan := make(chan result, len(mempool))
+
+	// Worker pool
+	var wg sync.WaitGroup
+	for i := 0; i < workers; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for j := range jobChan {
+				txHash, err := chainhash.NewHashFromStr(j.txID)
+				if err != nil {
+					resultChan <- result{err: fmt.Errorf("failed to parse txID %s: %v", j.txID, err)}
+					continue
+				}
+
+				tx, err := c.RPCClient.GetRawTransaction(txHash)
+				if err != nil {
+					resultChan <- result{err: fmt.Errorf("failed to get tx %s: %v", txHash, err)}
+					continue
+				}
+
+				inputs := 0
+				for _, txIn := range tx.MsgTx().TxIn {
+					if txIn.PreviousOutPoint.Hash.IsEqual(parentHash) {
+						inputs++
+					}
+				}
+				resultChan <- result{inputs: inputs}
+			}
+		}()
+	}
+
+	// Feed jobs
+	for i, txID := range mempool {
+		jobChan <- job{txID: txID.String(), idx: i}
+	}
+	close(jobChan)
+	wg.Wait()
+	close(resultChan)
+
+	// Process results
+	childrenCount := 0
+	for res := range resultChan {
+		if res.err != nil {
+			logger.Log.Error().Err(res.err).Msg("tx processing error")
+			continue
+		}
+		if res.inputs > 0 {
+			childrenCount++
+		}
+	}
+
+	return &TxChildrenCount{
+		ParentTxID:    parentHash,
+		ChildrenCount: childrenCount,
+	}, nil
+}
+
+<<<<<<< HEAD
+func (c *Client) EstimateFee(blockCount int, estimateMode *btcjson.EstimateSmartFeeMode) (float64, error) {
+	feeEstimate, err := c.RPCClient.EstimateSmartFee(int64(blockCount), estimateMode)
+	if err != nil {
+		return 0, err
+	}
+	feeRateSVB := *feeEstimate.FeeRate * 1e8 / 1000.0
+	return feeRateSVB, nil
+}
+
+=======
+>>>>>>> feat/metrics
 func (c *Client) SendRawTransaction(tx *wire.MsgTx, allowHighFees bool) (*chainhash.Hash, error) {
 	// Fallback to manual implementation if RPCClient is not available
 	// Serialize the transaction to hex
