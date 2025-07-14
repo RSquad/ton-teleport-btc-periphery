@@ -45,5 +45,13 @@ var (
 		prometheus.GaugeOpts{
 			Name: "cpfp_count",
 			Help: "CPFP Count",
-		}, []string{"tx_id"})
+		},
+		[]string{"tx_id"},
+	)
+	svbExceeded = promauto.NewGauge(
+		prometheus.GaugeOpts{
+			Name: "svb_exceeded",
+			Help: "SVB Exceeded",
+		},
+	)
 )
