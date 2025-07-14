@@ -71,7 +71,7 @@ func NewService(
 	// Fetcher: BitcoinNetwork
 	var fetcherBitcoinNetwork *FetcherBitcoinNetwork = nil
 	if cfg.Metrics.RunFetcherBitcoinNetwork {
-		fetcherBitcoinNetwork = NewFetcherBitcoinNetwork(writerDbChan, bitcoinClient, int64(cfg.Metrics.BitcoinNetworkFetchPeriod))
+		fetcherBitcoinNetwork = NewFetcherBitcoinNetwork(writerDbChan, db, bitcoinClient, int64(cfg.Metrics.BitcoinNetworkFetchPeriod))
 	}
 
 	// Fetcher: ContractTeleport
@@ -101,7 +101,7 @@ func NewService(
 			return nil, fmt.Errorf("failed to start FetcherPegouts: CoordinatorContract is null. Please set the COMMON_TON_CONTRACT_COORDINATOR value in the .env")
 		}
 
-		fetcherPegouts = NewFetcherPegouts(tonClient, bitcoinClient, coordinatorContract, db)
+		fetcherPegouts = NewFetcherPegouts(tonClient, bitcoinClient, coordinatorContract, db, int64(cfg.Metrics.MetricsPegoutsFetchPeriod))
 	}
 
 	return &MetricsService{

@@ -41,4 +41,9 @@ var (
 		},
 		[]string{"pegout_addr", "bitcoin_tx_id"},
 	)
+	cpfpCounter = promauto.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "cpfp_count",
+			Help: "CPFP Count",
+		}, []string{"tx_id"})
 )
