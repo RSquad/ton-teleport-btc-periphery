@@ -20,6 +20,13 @@ var (
 		},
 		[]string{"addr", "name"},
 	)
+	confirmedBlockMismatch = promauto.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "confirmed_block_mismatch",
+			Help: "Confirmed block mismatch",
+		},
+		[]string{"contract_block", "network_block"},
+	)
 	unsignedPegoutsLen = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "pegouts_len",
@@ -41,10 +48,33 @@ var (
 		},
 		[]string{"pegout_addr", "bitcoin_tx_id"},
 	)
+
 	dkgRestartCount = promauto.NewGauge(
 		prometheus.GaugeOpts{
 			Name: "dkg_restart_count",
 			Help: "DKG restart count",
+
+	dkgMaxSigners = promauto.NewGauge(
+		prometheus.GaugeOpts{
+			Name: "dkg_signers_count",
+			Help: "DKG signers count",
+		},
+	)
+	totalValidatorsCount = promauto.NewGauge(
+		prometheus.GaugeOpts{
+			Name: "total_validators_count",
+			Help: "Total validators count",
+	cpfpCounter = promauto.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "cpfp_count",
+			Help: "CPFP Count",
+		},
+		[]string{"tx_id"},
+	)
+	svbExceeded = promauto.NewGauge(
+		prometheus.GaugeOpts{
+			Name: "svb_exceeded",
+			Help: "SVB Exceeded",
 		},
 	)
 )

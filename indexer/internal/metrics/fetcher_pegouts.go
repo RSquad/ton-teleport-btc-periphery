@@ -3,7 +3,6 @@ package metrics
 import (
 	"context"
 	"database/sql"
-	"math/big"
 	"sync"
 	"time"
 
@@ -21,30 +20,9 @@ type FetcherPegouts struct {
 	bitcoinClient       *bitcoin.Client
 	coordinatorContract coordinator.Coordinator
 	db                  *sql.DB
+	period              int64
 	expiredAt           map[uint64]time.Time
 	pegoutCache         PegoutCache
-}
-
-type SignedPegout struct {
-	createdAt   time.Time
-	pegoutAddr  string
-	bitcoinTxId string
-}
-
-type PegoutCache struct {
-	items    map[uint64]PegoutCacheItem
-	expireAt time.Time
-}
-
-type PegoutCacheItem struct {
-	ID                      uint64
-	InternalKey             []byte
-	IsAutopegout            bool
-	CommitmentsMaskAccepted *big.Int
-	CommitmentsMaskOther    *big.Int
-	MaxSigners              uint16
-	SigningMask             *big.Int
-	ExpiredAt               time.Time
 }
 
 func NewFetcherPegouts(
@@ -52,12 +30,14 @@ func NewFetcherPegouts(
 	bitcoinClient *bitcoin.Client,
 	coordinator coordinator.Coordinator,
 	db *sql.DB,
+	period int64,
 ) *FetcherPegouts {
 	return &FetcherPegouts{
 		tonClient:           tonClient,
 		bitcoinClient:       bitcoinClient,
 		db:                  db,
 		coordinatorContract: coordinator,
+		period:              period,
 		expiredAt:           make(map[uint64]time.Time),
 		pegoutCache:         PegoutCache{},
 	}
@@ -223,7 +203,7 @@ func (fetcher *FetcherPegouts) Work(ctx context.Context, wg *sync.WaitGroup) {
 	defer logger.Log.Info().Msg("FetcherPegouts: stopped")
 	logger.DefaultLogStartWork("FetcherPegouts: starting...")
 
-	ticker := time.NewTicker(TICKER_INTERVAL)
+	ticker := time.NewTicker(time.Duration(fetcher.period) * time.Second)
 	defer ticker.Stop()
 
 	for {

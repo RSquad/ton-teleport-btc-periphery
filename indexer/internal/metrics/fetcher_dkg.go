@@ -83,6 +83,8 @@ func (fetcher *FetcherDKG) FetchDKG() {
 
 	dkgStatus.Reset()
 	dkgStatus.WithLabelValues(dkg.State.String()).Set(float64(dkg.State))
+	dkgMaxSigners.Set(float64(dkg.MaxSigners))
+	totalValidatorsCount.Set(float64(TOTAL_VALIDATORS))
 
 	if bytes.Equal(fetcher.cfgHash, dkg.CfgHash) &&
 		!dkg.Until.Equal(fetcher.until) {
