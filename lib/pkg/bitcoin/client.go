@@ -361,7 +361,6 @@ func (c *Client) GetTxChildrenCount(parentHash *chainhash.Hash) (*TxChildrenCoun
 	// Process results
 	childrenCount := 0
 	for res := range resultChan {
-		fmt.Printf("tx %d inputs\n", res.inputs)
 		if res.err != nil {
 			logger.Log.Error().Err(res.err).Msg("tx processing error")
 			continue
@@ -377,6 +376,7 @@ func (c *Client) GetTxChildrenCount(parentHash *chainhash.Hash) (*TxChildrenCoun
 	}, nil
 }
 
+<<<<<<< HEAD
 func (c *Client) EstimateFee(blockCount int, estimateMode *btcjson.EstimateSmartFeeMode) (float64, error) {
 	feeEstimate, err := c.RPCClient.EstimateSmartFee(int64(blockCount), estimateMode)
 	if err != nil {
@@ -386,6 +386,8 @@ func (c *Client) EstimateFee(blockCount int, estimateMode *btcjson.EstimateSmart
 	return feeRateSVB, nil
 }
 
+=======
+>>>>>>> feat/metrics
 func (c *Client) SendRawTransaction(tx *wire.MsgTx, allowHighFees bool) (*chainhash.Hash, error) {
 	// Fallback to manual implementation if RPCClient is not available
 	// Serialize the transaction to hex

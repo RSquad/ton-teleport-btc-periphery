@@ -271,7 +271,7 @@ func (fetcher *FetcherBitcoinNetwork) Work(ctx context.Context, wg *sync.WaitGro
 	defer logger.Log.Info().Msg("FetcherBitcoinNetwork: stopped")
 	logger.DefaultLogStartWork("FetcherBitcoinNetwork: starting...")
 
-	ticker := time.NewTicker(time.Duration(fetcher.period))
+	ticker := time.NewTicker(time.Duration(fetcher.period) * time.Second)
 	defer ticker.Stop()
 
 	for {

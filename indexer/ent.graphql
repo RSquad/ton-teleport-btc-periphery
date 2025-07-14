@@ -507,10 +507,10 @@ input PeginWhereInput {
 }
 type Pegout implements Node {
   id: ID!
-  addr: String!
+  addr: String
   status: PegoutStatus!
   bitcoinTxRaw: String!
-  bitcoinTxID: String!
+  bitcoinTxID: String
   bitcoinBlockHash: String!
   burn: Burn
   reinit: Reinit
@@ -586,6 +586,8 @@ input PegoutWhereInput {
   addrContains: String
   addrHasPrefix: String
   addrHasSuffix: String
+  addrIsNil: Boolean
+  addrNotNil: Boolean
   addrEqualFold: String
   addrContainsFold: String
   """
@@ -625,6 +627,8 @@ input PegoutWhereInput {
   bitcoinTxIDContains: String
   bitcoinTxIDHasPrefix: String
   bitcoinTxIDHasSuffix: String
+  bitcoinTxIDIsNil: Boolean
+  bitcoinTxIDNotNil: Boolean
   bitcoinTxIDEqualFold: String
   bitcoinTxIDContainsFold: String
   """
