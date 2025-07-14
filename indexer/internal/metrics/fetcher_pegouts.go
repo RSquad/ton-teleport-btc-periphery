@@ -22,6 +22,7 @@ type FetcherPegouts struct {
 	db                  *sql.DB
 	period              int64
 	expiredAt           map[uint64]time.Time
+	pegoutCache         PegoutCache
 }
 
 func NewFetcherPegouts(
@@ -38,6 +39,7 @@ func NewFetcherPegouts(
 		coordinatorContract: coordinator,
 		period:              period,
 		expiredAt:           make(map[uint64]time.Time),
+		pegoutCache:         PegoutCache{},
 	}
 }
 
@@ -73,6 +75,38 @@ func (f *FetcherPegouts) deleteSignedPegouts(pegouts []coordinator.PegoutRecord)
 			delete(f.expiredAt, ID) // Delete signed transactions
 		}
 	}
+}
+
+func (f *FetcherPegouts) getPegoutsData() (PegoutCacheItem, error) {
+	rows, err := f.db.Query( //TODO - make correct query
+		`SELECT *
+		FROM metrics_data WHERE type_id = 5
+		ORDER BY id DESC
+		LIMIT 1
+	`)
+	if err != nil {
+		return PegoutCacheItem{}, err
+	}
+
+	defer rows.Close()
+
+	var data PegoutCacheItem
+	if rows.Next() {
+		err = rows.Scan(
+			&data.ID,
+			&data.InternalKey,
+			&data.IsAutopegout,
+			&data.CommitmentsMaskAccepted,
+			&data.CommitmentsMaskOther,
+			&data.MaxSigners,
+			&data.SigningMask,
+		)
+		if err != nil {
+			return PegoutCacheItem{}, err
+		}
+	}
+
+	return data, nil
 }
 
 func (f *FetcherPegouts) getSignedPegouts() ([]SignedPegout, error) {
@@ -124,7 +158,21 @@ func (f *FetcherPegouts) setBitcoinTxExistsMetric(pegouts []SignedPegout) {
 	}
 }
 
+func (f *FetcherPegouts) cachePegout(data PegoutCacheItem) {
+	f.pegoutCache.items[data.ID] = data
+	f.pegoutCache.expireAt = time.Now().Add(time.Hour)
+}
+
 func (f *FetcherPegouts) Fetch() {
+	data, err := f.getPegoutsData()
+	if err != nil {
+		logger.Log.Error().Err(err).
+			Str("component", "FetcherPegouts").
+			Msg("fetch failed")
+	}
+
+	f.cachePegout(data)
+
 	unsignedPegouts, err := f.coordinatorContract.GetUnsignedPegouts()
 	if err != nil {
 		logger.Log.Error().Err(err).
