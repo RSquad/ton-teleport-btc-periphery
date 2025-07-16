@@ -8,13 +8,13 @@ import (
 
 type JsonApiHandler struct {
 	db    *sql.DB
-	cache *Cache
+	cache *Cache[string]
 }
 
 func NewJsonApiHandler(db *sql.DB) *JsonApiHandler {
 	return &JsonApiHandler{
 		db:    db,
-		cache: NewCache(),
+		cache: NewCache[string](),
 	}
 }
 
