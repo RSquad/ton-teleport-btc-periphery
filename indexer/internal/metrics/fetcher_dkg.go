@@ -90,7 +90,7 @@ func (fetcher *FetcherDKG) FetchDKG() {
 		!dkg.Until.Equal(fetcher.until) {
 		fetcher.restartCounter++
 	}
-	dkgRestartCount.Set(float64(fetcher.restartCounter))
+	//dkgRestartCount.Set(float64(fetcher.restartCounter))
 
 	fetcher.cfgHash = dkg.CfgHash
 	fetcher.until = dkg.Until

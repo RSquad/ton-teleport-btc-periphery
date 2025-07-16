@@ -48,12 +48,6 @@ var (
 		},
 		[]string{"pegout_addr", "bitcoin_tx_id"},
 	)
-
-	dkgRestartCount = promauto.NewGauge(
-		prometheus.GaugeOpts{
-			Name: "dkg_restart_count",
-			Help: "DKG restart count",
-
 	dkgMaxSigners = promauto.NewGauge(
 		prometheus.GaugeOpts{
 			Name: "dkg_signers_count",
@@ -64,6 +58,8 @@ var (
 		prometheus.GaugeOpts{
 			Name: "total_validators_count",
 			Help: "Total validators count",
+		},
+	)
 	cpfpCounter = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "cpfp_count",

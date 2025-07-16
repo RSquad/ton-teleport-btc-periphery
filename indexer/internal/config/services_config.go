@@ -82,6 +82,30 @@ func NewServicesConfig(indexerConfig *IndexerConfig) (*ServicesConfig, error) {
 	return servicesConfig, nil
 }
 
+func CfgToString(indexerConfig *IndexerConfig) string {
+	return fmt.Sprintf(
+		`BitcoinRpcHost: %s
+TonConfigUrl: %s
+TeleportContractAddr: %s
+CoordinatorContractAddr: %s
+BitcoinClientContractAddr: %s
+JettonMinterContractAddr: %s
+RunServices: %s
+Metrics: %s
+MetricsArgs: %s
+`,
+		indexerConfig.BitcoinRpcHost,
+		indexerConfig.TonConfigUrl,
+		indexerConfig.TeleportContractAddr,
+		indexerConfig.CoordinatorContractAddr,
+		indexerConfig.BitcoinClientContractAddr,
+		indexerConfig.JettonMinterContractAddr,
+		indexerConfig.RunServices,
+		indexerConfig.Metrics,
+		indexerConfig.MetricsArgs,
+	)
+}
+
 func ParseExternalServices(indexerConfig *IndexerConfig) (*ExternalServicesConfig, error) {
 	cfg := &ExternalServicesConfig{
 		BitcoinRpcHost:            indexerConfig.BitcoinRpcHost,

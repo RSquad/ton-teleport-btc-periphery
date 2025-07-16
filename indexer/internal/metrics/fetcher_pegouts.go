@@ -6,13 +6,10 @@ import (
 	"sync"
 	"time"
 
-	bu "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/bitcoinutils"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
-	"github.com/xssnick/tonutils-go/address"
 )
 
 type FetcherPegouts struct {
@@ -22,7 +19,7 @@ type FetcherPegouts struct {
 	db                  *sql.DB
 	period              int64
 	expiredAt           map[uint64]time.Time
-	pegoutCache         PegoutCache
+	//pegoutCache         PegoutCache
 }
 
 func NewFetcherPegouts(
@@ -39,10 +36,11 @@ func NewFetcherPegouts(
 		coordinatorContract: coordinator,
 		period:              period,
 		expiredAt:           make(map[uint64]time.Time),
-		pegoutCache:         PegoutCache{},
+		//pegoutCache:         PegoutCache{},
 	}
 }
 
+/*
 func (f *FetcherPegouts) setDelayedMetric(pegouts []coordinator.PegoutRecord) {
 	if len(pegouts) == 0 {
 		unsignedPegoutDelayed.WithLabelValues(utils.AddrToRawString(&address.Address{})).Set(0)
@@ -63,7 +61,9 @@ func (f *FetcherPegouts) setDelayedMetric(pegouts []coordinator.PegoutRecord) {
 		}
 	}
 }
+*/
 
+/*
 func (f *FetcherPegouts) deleteSignedPegouts(pegouts []coordinator.PegoutRecord) {
 	unsignedPegouts := make(map[uint64]struct{}, len(pegouts))
 	for _, pegout := range pegouts {
@@ -76,7 +76,9 @@ func (f *FetcherPegouts) deleteSignedPegouts(pegouts []coordinator.PegoutRecord)
 		}
 	}
 }
+*/
 
+/*
 func (f *FetcherPegouts) getPegoutsData() (PegoutCacheItem, error) {
 	rows, err := f.db.Query( //TODO - make correct query
 		`SELECT *
@@ -108,19 +110,21 @@ func (f *FetcherPegouts) getPegoutsData() (PegoutCacheItem, error) {
 
 	return data, nil
 }
+*/
 
+/*
 func (f *FetcherPegouts) getSignedPegouts() ([]SignedPegout, error) {
 	rows, err := f.db.Query(
-		`SELECT 
+		`SELECT
 			tt.created_at,
 			p.addr AS pegout_addr,
 			p.bitcoin_tx_id AS bitcoin_tx_id
 		FROM burns AS b
 		JOIN ton_txes AS tt ON tt.id = b.ton_tx_burn
 		JOIN pegouts AS p ON p.id = b.pegout_burn
-		WHERE 
+		WHERE
 			p.status = 'SIGNED'
-		AND 
+		AND
 			created_at > NOW() - INTERVAL '1 day'
 		ORDER BY created_at DESC
 	`)
@@ -162,39 +166,42 @@ func (f *FetcherPegouts) cachePegout(data PegoutCacheItem) {
 	f.pegoutCache.items[data.ID] = data
 	f.pegoutCache.expireAt = time.Now().Add(time.Hour)
 }
+*/
 
 func (f *FetcherPegouts) Fetch() {
-	data, err := f.getPegoutsData()
-	if err != nil {
-		logger.Log.Error().Err(err).
-			Str("component", "FetcherPegouts").
-			Msg("fetch failed")
-	}
+	/*
+		data, err := f.getPegoutsData()
+		if err != nil {
+			logger.Log.Error().Err(err).
+				Str("component", "FetcherPegouts").
+				Msg("fetch failed")
+		}
 
-	f.cachePegout(data)
+		f.cachePegout(data)
 
-	unsignedPegouts, err := f.coordinatorContract.GetUnsignedPegouts()
-	if err != nil {
-		logger.Log.Error().Err(err).
-			Str("component", "FetcherPegouts").
-			Msg("fetch failed")
-	}
+		unsignedPegouts, err := f.coordinatorContract.GetUnsignedPegouts()
+		if err != nil {
+			logger.Log.Error().Err(err).
+				Str("component", "FetcherPegouts").
+				Msg("fetch failed")
+		}
 
-	if unsignedPegouts == nil {
-		logger.Log.Debug().Msg("FetcherPegouts: Contract returns unsignedPegouts is null")
-	}
+		if unsignedPegouts == nil {
+			logger.Log.Debug().Msg("FetcherPegouts: Contract returns unsignedPegouts is null")
+		}
 
-	unsignedPegoutsLen.WithLabelValues("Unsigned pegouts length").Set(float64(len(unsignedPegouts)))
+		unsignedPegoutsLen.WithLabelValues("Unsigned pegouts length").Set(float64(len(unsignedPegouts)))
 
-	f.setDelayedMetric(unsignedPegouts)
-	f.deleteSignedPegouts(unsignedPegouts)
-	signedPegouts, err := f.getSignedPegouts()
-	if err != nil {
-		logger.Log.Error().Err(err).
-			Str("component", "FetcherPegouts").
-			Msg("fetch failed")
-	}
-	f.setBitcoinTxExistsMetric(signedPegouts)
+		f.setDelayedMetric(unsignedPegouts)
+		f.deleteSignedPegouts(unsignedPegouts)
+		signedPegouts, err := f.getSignedPegouts()
+		if err != nil {
+			logger.Log.Error().Err(err).
+				Str("component", "FetcherPegouts").
+				Msg("fetch failed")
+		}
+		f.setBitcoinTxExistsMetric(signedPegouts)
+	*/
 }
 
 func (fetcher *FetcherPegouts) Work(ctx context.Context, wg *sync.WaitGroup) {
