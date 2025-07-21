@@ -89,7 +89,7 @@ func (apiHandler JsonApiHandler) GetMints() (string, error) {
 	    FROM mints AS m
 	    LEFT JOIN ton_txes AS tt ON m.ton_tx_mint = tt.id
 	    LEFT JOIN pegins AS p ON m.id = p.mint_pegin
-	    ORDER BY m.id DESC
+	    ORDER BY m.created_at DESC
 	    LIMIT $1
 		) AS result;`,
 		limit,
@@ -128,7 +128,7 @@ func (apiHandler JsonApiHandler) GetBurns() (string, error) {
 			FROM burns AS b 
 			LEFT JOIN ton_txes AS tt ON tt.id = b.ton_tx_burn
 			LEFT JOIN pegouts AS p ON p.id = b.pegout_burn 
-			ORDER BY b.id DESC 
+			ORDER BY tt.created_at DESC 
 			LIMIT $1
 		) AS result;`,
 		limit,
@@ -166,7 +166,7 @@ func (apiHandler JsonApiHandler) GetReinits() (string, error) {
 		  FROM ton_txes AS tt
 			INNER JOIN reinits AS r ON tt.id = r.ton_tx_reinit
 		  LEFT JOIN pegouts AS p ON p.id = r.pegout_reinit
-		  ORDER BY r.id DESC
+		  ORDER BY created_at DESC
 		  LIMIT $1
 		) AS result;`,
 		limit,
