@@ -1,6 +1,7 @@
 package metrics
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
 	"encoding/json"
@@ -23,8 +24,19 @@ type FetcherPegouts struct {
 	coordinatorContract coordinator.Coordinator
 	db                  *sql.DB
 	period              int64
-	expiredAt           map[uint64]time.Time
-	cache               *Cache[coordinator.PegoutRecord]
+	pegoutTempData      PegoutTempData
+}
+
+type PegoutTempData struct {
+	lastPegoutDate  time.Time
+	unsignedPegouts *Cache[map[uint64]coordinator.PegoutRecord]
+	signedPegouts   *Cache[[]SignedPegout]
+	internalKeys    *Cache[InternalKeys]
+}
+
+type InternalKeys struct {
+	dkg     []byte
+	prevDkg []byte
 }
 
 func NewFetcherPegouts(
@@ -40,41 +52,27 @@ func NewFetcherPegouts(
 		db:                  db,
 		coordinatorContract: coordinatorContract,
 		period:              period,
-		expiredAt:           make(map[uint64]time.Time),
-		cache:               NewCache[coordinator.PegoutRecord](),
+		pegoutTempData: PegoutTempData{
+			lastPegoutDate:  time.Time{},
+			unsignedPegouts: NewCache[map[uint64]coordinator.PegoutRecord](),
+			signedPegouts:   NewCache[[]SignedPegout](),
+			internalKeys:    NewCache[InternalKeys](),
+		},
 	}
 }
 
-func (f *FetcherPegouts) setDelayedMetric(pegouts []coordinator.PegoutRecord) {
+func (f *FetcherPegouts) setDelayedMetric(pegouts map[uint64]coordinator.PegoutRecord) {
+
 	if len(pegouts) == 0 {
 		unsignedPegoutDelayed.WithLabelValues(utils.AddrToRawString(&address.Address{})).Set(0)
 		return
 	}
 	now := time.Now()
 	for _, pegout := range pegouts {
-		if oldExpiredAt, exists := f.expiredAt[pegout.ID]; exists {
-			if oldExpiredAt.Equal(pegout.ExpiredAt) {
-				if now.After(pegout.ExpiredAt.Add(PEGOUT_MAX_DELAY)) {
-					unsignedPegoutDelayed.WithLabelValues(utils.AddrToRawString(pegout.PegoutAddress)).Set(1)
-				} else {
-					unsignedPegoutDelayed.WithLabelValues(utils.AddrToRawString(pegout.PegoutAddress)).Set(0)
-				}
-			}
+		if now.After(pegout.ExpiredAt.Add(PEGOUT_MAX_DELAY)) {
+			unsignedPegoutDelayed.WithLabelValues(utils.AddrToRawString(pegout.PegoutAddress)).Set(1)
 		} else {
-			f.expiredAt[pegout.ID] = pegout.ExpiredAt
-		}
-	}
-}
-
-func (f *FetcherPegouts) deleteSignedPegouts(pegouts []coordinator.PegoutRecord) {
-	unsignedPegouts := make(map[uint64]struct{}, len(pegouts))
-	for _, pegout := range pegouts {
-		unsignedPegouts[pegout.ID] = struct{}{}
-	}
-
-	for ID := range f.expiredAt {
-		if _, exists := unsignedPegouts[ID]; !exists {
-			delete(f.expiredAt, ID) // Delete signed transactions
+			unsignedPegoutDelayed.WithLabelValues(utils.AddrToRawString(pegout.PegoutAddress)).Set(0)
 		}
 	}
 }
@@ -102,14 +100,14 @@ func (f *FetcherPegouts) getPegoutsData() (map[uint64]coordinator.PegoutRecord, 
 		}
 	}
 
-	var coordibatorData ContractCoordinatorData
-	err = json.Unmarshal([]byte(data), &coordibatorData)
+	var coordinatorData ContractCoordinatorData
+	err = json.Unmarshal([]byte(data), &coordinatorData)
 	if err != nil {
 		return make(map[uint64]coordinator.PegoutRecord), err
 	}
 
 	pegouts := make(map[uint64]coordinator.PegoutRecord)
-	for _, pegout := range coordibatorData.UnsignedPegouts {
+	for _, pegout := range coordinatorData.UnsignedPegouts {
 		pegouts[pegout.ID] = pegout
 	}
 
@@ -149,6 +147,40 @@ func (f *FetcherPegouts) getSignedPegouts() ([]SignedPegout, error) {
 	return pegouts, nil
 }
 
+func (f *FetcherPegouts) getInternalKey(typeId int) ([]byte, error) {
+	query := `
+    SELECT payload::json
+    FROM metrics_data 
+    WHERE type_id = $1
+    ORDER BY id DESC
+    LIMIT 1
+`
+	rows, err := f.db.Query(query, typeId)
+	if err != nil {
+		return []byte{}, err
+	}
+
+	defer rows.Close()
+
+	var data string
+	if rows.Next() {
+		err = rows.Scan(
+			&data,
+		)
+		if err != nil {
+			return []byte{}, err
+		}
+	}
+
+	var dkgData coordinator.DKG
+	err = json.Unmarshal([]byte(data), &dkgData)
+	if err != nil {
+		return []byte{}, err
+	}
+
+	return dkgData.R3.Data.InternalKey, nil
+}
+
 func (f *FetcherPegouts) setBitcoinTxExistsMetric(pegouts []SignedPegout) {
 	if len(pegouts) == 0 {
 		unprocessedPegout.WithLabelValues(utils.AddrToRawString(&address.Address{}), "").Set(0)
@@ -165,25 +197,54 @@ func (f *FetcherPegouts) setBitcoinTxExistsMetric(pegouts []SignedPegout) {
 	}
 }
 
+func (f *FetcherPegouts) setAutopegoutDelayedMetric(pegouts map[uint64]coordinator.PegoutRecord) {
+
+	now := time.Now()
+	for _, pegout := range pegouts {
+		if pegout.IsAutopegout {
+			f.pegoutTempData.lastPegoutDate = now
+		}
+		if now.After(f.pegoutTempData.lastPegoutDate.Add(AUTOPEGOUT_MAX_DELAY)) {
+			autopegoutDelayed.Set(1)
+		} else {
+			autopegoutDelayed.Set(0)
+		}
+	}
+}
+
+func (f *FetcherPegouts) setWrongInternalKeyMetric(
+	pegouts map[uint64]coordinator.PegoutRecord,
+	internalKeys InternalKeys,
+) {
+	for _, pegout := range pegouts {
+		if !bytes.Equal(pegout.InternalKey, internalKeys.dkg) ||
+			!bytes.Equal(pegout.InternalKey, internalKeys.prevDkg) {
+			wrongInternalKey.WithLabelValues(string(pegout.InternalKey), utils.AddrToRawString(pegout.PegoutAddress)).Set(1)
+		} else {
+			wrongInternalKey.WithLabelValues(string(pegout.InternalKey), utils.AddrToRawString(pegout.PegoutAddress)).Set(0)
+		}
+	}
+}
+
 func (f *FetcherPegouts) Fetch() {
-	data, err := f.getPegoutsData()
-	if err != nil {
-		logger.Log.Error().Err(err).
-			Str("component", "FetcherPegouts").
-			Msg("fetch failed")
-	}
-	for _, pegout := range data {
-		f.cache.Set("pegouts", pegout, 30*time.Second)
+	var unsignedPegouts map[uint64]coordinator.PegoutRecord
+	var err error
+	cache, ok := f.pegoutTempData.unsignedPegouts.Get("UnsignedPegouts")
+
+	if ok {
+		unsignedPegouts = cache
+	} else {
+		unsignedPegouts, err = f.getPegoutsData()
+		if err != nil {
+			logger.Log.Error().Err(err).
+				Str("component", "FetcherPegouts").
+				Msg("fetch failed")
+		}
+
+		f.pegoutTempData.unsignedPegouts.Set("UnsignedPegouts", unsignedPegouts, time.Duration(f.period)*time.Second)
 	}
 
-	fmt.Println(f.cache)
-
-	unsignedPegouts, err := f.coordinatorContract.GetUnsignedPegouts()
-	if err != nil {
-		logger.Log.Error().Err(err).
-			Str("component", "FetcherPegouts").
-			Msg("fetch failed")
-	}
+	fmt.Println(f.pegoutTempData.unsignedPegouts)
 
 	if unsignedPegouts == nil {
 		logger.Log.Debug().Msg("FetcherPegouts: Contract returns unsignedPegouts is null")
@@ -192,14 +253,48 @@ func (f *FetcherPegouts) Fetch() {
 	unsignedPegoutsLen.WithLabelValues("Unsigned pegouts length").Set(float64(len(unsignedPegouts)))
 
 	f.setDelayedMetric(unsignedPegouts)
-	f.deleteSignedPegouts(unsignedPegouts)
-	signedPegouts, err := f.getSignedPegouts()
-	if err != nil {
-		logger.Log.Error().Err(err).
-			Str("component", "FetcherPegouts").
-			Msg("fetch failed")
+	f.setAutopegoutDelayedMetric(unsignedPegouts)
+	var signedPegouts []SignedPegout
+	signedCache, ok := f.pegoutTempData.signedPegouts.Get("SignedPegouts")
+
+	if ok {
+		signedPegouts = signedCache
+	} else {
+		signedPegouts, err = f.getSignedPegouts()
+		if err != nil {
+			logger.Log.Error().Err(err).
+				Str("component", "FetcherPegouts").
+				Msg("fetch failed")
+		}
+		f.pegoutTempData.signedPegouts.Set("SignedPegouts", signedPegouts, time.Duration(f.period)*time.Second)
 	}
 	f.setBitcoinTxExistsMetric(signedPegouts)
+
+	var internalKeys InternalKeys
+	internalKeysCache, ok := f.pegoutTempData.internalKeys.Get("InternalKeys")
+	if ok {
+		internalKeys = internalKeysCache
+	} else {
+		dkg, err := f.getInternalKey(0)
+		if err != nil {
+			logger.Log.Error().Err(err).
+				Str("component", "FetcherPegouts").
+				Msg("fetch failed")
+		}
+
+		prevDkg, err := f.getInternalKey(1)
+		if err != nil {
+			logger.Log.Error().Err(err).
+				Str("component", "FetcherPegouts").
+				Msg("fetch failed")
+		}
+		internalKeys = InternalKeys{dkg, prevDkg}
+		f.pegoutTempData.internalKeys.Set("InternalKeys", internalKeys, time.Duration(f.period)*time.Second)
+	}
+
+	f.setWrongInternalKeyMetric(unsignedPegouts, internalKeys)
+	f.pegoutTempData.unsignedPegouts.DeleteExpired()
+	f.pegoutTempData.signedPegouts.DeleteExpired()
 }
 
 func (fetcher *FetcherPegouts) Work(ctx context.Context, wg *sync.WaitGroup) {

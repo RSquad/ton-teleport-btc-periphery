@@ -73,4 +73,17 @@ var (
 			Help: "SVB Exceeded",
 		},
 	)
+	autopegoutDelayed = promauto.NewGauge(
+		prometheus.GaugeOpts{
+			Name: "autopegout_delayed",
+			Help: "Autopegout delayed",
+		},
+	)
+	wrongInternalKey = promauto.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "wrong_internal_key",
+			Help: "Wrong internal key",
+		},
+		[]string{"internal_key", "pegout_addr"},
+	)
 )
