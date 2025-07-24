@@ -28,10 +28,17 @@ type FetcherPegouts struct {
 }
 
 type PegoutTempData struct {
-	lastPegoutDate  time.Time
-	unsignedPegouts *Cache[map[uint64]coordinator.PegoutRecord]
-	signedPegouts   *Cache[[]SignedPegout]
-	internalKeys    *Cache[InternalKeys]
+	lastAutopegoutDate time.Time
+	expirations        map[string]Expirations
+	unsignedPegouts    *Cache[map[uint64]coordinator.PegoutRecord]
+	signedPegouts      *Cache[map[string]SignedPegout]
+	internalKeys       *Cache[InternalKeys]
+}
+
+type Expirations struct {
+	actual       time.Time
+	previous     time.Time
+	restartCount int
 }
 
 type InternalKeys struct {
@@ -53,10 +60,11 @@ func NewFetcherPegouts(
 		coordinatorContract: coordinatorContract,
 		period:              period,
 		pegoutTempData: PegoutTempData{
-			lastPegoutDate:  time.Time{},
-			unsignedPegouts: NewCache[map[uint64]coordinator.PegoutRecord](),
-			signedPegouts:   NewCache[[]SignedPegout](),
-			internalKeys:    NewCache[InternalKeys](),
+			lastAutopegoutDate: time.Time{},
+			expirations:        make(map[string]Expirations),
+			unsignedPegouts:    NewCache[map[uint64]coordinator.PegoutRecord](),
+			signedPegouts:      NewCache[map[string]SignedPegout](),
+			internalKeys:       NewCache[InternalKeys](),
 		},
 	}
 }
@@ -109,12 +117,20 @@ func (f *FetcherPegouts) getPegoutsData() (map[uint64]coordinator.PegoutRecord, 
 	pegouts := make(map[uint64]coordinator.PegoutRecord)
 	for _, pegout := range coordinatorData.UnsignedPegouts {
 		pegouts[pegout.ID] = pegout
+		pegoutAddr := utils.AddrToRawString(pegout.PegoutAddress)
+		if _, exists := f.pegoutTempData.expirations[pegoutAddr]; !exists {
+			f.pegoutTempData.expirations[pegoutAddr] = Expirations{
+				actual:       pegout.ExpiredAt,
+				previous:     pegout.ExpiredAt,
+				restartCount: 0,
+			}
+		}
 	}
 
 	return pegouts, nil
 }
 
-func (f *FetcherPegouts) getSignedPegouts() ([]SignedPegout, error) {
+func (f *FetcherPegouts) getSignedPegouts() (map[string]SignedPegout, error) {
 	rows, err := f.db.Query(
 		`SELECT
 			tt.created_at,
@@ -130,19 +146,19 @@ func (f *FetcherPegouts) getSignedPegouts() ([]SignedPegout, error) {
 		ORDER BY created_at DESC
 	`)
 	if err != nil {
-		return []SignedPegout{}, err
+		return map[string]SignedPegout{}, err
 	}
 
 	defer rows.Close()
 
-	var pegouts []SignedPegout
+	var pegouts = make(map[string]SignedPegout)
 	for rows.Next() {
 		var pegout SignedPegout
 		err = rows.Scan(&pegout.createdAt, &pegout.pegoutAddr, &pegout.bitcoinTxId)
 		if err != nil {
-			return []SignedPegout{}, err
+			return map[string]SignedPegout{}, err
 		}
-		pegouts = append(pegouts, pegout)
+		pegouts[pegout.pegoutAddr] = pegout
 	}
 	return pegouts, nil
 }
@@ -181,7 +197,7 @@ func (f *FetcherPegouts) getInternalKey(typeId int) ([]byte, error) {
 	return dkgData.R3.Data.InternalKey, nil
 }
 
-func (f *FetcherPegouts) setBitcoinTxExistsMetric(pegouts []SignedPegout) {
+func (f *FetcherPegouts) setBitcoinTxExistsMetric(pegouts map[string]SignedPegout) {
 	if len(pegouts) == 0 {
 		unprocessedPegout.WithLabelValues(utils.AddrToRawString(&address.Address{}), "").Set(0)
 		return
@@ -202,9 +218,9 @@ func (f *FetcherPegouts) setAutopegoutDelayedMetric(pegouts map[uint64]coordinat
 	now := time.Now()
 	for _, pegout := range pegouts {
 		if pegout.IsAutopegout {
-			f.pegoutTempData.lastPegoutDate = now
+			f.pegoutTempData.lastAutopegoutDate = now
 		}
-		if now.After(f.pegoutTempData.lastPegoutDate.Add(AUTOPEGOUT_MAX_DELAY)) {
+		if now.After(f.pegoutTempData.lastAutopegoutDate.Add(AUTOPEGOUT_MAX_DELAY)) {
 			autopegoutDelayed.Set(1)
 		} else {
 			autopegoutDelayed.Set(0)
@@ -223,6 +239,41 @@ func (f *FetcherPegouts) setWrongInternalKeyMetric(
 		} else {
 			wrongInternalKey.WithLabelValues(string(pegout.InternalKey), utils.AddrToRawString(pegout.PegoutAddress)).Set(0)
 		}
+	}
+}
+
+func (f *FetcherPegouts) setInsufficientValidatorsMetric(pegouts map[uint64]coordinator.PegoutRecord) {
+	for _, pegout := range pegouts {
+		if pegout.MaxSigners < EXPECTED_SIGNERS_COUNT {
+			insufficientValidators.Set(1)
+		} else {
+			insufficientValidators.Set(0)
+		}
+	}
+}
+
+func (f *FetcherPegouts) setSigningRestartMetric(pegouts map[uint64]coordinator.PegoutRecord) {
+	for _, pegout := range pegouts {
+		pegoutAddr := utils.AddrToRawString(pegout.PegoutAddress)
+		expirations := f.pegoutTempData.expirations[pegoutAddr]
+		if expirations.actual.After(expirations.previous) {
+			pegoutSigningRestart.WithLabelValues(utils.AddrToRawString(pegout.PegoutAddress)).Set(1)
+			f.updateRestartCount(pegoutAddr)
+		} else {
+			pegoutSigningRestart.WithLabelValues(utils.AddrToRawString(pegout.PegoutAddress)).Set(0)
+		}
+	}
+}
+
+func (f *FetcherPegouts) updateRestartCount(pegoutAddr string) {
+	expirations := f.pegoutTempData.expirations[pegoutAddr]
+	expirations.restartCount = expirations.restartCount + 1
+	f.pegoutTempData.expirations[pegoutAddr] = expirations
+}
+
+func (f *FetcherPegouts) setRestartSigningPegoutCountMetric(expirations map[string]Expirations) {
+	for addr, expirations := range expirations {
+		pegoutRestartCount.WithLabelValues(addr).Set(float64(expirations.restartCount))
 	}
 }
 
@@ -254,7 +305,10 @@ func (f *FetcherPegouts) Fetch() {
 
 	f.setDelayedMetric(unsignedPegouts)
 	f.setAutopegoutDelayedMetric(unsignedPegouts)
-	var signedPegouts []SignedPegout
+	f.setInsufficientValidatorsMetric(unsignedPegouts)
+	f.setSigningRestartMetric(unsignedPegouts)
+	f.setRestartSigningPegoutCountMetric(f.pegoutTempData.expirations)
+	var signedPegouts = make(map[string]SignedPegout)
 	signedCache, ok := f.pegoutTempData.signedPegouts.Get("SignedPegouts")
 
 	if ok {

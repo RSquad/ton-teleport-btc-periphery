@@ -86,4 +86,31 @@ var (
 		},
 		[]string{"internal_key", "pegout_addr"},
 	)
+	insufficientValidators = promauto.NewGauge(
+		prometheus.GaugeOpts{
+			Name: "insufficient_validators",
+			Help: "Insufficient validators",
+		},
+	)
+	pegoutSigningRestart = promauto.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "pegout_signing_restart",
+			Help: "Pegout signing restart",
+		},
+		[]string{"pegout_addr"},
+	)
+	pegoutRestartCount = promauto.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "pegout_restart_count",
+			Help: "Pegout restart count",
+		},
+		[]string{"pegout_addr"},
+	)
+	pegoutSigningValidatorsCount = promauto.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "pegout_signing_validators_count",
+			Help: "Pegout signing validators count",
+		},
+		[]string{"pegout_addr"},
+	)
 )
