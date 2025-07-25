@@ -278,7 +278,7 @@ func (apiHandler JsonApiHandler) GetInfo() (string, error) {
 	}
 
 	if len(data) == 0 {
-		data = "[]"
+		data = "{}"
 	}
 
 	return data, nil
@@ -445,7 +445,7 @@ func (apiHandler JsonApiHandler) GetPlotsSummary() (string, error) {
 	}
 
 	if len(data) == 0 {
-		data = "[]"
+		data = "{}"
 	}
 
 	return data, nil
