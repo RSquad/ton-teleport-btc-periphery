@@ -106,10 +106,24 @@ var (
 		},
 		[]string{"pegout_addr"},
 	)
-	pegoutSigningValidatorsCount = promauto.NewGaugeVec(
+	pegoutSigningMaskValidatorsCount = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "pegout_signing_validators_count",
 			Help: "Pegout signing validators count",
+		},
+		[]string{"pegout_addr"},
+	)
+	pegoutSigningCulpritGotThreshold = promauto.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "pegout_signing_culprit",
+			Help: "Pegout signing culprit",
+		},
+		[]string{"pegout_addr"},
+	)
+	pegoutSigningCulpritNotGetThreshold = promauto.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "pegout_signing_culprit_not_get_threshold",
+			Help: "Pegout signing culprit not get threshold",
 		},
 		[]string{"pegout_addr"},
 	)

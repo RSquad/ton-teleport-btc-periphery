@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"math/big"
 	"sync"
 	"time"
 
@@ -44,6 +45,20 @@ type Expirations struct {
 type InternalKeys struct {
 	dkg     []byte
 	prevDkg []byte
+}
+
+func popcnt(n *big.Int) int {
+	count := 0
+	zero := big.NewInt(0)
+	one := big.NewInt(1)
+	temp := new(big.Int)
+
+	for n.Cmp(zero) != 0 {
+		count++
+		temp.Sub(n, one)
+		n.And(n, temp)
+	}
+	return count
 }
 
 func NewFetcherPegouts(
@@ -277,6 +292,36 @@ func (f *FetcherPegouts) setRestartSigningPegoutCountMetric(expirations map[stri
 	}
 }
 
+func (f *FetcherPegouts) setCulpritMetrics(pegout coordinator.PegoutRecord) {
+	if pegout.ClaimsCount > 0 {
+		if popcnt(pegout.ClaimsMask) < int(pegout.MaxSigners) {
+			pegoutSigningCulpritNotGetThreshold.
+				WithLabelValues(utils.AddrToRawString(pegout.PegoutAddress)).
+				Set(1)
+		} else {
+			pegoutSigningCulpritGotThreshold.
+				WithLabelValues(utils.AddrToRawString(pegout.PegoutAddress)).
+				Set(1)
+		}
+	} else {
+		pegoutSigningCulpritNotGetThreshold.
+			WithLabelValues(utils.AddrToRawString(pegout.PegoutAddress)).
+			Set(0)
+
+		pegoutSigningCulpritGotThreshold.
+			WithLabelValues(utils.AddrToRawString(pegout.PegoutAddress)).
+			Set(0)
+	}
+}
+
+func (f *FetcherPegouts) setSigningMaskMetrics(pegout coordinator.PegoutRecord) {
+	signingMaskCount := popcnt(pegout.SigningMask)
+
+	pegoutSigningMaskValidatorsCount.
+		WithLabelValues(utils.AddrToRawString(pegout.PegoutAddress)).
+		Set(float64(signingMaskCount))
+}
+
 func (f *FetcherPegouts) Fetch() {
 	var unsignedPegouts map[uint64]coordinator.PegoutRecord
 	var err error
@@ -308,6 +353,8 @@ func (f *FetcherPegouts) Fetch() {
 	f.setInsufficientValidatorsMetric(unsignedPegouts)
 	f.setSigningRestartMetric(unsignedPegouts)
 	f.setRestartSigningPegoutCountMetric(f.pegoutTempData.expirations)
+	f.setSigningMaskMetrics(unsignedPegouts[0])
+	f.setCulpritMetrics(unsignedPegouts[0])
 	var signedPegouts = make(map[string]SignedPegout)
 	signedCache, ok := f.pegoutTempData.signedPegouts.Get("SignedPegouts")
 
