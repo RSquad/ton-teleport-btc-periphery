@@ -59,7 +59,11 @@ func startAndWaitForStop() error {
 	logger.Log.Info().Msgf("Create a new TON client with config `%s`", cfg.TonConfigPathOrURL)
 	tonClient, err := tonclient.New(cfg.TonConfigPathOrURL)
 	if err != nil {
-		return err
+		logger.Log.Error().Msgf("failed to create TON client from config `%s`. Defaul mainnet config will be used", cfg.TonConfigPathOrURL)
+		tonClient, err = tonclient.New("https://ton.org/global-config.json")
+		if err != nil {
+			return err
+		}
 	}
 
 	// Validator
