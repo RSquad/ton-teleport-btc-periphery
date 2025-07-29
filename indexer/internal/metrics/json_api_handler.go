@@ -108,6 +108,10 @@ func (apiHandler JsonApiHandler) GetMints() (string, error) {
 		}
 	}
 
+	if len(data) == 0 {
+		data = "[]"
+	}
+
 	return data, nil
 }
 
@@ -145,6 +149,10 @@ func (apiHandler JsonApiHandler) GetBurns() (string, error) {
 		if err != nil {
 			return "", err
 		}
+	}
+
+	if len(data) == 0 {
+		data = "[]"
 	}
 
 	return data, nil
@@ -185,6 +193,10 @@ func (apiHandler JsonApiHandler) GetReinits() (string, error) {
 		}
 	}
 
+	if len(data) == 0 {
+		data = "[]"
+	}
+
 	return data, nil
 }
 
@@ -216,6 +228,10 @@ func (apiHandler JsonApiHandler) GetInternalKeys() (string, error) {
 		if err != nil {
 			return "", err
 		}
+	}
+
+	if len(data) == 0 {
+		data = "[]"
 	}
 
 	return data, nil
@@ -261,6 +277,10 @@ func (apiHandler JsonApiHandler) GetInfo() (string, error) {
 		}
 	}
 
+	if len(data) == 0 {
+		data = "{}"
+	}
+
 	return data, nil
 }
 
@@ -290,6 +310,10 @@ func (apiHandler JsonApiHandler) PlotMinted() (string, error) {
 		if err != nil {
 			return "", err
 		}
+	}
+
+	if len(data) == 0 {
+		data = "[]"
 	}
 
 	return data, nil
@@ -323,6 +347,10 @@ func (apiHandler JsonApiHandler) PlotBurned() (string, error) {
 		if err != nil {
 			return "", err
 		}
+	}
+
+	if len(data) == 0 {
+		data = "[]"
 	}
 
 	return data, nil
@@ -378,6 +406,10 @@ func (apiHandler JsonApiHandler) PlotTotalSupply() (string, error) {
 		}
 	}
 
+	if len(data) == 0 {
+		data = "[]"
+	}
+
 	return data, nil
 }
 
@@ -410,6 +442,10 @@ func (apiHandler JsonApiHandler) GetPlotsSummary() (string, error) {
 		if err != nil {
 			return "", err
 		}
+	}
+
+	if len(data) == 0 {
+		data = "{}"
 	}
 
 	return data, nil
