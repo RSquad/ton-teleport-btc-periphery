@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"sync"
@@ -22,6 +23,7 @@ type ContractBitcoinClientData struct {
 
 type FetcherContractBitcoinClient struct {
 	chDB                  chan PayloadDB
+	db                    *sql.DB
 	bitcoinClient         *bitcoin.Client
 	bitcoinClientContract *bitcoinclientcontract.BitcoinClientContract
 	period                int64 // Fetch period (in seconds)
@@ -29,16 +31,57 @@ type FetcherContractBitcoinClient struct {
 
 func NewFetcherContractBitcoinClient(
 	chDB chan PayloadDB,
+	db *sql.DB,
 	bitcoinClient *bitcoin.Client,
 	bitcoinClientContract *bitcoinclientcontract.BitcoinClientContract,
 	period int64,
 ) *FetcherContractBitcoinClient {
 	return &FetcherContractBitcoinClient{
 		chDB:                  chDB,
+		db:                    db,
 		bitcoinClient:         bitcoinClient,
 		bitcoinClientContract: bitcoinClientContract,
 		period:                period,
 	}
+}
+
+func (fetcher *FetcherContractBitcoinClient) setNextSvbNotZeroMetrics(
+	lastPegoutBlockConfirmations int64,
+	confirmationsNeeded int64,
+	nextSvb uint16,
+) {
+
+	if lastPegoutBlockConfirmations > confirmationsNeeded {
+		if nextSvb != 0 {
+			nextSvbNotZero.Set(1)
+		}
+	}
+	nextSvbNotZero.Set(0)
+}
+
+func (fetcher *FetcherContractBitcoinClient) getNextSvbAndLastPegoutTxID() (uint16, *chainhash.Hash, error) {
+	rows, err := fetcher.db.Query(
+		`SELECT payload::json
+		FROM metrics_data
+		WHERE type_id = 4
+		ORDER BY id DESC
+		LIMIT 1
+	`)
+	if err != nil {
+		return 0, nil, err
+	}
+
+	defer rows.Close()
+
+	var data ContractTeleportData
+	if rows.Next() {
+		err = rows.Scan(&data)
+		if err != nil {
+			return 0, nil, err
+		}
+	}
+
+	return data.NextSVB, data.LastPegoutTxID, nil
 }
 
 func (fetcher *FetcherContractBitcoinClient) Work(ctx context.Context, wg *sync.WaitGroup) {
@@ -91,6 +134,20 @@ func (fetcher *FetcherContractBitcoinClient) Fetch() {
 		logger.Log.Error().Msg(fmt.Sprintf("FetcherContractBitcoinClient: failed to retrieve LastConfirmedBlockHeight, error: %v", err))
 		return
 	}
+
+	nextSvb, lastPegoutTxID, err := fetcher.getNextSvbAndLastPegoutTxID()
+	if err != nil {
+		logger.Log.Error().Msg(fmt.Sprintf("FetcherContractBitcoinClient: failed to retrieve NextSVB, error: %v", err))
+		return
+	}
+
+	lastPegoutHeight, err := fetcher.bitcoinClient.GetBlockHeightByHash(lastPegoutTxID)
+	if err != nil {
+		logger.Log.Error().Msg(fmt.Sprintf("FetcherContractBitcoinClient: failed to retrieve LastPegoutHeight, error: %v", err))
+		return
+	}
+
+	fetcher.setNextSvbNotZeroMetrics(lastConfirmedBlockHeight-lastPegoutHeight, confirmationsNeeded, nextSvb)
 
 	data := &ContractBitcoinClientData{
 		CandidateBlockHashes:     candidateBlockHashes,

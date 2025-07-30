@@ -65,7 +65,7 @@ func NewService(
 			return nil, fmt.Errorf("failed to start FetcherContractBitcoinClient: BitcoinClientContract is null. Please set the COMMON_TON_CONTRACT_BITCLIENT_ADDR value in the .env")
 		}
 
-		fetcherContractBitcoinClient = NewFetcherContractBitcoinClient(writerDbChan, bitcoinClient, bitcoinClientContract, int64(cfg.Metrics.BitcoinClientContractFetchPeriod))
+		fetcherContractBitcoinClient = NewFetcherContractBitcoinClient(writerDbChan, db, bitcoinClient, bitcoinClientContract, int64(cfg.Metrics.BitcoinClientContractFetchPeriod))
 	}
 
 	// Fetcher: BitcoinNetwork
