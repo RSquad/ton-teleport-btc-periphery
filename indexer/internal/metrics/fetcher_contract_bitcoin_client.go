@@ -50,16 +50,15 @@ func (fetcher *FetcherContractBitcoinClient) setNextSvbNotZeroMetrics(
 	confirmationsNeeded int64,
 	nextSvb uint16,
 ) {
-
+	nextSvbNotZero.Set(0)
 	if lastPegoutBlockConfirmations > confirmationsNeeded {
 		if nextSvb != 0 {
 			nextSvbNotZero.Set(1)
 		}
 	}
-	nextSvbNotZero.Set(0)
 }
 
-func (fetcher *FetcherContractBitcoinClient) getNextSvbAndLastPegoutTxID() (uint16, *chainhash.Hash, error) {
+func (fetcher *FetcherContractBitcoinClient) getNextSvbAndLastPegoutHash() (uint16, *chainhash.Hash, error) {
 	rows, err := fetcher.db.Query(
 		`SELECT payload::json
 		FROM metrics_data
@@ -73,15 +72,22 @@ func (fetcher *FetcherContractBitcoinClient) getNextSvbAndLastPegoutTxID() (uint
 
 	defer rows.Close()
 
-	var data ContractTeleportData
+	var data string
 	if rows.Next() {
 		err = rows.Scan(&data)
 		if err != nil {
-			return 0, nil, err
+			return 0, &chainhash.Hash{}, err
 		}
 	}
 
-	return data.NextSVB, data.LastPegoutTxID, nil
+	var teleportData ContractTeleportData
+
+	err = json.Unmarshal([]byte(data), &teleportData)
+	if err != nil {
+		return 0, &chainhash.Hash{}, err
+	}
+
+	return teleportData.NextSVB, teleportData.LastPegoutTxID, nil
 }
 
 func (fetcher *FetcherContractBitcoinClient) Work(ctx context.Context, wg *sync.WaitGroup) {
@@ -135,13 +141,19 @@ func (fetcher *FetcherContractBitcoinClient) Fetch() {
 		return
 	}
 
-	nextSvb, lastPegoutTxID, err := fetcher.getNextSvbAndLastPegoutTxID()
+	nextSvb, lastPegoutHash, err := fetcher.getNextSvbAndLastPegoutHash()
 	if err != nil {
 		logger.Log.Error().Msg(fmt.Sprintf("FetcherContractBitcoinClient: failed to retrieve NextSVB, error: %v", err))
 		return
 	}
 
-	lastPegoutHeight, err := fetcher.bitcoinClient.GetBlockHeightByHash(lastPegoutTxID)
+	lastPegoutBlockHash, err := fetcher.bitcoinClient.GetBlockHashByTxID(lastPegoutHash)
+	if err != nil {
+		logger.Log.Error().Msg(fmt.Sprintf("FetcherContractBitcoinClient: failed to retrieve LastPegoutBlockHash, error: %v", err))
+		return
+	}
+
+	lastPegoutHeight, err := fetcher.bitcoinClient.GetBlockHeightByHash(lastPegoutBlockHash)
 	if err != nil {
 		logger.Log.Error().Msg(fmt.Sprintf("FetcherContractBitcoinClient: failed to retrieve LastPegoutHeight, error: %v", err))
 		return
