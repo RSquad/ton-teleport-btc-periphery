@@ -46,14 +46,16 @@ func NewFetcherContractBitcoinClient(
 }
 
 func (fetcher *FetcherContractBitcoinClient) setNextSvbNotZeroMetrics(
+	txId *chainhash.Hash,
 	lastPegoutBlockConfirmations int64,
 	confirmationsNeeded int64,
 	nextSvb uint16,
 ) {
-	nextSvbNotZero.Set(0)
+	nextSvbNotZero.Reset()
+	nextSvbNotZero.WithLabelValues(txId.String()).Set(0)
 	if lastPegoutBlockConfirmations > confirmationsNeeded {
 		if nextSvb != 0 {
-			nextSvbNotZero.Set(1)
+			nextSvbNotZero.WithLabelValues(txId.String()).Set(1)
 		}
 	}
 }
@@ -67,7 +69,7 @@ func (fetcher *FetcherContractBitcoinClient) getNextSvbAndLastPegoutHash() (uint
 		LIMIT 1
 	`)
 	if err != nil {
-		return 0, nil, err
+		return 0, &chainhash.Hash{}, err
 	}
 
 	defer rows.Close()
@@ -143,7 +145,7 @@ func (fetcher *FetcherContractBitcoinClient) Fetch() {
 
 	nextSvb, lastPegoutHash, err := fetcher.getNextSvbAndLastPegoutHash()
 	if err != nil {
-		logger.Log.Error().Msg(fmt.Sprintf("FetcherContractBitcoinClient: failed to retrieve NextSVB, error: %v", err))
+		logger.Log.Error().Msg(fmt.Sprintf("FetcherContractBitcoinClient: failed to retrieve TeleportData, error: %v", err))
 		return
 	}
 
@@ -159,7 +161,7 @@ func (fetcher *FetcherContractBitcoinClient) Fetch() {
 		return
 	}
 
-	fetcher.setNextSvbNotZeroMetrics(lastConfirmedBlockHeight-lastPegoutHeight, confirmationsNeeded, nextSvb)
+	fetcher.setNextSvbNotZeroMetrics(lastPegoutHash, lastConfirmedBlockHeight-lastPegoutHeight, confirmationsNeeded, nextSvb)
 
 	data := &ContractBitcoinClientData{
 		CandidateBlockHashes:     candidateBlockHashes,

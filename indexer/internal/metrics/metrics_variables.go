@@ -41,10 +41,11 @@ var (
 		},
 		[]string{"pegout_addr", "bitcoin_tx_id"},
 	)
-	nextSvbNotZero = promauto.NewGauge(
+	nextSvbNotZero = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "next_svb_not_zero",
 			Help: "Next SVB not zero",
 		},
+		[]string{"bitcoin_tx_id"},
 	)
 )
