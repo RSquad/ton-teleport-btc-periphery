@@ -78,7 +78,7 @@ func (apiHandler JsonApiHandler) GetMints() (string, error) {
 	const limit = 5000 // Yes, we will select only last 5000 mints
 
 	rows, err := apiHandler.db.Query(
-		`SELECT json_agg(result) AS data FROM (
+		`SELECT COALESCE(json_agg(result), '[]') AS data FROM (
 			SELECT
 				m.created_at,
 				m.status,
@@ -119,7 +119,7 @@ func (apiHandler JsonApiHandler) GetBurns() (string, error) {
 	const limit = 5000 // Yes, we will select only last 5000 burns
 
 	rows, err := apiHandler.db.Query(
-		`SELECT json_agg(result) AS data FROM (
+		`SELECT COALESCE(json_agg(result), '[]') AS data FROM (
 			SELECT
 				tt.created_at,
 				TO_CHAR(CAST(b.amount AS real) / 100000000.0, 'FM999999990.00000000') || ' BTC' AS amount,
@@ -162,7 +162,7 @@ func (apiHandler JsonApiHandler) GetReinits() (string, error) {
 	const limit = 5000 // Yes, we will select only last 5000 reinits
 
 	rows, err := apiHandler.db.Query(
-		`SELECT json_agg(result) AS data FROM (
+		`SELECT COALESCE(json_agg(result), '[]') AS data FROM (
 		  SELECT
 		    tt.created_at AS created_at,
 				tt.hash AS ton_tx,
@@ -204,7 +204,7 @@ func (apiHandler JsonApiHandler) GetInternalKeys() (string, error) {
 	const limit = 5000 // Yes, we will select only last 5000 internal keys
 
 	rows, err := apiHandler.db.Query(
-		`SELECT json_agg(result) AS data FROM (
+		`SELECT COALESCE(json_agg(result), '[]') AS data FROM (
 		  SELECT 
 			  ik.completed_at,
 				ik.key AS internal_key,
@@ -286,7 +286,7 @@ func (apiHandler JsonApiHandler) GetInfo() (string, error) {
 
 func (apiHandler JsonApiHandler) PlotMinted() (string, error) {
 	rows, err := apiHandler.db.Query(
-		`SELECT json_agg(result) AS data FROM (
+		`SELECT COALESCE(json_agg(result), '[]') AS data FROM (
 			WITH data_by_days AS (
 				SELECT
 					DATE_TRUNC('day', created_at)::date AS day,
@@ -321,7 +321,7 @@ func (apiHandler JsonApiHandler) PlotMinted() (string, error) {
 
 func (apiHandler JsonApiHandler) PlotBurned() (string, error) {
 	rows, err := apiHandler.db.Query(
-		`SELECT json_agg(result) AS data FROM (
+		`SELECT COALESCE(json_agg(result), '[]') AS data FROM (
 			WITH data_by_days AS (
 				SELECT
 					DATE_TRUNC('day', tt.created_at)::date AS day,
@@ -358,7 +358,7 @@ func (apiHandler JsonApiHandler) PlotBurned() (string, error) {
 
 func (apiHandler JsonApiHandler) PlotTotalSupply() (string, error) {
 	rows, err := apiHandler.db.Query(
-		`SELECT json_agg(result) AS data FROM (
+		`SELECT COALESCE(json_agg(result), '[]') AS data FROM (
 			WITH unified_events AS (
 				SELECT
 					DATE_TRUNC('day', created_at)::date AS day,
@@ -423,10 +423,10 @@ func (apiHandler JsonApiHandler) GetPlotsSummary() (string, error) {
 						SELECT COUNT(1) AS row_count FROM burns AS b INNER JOIN pegouts AS p ON b.pegout_burn = p.id AND p.status = 'CONFIRMED'
 				),
 				'total_minted', (
-						SELECT SUM((CAST(amount AS numeric)) / 100000000)::numeric(20,8) AS total_minted FROM mints WHERE status = 'SUCCESS'
+						SELECT COALESCE(SUM((CAST(amount AS numeric)) / 100000000)::numeric(20,8), 0) AS total_minted FROM mints WHERE status = 'SUCCESS'
 				),
 				'total_burned', (
-						SELECT SUM((CAST (b.amount AS numeric)) / 100000000)::numeric(20,8) AS total_burned FROM burns AS b JOIN pegouts AS p ON p.id = b.pegout_burn WHERE p.status = 'CONFIRMED'
+						SELECT COALESCE(SUM((CAST (b.amount AS numeric)) / 100000000)::numeric(20,8), 0) AS total_burned FROM burns AS b JOIN pegouts AS p ON p.id = b.pegout_burn WHERE p.status = 'CONFIRMED'
 				)
 		) AS result;`,
 	)
