@@ -79,8 +79,8 @@ func (fetcher *FetcherDKG) FetchDKG() {
 		return
 	}
 
-	treshold := MulDivCeil(int(storage.MinClaimsPercent), int(storage.MinSignersThreshold), 100)
-	culpritIdx, culpritFound := getCulprit(dkg.Claims.Counters, uint16(treshold))
+	threshold := MulDivCeil(int(storage.MinClaimsPercent), int(storage.MinSignersThreshold), 100)
+	culpritIdx, culpritFound := getCulprit(dkg.Claims.Counters, uint16(threshold))
 
 	culpritRemoved := false
 	if culpritFound {
@@ -119,7 +119,7 @@ func setCulpritMetric(culpritFound bool, culpritRemoved bool) {
 	}
 }
 
-func getCulprit(m map[uint16]uint16, treshold uint16) (uint16, bool) {
+func getCulprit(m map[uint16]uint16, threshold uint16) (uint16, bool) {
 	var culprit uint16 = 0
 	var claimsCounter uint16 = 0
 
@@ -134,7 +134,7 @@ func getCulprit(m map[uint16]uint16, treshold uint16) (uint16, bool) {
 		}
 	}
 
-	if claimsCounter < treshold {
+	if claimsCounter < threshold {
 		return 0, false
 	}
 
