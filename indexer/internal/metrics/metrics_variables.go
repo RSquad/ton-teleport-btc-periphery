@@ -41,4 +41,16 @@ var (
 		},
 		[]string{"pegout_addr", "bitcoin_tx_id"},
 	)
+	dkgCulpritRemains = promauto.NewGauge(
+		prometheus.GaugeOpts{
+			Name: "dkg_culprit remains in vset",
+			Help: "DKG Culprit remains in vset",
+		},
+	)
+	dkgCulpritRemoved = promauto.NewGauge(
+		prometheus.GaugeOpts{
+			Name: "dkg_culprit removed from vset",
+			Help: "DKG Culprit removed from vset",
+		},
+	)
 )
