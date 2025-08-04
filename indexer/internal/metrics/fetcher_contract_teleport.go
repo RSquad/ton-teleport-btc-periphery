@@ -83,6 +83,17 @@ func (fetcher *FetcherContractTeleport) Work(ctx context.Context, wg *sync.WaitG
 	}
 }
 
+func (fetcher *FetcherContractTeleport) setUtxoDifferentKeysMetric(utxo *[]ContractTeleportUTXO) {
+	var prevKey *chainhash.Hash = (*utxo)[0].TapMerkleRoot
+	for _, utxo := range *utxo {
+		if utxo.TapMerkleRoot != prevKey {
+			utxoKeysDifference.WithLabelValues(prevKey.String(), utxo.TapMerkleRoot.String()).Set(1)
+			continue
+		}
+		utxoKeysDifference.WithLabelValues(prevKey.String(), utxo.TapMerkleRoot.String()).Set(0)
+	}
+}
+
 func (fetcher *FetcherContractTeleport) Fetch() {
 	storage, err := fetcher.teleportContract.GetStorage(nil)
 	if err != nil {
@@ -111,6 +122,8 @@ func (fetcher *FetcherContractTeleport) Fetch() {
 		PeginsCount:          ConvertDeposits(storage.Deposits),
 		UTXOset:              ConvertUTXOSet(storage.UTXOset),
 	}
+
+	fetcher.setUtxoDifferentKeysMetric(contractTeleportData.UTXOset)
 
 	jsonData, err := json.Marshal(contractTeleportData)
 	if err != nil {

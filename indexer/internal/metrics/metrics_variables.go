@@ -41,4 +41,17 @@ var (
 		},
 		[]string{"pegout_addr", "bitcoin_tx_id"},
 	)
+	lastBlockHeightDifference = promauto.NewGauge(
+		prometheus.GaugeOpts{
+			Name: "last_block_height_difference",
+			Help: "Last block height difference",
+		},
+	)
+	utxoKeysDifference = promauto.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "utxo_keys_difference",
+			Help: "Utxo keys difference",
+		},
+		[]string{"expected", "found"},
+	)
 )
