@@ -4,11 +4,13 @@ import (
 	"bytes"
 	"context"
 	"database/sql"
+	"encoding/base64"
 	"encoding/json"
-	"fmt"
 	"math/big"
 	"sync"
 	"time"
+
+	"slices"
 
 	bu "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/bitcoinutils"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
@@ -59,6 +61,16 @@ func popcnt(n *big.Int) int {
 		n.And(n, temp)
 	}
 	return count
+}
+
+func getMapKeysUint64(data map[uint64]coordinator.PegoutRecord) []uint64 {
+	keys := make([]uint64, 0, len(data))
+	for k := range data {
+		keys = append(keys, k)
+	}
+
+	slices.Sort(keys)
+	return keys
 }
 
 func NewFetcherPegouts(
@@ -209,6 +221,10 @@ func (f *FetcherPegouts) getInternalKey(typeId int) ([]byte, error) {
 		return []byte{}, err
 	}
 
+	if dkgData.R3.Data == nil {
+		return []byte{}, nil
+	}
+
 	return dkgData.R3.Data.InternalKey, nil
 }
 
@@ -250,9 +266,15 @@ func (f *FetcherPegouts) setWrongInternalKeyMetric(
 	for _, pegout := range pegouts {
 		if !bytes.Equal(pegout.InternalKey, internalKeys.dkg) ||
 			!bytes.Equal(pegout.InternalKey, internalKeys.prevDkg) {
-			wrongInternalKey.WithLabelValues(string(pegout.InternalKey), utils.AddrToRawString(pegout.PegoutAddress)).Set(1)
+			wrongInternalKey.WithLabelValues(
+				base64.StdEncoding.EncodeToString(pegout.InternalKey),
+				utils.AddrToRawString(pegout.PegoutAddress),
+			).Set(1)
 		} else {
-			wrongInternalKey.WithLabelValues(string(pegout.InternalKey), utils.AddrToRawString(pegout.PegoutAddress)).Set(0)
+			wrongInternalKey.WithLabelValues(
+				base64.StdEncoding.EncodeToString(pegout.InternalKey),
+				utils.AddrToRawString(pegout.PegoutAddress),
+			).Set(0)
 		}
 	}
 }
@@ -340,8 +362,6 @@ func (f *FetcherPegouts) Fetch() {
 		f.pegoutTempData.unsignedPegouts.Set("UnsignedPegouts", unsignedPegouts, time.Duration(f.period)*time.Second)
 	}
 
-	fmt.Println(f.pegoutTempData.unsignedPegouts)
-
 	if unsignedPegouts == nil {
 		logger.Log.Debug().Msg("FetcherPegouts: Contract returns unsignedPegouts is null")
 	}
@@ -353,8 +373,9 @@ func (f *FetcherPegouts) Fetch() {
 	f.setInsufficientValidatorsMetric(unsignedPegouts)
 	f.setSigningRestartMetric(unsignedPegouts)
 	f.setRestartSigningPegoutCountMetric(f.pegoutTempData.expirations)
-	f.setSigningMaskMetrics(unsignedPegouts[0])
-	f.setCulpritMetrics(unsignedPegouts[0])
+	keys := getMapKeysUint64(unsignedPegouts)
+	f.setSigningMaskMetrics(unsignedPegouts[keys[0]])
+	f.setCulpritMetrics(unsignedPegouts[keys[0]])
 	var signedPegouts = make(map[string]SignedPegout)
 	signedCache, ok := f.pegoutTempData.signedPegouts.Get("SignedPegouts")
 
