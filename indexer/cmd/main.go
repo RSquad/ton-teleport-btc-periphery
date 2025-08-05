@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"database/sql"
+	"encoding/hex"
 	"fmt"
 	"log"
 	"sync"
@@ -22,6 +23,7 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/bitcoinclientcontract"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
+	jwv4r2contract "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/jw_v4r2_contract"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/teleportcontract"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
@@ -91,6 +93,20 @@ func initialize() (*App, error) {
 	tonClient, err := tonclient.New(cfg.ExternalServices.TonConfigUrl)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create ton client: %w", err)
+	}
+
+	jwV4R2Secret, err := hex.DecodeString(cfg.ExternalServices.RelayerWalletV4Secret)
+	if err != nil {
+		return nil, fmt.Errorf("[App] failed to decode jwv4r2 secret: %w", err)
+	}
+
+	jwV4R2Contract, err := jwv4r2contract.NewJWV4R2Contract(
+		tonClient.API,
+		jwV4R2Secret,
+		context.Background(),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("[App] failed to create jwv4r2 contract: %w", err)
 	}
 
 	// Teleport contract
@@ -216,6 +232,7 @@ func initialize() (*App, error) {
 			coordinatorContract,
 			bitcoinClientContract,
 			teleportContract,
+			jwV4R2Contract.Address(),
 			bitcoinClient,
 			tonClient,
 			cfg,

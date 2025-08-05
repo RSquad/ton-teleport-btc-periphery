@@ -22,6 +22,7 @@ type FetcherContractBalances struct {
 func NewFetcherContractBalances(
 	tonClient *tonclient.TonClient,
 	cfg *config.ServicesConfig,
+	relayerAddr *address.Address,
 ) *FetcherContractBalances {
 	return &FetcherContractBalances{
 		tonClient: tonClient,
@@ -30,6 +31,7 @@ func NewFetcherContractBalances(
 			"coordinator": cfg.ExternalServices.CoordinatorContractAddr,
 			"bitclient":   cfg.ExternalServices.BitcoinClientContractAddr,
 			"minter":      cfg.ExternalServices.JettonMinterContractAddr,
+			"relayer":     relayerAddr,
 		},
 	}
 }
@@ -41,6 +43,19 @@ func (fetcher *FetcherContractBalances) GetBalances() (map[string]float64, error
 		balances[name] = -1.0 // Default value
 
 		if contractAddr == nil {
+			continue
+		}
+
+		account, err := fetcher.tonClient.FetchAcc(contractAddr, nil)
+		if err != nil {
+			logger.Log.Error().
+				Msg(fmt.Sprintf("FetcherContractBalances: can't fetch account %s, error: %v", utils.AddrToRawString(contractAddr), err))
+			continue
+		}
+
+		if !account.IsActive {
+			logger.Log.Error().
+				Msg(fmt.Sprintf("FetcherContractBalances: account is not active %s, error: %v", utils.AddrToRawString(contractAddr), err))
 			continue
 		}
 

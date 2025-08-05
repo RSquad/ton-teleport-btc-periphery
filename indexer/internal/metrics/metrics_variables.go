@@ -170,13 +170,6 @@ var (
 			Help: "Autopegout fee",
 		},
 	)
-	relayerBalance = promauto.NewGaugeVec( // TODO: implement metric
-		prometheus.GaugeOpts{
-			Name: "relayer_balance",
-			Help: "Relayer balance",
-		},
-		[]string{"addr"},
-	)
 	lastBlockHeightDifference = promauto.NewGauge(
 		prometheus.GaugeOpts{
 			Name: "last_block_height_difference",
