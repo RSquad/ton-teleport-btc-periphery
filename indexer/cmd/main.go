@@ -97,7 +97,7 @@ func initialize() (*App, error) {
 
 	jwV4R2Secret, err := hex.DecodeString(cfg.ExternalServices.RelayerWalletV4Secret)
 	if err != nil {
-		return nil, fmt.Errorf("[App] failed to decode jwv4r2 secret: %w", err)
+		return nil, fmt.Errorf("failed to decode jwv4r2 secret: %w", err)
 	}
 
 	jwV4R2Contract, err := jwv4r2contract.NewJWV4R2Contract(
@@ -106,7 +106,7 @@ func initialize() (*App, error) {
 		context.Background(),
 	)
 	if err != nil {
-		return nil, fmt.Errorf("[App] failed to create jwv4r2 contract: %w", err)
+		return nil, fmt.Errorf("failed to create jwv4r2 contract: %w", err)
 	}
 
 	// Teleport contract
