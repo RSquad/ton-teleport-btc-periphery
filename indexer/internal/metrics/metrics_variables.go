@@ -146,4 +146,35 @@ var (
 			Help: "DKG Culprit removed from vset",
 		},
 	)
+	utxoLimitGauge = promauto.NewGauge(
+		prometheus.GaugeOpts{
+			Name: "utxo_limit",
+			Help: "UTXO limit",
+		},
+	)
+	utxoCountGauge = promauto.NewGauge(
+		prometheus.GaugeOpts{
+			Name: "utxo_count",
+			Help: "UTXO count",
+		},
+	)
+	totalSetrviceFeeGauge = promauto.NewGauge(
+		prometheus.GaugeOpts{
+			Name: "total_service_fee",
+			Help: "Total service fee",
+		},
+	)
+	autopegoutFeeGauge = promauto.NewGauge(
+		prometheus.GaugeOpts{
+			Name: "autopegout_fee",
+			Help: "Autopegout fee",
+		},
+	)
+	relayerBalance = promauto.NewGaugeVec( // TODO: implement metric
+		prometheus.GaugeOpts{
+			Name: "relayer_balance",
+			Help: "Relayer balance",
+		},
+		[]string{"addr"},
+	)
 )

@@ -162,6 +162,22 @@ func (c *TeleportContract) SendPegoutProof(
 	return c.sender.SendWaitTransaction(c.ctx, message)
 }
 
+func (c *TeleportContract) GetAutoPegoutFee(block *tonutils.BlockIDExt) (*big.Int, error) {
+	if block == nil {
+		var err error
+		block, err = c.TonClient.API.CurrentMasterchainInfo(c.ctx)
+		if err != nil {
+			return nil, err
+		}
+	}
+	result, err := c.TonClient.API.RunGetMethod(c.ctx, block, c.Addr, "get_auto_pegout_fee")
+
+	if err != nil {
+		return nil, err
+	}
+	return result.MustInt(0), nil
+}
+
 func (c *TeleportContract) GetStorage(block *tonutils.BlockIDExt) (Storage, error) {
 	if block == nil {
 		var err error

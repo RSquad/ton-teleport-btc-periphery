@@ -112,6 +112,18 @@ func (fetcher *FetcherContractTeleport) Fetch() {
 		UTXOset:              ConvertUTXOSet(storage.UTXOset),
 	}
 
+	autopegoutFee, err := fetcher.teleportContract.GetAutoPegoutFee(nil)
+	if err != nil {
+		logger.Log.Error().Err(err).
+			Str("component", "FetcherContractTeleport").
+			Msg("failed to get autopegout fee")
+	}
+	var utxoLimit float64 = 252 // TODO: get limit value from teleport
+	utxoLimitGauge.Set(float64(utxoLimit))
+	utxoCountGauge.Set(float64(len(*contractTeleportData.UTXOset)))
+	totalSetrviceFeeGauge.Set(float64(contractTeleportData.TotalServiceFee))
+	autopegoutFeeGauge.Set(float64(autopegoutFee.Int64()))
+
 	jsonData, err := json.Marshal(contractTeleportData)
 	if err != nil {
 		logger.Log.Error().Err(err).
