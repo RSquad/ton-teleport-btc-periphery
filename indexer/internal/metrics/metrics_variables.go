@@ -73,4 +73,11 @@ var (
 			Help: "SVB Exceeded",
 		},
 	)
+	nextSvbNotZero = promauto.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "next_svb_not_zero",
+			Help: "Next SVB not zero",
+		},
+		[]string{"bitcoin_tx_id"},
+	)
 )
