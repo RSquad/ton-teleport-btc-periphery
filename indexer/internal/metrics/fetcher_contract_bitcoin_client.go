@@ -121,6 +121,53 @@ func (fetcher *FetcherContractBitcoinClient) setConfirmedBlockHashMismatchMetric
 	confirmedBlockMismatch.WithLabelValues(contractBlockHash, networkBlockHash).Set(0)
 }
 
+func (fetcher *FetcherContractBitcoinClient) GetBitcoinInfo() (FetcherBitcoinNetworkData, error) {
+	rows, err := fetcher.db.Query(
+		`SELECT payload::json
+			FROM metrics_data
+			WHERE type_id = 3
+			ORDER BY id DESC
+			LIMIT 1
+		`,
+	)
+	if err != nil {
+		return FetcherBitcoinNetworkData{}, err
+	}
+
+	defer rows.Close()
+
+	var data string
+	if rows.Next() {
+		err = rows.Scan(&data)
+		if err != nil {
+			return FetcherBitcoinNetworkData{}, err
+		}
+	}
+
+	if len(data) == 0 {
+		data = "{}"
+	}
+
+	var bitcoinNetworkData FetcherBitcoinNetworkData
+	err = json.Unmarshal([]byte(data), &bitcoinNetworkData)
+	if err != nil {
+		return FetcherBitcoinNetworkData{}, err
+	}
+
+	return bitcoinNetworkData, nil
+}
+
+func (fetcher *FetcherContractBitcoinClient) setDifferentHeightMetric(
+	lastBlockHeightClient int64,
+	lastBlockHeightNetwork int64,
+	confirmationsNeeded int64,
+) {
+	lastBlockHeightDifference.Set(0)
+	if lastBlockHeightNetwork-lastBlockHeightClient > confirmationsNeeded {
+		lastBlockHeightDifference.Set(1)
+	}
+}
+
 func (fetcher *FetcherContractBitcoinClient) Fetch() {
 	storageCell, err := fetcher.bitcoinClientContract.GetStorageCell()
 	if err != nil {
@@ -152,15 +199,15 @@ func (fetcher *FetcherContractBitcoinClient) Fetch() {
 		return
 	}
 
-	info, err := fetcher.bitcoinClient.GetBlockChainInfo()
+	blockChainInfo, err := fetcher.GetBitcoinInfo()
 	if err != nil {
-		logger.Log.Error().Msg(fmt.Sprintf("FetcherContractBitcoinClient: failed to retrieve BlockChainInfo, error: %v", err))
+		logger.Log.Error().Msg(fmt.Sprintf("FetcherContractBitcoinClient: failed to retrieve LastKnownBlockHeight, error: %v", err))
 		return
 	}
 
 	// TODO: check in runtime. The correct comparison should be against the Bitcoin network's block hash at lastConfirmedBlockHeight.
 	// Check if LastConfirmedBlockHashes is match
-	fetcher.setConfirmedBlockHashMismatchMetric(lastConfirmedBlockHash.String(), info.BestBlockHash)
+	fetcher.setConfirmedBlockHashMismatchMetric(lastConfirmedBlockHash.String(), blockChainInfo.BestBlockHash)
 
 	nextSvb, lastPegoutHash, err := fetcher.getNextSvbAndLastPegoutHash()
 	if err != nil {
@@ -181,12 +228,6 @@ func (fetcher *FetcherContractBitcoinClient) Fetch() {
 	}
 
 	fetcher.setNextSvbNotZeroMetrics(lastPegoutHash, lastConfirmedBlockHeight-lastPegoutHeight, confirmationsNeeded, nextSvb)
-
-	blockChainInfo, err := fetcher.GetBitcoinInfo()
-	if err != nil {
-		logger.Log.Error().Msg(fmt.Sprintf("FetcherContractBitcoinClient: failed to retrieve LastKnownBlockHeight, error: %v", err))
-		return
-	}
 
 	fetcher.setDifferentHeightMetric(lastConfirmedBlockHeight, int64(blockChainInfo.Blocks), confirmationsNeeded)
 
