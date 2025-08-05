@@ -80,4 +80,58 @@ var (
 		},
 		[]string{"bitcoin_tx_id"},
 	)
+	autopegoutDelayed = promauto.NewGauge(
+		prometheus.GaugeOpts{
+			Name: "autopegout_delayed",
+			Help: "Autopegout delayed",
+		},
+	)
+	wrongInternalKey = promauto.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "wrong_internal_key",
+			Help: "Wrong internal key",
+		},
+		[]string{"internal_key", "pegout_addr"},
+	)
+	insufficientValidators = promauto.NewGauge(
+		prometheus.GaugeOpts{
+			Name: "insufficient_validators",
+			Help: "Insufficient validators",
+		},
+	)
+	pegoutSigningRestart = promauto.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "pegout_signing_restart",
+			Help: "Pegout signing restart",
+		},
+		[]string{"pegout_addr"},
+	)
+	pegoutRestartCount = promauto.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "pegout_restart_count",
+			Help: "Pegout restart count",
+		},
+		[]string{"pegout_addr"},
+	)
+	pegoutSigningMaskValidatorsCount = promauto.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "pegout_signing_validators_count",
+			Help: "Pegout signing validators count",
+		},
+		[]string{"pegout_addr"},
+	)
+	pegoutSigningCulpritGotThreshold = promauto.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "pegout_signing_culprit",
+			Help: "Pegout signing culprit",
+		},
+		[]string{"pegout_addr"},
+	)
+	pegoutSigningCulpritNotGetThreshold = promauto.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "pegout_signing_culprit_not_get_threshold",
+			Help: "Pegout signing culprit not get threshold",
+		},
+		[]string{"pegout_addr"},
+	)
 )
