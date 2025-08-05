@@ -94,6 +94,24 @@ func (fetcher *FetcherDKG) FetchDKG() {
 
 	fetcher.cfgHash = dkg.CfgHash
 	fetcher.until = dkg.Until
+	storage, err := fetcher.coordinatorContract.GetStorage(nil)
+	if err != nil {
+		logger.Log.Error().
+			Err(err).
+			Str("component", "FetcherDKG").
+			Msg("failed to get coordinator storage")
+		return
+	}
+
+	threshold := MulDivCeil(int(storage.MinClaimsPercent), int(storage.MinSignersThreshold), 100)
+	culpritIdx, culpritFound := getCulprit(dkg.Claims.Counters, uint16(threshold))
+
+	culpritRemoved := false
+	if culpritFound {
+		culpritRemoved = dkg.VSetMask.Bit(int(culpritIdx)) == 0
+	}
+
+	setCulpritMetric(culpritFound, culpritRemoved)
 
 	// Serialize
 	jsonData, err := json.Marshal(dkg)
@@ -111,6 +129,40 @@ func (fetcher *FetcherDKG) FetchDKG() {
 		typeId:    PayloadTypeDKG,
 		payload:   string(jsonData),
 	}
+}
+
+func setCulpritMetric(culpritFound bool, culpritRemoved bool) {
+	dkgCulpritRemains.Set(0)
+	dkgCulpritRemoved.Set(0)
+	if culpritFound {
+		if culpritRemoved {
+			dkgCulpritRemoved.Set(1)
+		} else {
+			dkgCulpritRemains.Set(1)
+		}
+	}
+}
+
+func getCulprit(m map[uint16]uint16, threshold uint16) (uint16, bool) {
+	var culprit uint16 = 0
+	var claimsCounter uint16 = 0
+
+	if len(m) == 0 {
+		return culprit, false
+	}
+
+	for i, v := range m {
+		if v > claimsCounter {
+			claimsCounter = v
+			culprit = i
+		}
+	}
+
+	if claimsCounter < threshold {
+		return 0, false
+	}
+
+	return culprit, true
 }
 
 func (fetcher *FetcherDKG) FetchPrevDKG() {
