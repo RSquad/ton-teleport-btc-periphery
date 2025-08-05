@@ -83,6 +83,14 @@ func (fetcher *FetcherContractTeleport) Work(ctx context.Context, wg *sync.WaitG
 	}
 }
 
+func (fetcher *FetcherContractTeleport) setAutopegoutFeeMetric(autopegoutFee *big.Int) {
+	if autopegoutFee == nil {
+		autopegoutFeeGauge.Set(-1)
+		return
+	}
+	autopegoutFeeGauge.Set(float64(autopegoutFee.Int64()))
+}
+
 func (fetcher *FetcherContractTeleport) Fetch() {
 	storage, err := fetcher.teleportContract.GetStorage(nil)
 	if err != nil {
@@ -122,7 +130,7 @@ func (fetcher *FetcherContractTeleport) Fetch() {
 	utxoLimitGauge.Set(float64(utxoLimit))
 	utxoCountGauge.Set(float64(len(*contractTeleportData.UTXOset)))
 	totalSetrviceFeeGauge.Set(float64(contractTeleportData.TotalServiceFee))
-	autopegoutFeeGauge.Set(float64(autopegoutFee.Int64()))
+	fetcher.setAutopegoutFeeMetric(autopegoutFee)
 
 	jsonData, err := json.Marshal(contractTeleportData)
 	if err != nil {
