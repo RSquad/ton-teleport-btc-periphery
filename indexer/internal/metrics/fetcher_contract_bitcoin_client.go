@@ -182,6 +182,14 @@ func (fetcher *FetcherContractBitcoinClient) Fetch() {
 
 	fetcher.setNextSvbNotZeroMetrics(lastPegoutHash, lastConfirmedBlockHeight-lastPegoutHeight, confirmationsNeeded, nextSvb)
 
+	blockChainInfo, err := fetcher.GetBitcoinInfo()
+	if err != nil {
+		logger.Log.Error().Msg(fmt.Sprintf("FetcherContractBitcoinClient: failed to retrieve LastKnownBlockHeight, error: %v", err))
+		return
+	}
+
+	fetcher.setDifferentHeightMetric(lastConfirmedBlockHeight, int64(blockChainInfo.Blocks), confirmationsNeeded)
+
 	data := &ContractBitcoinClientData{
 		CandidateBlockHashes:     candidateBlockHashes,
 		ConfirmationsNeeded:      confirmationsNeeded,

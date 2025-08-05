@@ -91,6 +91,17 @@ func (fetcher *FetcherContractTeleport) setAutopegoutFeeMetric(autopegoutFee *bi
 	autopegoutFeeGauge.Set(float64(autopegoutFee.Int64()))
 }
 
+func (fetcher *FetcherContractTeleport) setUtxoDifferentKeysMetric(utxo *[]ContractTeleportUTXO) {
+	var prevKey *chainhash.Hash = (*utxo)[0].TapMerkleRoot
+	for _, utxo := range *utxo {
+		if utxo.TapMerkleRoot != prevKey {
+			utxoKeysDifference.WithLabelValues(prevKey.String(), utxo.TapMerkleRoot.String()).Set(1)
+			continue
+		}
+		utxoKeysDifference.WithLabelValues(prevKey.String(), utxo.TapMerkleRoot.String()).Set(0)
+	}
+}
+
 func (fetcher *FetcherContractTeleport) Fetch() {
 	storage, err := fetcher.teleportContract.GetStorage(nil)
 	if err != nil {
@@ -131,6 +142,8 @@ func (fetcher *FetcherContractTeleport) Fetch() {
 	utxoCountGauge.Set(float64(len(*contractTeleportData.UTXOset)))
 	totalSetrviceFeeGauge.Set(float64(contractTeleportData.TotalServiceFee))
 	fetcher.setAutopegoutFeeMetric(autopegoutFee)
+
+	fetcher.setUtxoDifferentKeysMetric(contractTeleportData.UTXOset)
 
 	jsonData, err := json.Marshal(contractTeleportData)
 	if err != nil {
