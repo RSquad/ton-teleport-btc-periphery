@@ -3,11 +3,13 @@ package pegoutcontract
 import (
 	"context"
 	"fmt"
+	"math/big"
 
 	tonclient "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
 	"github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/ton"
+	"github.com/xssnick/tonutils-go/tvm/cell"
 )
 
 const (
@@ -24,12 +26,133 @@ type PegoutContract struct {
 	ctx       context.Context
 }
 
+type PegoutContractStorage struct {
+	Initiated          bool
+	BitcoinTxId        *big.Int
+	TeleportAddress    *address.Address
+	Amount             *big.Int
+	OutputScript       []byte
+	Signatures         *cell.Dictionary
+	UtxoSet            *cell.Dictionary
+	TxFee              *big.Int
+	ChangeScript       []byte
+	InternalKey        *big.Int
+	CoordinatorAddress *address.Address
+}
+
 func New(
 	addr *address.Address,
 	tonClient *tonclient.TonClient,
 	ctx context.Context,
 ) *PegoutContract {
 	return &PegoutContract{addr, tonClient, ctx}
+}
+
+func (c *PegoutContract) GetStorage(block *ton.BlockIDExt) (PegoutContractStorage, error) {
+	if block == nil {
+		var err error
+		block, err = c.tonClient.API.CurrentMasterchainInfo(c.ctx)
+		if err != nil {
+			return PegoutContractStorage{}, fmt.Errorf("failed to get masterchain info: %w", err)
+		}
+	}
+	acc, err := c.tonClient.FetchAcc(c.Addr, block)
+	if err != nil {
+		return PegoutContractStorage{}, fmt.Errorf("failed to fetch addcount: %w", err)
+	}
+	storageSlice := acc.Data.BeginParse()
+
+	initiated, err := storageSlice.LoadBoolBit()
+	if err != nil {
+		return PegoutContractStorage{}, fmt.Errorf("failed to get initiated: %w", err)
+	}
+	bitcoinTxId, err := storageSlice.LoadBigUInt(256)
+	if err != nil {
+		return PegoutContractStorage{}, fmt.Errorf("failed to get bitcoin tx id: %w", err)
+	}
+	teleportAddress, err := storageSlice.LoadAddr()
+	if err != nil {
+		return PegoutContractStorage{}, fmt.Errorf("failed to get teleport address: %w", err)
+	}
+
+	uninitiatedStorage := PegoutContractStorage{
+		Initiated:          initiated,
+		BitcoinTxId:        bitcoinTxId,
+		TeleportAddress:    teleportAddress,
+		Amount:             nil,
+		OutputScript:       nil,
+		Signatures:         nil,
+		UtxoSet:            nil,
+		TxFee:              nil,
+		ChangeScript:       nil,
+		InternalKey:        nil,
+		CoordinatorAddress: &address.Address{},
+	}
+
+	if !initiated {
+		return uninitiatedStorage, nil
+	}
+
+	amount, err := storageSlice.LoadBigUInt(64)
+	if err != nil {
+		return uninitiatedStorage, fmt.Errorf("failed to get amount: %w", err)
+	}
+	txFee, err := storageSlice.LoadBigUInt(64)
+	if err != nil {
+		return uninitiatedStorage, err
+	}
+	size, err := storageSlice.LoadUInt(8)
+	if err != nil {
+		return uninitiatedStorage, err
+	}
+	outputScript, err := storageSlice.LoadSlice(uint(size))
+	if err != nil {
+		return uninitiatedStorage, err
+	}
+	signatures, err := storageSlice.LoadDict(256) // TODO: check keysize
+	if err != nil {
+		return uninitiatedStorage, err
+	}
+
+	utxoSet, err := storageSlice.LoadDict(256)
+	if err != nil {
+		return uninitiatedStorage, err
+	}
+
+	storageSlice, err = storageSlice.LoadRef()
+	if err != nil {
+		return uninitiatedStorage, err
+	}
+	size, err = storageSlice.LoadUInt(8)
+	if err != nil {
+		return uninitiatedStorage, err
+	}
+	changeScript, err := storageSlice.LoadSlice(uint(size))
+	if err != nil {
+		return uninitiatedStorage, err
+	}
+	internalKey, err := storageSlice.LoadBigUInt(256)
+	if err != nil {
+		return uninitiatedStorage, err
+	}
+	coordinatorAddress, err := storageSlice.LoadAddr()
+	if err != nil {
+		return uninitiatedStorage, err
+	}
+
+	return PegoutContractStorage{
+		Initiated:          initiated,
+		BitcoinTxId:        bitcoinTxId,
+		TeleportAddress:    teleportAddress,
+		Amount:             amount,
+		OutputScript:       outputScript,
+		Signatures:         signatures,
+		UtxoSet:            utxoSet,
+		TxFee:              txFee,
+		ChangeScript:       changeScript,
+		InternalKey:        internalKey,
+		CoordinatorAddress: coordinatorAddress,
+	}, nil
 }
 
 func (c *PegoutContract) GetTxParts(block *ton.BlockIDExt) (*TxParts, error) {

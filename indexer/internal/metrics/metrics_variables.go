@@ -73,4 +73,11 @@ var (
 			Help: "SVB Exceeded",
 		},
 	)
+	pegoutInputsOutputsMismatch = promauto.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "pegout_inputs_outputs_mismatch",
+			Help: "Pegout inputs outputs mismatch",
+		},
+		[]string{"pegout_addr"},
+	)
 )
