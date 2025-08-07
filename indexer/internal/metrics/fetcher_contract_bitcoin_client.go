@@ -162,9 +162,9 @@ func (fetcher *FetcherContractBitcoinClient) setDifferentHeightMetric(
 	lastBlockHeightNetwork int64,
 	confirmationsNeeded int64,
 ) {
-	lastBlockHeightDifference.Set(0)
+	lastBlockHeightDifference.WithLabelValues(fmt.Sprint(lastBlockHeightNetwork), fmt.Sprint(lastBlockHeightClient)).Set(0)
 	if lastBlockHeightNetwork-lastBlockHeightClient > confirmationsNeeded {
-		lastBlockHeightDifference.Set(1)
+		lastBlockHeightDifference.WithLabelValues(fmt.Sprint(lastBlockHeightNetwork), fmt.Sprint(lastBlockHeightClient)).Set(1)
 	}
 }
 

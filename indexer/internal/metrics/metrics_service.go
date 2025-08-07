@@ -13,7 +13,6 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/teleportcontract"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
-	"github.com/xssnick/tonutils-go/address"
 )
 
 type MetricsService struct {
@@ -31,7 +30,6 @@ func NewService(
 	coordinatorContract coordinator.Coordinator,
 	bitcoinClientContract *bitcoinclientcontract.BitcoinClientContract,
 	teleportContract *teleportcontract.TeleportContract,
-	relayerAddress *address.Address,
 	bitcoinClient *bitcoin.Client,
 	tonClient *tonclient.TonClient,
 	cfg *config.ServicesConfig,
@@ -57,7 +55,7 @@ func NewService(
 	// Fetcher: Contract balances
 	var fetcherContractBalances *FetcherContractBalances = nil
 	if cfg.Metrics.RunFetcherContractBalances {
-		fetcherContractBalances = NewFetcherContractBalances(tonClient, cfg, relayerAddress)
+		fetcherContractBalances = NewFetcherContractBalances(tonClient, cfg)
 	}
 
 	// Fetcher: Contract Bitcoin client

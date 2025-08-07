@@ -29,15 +29,15 @@ var (
 	)
 	unsignedPegoutsLen = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Name: "pegouts_len",
-			Help: "Pegouts len",
+			Name: "unsigned_pegouts_len",
+			Help: "Unsigned pegouts len",
 		},
 		[]string{"len"},
 	)
 	unsignedPegoutDelayed = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Name: "pegout_delayed",
-			Help: "Pegout delayed",
+			Name: "unsigned_pegout_delayed",
+			Help: "Unsigned pegout delayed",
 		},
 		[]string{"pegout_addr"},
 	)
@@ -93,11 +93,12 @@ var (
 		},
 		[]string{"internal_key", "pegout_addr"},
 	)
-	insufficientValidators = promauto.NewGauge(
+	insufficientValidators = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "insufficient_validators",
 			Help: "Insufficient validators",
 		},
+		[]string{"pegout_addr"},
 	)
 	pegoutSigningRestart = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
@@ -170,11 +171,12 @@ var (
 			Help: "Autopegout fee",
 		},
 	)
-	lastBlockHeightDifference = promauto.NewGauge(
+	lastBlockHeightDifference = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "last_block_height_difference",
 			Help: "Last block height difference",
 		},
+		[]string{"network", "client"},
 	)
 	utxoKeysDifference = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{

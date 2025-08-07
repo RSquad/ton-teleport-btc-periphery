@@ -103,7 +103,7 @@ func (fetcher *FetcherDKG) FetchDKG() {
 		return
 	}
 
-	threshold := MulDivCeil(int(storage.MinClaimsPercent), int(storage.MinSignersThreshold), 100)
+	threshold := MulDivCeil(uint(storage.MinClaimsPercent), uint(storage.MinSignersThreshold), 100)
 	culpritIdx, culpritFound := getCulprit(dkg.Claims.Counters, uint16(threshold))
 
 	culpritRemoved := false

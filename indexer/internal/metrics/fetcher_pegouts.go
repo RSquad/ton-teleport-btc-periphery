@@ -281,11 +281,7 @@ func (f *FetcherPegouts) setWrongInternalKeyMetric(
 
 func (f *FetcherPegouts) setInsufficientValidatorsMetric(pegouts map[uint64]coordinator.PegoutRecord) {
 	for _, pegout := range pegouts {
-		if pegout.MaxSigners < EXPECTED_SIGNERS_COUNT {
-			insufficientValidators.Set(1)
-		} else {
-			insufficientValidators.Set(0)
-		}
+		insufficientValidators.WithLabelValues(utils.AddrToRawString(pegout.PegoutAddress)).Set(float64(pegout.MaxSigners))
 	}
 }
 
