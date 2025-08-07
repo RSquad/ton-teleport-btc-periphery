@@ -14,6 +14,7 @@ type MetricsConfig struct {
 	RunFetcherContractBitcoinClient bool
 	RunFetcherContractTeleport      bool
 	RunFetcherContractCoordinator   bool
+	RunFetcherContractPegout        bool
 	RunFetcherPegouts               bool
 	RunFetcherBitcoinNetwork        bool
 
@@ -23,6 +24,7 @@ type MetricsConfig struct {
 	BitcoinNetworkFetchPeriod        int
 	TeleportContractFetchPeriod      int
 	CoordinatorContractFetchPeriod   int
+	PegoutContractFetchPeriod        int
 	MetricsPegoutsFetchPeriod        int
 }
 
@@ -204,6 +206,7 @@ func ParseMetrics(indexerConfig *IndexerConfig) (*MetricsConfig, error) {
 		RunFetcherContractBitcoinClient: true,
 		RunFetcherContractTeleport:      true,
 		RunFetcherContractCoordinator:   true,
+		RunFetcherContractPegout:        true,
 		RunFetcherPegouts:               true,
 		RunFetcherBitcoinNetwork:        true,
 
@@ -213,6 +216,7 @@ func ParseMetrics(indexerConfig *IndexerConfig) (*MetricsConfig, error) {
 		BitcoinNetworkFetchPeriod:        59,
 		TeleportContractFetchPeriod:      27,
 		CoordinatorContractFetchPeriod:   59,
+		PegoutContractFetchPeriod:        59,
 		MetricsPegoutsFetchPeriod:        59,
 	}
 
@@ -244,6 +248,8 @@ func ParseMetrics(indexerConfig *IndexerConfig) (*MetricsConfig, error) {
 				cfg.RunFetcherContractTeleport = value
 			case "CONTRACT_COORDINATOR":
 				cfg.RunFetcherContractCoordinator = value
+			case "CONTRACT_PEGOUT":
+				cfg.RunFetcherContractPegout = value
 			case "PEGOUTS":
 				cfg.RunFetcherPegouts = value
 			case "BITCOIN_NETWORK":
@@ -284,6 +290,8 @@ func ParseMetrics(indexerConfig *IndexerConfig) (*MetricsConfig, error) {
 				cfg.TeleportContractFetchPeriod = value
 			case "COORDINATOR_CONTRACT_FETCH_PERIOD":
 				cfg.CoordinatorContractFetchPeriod = value
+			case "CONTRACT_PEGOUT_FETCH_PERIOD":
+				cfg.PegoutContractFetchPeriod = value
 			case "METRICS_PEGOUTS_FETCH_PERIOD":
 				cfg.MetricsPegoutsFetchPeriod = value
 

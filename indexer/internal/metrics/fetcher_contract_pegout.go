@@ -2,6 +2,8 @@ package metrics
 
 import (
 	"context"
+	"database/sql"
+	"encoding/json"
 	"fmt"
 	"math/big"
 	"sync"
@@ -9,20 +11,29 @@ import (
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/pegoutcontract"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
+	"github.com/xssnick/tonutils-go/address"
 )
 
 type FetcherContractPegout struct {
-	pegoutContract pegoutcontract.PegoutContract
-	period         int64 // Fetch period (in seconds)
+	db        *sql.DB
+	tonClient *tonclient.TonClient
+	period    int64 // Fetch period (in seconds)
+}
+
+type PegoutData struct {
+	Address string
 }
 
 func NewFetcherContractPegout(
-	pegoutContract pegoutcontract.PegoutContract,
+	db *sql.DB,
+	tonClient *tonclient.TonClient,
 	period int64,
 ) *FetcherContractPegout {
 	return &FetcherContractPegout{
-		pegoutContract: pegoutContract,
-		period:         period,
+		db:        db,
+		tonClient: tonClient,
+		period:    period,
 	}
 }
 
@@ -46,14 +57,60 @@ func (fetcher *FetcherContractPegout) Work(ctx context.Context, wg *sync.WaitGro
 	}
 }
 
+func (fetcher *FetcherContractPegout) createPegoutContract(pegoutAddr *address.Address) *pegoutcontract.PegoutContract {
+	pegoutContract := pegoutcontract.New(
+		pegoutAddr,
+		fetcher.tonClient,
+		context.Background(),
+	)
+	return pegoutContract
+}
+
+func (fetcher *FetcherContractPegout) getPegoutAddr() (*address.Address, error) {
+	rows, err := fetcher.db.Query(``) // TODO: create query to get pegout contract address
+
+	if err != nil {
+		return &address.Address{}, err
+	}
+
+	defer rows.Close()
+
+	var data string
+	if rows.Next() {
+		err = rows.Scan(&data)
+		if err != nil {
+			return &address.Address{}, err
+		}
+	}
+
+	var pegoutData PegoutData
+	err = json.Unmarshal([]byte(data), &pegoutData)
+	if err != nil {
+		return &address.Address{}, err
+	}
+	// TODO: replace with pegoutData.Address
+	pegoutAddr, err := address.ParseRawAddr("0:e7016a34411d7f014d1e411cac699793a94fd4c2b061139f57940cb1dde37ba2")
+	if err != nil {
+		logger.Log.Error().Msg(fmt.Sprintf("FetcherContractPegout: failed to parse pegout address, error: %v", err))
+		return &address.Address{}, nil
+	}
+	return pegoutAddr, nil
+}
+
 func (fetcher *FetcherContractPegout) Fetch() {
-	storage, err := fetcher.pegoutContract.GetStorage(nil)
+	pegoutAddr, err := fetcher.getPegoutAddr()
+	if err != nil {
+		logger.Log.Error().Msg(fmt.Sprintf("FetcherContractPegout: failed to retrieve pegout address, error: %v", err))
+		return
+	}
+	pegoutContract := fetcher.createPegoutContract(pegoutAddr)
+	storage, err := pegoutContract.GetStorage(nil)
 	if err != nil {
 		logger.Log.Error().Msg(fmt.Sprintf("FetcherContractPegout: failed to retrieve storage cell, error: %v", err))
 		return
 	}
 
-	txParts, err := fetcher.pegoutContract.GetTxParts(nil)
+	txParts, err := pegoutContract.GetTxParts(nil)
 	if err != nil {
 		logger.Log.Error().Msg(fmt.Sprintf("FetcherContractPegout: failed to retrieve tx parts, error: %v", err))
 		return
@@ -76,6 +133,6 @@ func (fetcher *FetcherContractPegout) Fetch() {
 	}
 
 	pegoutInputsOutputsMismatch.
-		WithLabelValues(fetcher.pegoutContract.Addr.String()).
+		WithLabelValues(pegoutContract.Addr.String()).
 		Set(float64(totalInputAmount.Cmp(totalOutputAmount.Add(totalOutputAmount, storage.TxFee))))
 }
