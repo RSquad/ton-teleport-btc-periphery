@@ -3,7 +3,6 @@ package metrics
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"math/big"
 	"sync"
@@ -67,29 +66,29 @@ func (fetcher *FetcherContractPegout) createPegoutContract(pegoutAddr *address.A
 }
 
 func (fetcher *FetcherContractPegout) getPegoutAddr() (*address.Address, error) {
-	rows, err := fetcher.db.Query(``) // TODO: create query to get pegout contract address
+	// rows, err := fetcher.db.Query(``) // TODO: create query to get pegout contract address
 
-	if err != nil {
-		return &address.Address{}, err
-	}
+	// if err != nil {
+	// 	return &address.Address{}, err
+	// }
 
-	defer rows.Close()
+	// defer rows.Close()
 
-	var data string
-	if rows.Next() {
-		err = rows.Scan(&data)
-		if err != nil {
-			return &address.Address{}, err
-		}
-	}
+	// var data string
+	// if rows.Next() {
+	// 	err = rows.Scan(&data)
+	// 	if err != nil {
+	// 		return &address.Address{}, err
+	// 	}
+	// }
 
-	var pegoutData PegoutData
-	err = json.Unmarshal([]byte(data), &pegoutData)
-	if err != nil {
-		return &address.Address{}, err
-	}
+	// var pegoutData PegoutData
+	// err = json.Unmarshal([]byte(data), &pegoutData)
+	// if err != nil {
+	// 	return &address.Address{}, err
+	// }
 	// TODO: replace with pegoutData.Address
-	pegoutAddr, err := address.ParseRawAddr("0:e7016a34411d7f014d1e411cac699793a94fd4c2b061139f57940cb1dde37ba2")
+	pegoutAddr, err := address.ParseRawAddr("0:0cbe248cbeb717298a4dd52e98d11904fe93817c64b594a3f98a283a6177e4a0")
 	if err != nil {
 		logger.Log.Error().Msg(fmt.Sprintf("FetcherContractPegout: failed to parse pegout address, error: %v", err))
 		return &address.Address{}, nil

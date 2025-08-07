@@ -156,6 +156,13 @@ func (c *PegoutContract) GetStorage(block *ton.BlockIDExt) (PegoutContractStorag
 }
 
 func (c *PegoutContract) GetTxParts(block *ton.BlockIDExt) (*TxParts, error) {
+	if block == nil {
+		var err error
+		block, err = c.tonClient.API.CurrentMasterchainInfo(c.ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get masterchain info: %w", err)
+		}
+	}
 	res, err := c.tonClient.API.RunGetMethod(c.ctx, block, c.Addr, "get_tx_parts")
 	if err != nil {
 		return nil, fmt.Errorf("failed to get tx parts: %w", err)
