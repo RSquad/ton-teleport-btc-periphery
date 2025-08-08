@@ -59,6 +59,6 @@ func CalcPeginBitcoinAddr(
 
 	return btcutil.NewAddressTaproot(
 		schnorr.SerializePubKey(outputKey),
-		&chaincfg.SigNetParams,
+		&chaincfg.MainNetParams,
 	)
 }
