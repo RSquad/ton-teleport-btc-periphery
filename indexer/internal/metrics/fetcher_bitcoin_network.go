@@ -178,12 +178,9 @@ func (fetcher *FetcherBitcoinNetwork) setBitcoinTxExistsMetric(pegouts []SignedP
 	}
 }
 
-func (fb *FetcherBitcoinNetwork) setSVBExceededMetric(exceeded bool) {
-	if !exceeded {
-		svbExceeded.Set(0)
-		return
-	}
-	svbExceeded.Set(1)
+func (fb *FetcherBitcoinNetwork) setSVBExceededMetric(svb float64, baseSvb float64) {
+	svbCurrent.Set(svb)
+	svbBase.Set(baseSvb)
 }
 
 func (fetcher *FetcherBitcoinNetwork) setCPFPCountMetric(count bitcoin.TxChildrenCount) {
@@ -233,15 +230,13 @@ func (fetcher *FetcherBitcoinNetwork) Fetch() {
 			Str("component", "FetcherBitcoinTx").
 			Msg("fetch failed at get base svb")
 	}
-	fmt.Println("SOME STRING LOG 5")
 	svb, err := fetcher.getSVB(1, nil)
 	if err != nil {
 		logger.Log.Error().Err(err).
 			Str("component", "FetcherBitcoinTx").
 			Msg("fetch failed at get svb")
 	}
-	fmt.Println("svb: ", svb, "baseSvb: ", baseSvb)
-	fetcher.setSVBExceededMetric((svb + SVB_TRESHOLD) > baseSvb)
+	fetcher.setSVBExceededMetric(svb, baseSvb)
 
 	// Serialize
 	data := FetcherBitcoinNetworkData{
@@ -277,7 +272,7 @@ func (fetcher *FetcherBitcoinNetwork) Work(ctx context.Context, wg *sync.WaitGro
 	for {
 		select {
 		case <-ctx.Done():
-			logger.Log.Info().Msg("DKG Fetcher received shutdown signal...")
+			logger.Log.Info().Msg("FetcherBitcoinNetwork received shutdown signal...")
 			return
 		case <-ticker.C:
 			fetcher.Fetch()

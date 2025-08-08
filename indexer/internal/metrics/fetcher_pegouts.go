@@ -6,7 +6,6 @@ import (
 	"database/sql"
 	"encoding/base64"
 	"encoding/json"
-	"math/big"
 	"sync"
 	"time"
 
@@ -47,20 +46,6 @@ type Expirations struct {
 type InternalKeys struct {
 	dkg     []byte
 	prevDkg []byte
-}
-
-func popcnt(n *big.Int) int {
-	count := 0
-	zero := big.NewInt(0)
-	one := big.NewInt(1)
-	temp := new(big.Int)
-
-	for n.Cmp(zero) != 0 {
-		count++
-		temp.Sub(n, one)
-		n.And(n, temp)
-	}
-	return count
 }
 
 func getMapKeysUint64(data map[uint64]coordinator.PegoutRecord) []uint64 {
@@ -245,17 +230,22 @@ func (f *FetcherPegouts) setBitcoinTxExistsMetric(pegouts map[string]SignedPegou
 }
 
 func (f *FetcherPegouts) setAutopegoutDelayedMetric(pegouts map[uint64]coordinator.PegoutRecord) {
-
+	autopegoutDelayed.Set(0)
 	now := time.Now()
 	for _, pegout := range pegouts {
 		if pegout.IsAutopegout {
 			f.pegoutTempData.lastAutopegoutDate = now
 		}
-		if now.After(f.pegoutTempData.lastAutopegoutDate.Add(AUTOPEGOUT_MAX_DELAY)) {
-			autopegoutDelayed.Set(1)
-		} else {
-			autopegoutDelayed.Set(0)
-		}
+	}
+
+	if now.After(f.pegoutTempData.lastAutopegoutDate.Add(AUTOPEGOUT_WARN_DELAY)) {
+		autopegoutDelayed.Set(1)
+	}
+	if now.After(f.pegoutTempData.lastAutopegoutDate.Add(AUTOPEGOUT_CRIT_DELAY)) {
+		autopegoutDelayed.Set(2)
+	}
+	if now.After(f.pegoutTempData.lastAutopegoutDate.Add(AUTOPEGOUT_PANIC_DELAY)) {
+		autopegoutDelayed.Set(3)
 	}
 }
 
@@ -279,9 +269,9 @@ func (f *FetcherPegouts) setWrongInternalKeyMetric(
 	}
 }
 
-func (f *FetcherPegouts) setInsufficientValidatorsMetric(pegouts map[uint64]coordinator.PegoutRecord) {
+func (f *FetcherPegouts) setPegoutMaxSignersMetric(pegouts map[uint64]coordinator.PegoutRecord) {
 	for _, pegout := range pegouts {
-		insufficientValidators.WithLabelValues(utils.AddrToRawString(pegout.PegoutAddress)).Set(float64(pegout.MaxSigners))
+		pegoutMaxSigners.WithLabelValues(utils.AddrToRawString(pegout.PegoutAddress)).Set(float64(pegout.MaxSigners))
 	}
 }
 
@@ -366,7 +356,7 @@ func (f *FetcherPegouts) Fetch() {
 
 	f.setDelayedMetric(unsignedPegouts)
 	f.setAutopegoutDelayedMetric(unsignedPegouts)
-	f.setInsufficientValidatorsMetric(unsignedPegouts)
+	f.setPegoutMaxSignersMetric(unsignedPegouts)
 	f.setSigningRestartMetric(unsignedPegouts)
 	f.setRestartSigningPegoutCountMetric(f.pegoutTempData.expirations)
 	keys := getMapKeysUint64(unsignedPegouts)

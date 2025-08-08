@@ -1,6 +1,9 @@
 package metrics
 
-import "math"
+import (
+	"math"
+	"math/big"
+)
 
 func MulDivCeil(a, b, c uint) uint {
 	if c == 0 {
@@ -17,4 +20,18 @@ func MulDivCeil(a, b, c uint) uint {
 	}
 
 	return uint(result)
+}
+
+func popcnt(n *big.Int) int {
+	count := 0
+	zero := big.NewInt(0)
+	one := big.NewInt(1)
+	temp := new(big.Int)
+
+	for n.Cmp(zero) != 0 {
+		count++
+		temp.Sub(n, one)
+		n.And(n, temp)
+	}
+	return count
 }

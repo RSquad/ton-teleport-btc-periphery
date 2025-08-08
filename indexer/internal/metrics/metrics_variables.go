@@ -67,9 +67,15 @@ var (
 		},
 		[]string{"tx_id"},
 	)
-	svbExceeded = promauto.NewGauge(
+	svbCurrent = promauto.NewGauge(
 		prometheus.GaugeOpts{
-			Name: "svb_exceeded",
+			Name: "svb_current",
+			Help: "SVB Exceeded",
+		},
+	)
+	svbBase = promauto.NewGauge(
+		prometheus.GaugeOpts{
+			Name: "svb_base",
 			Help: "SVB Exceeded",
 		},
 	)
@@ -93,10 +99,10 @@ var (
 		},
 		[]string{"internal_key", "pegout_addr"},
 	)
-	insufficientValidators = promauto.NewGaugeVec(
+	pegoutMaxSigners = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Name: "insufficient_validators",
-			Help: "Insufficient validators",
+			Name: "pegout_max_signers_count",
+			Help: "Pegout max signers count",
 		},
 		[]string{"pegout_addr"},
 	)
@@ -137,13 +143,13 @@ var (
 	)
 	dkgCulpritRemains = promauto.NewGauge(
 		prometheus.GaugeOpts{
-			Name: "dkg_culprit remains in vset",
+			Name: "dkg_culprit_remains_in_vset",
 			Help: "DKG Culprit remains in vset",
 		},
 	)
 	dkgCulpritRemoved = promauto.NewGauge(
 		prometheus.GaugeOpts{
-			Name: "dkg_culprit removed from vset",
+			Name: "dkg_culprit_removed_from_vset",
 			Help: "DKG Culprit removed from vset",
 		},
 	)
