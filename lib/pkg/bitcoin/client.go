@@ -64,7 +64,7 @@ func NewClient(host string, user string, pass string) (*Client, error) {
 		User:         user,
 		Pass:         pass,
 		HTTPPostMode: true,
-		DisableTLS:   false, // This was the original default
+		DisableTLS:   false,
 	}
 
 	legacyRPCClient, err := rpcclient.New(connCfg, nil)
