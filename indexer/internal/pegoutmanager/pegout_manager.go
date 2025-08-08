@@ -115,7 +115,7 @@ func (pm *PegoutManager) executeSigningPegoutsCycle() (err error) {
 	logStartProcessingSigningPegouts()
 
 	pegouts, err := pm.repo.Pegout.Query().
-		Where(entpegout.StatusEQ(entpegout.StatusSigning), entpegout.AddrNEQ("NONE"), entpegout.AddrNEQ("NONE1")).
+		Where(entpegout.StatusEQ(entpegout.StatusSigning), entpegout.AddrNEQ(""), entpegout.AddrNotNil()).
 		Limit(pegoutQueryLimit).
 		All(pm.ctx)
 	if err != nil {
