@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"encoding/base64"
 	"encoding/json"
+	"math/big"
 	"sync"
 	"time"
 
@@ -46,6 +47,30 @@ type Expirations struct {
 type InternalKeys struct {
 	dkg     []byte
 	prevDkg []byte
+}
+
+var EMPTY_PEGOUT coordinator.PegoutRecord = coordinator.PegoutRecord{
+
+	ID:                      0,
+	PegoutAddress:           &address.Address{},
+	InternalKey:             []byte{},
+	IsAutopegout:            false,
+	Commitments:             map[uint16][]byte{},
+	CommitmentsMaskAccepted: big.NewInt(0),
+	CommitmentsMaskOther:    big.NewInt(0),
+	SigningShares:           map[uint16]map[uint16][]byte{},
+	SigningSharesMask:       []byte{},
+	Signatures: coordinator.PegoutSignatures{
+		Mask:  big.NewInt(0),
+		Count: 0,
+		Hash:  []byte{},
+	},
+	ClaimsMask:     big.NewInt(0),
+	ClaimsCount:    0,
+	ClaimsCounters: map[uint16]uint16{},
+	MaxSigners:     0,
+	ExpiredAt:      time.Time{},
+	SigningMask:    big.NewInt(0),
 }
 
 func getMapKeysUint64(data map[uint64]coordinator.PegoutRecord) []uint64 {
@@ -360,8 +385,14 @@ func (f *FetcherPegouts) Fetch() {
 	f.setSigningRestartMetric(unsignedPegouts)
 	f.setRestartSigningPegoutCountMetric(f.pegoutTempData.expirations)
 	keys := getMapKeysUint64(unsignedPegouts)
-	f.setSigningMaskMetrics(unsignedPegouts[keys[0]])
-	f.setCulpritMetrics(unsignedPegouts[keys[0]])
+	if len(keys) == 0 {
+		logger.Log.Debug().Msg("FetcherPegouts: Contract returns unsignedPegouts is empty")
+		f.setSigningMaskMetrics(EMPTY_PEGOUT)
+		f.setCulpritMetrics(EMPTY_PEGOUT)
+	} else {
+		f.setSigningMaskMetrics(unsignedPegouts[keys[0]])
+		f.setCulpritMetrics(unsignedPegouts[keys[0]])
+	}
 	var signedPegouts = make(map[string]SignedPegout)
 	signedCache, ok := f.pegoutTempData.signedPegouts.Get("SignedPegouts")
 
