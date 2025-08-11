@@ -5,6 +5,7 @@ on:
     branches:
       - develop
       - sandbox
+      - master
     paths-ignore:
       - '**/*.md'
 
@@ -26,6 +27,16 @@ jobs:
       APPS: '["indexer", "relayer", "db-backup"]'
       STAGE: sandbox
       DOCKER_REGISTRY_URL: registry.digitalocean.com/rsquad-dev
+    secrets:
+      DOCKER_REGISTRY_USERNAME: ${{ secrets.DOCR_USERNAME }}
+      DOCKER_REGISTRY_PASSWORD: ${{ secrets.DOCR_PASSWORD }}
+  master:
+    if: github.ref == 'refs/heads/master'
+    uses: ./.github/workflows/build-and-push.yml
+    with:
+      APPS: '["indexer", "relayer", "oracle", "db-backup"]'
+      STAGE: prod
+      DOCKER_REGISTRY_URL: registry.digitalocean.com/rsquad-prod
     secrets:
       DOCKER_REGISTRY_USERNAME: ${{ secrets.DOCR_USERNAME }}
       DOCKER_REGISTRY_PASSWORD: ${{ secrets.DOCR_PASSWORD }}

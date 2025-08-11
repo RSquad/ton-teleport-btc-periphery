@@ -40,6 +40,7 @@ type ExternalServicesConfig struct {
 	BitcoinRpcPass            string
 	TonConfigUrl              string
 	DatabaseUrl               string
+	RelayerWalletV4Secret     string
 	TeleportContractAddr      *address.Address
 	CoordinatorContractAddr   *address.Address
 	BitcoinClientContractAddr *address.Address
@@ -87,6 +88,7 @@ func CfgToString(indexerConfig *IndexerConfig) string {
 		`BitcoinRpcHost: %s
 TonConfigUrl: %s
 TeleportContractAddr: %s
+RelayerWalletV4Secret: %s
 CoordinatorContractAddr: %s
 BitcoinClientContractAddr: %s
 JettonMinterContractAddr: %s
@@ -97,6 +99,7 @@ MetricsArgs: %s
 		indexerConfig.BitcoinRpcHost,
 		indexerConfig.TonConfigUrl,
 		indexerConfig.TeleportContractAddr,
+		indexerConfig.RelayerWalletV4Secret,
 		indexerConfig.CoordinatorContractAddr,
 		indexerConfig.BitcoinClientContractAddr,
 		indexerConfig.JettonMinterContractAddr,
@@ -113,6 +116,7 @@ func ParseExternalServices(indexerConfig *IndexerConfig) (*ExternalServicesConfi
 		BitcoinRpcPass:            indexerConfig.BitcoinRpcPass,
 		TonConfigUrl:              indexerConfig.TonConfigUrl,
 		DatabaseUrl:               indexerConfig.DatabaseUrl,
+		RelayerWalletV4Secret:     indexerConfig.RelayerWalletV4Secret,
 		TeleportContractAddr:      nil,
 		CoordinatorContractAddr:   nil,
 		BitcoinClientContractAddr: nil,

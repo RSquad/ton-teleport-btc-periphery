@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"sync"
@@ -22,6 +23,7 @@ type ContractBitcoinClientData struct {
 
 type FetcherContractBitcoinClient struct {
 	chDB                  chan PayloadDB
+	db                    *sql.DB
 	bitcoinClient         *bitcoin.Client
 	bitcoinClientContract *bitcoinclientcontract.BitcoinClientContract
 	period                int64 // Fetch period (in seconds)
@@ -29,16 +31,65 @@ type FetcherContractBitcoinClient struct {
 
 func NewFetcherContractBitcoinClient(
 	chDB chan PayloadDB,
+	db *sql.DB,
 	bitcoinClient *bitcoin.Client,
 	bitcoinClientContract *bitcoinclientcontract.BitcoinClientContract,
 	period int64,
 ) *FetcherContractBitcoinClient {
 	return &FetcherContractBitcoinClient{
 		chDB:                  chDB,
+		db:                    db,
 		bitcoinClient:         bitcoinClient,
 		bitcoinClientContract: bitcoinClientContract,
 		period:                period,
 	}
+}
+
+func (fetcher *FetcherContractBitcoinClient) setNextSvbNotZeroMetrics(
+	txId *chainhash.Hash,
+	lastPegoutBlockConfirmations int64,
+	confirmationsNeeded int64,
+	nextSvb uint16,
+) {
+	nextSvbNotZero.Reset()
+	nextSvbNotZero.WithLabelValues(txId.String()).Set(0)
+	if lastPegoutBlockConfirmations > confirmationsNeeded {
+		if nextSvb != 0 {
+			nextSvbNotZero.WithLabelValues(txId.String()).Set(1)
+		}
+	}
+}
+
+func (fetcher *FetcherContractBitcoinClient) getNextSvbAndLastPegoutHash() (uint16, *chainhash.Hash, error) {
+	rows, err := fetcher.db.Query(
+		`SELECT payload::json
+		FROM metrics_data
+		WHERE type_id = 4
+		ORDER BY id DESC
+		LIMIT 1
+	`)
+	if err != nil {
+		return 0, &chainhash.Hash{}, err
+	}
+
+	defer rows.Close()
+
+	var data string
+	if rows.Next() {
+		err = rows.Scan(&data)
+		if err != nil {
+			return 0, &chainhash.Hash{}, err
+		}
+	}
+
+	var teleportData ContractTeleportData
+
+	err = json.Unmarshal([]byte(data), &teleportData)
+	if err != nil {
+		return 0, &chainhash.Hash{}, err
+	}
+
+	return teleportData.NextSVB, teleportData.LastPegoutTxID, nil
 }
 
 func (fetcher *FetcherContractBitcoinClient) Work(ctx context.Context, wg *sync.WaitGroup) {
@@ -68,6 +119,53 @@ func (fetcher *FetcherContractBitcoinClient) setConfirmedBlockHashMismatchMetric
 		return
 	}
 	confirmedBlockMismatch.WithLabelValues(contractBlockHash, networkBlockHash).Set(0)
+}
+
+func (fetcher *FetcherContractBitcoinClient) GetBitcoinInfo() (FetcherBitcoinNetworkData, error) {
+	rows, err := fetcher.db.Query(
+		`SELECT payload::json
+			FROM metrics_data
+			WHERE type_id = 3
+			ORDER BY id DESC
+			LIMIT 1
+		`,
+	)
+	if err != nil {
+		return FetcherBitcoinNetworkData{}, err
+	}
+
+	defer rows.Close()
+
+	var data string
+	if rows.Next() {
+		err = rows.Scan(&data)
+		if err != nil {
+			return FetcherBitcoinNetworkData{}, err
+		}
+	}
+
+	if len(data) == 0 {
+		data = "{}"
+	}
+
+	var bitcoinNetworkData FetcherBitcoinNetworkData
+	err = json.Unmarshal([]byte(data), &bitcoinNetworkData)
+	if err != nil {
+		return FetcherBitcoinNetworkData{}, err
+	}
+
+	return bitcoinNetworkData, nil
+}
+
+func (fetcher *FetcherContractBitcoinClient) setDifferentHeightMetric(
+	lastBlockHeightClient int64,
+	lastBlockHeightNetwork int64,
+	confirmationsNeeded int64,
+) {
+	lastBlockHeightDifference.WithLabelValues(fmt.Sprint(lastBlockHeightNetwork), fmt.Sprint(lastBlockHeightClient)).Set(0)
+	if lastBlockHeightNetwork-lastBlockHeightClient > confirmationsNeeded {
+		lastBlockHeightDifference.WithLabelValues(fmt.Sprint(lastBlockHeightNetwork), fmt.Sprint(lastBlockHeightClient)).Set(1)
+	}
 }
 
 func (fetcher *FetcherContractBitcoinClient) Fetch() {
@@ -101,15 +199,37 @@ func (fetcher *FetcherContractBitcoinClient) Fetch() {
 		return
 	}
 
-	info, err := fetcher.bitcoinClient.GetBlockChainInfo()
+	blockChainInfo, err := fetcher.GetBitcoinInfo()
 	if err != nil {
-		logger.Log.Error().Msg(fmt.Sprintf("FetcherContractBitcoinClient: failed to retrieve BlockChainInfo, error: %v", err))
+		logger.Log.Error().Msg(fmt.Sprintf("FetcherContractBitcoinClient: failed to retrieve LastKnownBlockHeight, error: %v", err))
 		return
 	}
 
 	// TODO: check in runtime. The correct comparison should be against the Bitcoin network's block hash at lastConfirmedBlockHeight.
 	// Check if LastConfirmedBlockHashes is match
-	fetcher.setConfirmedBlockHashMismatchMetric(lastConfirmedBlockHash.String(), info.BestBlockHash)
+	fetcher.setConfirmedBlockHashMismatchMetric(lastConfirmedBlockHash.String(), blockChainInfo.BestBlockHash)
+
+	nextSvb, lastPegoutHash, err := fetcher.getNextSvbAndLastPegoutHash()
+	if err != nil {
+		logger.Log.Error().Msg(fmt.Sprintf("FetcherContractBitcoinClient: failed to retrieve TeleportData, error: %v", err))
+		return
+	}
+
+	lastPegoutBlockHash, err := fetcher.bitcoinClient.GetBlockHashByTxID(lastPegoutHash)
+	if err != nil {
+		logger.Log.Error().Msg(fmt.Sprintf("FetcherContractBitcoinClient: failed to retrieve LastPegoutBlockHash, error: %v", err))
+		return
+	}
+
+	lastPegoutHeight, err := fetcher.bitcoinClient.GetBlockHeightByHash(lastPegoutBlockHash)
+	if err != nil {
+		logger.Log.Error().Msg(fmt.Sprintf("FetcherContractBitcoinClient: failed to retrieve LastPegoutHeight, error: %v", err))
+		return
+	}
+
+	fetcher.setNextSvbNotZeroMetrics(lastPegoutHash, lastConfirmedBlockHeight-lastPegoutHeight, confirmationsNeeded, nextSvb)
+
+	fetcher.setDifferentHeightMetric(lastConfirmedBlockHeight, int64(blockChainInfo.Blocks), confirmationsNeeded)
 
 	data := &ContractBitcoinClientData{
 		CandidateBlockHashes:     candidateBlockHashes,

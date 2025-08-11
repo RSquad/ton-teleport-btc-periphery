@@ -8,13 +8,13 @@ import (
 
 type JsonApiHandler struct {
 	db    *sql.DB
-	cache *Cache
+	cache *Cache[string]
 }
 
 func NewJsonApiHandler(db *sql.DB) *JsonApiHandler {
 	return &JsonApiHandler{
 		db:    db,
-		cache: NewCache(),
+		cache: NewCache[string](),
 	}
 }
 
@@ -78,7 +78,7 @@ func (apiHandler JsonApiHandler) GetMints() (string, error) {
 	const limit = 5000 // Yes, we will select only last 5000 mints
 
 	rows, err := apiHandler.db.Query(
-		`SELECT json_agg(result) AS data FROM (
+		`SELECT COALESCE(json_agg(result), '[]') AS data FROM (
 			SELECT
 				m.created_at,
 				m.status,
@@ -89,7 +89,7 @@ func (apiHandler JsonApiHandler) GetMints() (string, error) {
 	    FROM mints AS m
 	    LEFT JOIN ton_txes AS tt ON m.ton_tx_mint = tt.id
 	    LEFT JOIN pegins AS p ON m.id = p.mint_pegin
-	    ORDER BY m.id DESC
+	    ORDER BY m.created_at DESC
 	    LIMIT $1
 		) AS result;`,
 		limit,
@@ -108,6 +108,10 @@ func (apiHandler JsonApiHandler) GetMints() (string, error) {
 		}
 	}
 
+	if len(data) == 0 {
+		data = "[]"
+	}
+
 	return data, nil
 }
 
@@ -115,7 +119,7 @@ func (apiHandler JsonApiHandler) GetBurns() (string, error) {
 	const limit = 5000 // Yes, we will select only last 5000 burns
 
 	rows, err := apiHandler.db.Query(
-		`SELECT json_agg(result) AS data FROM (
+		`SELECT COALESCE(json_agg(result), '[]') AS data FROM (
 			SELECT
 				tt.created_at,
 				TO_CHAR(CAST(b.amount AS real) / 100000000.0, 'FM999999990.00000000') || ' BTC' AS amount,
@@ -128,7 +132,7 @@ func (apiHandler JsonApiHandler) GetBurns() (string, error) {
 			FROM burns AS b 
 			LEFT JOIN ton_txes AS tt ON tt.id = b.ton_tx_burn
 			LEFT JOIN pegouts AS p ON p.id = b.pegout_burn 
-			ORDER BY b.id DESC 
+			ORDER BY tt.created_at DESC 
 			LIMIT $1
 		) AS result;`,
 		limit,
@@ -147,6 +151,10 @@ func (apiHandler JsonApiHandler) GetBurns() (string, error) {
 		}
 	}
 
+	if len(data) == 0 {
+		data = "[]"
+	}
+
 	return data, nil
 }
 
@@ -154,7 +162,7 @@ func (apiHandler JsonApiHandler) GetReinits() (string, error) {
 	const limit = 5000 // Yes, we will select only last 5000 reinits
 
 	rows, err := apiHandler.db.Query(
-		`SELECT json_agg(result) AS data FROM (
+		`SELECT COALESCE(json_agg(result), '[]') AS data FROM (
 		  SELECT
 		    tt.created_at AS created_at,
 				tt.hash AS ton_tx,
@@ -166,7 +174,7 @@ func (apiHandler JsonApiHandler) GetReinits() (string, error) {
 		  FROM ton_txes AS tt
 			INNER JOIN reinits AS r ON tt.id = r.ton_tx_reinit
 		  LEFT JOIN pegouts AS p ON p.id = r.pegout_reinit
-		  ORDER BY r.id DESC
+		  ORDER BY created_at DESC
 		  LIMIT $1
 		) AS result;`,
 		limit,
@@ -185,6 +193,10 @@ func (apiHandler JsonApiHandler) GetReinits() (string, error) {
 		}
 	}
 
+	if len(data) == 0 {
+		data = "[]"
+	}
+
 	return data, nil
 }
 
@@ -192,7 +204,7 @@ func (apiHandler JsonApiHandler) GetInternalKeys() (string, error) {
 	const limit = 5000 // Yes, we will select only last 5000 internal keys
 
 	rows, err := apiHandler.db.Query(
-		`SELECT json_agg(result) AS data FROM (
+		`SELECT COALESCE(json_agg(result), '[]') AS data FROM (
 		  SELECT 
 			  ik.completed_at,
 				ik.key AS internal_key,
@@ -216,6 +228,10 @@ func (apiHandler JsonApiHandler) GetInternalKeys() (string, error) {
 		if err != nil {
 			return "", err
 		}
+	}
+
+	if len(data) == 0 {
+		data = "[]"
 	}
 
 	return data, nil
@@ -261,12 +277,16 @@ func (apiHandler JsonApiHandler) GetInfo() (string, error) {
 		}
 	}
 
+	if len(data) == 0 {
+		data = "{}"
+	}
+
 	return data, nil
 }
 
 func (apiHandler JsonApiHandler) PlotMinted() (string, error) {
 	rows, err := apiHandler.db.Query(
-		`SELECT json_agg(result) AS data FROM (
+		`SELECT COALESCE(json_agg(result), '[]') AS data FROM (
 			WITH data_by_days AS (
 				SELECT
 					DATE_TRUNC('day', created_at)::date AS day,
@@ -292,12 +312,16 @@ func (apiHandler JsonApiHandler) PlotMinted() (string, error) {
 		}
 	}
 
+	if len(data) == 0 {
+		data = "[]"
+	}
+
 	return data, nil
 }
 
 func (apiHandler JsonApiHandler) PlotBurned() (string, error) {
 	rows, err := apiHandler.db.Query(
-		`SELECT json_agg(result) AS data FROM (
+		`SELECT COALESCE(json_agg(result), '[]') AS data FROM (
 			WITH data_by_days AS (
 				SELECT
 					DATE_TRUNC('day', tt.created_at)::date AS day,
@@ -325,12 +349,16 @@ func (apiHandler JsonApiHandler) PlotBurned() (string, error) {
 		}
 	}
 
+	if len(data) == 0 {
+		data = "[]"
+	}
+
 	return data, nil
 }
 
 func (apiHandler JsonApiHandler) PlotTotalSupply() (string, error) {
 	rows, err := apiHandler.db.Query(
-		`SELECT json_agg(result) AS data FROM (
+		`SELECT COALESCE(json_agg(result), '[]') AS data FROM (
 			WITH unified_events AS (
 				SELECT
 					DATE_TRUNC('day', created_at)::date AS day,
@@ -378,6 +406,10 @@ func (apiHandler JsonApiHandler) PlotTotalSupply() (string, error) {
 		}
 	}
 
+	if len(data) == 0 {
+		data = "[]"
+	}
+
 	return data, nil
 }
 
@@ -391,10 +423,10 @@ func (apiHandler JsonApiHandler) GetPlotsSummary() (string, error) {
 						SELECT COUNT(1) AS row_count FROM burns AS b INNER JOIN pegouts AS p ON b.pegout_burn = p.id AND p.status = 'CONFIRMED'
 				),
 				'total_minted', (
-						SELECT SUM((CAST(amount AS numeric)) / 100000000)::numeric(20,8) AS total_minted FROM mints WHERE status = 'SUCCESS'
+						SELECT COALESCE(SUM((CAST(amount AS numeric)) / 100000000)::numeric(20,8), 0) AS total_minted FROM mints WHERE status = 'SUCCESS'
 				),
 				'total_burned', (
-						SELECT SUM((CAST (b.amount AS numeric)) / 100000000)::numeric(20,8) AS total_burned FROM burns AS b JOIN pegouts AS p ON p.id = b.pegout_burn WHERE p.status = 'CONFIRMED'
+						SELECT COALESCE(SUM((CAST (b.amount AS numeric)) / 100000000)::numeric(20,8), 0) AS total_burned FROM burns AS b JOIN pegouts AS p ON p.id = b.pegout_burn WHERE p.status = 'CONFIRMED'
 				)
 		) AS result;`,
 	)
@@ -410,6 +442,10 @@ func (apiHandler JsonApiHandler) GetPlotsSummary() (string, error) {
 		if err != nil {
 			return "", err
 		}
+	}
+
+	if len(data) == 0 {
+		data = "{}"
 	}
 
 	return data, nil
