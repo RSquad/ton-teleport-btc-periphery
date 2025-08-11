@@ -82,7 +82,7 @@ func (apiHandler JsonApiHandler) GetMints() (string, error) {
 			SELECT
 				m.created_at,
 				m.status,
-				TO_CHAR(CAST(m.amount AS real) / 100000000.0, 'FM999999990.00000000') || ' BTC' AS amount,
+				TO_CHAR(CAST(m.amount AS int8) / 100000000.0, 'FM999999990.00000000') || ' BTC' AS amount,
 				COALESCE(tt.hash, '_') AS ton_tx,
 		    p.receiver_addr,
 		    p.bitcoin_tx_id
@@ -122,7 +122,7 @@ func (apiHandler JsonApiHandler) GetBurns() (string, error) {
 		`SELECT COALESCE(json_agg(result), '[]') AS data FROM (
 			SELECT
 				tt.created_at,
-				TO_CHAR(CAST(b.amount AS real) / 100000000.0, 'FM999999990.00000000') || ' BTC' AS amount,
+				TO_CHAR(CAST(b.amount AS int8) / 100000000.0, 'FM999999990.00000000') || ' BTC' AS amount,
 				COALESCE(p.addr, '_') AS pegout_addr,
 				b.sender_addr,
 				COALESCE(p.bitcoin_tx_id, '_') AS bitcoin_tx_id,
@@ -166,7 +166,7 @@ func (apiHandler JsonApiHandler) GetReinits() (string, error) {
 		  SELECT
 		    tt.created_at AS created_at,
 				tt.hash AS ton_tx,
-		    TO_CHAR(CAST(r.amount AS real) / 100000000.0, 'FM999999990.00000000') || ' BTC' AS amount,
+		    TO_CHAR(CAST(r.amount AS int8) / 100000000.0, 'FM999999990.00000000') || ' BTC' AS amount,
 		    COALESCE(p.addr, '_') AS pegout_addr,
 		    COALESCE(p.bitcoin_tx_id, '_') AS bitcoin_tx_id,
 				COALESCE(p.bitcoin_tx_raw, '_') AS bitcoin_tx_raw,
