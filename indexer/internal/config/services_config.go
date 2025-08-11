@@ -23,6 +23,7 @@ type MetricsConfig struct {
 	BitcoinNetworkFetchPeriod        int
 	TeleportContractFetchPeriod      int
 	CoordinatorContractFetchPeriod   int
+	MetricsPegoutsFetchPeriod        int
 }
 
 type RunServicesConfig struct {
@@ -39,6 +40,7 @@ type ExternalServicesConfig struct {
 	BitcoinRpcPass            string
 	TonConfigUrl              string
 	DatabaseUrl               string
+	RelayerWalletV4Secret     string
 	TeleportContractAddr      *address.Address
 	CoordinatorContractAddr   *address.Address
 	BitcoinClientContractAddr *address.Address
@@ -81,6 +83,32 @@ func NewServicesConfig(indexerConfig *IndexerConfig) (*ServicesConfig, error) {
 	return servicesConfig, nil
 }
 
+func CfgToString(indexerConfig *IndexerConfig) string {
+	return fmt.Sprintf(
+		`BitcoinRpcHost: %s
+TonConfigUrl: %s
+TeleportContractAddr: %s
+RelayerWalletV4Secret: %s
+CoordinatorContractAddr: %s
+BitcoinClientContractAddr: %s
+JettonMinterContractAddr: %s
+RunServices: %s
+Metrics: %s
+MetricsArgs: %s
+`,
+		indexerConfig.BitcoinRpcHost,
+		indexerConfig.TonConfigUrl,
+		indexerConfig.TeleportContractAddr,
+		indexerConfig.RelayerWalletV4Secret,
+		indexerConfig.CoordinatorContractAddr,
+		indexerConfig.BitcoinClientContractAddr,
+		indexerConfig.JettonMinterContractAddr,
+		indexerConfig.RunServices,
+		indexerConfig.Metrics,
+		indexerConfig.MetricsArgs,
+	)
+}
+
 func ParseExternalServices(indexerConfig *IndexerConfig) (*ExternalServicesConfig, error) {
 	cfg := &ExternalServicesConfig{
 		BitcoinRpcHost:            indexerConfig.BitcoinRpcHost,
@@ -88,6 +116,7 @@ func ParseExternalServices(indexerConfig *IndexerConfig) (*ExternalServicesConfi
 		BitcoinRpcPass:            indexerConfig.BitcoinRpcPass,
 		TonConfigUrl:              indexerConfig.TonConfigUrl,
 		DatabaseUrl:               indexerConfig.DatabaseUrl,
+		RelayerWalletV4Secret:     indexerConfig.RelayerWalletV4Secret,
 		TeleportContractAddr:      nil,
 		CoordinatorContractAddr:   nil,
 		BitcoinClientContractAddr: nil,
@@ -188,6 +217,7 @@ func ParseMetrics(indexerConfig *IndexerConfig) (*MetricsConfig, error) {
 		BitcoinNetworkFetchPeriod:        59,
 		TeleportContractFetchPeriod:      27,
 		CoordinatorContractFetchPeriod:   59,
+		MetricsPegoutsFetchPeriod:        59,
 	}
 
 	// Run fetchers
@@ -258,6 +288,8 @@ func ParseMetrics(indexerConfig *IndexerConfig) (*MetricsConfig, error) {
 				cfg.TeleportContractFetchPeriod = value
 			case "COORDINATOR_CONTRACT_FETCH_PERIOD":
 				cfg.CoordinatorContractFetchPeriod = value
+			case "METRICS_PEGOUTS_FETCH_PERIOD":
+				cfg.MetricsPegoutsFetchPeriod = value
 
 			default:
 				return nil, fmt.Errorf("unknonwn `METRICS_ARGS` .env argument name '%s'", name)

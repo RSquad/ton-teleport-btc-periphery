@@ -5,19 +5,19 @@ import (
 	"time"
 )
 
-type CacheItem struct {
-	Value      string
+type CacheItem[T any] struct {
+	Value      T
 	Expiration int64
 }
 
-type Cache struct {
-	items map[string]CacheItem
+type Cache[T any] struct {
+	items map[string]CacheItem[T]
 	mu    sync.RWMutex
 }
 
-func NewCache() *Cache {
-	cache := &Cache{
-		items: make(map[string]CacheItem),
+func NewCache[T any]() *Cache[T] {
+	cache := &Cache[T]{
+		items: make(map[string]CacheItem[T]),
 	}
 
 	// Clear cache routine
@@ -31,35 +31,37 @@ func NewCache() *Cache {
 	return cache
 }
 
-func (c *Cache) Set(key, value string, duration time.Duration) {
+func (c *Cache[T]) Set(key string, value T, duration time.Duration) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
 	expiration := time.Now().Add(duration).UnixNano()
-	c.items[key] = CacheItem{
+	c.items[key] = CacheItem[T]{
 		Value:      value,
 		Expiration: expiration,
 	}
 }
 
-func (c *Cache) Get(key string) (string, bool) {
+func (c *Cache[T]) Get(key string) (T, bool) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
 	item, found := c.items[key]
 	if !found {
-		return "", false
+		var zero T
+		return zero, false
 	}
 
 	// Check if the item has expired
 	if time.Now().UnixNano() > item.Expiration {
-		return "", false
+		var zero T
+		return zero, false
 	}
 
 	return item.Value, true
 }
 
-func (c *Cache) DeleteExpired() {
+func (c *Cache[T]) DeleteExpired() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
