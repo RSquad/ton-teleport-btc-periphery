@@ -1,6 +1,7 @@
 package metrics
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -10,17 +11,23 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
 )
 
 type JsonApiHandler struct {
-	db    *sql.DB
-	cache *Cache[string]
+	db                   *sql.DB
+	tonClient            *tonclient.TonClient
+	tonMaxMainValidators int
+	cache                *Cache[string]
 }
 
-func NewJsonApiHandler(db *sql.DB) *JsonApiHandler {
+func NewJsonApiHandler(db *sql.DB, tonClient *tonclient.TonClient) *JsonApiHandler {
 	return &JsonApiHandler{
-		db:    db,
-		cache: NewCache[string](),
+		db:                   db,
+		tonClient:            tonClient,
+		tonMaxMainValidators: -1,
+		cache:                NewCache[string](),
 	}
 }
 
@@ -60,7 +67,7 @@ func (apiHandler JsonApiHandler) ServeHTTP(w http.ResponseWriter, r *http.Reques
 		case "plots_summary":
 			payload, err = apiHandler.GetPlotsSummary()
 		case "dkg_status":
-			payload, err = apiHandler.GetDkgStatus()
+			payload, err = apiHandler.GetDkgStatus(r.Context())
 		default:
 			w.WriteHeader(http.StatusNotFound)
 			w.Write([]byte("Please select one of the next values: mints, burns, reinits, info, internal_keys, plot_minted, plot_burned, plot_total_supply, plots_summary, dkg_status"))
@@ -459,17 +466,17 @@ func (apiHandler JsonApiHandler) GetPlotsSummary() (string, error) {
 	return data, nil
 }
 
-func (apiHandler JsonApiHandler) GetDkgStatus() (string, error) {
+func (apiHandler JsonApiHandler) GetDkgStatus(ctx context.Context) (string, error) {
 	type OriginalData struct {
 		Dkg     map[string]interface{}
 		PrevDkg map[string]interface{}
 	}
 
 	type DkgInfo struct {
-		Status                  string
 		VSetSize                int
 		ValidatorsCountInDkg    int
 		ValidatorsCountNotInDkg int
+		ValidatorsCountMax      int
 		ValidatorsCountTotal    int
 		ValidatorsIdxInDkg      map[int]string
 		ValidatorsIdxNotInDkg   map[int]string
@@ -523,6 +530,7 @@ func (apiHandler JsonApiHandler) GetDkgStatus() (string, error) {
 					}
 
 					dkgLastRound = &res
+					break
 				}
 			}
 
@@ -531,9 +539,31 @@ func (apiHandler JsonApiHandler) GetDkgStatus() (string, error) {
 				return nil, err
 			}
 
+			// tonMaxMainValidators
+			if apiHandler.tonMaxMainValidators < 0 {
+				block, err := apiHandler.tonClient.API.GetMasterchainInfo(ctx)
+				if err != nil {
+					return nil, fmt.Errorf("failed to get block: %v", err)
+				}
+
+				tonConfig, err := apiHandler.tonClient.API.GetBlockchainConfig(ctx, block, 16)
+				if err != nil {
+					return nil, fmt.Errorf("failed to get config: %v", err)
+				}
+
+				tonConfigParam16 := tonConfig.Get(16)
+				s := tonConfigParam16.BeginParse()
+				s.MustLoadUInt(16)
+				apiHandler.tonMaxMainValidators = int(s.MustLoadUInt(16))
+			}
+
+			dkgInfo.ValidatorsCountMax = apiHandler.tonMaxMainValidators
 			dkgInfo.VSetSize = len(vset)
-			dkgInfo.ValidatorsCountTotal = 100
+			dkgInfo.ValidatorsCountTotal = dkgInfo.ValidatorsCountMax
 			dkgInfo.ValidatorsCountInDkg = int(maxSigners)
+			if len(vset) < dkgInfo.ValidatorsCountTotal {
+				dkgInfo.ValidatorsCountTotal = len(vset)
+			}
 			dkgInfo.ValidatorsCountNotInDkg = dkgInfo.ValidatorsCountTotal - dkgInfo.ValidatorsCountInDkg
 
 			if dkgLastRound != nil {
@@ -551,7 +581,7 @@ func (apiHandler JsonApiHandler) GetDkgStatus() (string, error) {
 				dkgInfo.ValidatorsIdxInDkg = make(map[int]string)
 				dkgInfo.ValidatorsIdxNotInDkg = make(map[int]string)
 
-				for i := 0; i < mask.BitLen(); i++ {
+				for i := 0; i < dkgInfo.ValidatorsCountTotal; i++ {
 					pubKeyBase64, ok := vset[strconv.Itoa(i)].(string)
 					if !ok {
 						return nil, errors.New("invalid vset pubkey type")
@@ -616,3 +646,45 @@ func (apiHandler JsonApiHandler) SelectToObject(sql string) (map[string]interfac
 	}
 	return m, nil
 }
+
+/*
+SELECT payload FROM metrics_data WHERE type_id = 1 ORDER BY id DESC LIMIT 1;
+SELECT payload::json FROM metrics_data WHERE type_id = 4 ORDER BY id DESC LIMIT 1;
+
+UPDATE metrics_data SET payload = (jsonb_set(COALESCE(payload::jsonb, '{}'::jsonb),'{R1,Packages}','{}'::jsonb,true))::text WHERE type_id in (0,1);
+
+{
+    "Id":56156,
+    "TeleportAddress":"0:baa3e462e10dd1dc7d7139368f6b067deb88aa85add3cc91809a98bc8785ea70",
+    "MinterAddress":"0:668f1a58b09f321c4ada61f4e92dd7a309e907328292d9f384acfe252c709fe1",
+    "BitcoinClientAddress":"0:bccd3100b7d06386d7b29919ceabc84aec0b949ec781d713cd1e3ade099b3034",
+    "CoordinatorAddress":"-1:ead7da389bde317c5fb285807ce507baad31c35fe5534b3c418785e901f64c68",
+    "InspectorAddress":"0:65eb714514bfd499c784b46715811c447670a66a4232b6745af2d2e2cb3b92ec",
+    "ConfiguratorAddress":"0:1be4a6a79264528caa27f986afed08fe685d7d7d9e978cce7fbeeced9ee1ca47",
+    "TweakedPubkey":"5deed5c4d87bfa8424eb5958bbeb52ae10940f2dd68018541727522b91f27e9a",
+    "InternalKey":"f15153e3f55fc3e87e3296b4594811e9e63bd9ed1ce4324930a5055977788ce3",
+    "NextSVB":6,
+    "BaseSVB":1,
+    "PegoutChainCounter":6,
+    "LastPegoutTxID":"5653b4d226567fdeacbc82a37784e0ee0e5692642c7ceb1e0ca5a89f63e91e18",
+    "CsvLock":2363,
+    "Limits":{
+        "MinPeginAmount":3000,
+        "MinPegoutAmount":1000
+    },
+    "TotalServiceFee":3392,
+    "Enabled":true,
+    "PeginsCount":0,
+    "UTXOset":[
+        {
+            "Address":"5653b4d226567fdeacbc82a37784e0ee0e5692642c7ceb1e0ca5a89f63e91e18",
+            "Amount":5268,
+            "Index":1,
+            "TapMerkleRoot":"0000000000000000000000000000000000000000000000000000000000000000",
+            "MintAddress":"0:0000000000000000000000000000000000000000000000000000000000000000",
+            "Script":"51205deed5c4d87bfa8424eb5958bbeb52ae10940f2dd68018541727522b91f27e9a"
+        }
+    ]
+
+}
+*/
