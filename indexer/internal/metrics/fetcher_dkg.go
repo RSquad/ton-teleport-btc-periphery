@@ -103,6 +103,17 @@ func (fetcher *FetcherDKG) FetchDKG() {
 		return
 	}
 
+	// Remove DKG R1, R2 packages
+	if storage.Dkg != nil {
+		if storage.Dkg.R1 != nil {
+			storage.Dkg.R1.Packages = make(map[uint16][]byte)
+		}
+
+		if storage.Dkg.R2 != nil {
+			storage.Dkg.R2.Packages = make(map[uint16][]byte)
+		}
+	}
+
 	threshold := MulDivCeil(uint(storage.MinClaimsPercent), uint(storage.MinSignersThreshold), 100)
 	culpritIdx, culpritFound := getCulprit(dkg.Claims.Counters, uint16(threshold))
 
@@ -179,6 +190,15 @@ func (fetcher *FetcherDKG) FetchPrevDKG() {
 	if prevDkg == nil {
 		logger.Log.Debug().Msg("FetcherPrevDKG: Contract returns prevDkg==null")
 		return
+	}
+
+	// Remove DKG R1, R2 packages
+	if prevDkg.R1 != nil {
+		prevDkg.R1.Packages = make(map[uint16][]byte)
+	}
+
+	if prevDkg.R2 != nil {
+		prevDkg.R2.Packages = make(map[uint16][]byte)
 	}
 
 	// Serialize
