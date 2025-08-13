@@ -53,7 +53,7 @@ func (s *HttpService) Work(ctx context.Context) {
 	mux.Handle("/indexer/graphql", srv)
 	mux.Handle("/", playground.ApolloSandboxHandler("Indexer", "/indexer/graphql"))
 	mux.Handle("/metrics", promhttp.Handler())
-	mux.Handle("/api/metrics", metrics.NewJsonApiHandler(s.db, s.tonClient))
+	mux.Handle("/indexer/api/metrics", metrics.NewJsonApiHandler(s.db, s.tonClient))
 
 	c := cors.New(cors.Options{
 		AllowedOrigins:   []string{"*"},

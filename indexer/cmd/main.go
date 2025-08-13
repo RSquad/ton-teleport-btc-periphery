@@ -9,6 +9,7 @@ import (
 
 	"entgo.io/ent/dialect"
 
+	entsql "entgo.io/ent/dialect/sql"
 	_ "github.com/lib/pq"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/config"
 	ent "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated"
@@ -127,10 +128,23 @@ func initialize() (*App, error) {
 		)
 	}
 
-	repo, err := ent.Open(dialect.Postgres, cfg.ExternalServices.DatabaseUrl)
-	if err != nil {
-		log.Fatalf("failed to create repo: %v", err)
+	// Open DB connection
+	var db *sql.DB = nil
+	{
+		db, err = sql.Open("postgres", cfg.ExternalServices.DatabaseUrl)
+		if err != nil {
+			return nil, err
+		}
+
+		// Setup DB pooling
+		db.SetMaxOpenConns(8)
+		db.SetMaxIdleConns(8)
+		db.SetConnMaxLifetime(-1)
+		db.SetConnMaxIdleTime(-1)
 	}
+
+	drv := entsql.OpenDB(dialect.Postgres, db)
+	repo := ent.NewClient(ent.Driver(drv))
 
 	if err := repo.Schema.Create(
 		context.Background(),
@@ -192,21 +206,6 @@ func initialize() (*App, error) {
 			teleportContract,
 			coordinatorContract,
 		)
-	}
-
-	// Open DB connection
-	var db *sql.DB = nil
-	{
-		db, err = sql.Open("postgres", cfg.ExternalServices.DatabaseUrl)
-		if err != nil {
-			return nil, err
-		}
-
-		// Setup DB pooling
-		db.SetMaxOpenConns(2)
-		db.SetMaxIdleConns(2)
-		db.SetConnMaxLifetime(-1)
-		db.SetConnMaxIdleTime(-1)
 	}
 
 	// Metrics service
