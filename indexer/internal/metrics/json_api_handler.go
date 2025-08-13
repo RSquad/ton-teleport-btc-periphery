@@ -97,7 +97,7 @@ func (apiHandler JsonApiHandler) GetMints() (string, error) {
 			SELECT
 				m.created_at,
 				m.status,
-				TO_CHAR(CAST(m.amount AS int8) / 100000000.0, 'FM999999990.00000000') || ' BTC' AS amount,
+				TO_CHAR(m.amount::numeric(24,8) / 100000000::numeric(24,8), 'FM999999990.00000000') || ' BTC' AS amount,
 				COALESCE(tt.hash, '_') AS ton_tx,
 		    p.receiver_addr,
 		    p.bitcoin_tx_id
@@ -109,6 +109,7 @@ func (apiHandler JsonApiHandler) GetMints() (string, error) {
 		) AS result;`,
 		limit,
 	)
+
 	if err != nil {
 		return "", err
 	}
@@ -137,16 +138,17 @@ func (apiHandler JsonApiHandler) GetBurns() (string, error) {
 		`SELECT COALESCE(json_agg(result), '[]') AS data FROM (
 			SELECT
 				tt.created_at,
-				TO_CHAR(CAST(b.amount AS int8) / 100000000.0, 'FM999999990.00000000') || ' BTC' AS amount,
+				TO_CHAR(b.amount::numeric(24,8) / 100000000::numeric(24,8), 'FM999999990.00000000') || ' BTC' AS amount,
 				COALESCE(p.addr, '_') AS pegout_addr,
 				b.sender_addr,
 				COALESCE(p.bitcoin_tx_id, '_') AS bitcoin_tx_id,
 				COALESCE(p.bitcoin_tx_raw, '_') AS bitcoin_tx_raw,
 				COALESCE(tt.hash, '_') AS ton_tx,
 				COALESCE(p.status, '_') AS pegout_status 
-			FROM burns AS b 
+			FROM burns AS b
 			LEFT JOIN ton_txes AS tt ON tt.id = b.ton_tx_burn
-			LEFT JOIN pegouts AS p ON p.id = b.pegout_burn 
+			LEFT JOIN pegouts AS p ON p.id = b.pegout_burn
+			WHERE b.sender_addr != ':0'
 			ORDER BY tt.created_at DESC 
 			LIMIT $1
 		) AS result;`,
@@ -181,7 +183,7 @@ func (apiHandler JsonApiHandler) GetReinits() (string, error) {
 		  SELECT
 		    tt.created_at AS created_at,
 				tt.hash AS ton_tx,
-		    TO_CHAR(CAST(r.amount AS int8) / 100000000.0, 'FM999999990.00000000') || ' BTC' AS amount,
+		    TO_CHAR(r.amount::numeric(24,8) / 100000000::numeric(24,8), 'FM999999990.00000000') || ' BTC' AS amount,
 		    COALESCE(p.addr, '_') AS pegout_addr,
 		    COALESCE(p.bitcoin_tx_id, '_') AS bitcoin_tx_id,
 				COALESCE(p.bitcoin_tx_raw, '_') AS bitcoin_tx_raw,
@@ -305,12 +307,12 @@ func (apiHandler JsonApiHandler) PlotMinted() (string, error) {
 			WITH data_by_days AS (
 				SELECT
 					DATE_TRUNC('day', created_at)::date AS day,
-					SUM(CAST(amount AS int8)) AS minted,
+					SUM(amount::int8) AS minted,
 					COUNT(1) AS count
 				FROM mints
 				WHERE status = 'SUCCESS'
 				GROUP BY DATE_TRUNC('day', created_at)
-			) SELECT day, minted/100000000 AS minted, count FROM data_by_days ORDER BY day ASC
+			) SELECT day, TO_CHAR(minted::numeric(24,8) / 100000000::numeric(24,8), 'FM999999990.00000000') AS minted, count FROM data_by_days ORDER BY day ASC
 		) AS result;`,
 	)
 	if err != nil {
@@ -340,14 +342,14 @@ func (apiHandler JsonApiHandler) PlotBurned() (string, error) {
 			WITH data_by_days AS (
 				SELECT
 					DATE_TRUNC('day', tt.created_at)::date AS day,
-					SUM(CAST(b.amount AS int8)) AS burned,
+					SUM(b.amount::int8) AS burned,
 					COUNT(1) AS count
 				FROM burns AS b 
 				JOIN ton_txes AS tt ON tt.id = b.ton_tx_burn
 				JOIN pegouts AS p ON p.id = b.pegout_burn 
-				WHERE p.status = 'CONFIRMED'
+				WHERE p.status = 'CONFIRMED' AND b.sender_addr != ':0'
 				GROUP BY DATE_TRUNC('day', tt.created_at)
-  		) SELECT day, burned/100000000 AS burned, count FROM data_by_days ORDER BY day ASC
+  		) SELECT day, TO_CHAR(burned::numeric(24,8) / 100000000::numeric(24,8), 'FM999999990.00000000') AS burned, count FROM data_by_days ORDER BY day ASC
 		) AS result;`,
 	)
 	if err != nil {
@@ -377,19 +379,19 @@ func (apiHandler JsonApiHandler) PlotTotalSupply() (string, error) {
 			WITH unified_events AS (
 				SELECT
 					DATE_TRUNC('day', created_at)::date AS day,
-					CAST(amount AS int8) AS value
+					amount::int8 AS value
 				FROM mints
 				WHERE status = 'SUCCESS'
 
 				UNION ALL
 
 				SELECT
-					DATE_TRUNC('day', tt.created_at)::date AS day,
-					-CAST(b.amount AS int8) AS value
+					DATE_TRUNC('day', tt.created_at)::date AS day, 
+					-b.amount::int8 AS value
 				FROM burns AS b
 				JOIN ton_txes AS tt ON tt.id = b.ton_tx_burn
 				JOIN pegouts AS p ON p.id = b.pegout_burn
-				WHERE p.status = 'CONFIRMED'
+				WHERE p.status = 'CONFIRMED' AND b.sender_addr != ':0'
 			),
 
 			daily_totals AS (
@@ -402,7 +404,7 @@ func (apiHandler JsonApiHandler) PlotTotalSupply() (string, error) {
 
 			SELECT
 				day,
-				SUM(daily_sum/100000000) OVER (ORDER BY day) AS cumulative_total
+				SUM(daily_sum::numeric(24,8) / 100000000::numeric(24,8)) OVER (ORDER BY day) AS cumulative_total
 			FROM daily_totals
 			ORDER BY day
 		) AS result;`,
@@ -435,13 +437,13 @@ func (apiHandler JsonApiHandler) GetPlotsSummary() (string, error) {
 						SELECT COUNT(1) AS row_count FROM mints WHERE status = 'SUCCESS'
 				),
 				'burns_count', (
-						SELECT COUNT(1) AS row_count FROM burns AS b INNER JOIN pegouts AS p ON b.pegout_burn = p.id AND p.status = 'CONFIRMED'
+						SELECT COUNT(1) AS row_count FROM burns AS b INNER JOIN pegouts AS p ON b.pegout_burn = p.id AND p.status = 'CONFIRMED' AND b.sender_addr != ':0'
 				),
 				'total_minted', (
-						SELECT COALESCE(SUM((CAST(amount AS numeric)) / 100000000)::numeric(20,8), 0) AS total_minted FROM mints WHERE status = 'SUCCESS'
+						SELECT COALESCE(SUM(amount::int8)::numeric(24,8) / 100000000::numeric(24,8), 0) AS total_minted FROM mints WHERE status = 'SUCCESS'
 				),
 				'total_burned', (
-						SELECT COALESCE(SUM((CAST (b.amount AS numeric)) / 100000000)::numeric(20,8), 0) AS total_burned FROM burns AS b JOIN pegouts AS p ON p.id = b.pegout_burn WHERE p.status = 'CONFIRMED'
+						SELECT COALESCE(SUM(b.amount::int8)::numeric(24,8) / 100000000::numeric(24,8), 0) AS total_burned FROM burns AS b JOIN pegouts AS p ON p.id = b.pegout_burn WHERE p.status = 'CONFIRMED' AND b.sender_addr != ':0'
 				)
 		) AS result;`,
 	)
