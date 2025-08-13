@@ -77,12 +77,7 @@ func (c *PegoutRelayer) Relay() error {
 		return fmt.Errorf("[PegoutRelayer] failed to get bitcoin client contract last confirmed block height: %w", err)
 	}
 
-	confirmationsNeeded, err := c.bitcoinClientContract.GetConfirmationsNeeded()
-	if err != nil {
-		return fmt.Errorf("[PegoutRelayer] failed to get bitcoin client contract confirmations needed: %w", err)
-	}
-
-	if lastConfirmedBlockHeight-blockHeight >= confirmationsNeeded {
+	if blockHeight <= lastConfirmedBlockHeight {
 		txProof, err := c.getTxProof(teleportContractStorage.LastPegoutTxID, blockHash)
 		if err != nil {
 			return fmt.Errorf("[PegoutRelayer] failed to get last pegout tx proof: %w", err)
