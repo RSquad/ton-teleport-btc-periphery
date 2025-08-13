@@ -148,7 +148,7 @@ func (apiHandler JsonApiHandler) GetBurns() (string, error) {
 			FROM burns AS b
 			LEFT JOIN ton_txes AS tt ON tt.id = b.ton_tx_burn
 			LEFT JOIN pegouts AS p ON p.id = b.pegout_burn
-			WHERE b.sender_addr != ':0'
+			WHERE b.sender_addr != '0:'
 			ORDER BY tt.created_at DESC 
 			LIMIT $1
 		) AS result;`,
@@ -347,7 +347,7 @@ func (apiHandler JsonApiHandler) PlotBurned() (string, error) {
 				FROM burns AS b 
 				JOIN ton_txes AS tt ON tt.id = b.ton_tx_burn
 				JOIN pegouts AS p ON p.id = b.pegout_burn 
-				WHERE p.status = 'CONFIRMED' AND b.sender_addr != ':0'
+				WHERE p.status = 'CONFIRMED' AND b.sender_addr != '0:'
 				GROUP BY DATE_TRUNC('day', tt.created_at)
   		) SELECT day, TO_CHAR(burned::numeric(24,8) / 100000000::numeric(24,8), 'FM999999990.00000000') AS burned, count FROM data_by_days ORDER BY day ASC
 		) AS result;`,
@@ -391,7 +391,7 @@ func (apiHandler JsonApiHandler) PlotTotalSupply() (string, error) {
 				FROM burns AS b
 				JOIN ton_txes AS tt ON tt.id = b.ton_tx_burn
 				JOIN pegouts AS p ON p.id = b.pegout_burn
-				WHERE p.status = 'CONFIRMED' AND b.sender_addr != ':0'
+				WHERE p.status = 'CONFIRMED' AND b.sender_addr != '0:'
 			),
 
 			daily_totals AS (
@@ -437,13 +437,13 @@ func (apiHandler JsonApiHandler) GetPlotsSummary() (string, error) {
 						SELECT COUNT(1) AS row_count FROM mints WHERE status = 'SUCCESS'
 				),
 				'burns_count', (
-						SELECT COUNT(1) AS row_count FROM burns AS b INNER JOIN pegouts AS p ON b.pegout_burn = p.id AND p.status = 'CONFIRMED' AND b.sender_addr != ':0'
+						SELECT COUNT(1) AS row_count FROM burns AS b INNER JOIN pegouts AS p ON b.pegout_burn = p.id AND p.status = 'CONFIRMED' AND b.sender_addr != '0:'
 				),
 				'total_minted', (
 						SELECT COALESCE(SUM(amount::int8)::numeric(24,8) / 100000000::numeric(24,8), 0) AS total_minted FROM mints WHERE status = 'SUCCESS'
 				),
 				'total_burned', (
-						SELECT COALESCE(SUM(b.amount::int8)::numeric(24,8) / 100000000::numeric(24,8), 0) AS total_burned FROM burns AS b JOIN pegouts AS p ON p.id = b.pegout_burn WHERE p.status = 'CONFIRMED' AND b.sender_addr != ':0'
+						SELECT COALESCE(SUM(b.amount::int8)::numeric(24,8) / 100000000::numeric(24,8), 0) AS total_burned FROM burns AS b JOIN pegouts AS p ON p.id = b.pegout_burn WHERE p.status = 'CONFIRMED' AND b.sender_addr != '0:'
 				)
 		) AS result;`,
 	)
