@@ -92,8 +92,6 @@ func (apiHandler JsonApiHandler) ServeHTTP(w http.ResponseWriter, r *http.Reques
 func (apiHandler JsonApiHandler) GetMints() (string, error) {
 	const limit = 5000 // Yes, we will select only last 5000 mints
 
-	fmt.Println("MINTS: !AAAAAAA")
-
 	rows, err := apiHandler.db.Query(
 		`SELECT COALESCE(json_agg(result), '[]') AS data FROM (
 			SELECT
@@ -112,13 +110,9 @@ func (apiHandler JsonApiHandler) GetMints() (string, error) {
 		limit,
 	)
 
-	fmt.Println("MINTS: !BBBBBB")
-
 	if err != nil {
 		return "", err
 	}
-
-	fmt.Println("MINTS: !CCCCCCC")
 
 	defer rows.Close()
 
@@ -380,7 +374,6 @@ func (apiHandler JsonApiHandler) PlotBurned() (string, error) {
 }
 
 func (apiHandler JsonApiHandler) PlotTotalSupply() (string, error) {
-	fmt.Println("AAAAAAA")
 	rows, err := apiHandler.db.Query(
 		`SELECT COALESCE(json_agg(result), '[]') AS data FROM (
 			WITH unified_events AS (
@@ -420,11 +413,7 @@ func (apiHandler JsonApiHandler) PlotTotalSupply() (string, error) {
 		return "", err
 	}
 
-	fmt.Println("BBBBBB")
-
 	defer rows.Close()
-
-	fmt.Println("CCCCCC")
 
 	var data string
 	if rows.Next() {
@@ -433,8 +422,6 @@ func (apiHandler JsonApiHandler) PlotTotalSupply() (string, error) {
 			return "", err
 		}
 	}
-
-	fmt.Println("DDDDDD")
 
 	if len(data) == 0 {
 		data = "[]"
