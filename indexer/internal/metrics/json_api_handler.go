@@ -33,6 +33,8 @@ func NewJsonApiHandler(db *sql.DB, tonClient *tonclient.TonClient) *JsonApiHandl
 
 func (apiHandler JsonApiHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Check if 'source' parameter exists
+	fmt.Println("[ServeHTTP]: A")
+
 	queryParams := r.URL.Query()
 	sourceName := queryParams.Get("source")
 	if sourceName == "" {
@@ -41,12 +43,22 @@ func (apiHandler JsonApiHandler) ServeHTTP(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	fmt.Println("[ServeHTTP]: B")
+
 	var payload string
 	var err error = nil
+
+	fmt.Println("[ServeHTTP]: Before apiHandler.cache.Get")
+
 	cachedValue, ok := apiHandler.cache.Get(sourceName)
+
+	fmt.Println("[ServeHTTP]: After apiHandler.cache.Get")
+
 	if ok {
+		fmt.Println("[ServeHTTP]: Return from cache")
 		payload = cachedValue
 	} else {
+		fmt.Println("[ServeHTTP]: Get from DB")
 		switch sourceName {
 		case "mints":
 			payload, err = apiHandler.GetMints()
@@ -74,7 +86,11 @@ func (apiHandler JsonApiHandler) ServeHTTP(w http.ResponseWriter, r *http.Reques
 			return
 		}
 
+		fmt.Println("[ServeHTTP]: Before apiHandler.cache.Set")
+
 		apiHandler.cache.Set(sourceName, payload, 30*time.Second)
+
+		fmt.Println("[ServeHTTP]: After apiHandler.cache.Set")
 	}
 
 	if err != nil {
