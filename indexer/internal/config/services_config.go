@@ -40,6 +40,8 @@ type ExternalServicesConfig struct {
 	BitcoinRpcPass            string
 	TonConfigUrl              string
 	DatabaseUrl               string
+	DatabaseMaxConn           int
+	DatabaseMaxIdleConn       int
 	RelayerWalletV4Secret     string
 	TeleportContractAddr      *address.Address
 	CoordinatorContractAddr   *address.Address
@@ -116,11 +118,31 @@ func ParseExternalServices(indexerConfig *IndexerConfig) (*ExternalServicesConfi
 		BitcoinRpcPass:            indexerConfig.BitcoinRpcPass,
 		TonConfigUrl:              indexerConfig.TonConfigUrl,
 		DatabaseUrl:               indexerConfig.DatabaseUrl,
+		DatabaseMaxConn:           8,
+		DatabaseMaxIdleConn:       8,
 		RelayerWalletV4Secret:     indexerConfig.RelayerWalletV4Secret,
 		TeleportContractAddr:      nil,
 		CoordinatorContractAddr:   nil,
 		BitcoinClientContractAddr: nil,
 		JettonMinterContractAddr:  nil,
+	}
+
+	if len(indexerConfig.DatabaseMaxConn) > 0 {
+		value, err := ParseInt(indexerConfig.DatabaseMaxConn, "DatabaseMaxConn")
+		if err != nil {
+			return nil, fmt.Errorf("wrong `INDEXER_DATABASE_MAX_CONN` .env argument value '%s'. %w", indexerConfig.DatabaseMaxConn, err)
+		}
+
+		cfg.DatabaseMaxConn = value
+	}
+
+	if len(indexerConfig.DatabaseMaxIdleConn) > 0 {
+		value, err := ParseInt(indexerConfig.DatabaseMaxIdleConn, "DatabaseMaxIdleConn")
+		if err != nil {
+			return nil, fmt.Errorf("wrong `INDEXER_DATABASE_MAX_IDLE_CONN` .env argument value '%s'. %w", indexerConfig.DatabaseMaxIdleConn, err)
+		}
+
+		cfg.DatabaseMaxIdleConn = value
 	}
 
 	var err error = nil
