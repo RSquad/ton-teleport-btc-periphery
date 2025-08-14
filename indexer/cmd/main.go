@@ -40,7 +40,6 @@ type App struct {
 	MintService           *mintservice.MintService
 	MetricsService        *metrics.MetricsService
 	HttpService           *httpservice.HttpService
-	Db                    *sql.DB
 }
 
 func main() {
@@ -129,21 +128,33 @@ func initialize() (*App, error) {
 	}
 
 	// Open DB connection
-	var db *sql.DB = nil
+	var dbConnPoolMetrics *sql.DB = nil
+	var dbConnPoolGraphql *sql.DB = nil
 	{
-		db, err = sql.Open("postgres", cfg.ExternalServices.DatabaseUrl)
+		dbConnPoolMetrics, err = sql.Open("postgres", cfg.ExternalServices.DatabaseUrl)
 		if err != nil {
 			return nil, err
 		}
 
-		// Setup DB pooling
-		db.SetMaxOpenConns(8)
-		db.SetMaxIdleConns(8)
-		db.SetConnMaxLifetime(-1)
-		db.SetConnMaxIdleTime(-1)
+		dbConnPoolGraphql, err = sql.Open("postgres", cfg.ExternalServices.DatabaseUrl)
+		if err != nil {
+			return nil, err
+		}
+
+		// Setup DB pooling (metrics)
+		dbConnPoolMetrics.SetMaxOpenConns(8)
+		dbConnPoolMetrics.SetMaxIdleConns(8)
+		dbConnPoolMetrics.SetConnMaxLifetime(-1)
+		dbConnPoolMetrics.SetConnMaxIdleTime(-1)
+
+		// Setup DB pooling (graphql)
+		dbConnPoolGraphql.SetMaxOpenConns(8)
+		dbConnPoolGraphql.SetMaxIdleConns(8)
+		dbConnPoolGraphql.SetConnMaxLifetime(-1)
+		dbConnPoolGraphql.SetConnMaxIdleTime(-1)
 	}
 
-	drv := entsql.OpenDB(dialect.Postgres, db)
+	drv := entsql.OpenDB(dialect.Postgres, dbConnPoolGraphql)
 	repo := ent.NewClient(ent.Driver(drv))
 
 	if err := repo.Schema.Create(
@@ -218,7 +229,7 @@ func initialize() (*App, error) {
 			bitcoinClient,
 			tonClient,
 			cfg,
-			db,
+			dbConnPoolMetrics,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create matrics manager: %w", err)
@@ -233,7 +244,7 @@ func initialize() (*App, error) {
 			bitcoinClient,
 			tonClient,
 			teleportContract,
-			db,
+			dbConnPoolMetrics,
 		)
 	}
 
@@ -252,7 +263,6 @@ func initialize() (*App, error) {
 		EventService:        eventService,
 		MetricsService:      metricsService,
 		HttpService:         httpService,
-		Db:                  db,
 	}, nil
 }
 

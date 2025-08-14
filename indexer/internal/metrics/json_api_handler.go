@@ -447,6 +447,7 @@ func (apiHandler JsonApiHandler) PlotTotalSupply() (string, error) {
 }
 
 func (apiHandler JsonApiHandler) GetPlotsSummary() (string, error) {
+	fmt.Println("[ServeHTTP:GetPlotsSummary]: Before apiHandler.db.Query")
 	rows, err := apiHandler.db.Query(
 		`SELECT jsonb_build_object(
 				'mints_count', (
@@ -463,6 +464,7 @@ func (apiHandler JsonApiHandler) GetPlotsSummary() (string, error) {
 				)
 		) AS result;`,
 	)
+	fmt.Println("[ServeHTTP:GetPlotsSummary]: After apiHandler.db.Query")
 	if err != nil {
 		return "", err
 	}
