@@ -1,7 +1,6 @@
 package metrics
 
 import (
-	"sync"
 	"time"
 )
 
@@ -12,7 +11,7 @@ type CacheItem[T any] struct {
 
 type Cache[T any] struct {
 	items map[string]CacheItem[T]
-	mu    sync.RWMutex
+	//mu    sync.RWMutex
 }
 
 func NewCache[T any]() *Cache[T] {
@@ -32,8 +31,8 @@ func NewCache[T any]() *Cache[T] {
 }
 
 func (c *Cache[T]) Set(key string, value T, duration time.Duration) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
+	//c.mu.Lock()
+	//defer c.mu.Unlock()
 
 	expiration := time.Now().Add(duration).UnixNano()
 	c.items[key] = CacheItem[T]{
@@ -43,8 +42,8 @@ func (c *Cache[T]) Set(key string, value T, duration time.Duration) {
 }
 
 func (c *Cache[T]) Get(key string) (T, bool) {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
+	//c.mu.RLock()
+	//defer c.mu.RUnlock()
 
 	item, found := c.items[key]
 	if !found {
@@ -62,8 +61,8 @@ func (c *Cache[T]) Get(key string) (T, bool) {
 }
 
 func (c *Cache[T]) DeleteExpired() {
-	c.mu.Lock()
-	defer c.mu.Unlock()
+	//c.mu.Lock()
+	//defer c.mu.Unlock()
 
 	now := time.Now().UnixNano()
 	for k, v := range c.items {
