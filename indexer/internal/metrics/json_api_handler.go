@@ -629,6 +629,8 @@ func (apiHandler JsonApiHandler) SelectToObject(sql string) (map[string]interfac
 		return nil, err
 	}
 
+	defer rows.Close()
+
 	var data string
 	if rows.Next() {
 		err = rows.Scan(&data)
