@@ -142,14 +142,14 @@ func initialize() (*App, error) {
 		}
 
 		// Setup DB pooling (metrics)
-		dbConnPoolMetrics.SetMaxOpenConns(8)
-		dbConnPoolMetrics.SetMaxIdleConns(8)
+		dbConnPoolMetrics.SetMaxOpenConns(cfg.ExternalServices.DatabaseMaxConn)
+		dbConnPoolMetrics.SetMaxIdleConns(cfg.ExternalServices.DatabaseMaxIdleConn)
 		dbConnPoolMetrics.SetConnMaxLifetime(-1)
 		dbConnPoolMetrics.SetConnMaxIdleTime(-1)
 
 		// Setup DB pooling (graphql)
-		dbConnPoolGraphql.SetMaxOpenConns(8)
-		dbConnPoolGraphql.SetMaxIdleConns(8)
+		dbConnPoolGraphql.SetMaxOpenConns(cfg.ExternalServices.DatabaseMaxConn)
+		dbConnPoolGraphql.SetMaxIdleConns(cfg.ExternalServices.DatabaseMaxIdleConn)
 		dbConnPoolGraphql.SetConnMaxLifetime(-1)
 		dbConnPoolGraphql.SetConnMaxIdleTime(-1)
 	}
