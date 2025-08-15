@@ -6,8 +6,11 @@ import (
 	"fmt"
 	"log"
 	"sync"
+	"time"
 
 	"entgo.io/ent/dialect"
+
+	entsql "entgo.io/ent/dialect/sql"
 
 	_ "github.com/lib/pq"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/config"
@@ -128,17 +131,17 @@ func initialize() (*App, error) {
 
 	// Open DB connection
 	var dbConnPoolMetrics *sql.DB = nil
-	//var dbConnPoolGraphql *sql.DB = nil
+	var dbConnPoolGraphql *sql.DB = nil
 	{
 		dbConnPoolMetrics, err = sql.Open("postgres", cfg.ExternalServices.DatabaseUrl)
 		if err != nil {
 			return nil, err
 		}
 
-		//dbConnPoolGraphql, err = sql.Open("postgres", cfg.ExternalServices.DatabaseUrl)
-		//if err != nil {
-		//	return nil, err
-		//}
+		dbConnPoolGraphql, err = sql.Open("postgres", cfg.ExternalServices.DatabaseUrl)
+		if err != nil {
+			return nil, err
+		}
 
 		// Setup DB pooling (metrics)
 		dbConnPoolMetrics.SetMaxOpenConns(cfg.ExternalServices.DatabaseMaxConn)
@@ -147,18 +150,14 @@ func initialize() (*App, error) {
 		dbConnPoolMetrics.SetConnMaxIdleTime(-1)
 
 		// Setup DB pooling (graphql)
-		//dbConnPoolGraphql.SetMaxOpenConns(cfg.ExternalServices.DatabaseMaxConn)
-		//dbConnPoolGraphql.SetMaxIdleConns(cfg.ExternalServices.DatabaseMaxIdleConn)
-		//dbConnPoolGraphql.SetConnMaxLifetime(-1)
-		//dbConnPoolGraphql.SetConnMaxIdleTime(-1)
+		dbConnPoolGraphql.SetMaxOpenConns(cfg.ExternalServices.DatabaseMaxConn)
+		dbConnPoolGraphql.SetMaxIdleConns(cfg.ExternalServices.DatabaseMaxIdleConn)
+		dbConnPoolGraphql.SetConnMaxLifetime(1 * time.Minute)
+		dbConnPoolGraphql.SetConnMaxIdleTime(1 * time.Minute)
 	}
 
-	//drv := entsql.OpenDB(dialect.Postgres, dbConnPoolGraphql)
-	//repo := ent.NewClient(ent.Driver(drv))
-	repo, err := ent.Open(dialect.Postgres, cfg.ExternalServices.DatabaseUrl)
-	if err != nil {
-		log.Fatalf("failed to create repo: %v", err)
-	}
+	drv := entsql.OpenDB(dialect.Postgres, dbConnPoolGraphql)
+	repo := ent.NewClient(ent.Driver(drv))
 
 	if err := repo.Schema.Create(
 		context.Background(),
