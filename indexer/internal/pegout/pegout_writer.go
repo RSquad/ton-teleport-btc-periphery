@@ -33,8 +33,16 @@ func NewPegoutWriter(
 
 func (ew *PegoutWriter) WriteFromEvent(
 	event teleportcontract.EventWithPegoutInterface,
+	tx *ent.Tx,
 ) (*ent.Pegout, error) {
-	pegout, err := ew.repo.Pegout.Create().
+	var pegoutCli *ent.PegoutClient = nil
+	if tx != nil {
+		pegoutCli = tx.Pegout
+	} else {
+		pegoutCli = ew.repo.Pegout
+	}
+
+	pegout, err := pegoutCli.Create().
 		SetAddr(func() string {
 			if event.GetPegoutAddr().IsAddrNone() {
 				return ""
