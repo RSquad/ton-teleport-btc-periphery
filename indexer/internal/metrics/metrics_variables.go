@@ -106,6 +106,12 @@ var (
 		},
 		[]string{"pegout_addr"},
 	)
+	pegoutMinSigners = promauto.NewGauge(
+		prometheus.GaugeOpts{
+			Name: "min_signers",
+			Help: "Pegout min signers count",
+		},
+	)
 	pegoutSigningRestart = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "pegout_signing_restart",

@@ -35,7 +35,8 @@ type PegoutTempData struct {
 	expirations        map[string]Expirations
 	unsignedPegouts    *Cache[map[uint64]coordinator.PegoutRecord]
 	signedPegouts      *Cache[map[string]SignedPegout]
-	internalKeys       *Cache[InternalKeys]
+	curDkg             *Cache[coordinator.DKG]
+	prevDkg            *Cache[coordinator.DKG]
 }
 
 type Expirations struct {
@@ -50,7 +51,6 @@ type InternalKeys struct {
 }
 
 var EMPTY_PEGOUT coordinator.PegoutRecord = coordinator.PegoutRecord{
-
 	ID:                      0,
 	PegoutAddress:           &address.Address{},
 	InternalKey:             []byte{},
@@ -71,6 +71,40 @@ var EMPTY_PEGOUT coordinator.PegoutRecord = coordinator.PegoutRecord{
 	MaxSigners:     0,
 	ExpiredAt:      time.Time{},
 	SigningMask:    big.NewInt(0),
+}
+
+var EMPTY_DKG coordinator.DKG = coordinator.DKG{
+	State:       coordinator.DKGStateFinished,
+	VSet:        coordinator.VSet{},
+	MaxSigners:  0,
+	VSetMask:    big.NewInt(0),
+	SessionKeys: &coordinator.SessionKeys{},
+	R1: &coordinator.DKGR1{
+		Count:    0,
+		Mask:     big.NewInt(0),
+		Packages: map[uint16][]byte{},
+	},
+	R2: &coordinator.DKGR2{
+		Count:    0,
+		Mask:     big.NewInt(0),
+		Packages: map[uint16][]byte{},
+	},
+	R3: &coordinator.DKGR3{
+		Count: 0,
+		Mask:  big.NewInt(0),
+		Data: &coordinator.PubkeyData{
+			PubkeyPackage: []byte{},
+			InternalKey:   []byte{},
+		},
+	},
+	Claims: &coordinator.DKGClaims{
+		Mask:     big.NewInt(0),
+		Count:    0,
+		Counters: map[uint16]uint16{},
+	},
+	CfgHash:  []byte{},
+	Attempts: 0,
+	Until:    time.Time{},
 }
 
 func getMapKeysUint64(data map[uint64]coordinator.PegoutRecord) []uint64 {
@@ -101,7 +135,8 @@ func NewFetcherPegouts(
 			expirations:        make(map[string]Expirations),
 			unsignedPegouts:    NewCache[map[uint64]coordinator.PegoutRecord](),
 			signedPegouts:      NewCache[map[string]SignedPegout](),
-			internalKeys:       NewCache[InternalKeys](),
+			curDkg:             NewCache[coordinator.DKG](),
+			prevDkg:            NewCache[coordinator.DKG](),
 		},
 	}
 }
@@ -200,7 +235,7 @@ func (f *FetcherPegouts) getSignedPegouts() (map[string]SignedPegout, error) {
 	return pegouts, nil
 }
 
-func (f *FetcherPegouts) getInternalKey(typeId int) ([]byte, error) {
+func (f *FetcherPegouts) getDkg(typeId int) (coordinator.DKG, error) {
 	query := `
     SELECT payload::json
     FROM metrics_data 
@@ -210,7 +245,7 @@ func (f *FetcherPegouts) getInternalKey(typeId int) ([]byte, error) {
 `
 	rows, err := f.db.Query(query, typeId)
 	if err != nil {
-		return []byte{}, err
+		return EMPTY_DKG, err
 	}
 
 	defer rows.Close()
@@ -221,21 +256,26 @@ func (f *FetcherPegouts) getInternalKey(typeId int) ([]byte, error) {
 			&data,
 		)
 		if err != nil {
-			return []byte{}, err
+			return EMPTY_DKG, err
 		}
 	}
 
 	var dkgData coordinator.DKG
 	err = json.Unmarshal([]byte(data), &dkgData)
 	if err != nil {
-		return []byte{}, err
+		return EMPTY_DKG, err
 	}
 
-	if dkgData.R3.Data == nil {
-		return []byte{}, nil
-	}
+	return dkgData, nil
+}
 
-	return dkgData.R3.Data.InternalKey, nil
+func (f *FetcherPegouts) setMinSignersMetric(dkgMaxSiners uint16) {
+	if dkgMaxSiners == 0 {
+		pegoutMinSigners.Set(0)
+		return
+	}
+	minSigners := 2 * 3 / dkgMaxSiners
+	pegoutMinSigners.Set(float64(minSigners))
 }
 
 func (f *FetcherPegouts) setBitcoinTxExistsMetric(pegouts map[string]SignedPegout) {
@@ -409,31 +449,55 @@ func (f *FetcherPegouts) Fetch() {
 	}
 	f.setBitcoinTxExistsMetric(signedPegouts)
 
-	var internalKeys InternalKeys
-	internalKeysCache, ok := f.pegoutTempData.internalKeys.Get("InternalKeys")
+	var curDkg coordinator.DKG
+	var prevDkg coordinator.DKG
+	curDkgCache, ok := f.pegoutTempData.curDkg.Get("CurDkg")
 	if ok {
-		internalKeys = internalKeysCache
+		curDkg = curDkgCache
 	} else {
-		dkg, err := f.getInternalKey(0)
+		curDkg, err = f.getDkg(0)
 		if err != nil {
 			logger.Log.Error().Err(err).
 				Str("component", "FetcherPegouts").
 				Msg("fetch failed")
 		}
+		f.pegoutTempData.curDkg.Set("CurDkg", curDkg, time.Duration(f.period)*time.Second)
+	}
+	f.setMinSignersMetric(curDkg.MaxSigners)
+	prevDkgCache, ok := f.pegoutTempData.prevDkg.Get("PrevDkg")
+	if ok {
+		prevDkg = prevDkgCache
+	} else {
+		prevDkg, err = f.getDkg(1)
+		if err != nil {
+			logger.Log.Error().Err(err).
+				Str("component", "FetcherPegouts").
+				Msg("fetch failed")
+		}
+		f.pegoutTempData.prevDkg.Set("PrevDkg", prevDkg, time.Duration(f.period)*time.Second)
+	}
 
-		prevDkg, err := f.getInternalKey(1)
-		if err != nil {
-			logger.Log.Error().Err(err).
-				Str("component", "FetcherPegouts").
-				Msg("fetch failed")
-		}
-		internalKeys = InternalKeys{dkg, prevDkg}
-		f.pegoutTempData.internalKeys.Set("InternalKeys", internalKeys, time.Duration(f.period)*time.Second)
+	var curKey []byte = []byte{}
+	var prevKey []byte = []byte{}
+	if curDkg.R3.Data != nil {
+		curKey = curDkg.R3.Data.InternalKey
+	}
+	if prevDkg.R3.Data != nil {
+		prevKey = prevDkg.R3.Data.InternalKey
+	}
+
+	internalKeys := InternalKeys{
+		dkg:     curKey,
+		prevDkg: prevKey,
 	}
 
 	f.setWrongInternalKeyMetric(unsignedPegouts, internalKeys)
 	f.pegoutTempData.unsignedPegouts.DeleteExpired()
 	f.pegoutTempData.signedPegouts.DeleteExpired()
+	f.pegoutTempData.unsignedPegouts.DeleteExpired()
+	f.pegoutTempData.signedPegouts.DeleteExpired()
+	f.pegoutTempData.curDkg.DeleteExpired()
+	f.pegoutTempData.prevDkg.DeleteExpired()
 }
 
 func (fetcher *FetcherPegouts) Work(ctx context.Context, wg *sync.WaitGroup) {
