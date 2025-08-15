@@ -45,6 +45,7 @@ func NewFetcherContractBitcoinClient(
 	}
 }
 
+/*
 func (fetcher *FetcherContractBitcoinClient) setNextSvbNotZeroMetrics(
 	txId *chainhash.Hash,
 	lastPegoutBlockConfirmations int64,
@@ -59,7 +60,9 @@ func (fetcher *FetcherContractBitcoinClient) setNextSvbNotZeroMetrics(
 		}
 	}
 }
+*/
 
+/*
 func (fetcher *FetcherContractBitcoinClient) getNextSvbAndLastPegoutHash() (uint16, *chainhash.Hash, error) {
 	rows, err := fetcher.db.Query(
 		`SELECT payload::json
@@ -91,6 +94,7 @@ func (fetcher *FetcherContractBitcoinClient) getNextSvbAndLastPegoutHash() (uint
 
 	return teleportData.NextSVB, teleportData.LastPegoutTxID, nil
 }
+*/
 
 func (fetcher *FetcherContractBitcoinClient) Work(ctx context.Context, wg *sync.WaitGroup) {
 	defer wg.Done()
@@ -112,6 +116,7 @@ func (fetcher *FetcherContractBitcoinClient) Work(ctx context.Context, wg *sync.
 	}
 }
 
+/*
 func (fetcher *FetcherContractBitcoinClient) setConfirmedBlockHashMismatchMetric(contractBlockHash string, networkBlockHash string) {
 	isMatch := contractBlockHash == networkBlockHash
 	if !isMatch {
@@ -120,6 +125,7 @@ func (fetcher *FetcherContractBitcoinClient) setConfirmedBlockHashMismatchMetric
 	}
 	confirmedBlockMismatch.WithLabelValues(contractBlockHash, networkBlockHash).Set(0)
 }
+*/
 
 func (fetcher *FetcherContractBitcoinClient) GetBitcoinInfo() (FetcherBitcoinNetworkData, error) {
 	rows, err := fetcher.db.Query(
@@ -157,6 +163,7 @@ func (fetcher *FetcherContractBitcoinClient) GetBitcoinInfo() (FetcherBitcoinNet
 	return bitcoinNetworkData, nil
 }
 
+/*
 func (fetcher *FetcherContractBitcoinClient) setDifferentHeightMetric(
 	lastBlockHeightClient int64,
 	lastBlockHeightNetwork int64,
@@ -167,6 +174,7 @@ func (fetcher *FetcherContractBitcoinClient) setDifferentHeightMetric(
 		lastBlockHeightDifference.WithLabelValues(fmt.Sprint(lastBlockHeightNetwork), fmt.Sprint(lastBlockHeightClient)).Set(1)
 	}
 }
+*/
 
 func (fetcher *FetcherContractBitcoinClient) Fetch() {
 	storageCell, err := fetcher.bitcoinClientContract.GetStorageCell()
@@ -199,37 +207,70 @@ func (fetcher *FetcherContractBitcoinClient) Fetch() {
 		return
 	}
 
-	blockChainInfo, err := fetcher.GetBitcoinInfo()
-	if err != nil {
-		logger.Log.Error().Msg(fmt.Sprintf("FetcherContractBitcoinClient: failed to retrieve LastKnownBlockHeight, error: %v", err))
-		return
-	}
+	/*
+		"failed to call getblock for hash 0000000497f12786cc8e7236587d2302a9d63fd7d001d85da85c6184aaa29c47: HTTP request failed with status 400 Bad Request, body: {\"error\": \"Unsupported method: / on BITCOIN_SIGNET\"}"
+			"failed to call getblock for hash 0000000497f12786cc8e7236587d2302a9d63fd7d001d85da85c6184aaa29c47: HTTP request failed with status 401 Unauthorized, body: Must be authenticated!"
+			"failed to call getblock for hash 0000000497f12786cc8e7236587d2302a9d63fd7d001d85da85c6184aaa29c47: HTTP request failed with status 401 Unauthorized, body: Must be authenticated!"
+				curl https://bitcoin-rpc.ton-teleport.rsquad.solutions/ \
+				-X POST \
+				-H "Content-Type: application/json" \
+				-d '{
+					"jsonrpc": "2.0",
+					"id": 1,
+					"method": "getblock",
+					"params": ["0000000497f12786cc8e7236587d2302a9d63fd7d001d85da85c6184aaa29c47"]
+				}'
+
+				curl http://159.223.59.213:38332 \
+				-X POST \
+				-H "Content-Type: application/json" \
+				-d '{
+					"jsonrpc": "2.0",
+					"id": 1,
+					"method": "getblock",
+					"params": ["0000000497f12786cc8e7236587d2302a9d63fd7d001d85da85c6184aaa29c47"]
+				}'
+	*/
+
+	/*
+		blockChainInfo, err := fetcher.GetBitcoinInfo()
+		if err != nil {
+			logger.Log.Error().Msg(fmt.Sprintf("FetcherContractBitcoinClient: failed to retrieve LastKnownBlockHeight, error: %v", err))
+			return
+		}
+	*/
 
 	// TODO: check in runtime. The correct comparison should be against the Bitcoin network's block hash at lastConfirmedBlockHeight.
 	// Check if LastConfirmedBlockHashes is match
-	fetcher.setConfirmedBlockHashMismatchMetric(lastConfirmedBlockHash.String(), blockChainInfo.BestBlockHash)
+	//	fetcher.setConfirmedBlockHashMismatchMetric(lastConfirmedBlockHash.String(), blockChainInfo.BestBlockHash)
 
-	nextSvb, lastPegoutHash, err := fetcher.getNextSvbAndLastPegoutHash()
-	if err != nil {
-		logger.Log.Error().Msg(fmt.Sprintf("FetcherContractBitcoinClient: failed to retrieve TeleportData, error: %v", err))
-		return
-	}
+	/*
+		nextSvb, lastPegoutHash, err := fetcher.getNextSvbAndLastPegoutHash()
+		if err != nil {
+			logger.Log.Error().Msg(fmt.Sprintf("FetcherContractBitcoinClient: failed to retrieve TeleportData, error: %v", err))
+			return
+		}
+	*/
 
-	lastPegoutBlockHash, err := fetcher.bitcoinClient.GetBlockHashByTxID(lastPegoutHash)
-	if err != nil {
-		logger.Log.Error().Msg(fmt.Sprintf("FetcherContractBitcoinClient: failed to retrieve LastPegoutBlockHash, error: %v", err))
-		return
-	}
+	/*
+		lastPegoutBlockHash, err := fetcher.bitcoinClient.GetBlockHashByTxID(lastPegoutHash)
+		if err != nil {
+			logger.Log.Error().Msg(fmt.Sprintf("FetcherContractBitcoinClient: failed to retrieve LastPegoutBlockHash, error: %v", err))
+			return
+		}
+	*/
 
-	lastPegoutHeight, err := fetcher.bitcoinClient.GetBlockHeightByHash(lastPegoutBlockHash)
-	if err != nil {
-		logger.Log.Error().Msg(fmt.Sprintf("FetcherContractBitcoinClient: failed to retrieve LastPegoutHeight, error: %v", err))
-		return
-	}
+	/*
+		lastPegoutHeight, err := fetcher.bitcoinClient.GetBlockHeightByHash(lastPegoutBlockHash)
+		if err != nil {
+			logger.Log.Error().Msg(fmt.Sprintf("FetcherContractBitcoinClient: failed to retrieve LastPegoutHeight, error: %v", err))
+			return
+		}
+	*/
 
-	fetcher.setNextSvbNotZeroMetrics(lastPegoutHash, lastConfirmedBlockHeight-lastPegoutHeight, confirmationsNeeded, nextSvb)
+	//fetcher.setNextSvbNotZeroMetrics(lastPegoutHash, lastConfirmedBlockHeight-lastPegoutHeight, confirmationsNeeded, nextSvb)
 
-	fetcher.setDifferentHeightMetric(lastConfirmedBlockHeight, int64(blockChainInfo.Blocks), confirmationsNeeded)
+	//fetcher.setDifferentHeightMetric(lastConfirmedBlockHeight, int64(blockChainInfo.Blocks), confirmationsNeeded)
 
 	data := &ContractBitcoinClientData{
 		CandidateBlockHashes:     candidateBlockHashes,
