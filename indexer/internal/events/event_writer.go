@@ -42,7 +42,10 @@ func (ew *EventWriter) write(fn func(tx *ent.Tx) error) error {
 			err = tx.Commit()
 		}
 	}()
-	return fn(tx)
+
+	err = fn(tx)
+
+	return err
 }
 
 func (ew *EventWriter) Write(tonTx *ent.TonTx, event ton.EventInterface) error {
@@ -110,7 +113,7 @@ func (ew *EventWriter) writeMint(tonTx *ent.TonTx, event *teleportcontract.MintE
 
 func (ew *EventWriter) writeBurn(tonTx *ent.TonTx, event *teleportcontract.BurnEvent) error {
 	return ew.write(func(tx *ent.Tx) error {
-		pegout, err := ew.pegoutWriter.WriteFromEvent(event)
+		pegout, err := ew.pegoutWriter.WriteFromEvent(event, tx)
 		if err != nil {
 			return err
 		}
@@ -126,10 +129,11 @@ func (ew *EventWriter) writeBurn(tonTx *ent.TonTx, event *teleportcontract.BurnE
 
 func (ew *EventWriter) writeReinit(tonTx *ent.TonTx, event *teleportcontract.ReinitEvent) error {
 	return ew.write(func(tx *ent.Tx) error {
-		pegout, err := ew.pegoutWriter.WriteFromEvent(event)
+		pegout, err := ew.pegoutWriter.WriteFromEvent(event, tx)
 		if err != nil {
 			return err
 		}
+
 		_, err = tx.Reinit.Create().
 			SetAmount(event.Amount.String()).
 			SetNewInternalKey(hex.EncodeToString(event.NewInternalKey)).
