@@ -302,15 +302,11 @@ func (f *FetcherPegouts) setAutopegoutDelayedMetric(pegouts map[uint64]coordinat
 			f.pegoutTempData.lastAutopegoutDate = now
 		}
 	}
-
 	if now.After(f.pegoutTempData.lastAutopegoutDate.Add(AUTOPEGOUT_WARN_DELAY)) {
 		autopegoutDelayed.Set(1)
 	}
 	if now.After(f.pegoutTempData.lastAutopegoutDate.Add(AUTOPEGOUT_CRIT_DELAY)) {
 		autopegoutDelayed.Set(2)
-	}
-	if now.After(f.pegoutTempData.lastAutopegoutDate.Add(AUTOPEGOUT_PANIC_DELAY)) {
-		autopegoutDelayed.Set(3)
 	}
 }
 
@@ -417,7 +413,7 @@ func (f *FetcherPegouts) Fetch() {
 		logger.Log.Debug().Msg("FetcherPegouts: Contract returns unsignedPegouts is null")
 	}
 
-	unsignedPegoutsLen.WithLabelValues("Unsigned pegouts length").Set(float64(len(unsignedPegouts)))
+	unsignedPegoutsLen.Set(float64(len(unsignedPegouts)))
 
 	f.setDelayedMetric(unsignedPegouts)
 	f.setAutopegoutDelayedMetric(unsignedPegouts)

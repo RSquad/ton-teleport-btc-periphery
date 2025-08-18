@@ -10,7 +10,6 @@ import (
 
 	"github.com/btcsuite/btcd/btcjson"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
-	bu "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/bitcoinutils"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/teleportcontract"
@@ -48,39 +47,6 @@ func NewFetcherBitcoinNetwork(
 		bitcoinClient: bitcoinClient,
 		period:        period,
 	}
-}
-
-func (fetcher *FetcherBitcoinNetwork) getSignedPegouts() ([]SignedPegout, error) {
-	rows, err := fetcher.db.Query(
-		`SELECT 
-			tt.created_at,
-			p.addr AS pegout_addr,
-			p.bitcoin_tx_id AS bitcoin_tx_id
-		FROM burns AS b
-		JOIN ton_txes AS tt ON tt.id = b.ton_tx_burn
-		JOIN pegouts AS p ON p.id = b.pegout_burn
-		WHERE 
-			p.status = 'SIGNED'
-		-- AND 
-			-- created_at > NOW() - INTERVAL '1 day'
-		ORDER BY created_at DESC
-	`)
-	if err != nil {
-		return []SignedPegout{}, err
-	}
-
-	defer rows.Close()
-
-	var pegouts []SignedPegout
-	for rows.Next() {
-		var pegout SignedPegout
-		err = rows.Scan(&pegout.createdAt, &pegout.pegoutAddr, &pegout.bitcoinTxId)
-		if err != nil {
-			return []SignedPegout{}, err
-		}
-		pegouts = append(pegouts, pegout)
-	}
-	return pegouts, nil
 }
 
 func (fb *FetcherBitcoinNetwork) getBaseSVB() (float64, error) {
@@ -166,18 +132,6 @@ func (fetcher FetcherBitcoinNetwork) getCPFPCount(pegoutId *chainhash.Hash) (*bi
 	return txChildrenCount, nil
 }
 
-func (fetcher *FetcherBitcoinNetwork) setBitcoinTxExistsMetric(pegouts []SignedPegout) {
-	for _, pegout := range pegouts {
-		txExists, _, _ := bu.BitcoinTxExists(fetcher.bitcoinClient, pegout.bitcoinTxId)
-		if !txExists {
-			unprocessedPegout.WithLabelValues(pegout.pegoutAddr, pegout.bitcoinTxId).Set(1)
-		} else {
-			unprocessedPegout.WithLabelValues(pegout.pegoutAddr, pegout.bitcoinTxId).Set(0)
-		}
-
-	}
-}
-
 func (fb *FetcherBitcoinNetwork) setSVBExceededMetric(svb float64, baseSvb float64) {
 	svbCurrent.Set(svb)
 	svbBase.Set(baseSvb)
@@ -196,14 +150,6 @@ func (fetcher *FetcherBitcoinNetwork) Fetch() {
 		logger.Log.Error().Msg(fmt.Sprintf("FetcherBitcoinNetwork: failed to retrieve BlockChainInfo, error: %v", err))
 		return
 	}
-
-	signedPegouts, err := fetcher.getSignedPegouts()
-	if err != nil {
-		logger.Log.Error().Err(err).
-			Str("component", "FetcherBitcoinNetwork").
-			Msg("fetch failed")
-	}
-	fetcher.setBitcoinTxExistsMetric(signedPegouts)
 
 	LastPegoutTxID, err := fetcher.getLastPegoutId()
 	if err != nil {

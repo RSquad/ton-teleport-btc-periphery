@@ -27,12 +27,11 @@ var (
 		},
 		[]string{"contract_block", "network_block"},
 	)
-	unsignedPegoutsLen = promauto.NewGaugeVec(
+	unsignedPegoutsLen = promauto.NewGauge(
 		prometheus.GaugeOpts{
 			Name: "unsigned_pegouts_len",
 			Help: "Unsigned pegouts len",
 		},
-		[]string{"len"},
 	)
 	unsignedPegoutDelayed = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
