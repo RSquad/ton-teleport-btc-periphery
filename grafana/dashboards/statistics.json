@@ -18,7 +18,7 @@
     "editable": true,
     "fiscalYearStartMonth": 0,
     "graphTooltip": 0,
-    "id": 7,
+    "id": 5,
     "links": [],
     "panels": [
         {
@@ -43,7 +43,7 @@
             },
             "gridPos": {
                 "h": 4,
-                "w": 5,
+                "w": 6,
                 "x": 6,
                 "y": 0
             },
@@ -78,7 +78,7 @@
                     "root_selector": "",
                     "source": "url",
                     "type": "json",
-                    "url": "http://indexer/api/metrics?source=plots_summary",
+                    "url": "http://indexer/indexer/api/metrics?source=plots_summary",
                     "url_options": {
                         "data": "",
                         "method": "GET"
@@ -126,7 +126,7 @@
             },
             "gridPos": {
                 "h": 4,
-                "w": 5,
+                "w": 6,
                 "x": 12,
                 "y": 0
             },
@@ -161,7 +161,7 @@
                     "root_selector": "",
                     "source": "url",
                     "type": "json",
-                    "url": "http://indexer/api/metrics?source=plots_summary",
+                    "url": "http://indexer/indexer/api/metrics?source=plots_summary",
                     "url_options": {
                         "data": "",
                         "method": "GET"
@@ -194,7 +194,7 @@
                     "color": {
                         "mode": "thresholds"
                     },
-                    "decimals": 8,
+                    "decimals": 3,
                     "mappings": [],
                     "thresholds": {
                         "mode": "absolute",
@@ -210,8 +210,8 @@
             },
             "gridPos": {
                 "h": 4,
-                "w": 5,
-                "x": 4,
+                "w": 6,
+                "x": 3,
                 "y": 4
             },
             "id": 5,
@@ -245,7 +245,7 @@
                     "root_selector": "",
                     "source": "url",
                     "type": "json",
-                    "url": "http://indexer/api/metrics?source=plots_summary",
+                    "url": "http://indexer/indexer/api/metrics?source=plots_summary",
                     "url_options": {
                         "data": "",
                         "method": "GET"
@@ -290,7 +290,7 @@
                     "color": {
                         "mode": "thresholds"
                     },
-                    "decimals": 8,
+                    "decimals": 3,
                     "mappings": [],
                     "thresholds": {
                         "mode": "absolute",
@@ -306,7 +306,7 @@
             },
             "gridPos": {
                 "h": 4,
-                "w": 5,
+                "w": 6,
                 "x": 9,
                 "y": 4
             },
@@ -341,7 +341,7 @@
                     "root_selector": "",
                     "source": "url",
                     "type": "json",
-                    "url": "http://indexer/api/metrics?source=plots_summary",
+                    "url": "http://indexer/indexer/api/metrics?source=plots_summary",
                     "url_options": {
                         "data": "",
                         "method": "GET"
@@ -374,7 +374,7 @@
                     "color": {
                         "mode": "thresholds"
                     },
-                    "decimals": 8,
+                    "decimals": 3,
                     "mappings": [],
                     "thresholds": {
                         "mode": "absolute",
@@ -390,8 +390,8 @@
             },
             "gridPos": {
                 "h": 4,
-                "w": 5,
-                "x": 14,
+                "w": 6,
+                "x": 15,
                 "y": 4
             },
             "id": 4,
@@ -425,7 +425,7 @@
                     "root_selector": "",
                     "source": "url",
                     "type": "json",
-                    "url": "http://indexer/api/metrics?source=plots_summary",
+                    "url": "http://indexer/indexer/api/metrics?source=plots_summary",
                     "url_options": {
                         "data": "",
                         "method": "GET"
@@ -560,7 +560,7 @@
                     "root_selector": "",
                     "source": "url",
                     "type": "json",
-                    "url": "http://indexer/api/metrics?source=plot_total_supply",
+                    "url": "http://indexer/indexer/api/metrics?source=plot_total_supply",
                     "url_options": {
                         "data": "",
                         "method": "GET"
@@ -680,7 +680,7 @@
                     "root_selector": "",
                     "source": "url",
                     "type": "json",
-                    "url": "http://indexer/api/metrics?source=plot_minted",
+                    "url": "http://indexer/indexer/api/metrics?source=plot_minted",
                     "url_options": {
                         "data": "",
                         "method": "GET"
@@ -710,7 +710,7 @@
                     "root_selector": "",
                     "source": "url",
                     "type": "json",
-                    "url": "http://indexer/api/metrics?source=plot_burned",
+                    "url": "http://indexer/indexer/api/metrics?source=plot_burned",
                     "url_options": {
                         "data": "",
                         "method": "GET"
@@ -855,7 +855,7 @@
                     "root_selector": "",
                     "source": "url",
                     "type": "json",
-                    "url": "http://indexer/api/metrics?source=plot_minted",
+                    "url": "http://indexer/indexer/api/metrics?source=plot_minted",
                     "url_options": {
                         "data": "",
                         "method": "GET"
@@ -885,7 +885,7 @@
                     "root_selector": "",
                     "source": "url",
                     "type": "json",
-                    "url": "http://indexer/api/metrics?source=plot_burned",
+                    "url": "http://indexer/indexer/api/metrics?source=plot_burned",
                     "url_options": {
                         "data": "",
                         "method": "GET"

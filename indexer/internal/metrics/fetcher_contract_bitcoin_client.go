@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"sync"
@@ -22,6 +23,7 @@ type ContractBitcoinClientData struct {
 
 type FetcherContractBitcoinClient struct {
 	chDB                  chan PayloadDB
+	db                    *sql.DB
 	bitcoinClient         *bitcoin.Client
 	bitcoinClientContract *bitcoinclientcontract.BitcoinClientContract
 	period                int64 // Fetch period (in seconds)
@@ -29,12 +31,14 @@ type FetcherContractBitcoinClient struct {
 
 func NewFetcherContractBitcoinClient(
 	chDB chan PayloadDB,
+	db *sql.DB,
 	bitcoinClient *bitcoin.Client,
 	bitcoinClientContract *bitcoinclientcontract.BitcoinClientContract,
 	period int64,
 ) *FetcherContractBitcoinClient {
 	return &FetcherContractBitcoinClient{
 		chDB:                  chDB,
+		db:                    db,
 		bitcoinClient:         bitcoinClient,
 		bitcoinClientContract: bitcoinClientContract,
 		period:                period,
@@ -59,6 +63,42 @@ func (fetcher *FetcherContractBitcoinClient) Work(ctx context.Context, wg *sync.
 			fetcher.Fetch()
 		}
 	}
+}
+
+func (fetcher *FetcherContractBitcoinClient) GetBitcoinInfo() (FetcherBitcoinNetworkData, error) {
+	rows, err := fetcher.db.Query(
+		`SELECT payload::json
+			FROM metrics_data
+			WHERE type_id = 3
+			ORDER BY id DESC
+			LIMIT 1
+		`,
+	)
+	if err != nil {
+		return FetcherBitcoinNetworkData{}, err
+	}
+
+	defer rows.Close()
+
+	var data string
+	if rows.Next() {
+		err = rows.Scan(&data)
+		if err != nil {
+			return FetcherBitcoinNetworkData{}, err
+		}
+	}
+
+	if len(data) == 0 {
+		data = "{}"
+	}
+
+	var bitcoinNetworkData FetcherBitcoinNetworkData
+	err = json.Unmarshal([]byte(data), &bitcoinNetworkData)
+	if err != nil {
+		return FetcherBitcoinNetworkData{}, err
+	}
+
+	return bitcoinNetworkData, nil
 }
 
 func (fetcher *FetcherContractBitcoinClient) Fetch() {

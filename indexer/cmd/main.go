@@ -6,8 +6,11 @@ import (
 	"fmt"
 	"log"
 	"sync"
+	"time"
 
 	"entgo.io/ent/dialect"
+
+	entsql "entgo.io/ent/dialect/sql"
 
 	_ "github.com/lib/pq"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/config"
@@ -39,7 +42,6 @@ type App struct {
 	MintService           *mintservice.MintService
 	MetricsService        *metrics.MetricsService
 	HttpService           *httpservice.HttpService
-	Db                    *sql.DB
 }
 
 func main() {
@@ -70,32 +72,34 @@ func initialize() (*App, error) {
 	}
 
 	// Read .env config
-	config, err := config.NewServicesConfig(&indexerConfig)
+	cfg, err := config.NewServicesConfig(&indexerConfig)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse .env config: %w", err)
 	}
 
+	logger.Log.Debug().Msg(config.CfgToString(&indexerConfig))
+
 	// Bitcoin client
 	bitcoinClient, err := bitcoin.NewClient(
-		config.ExternalServices.BitcoinRpcHost,
-		config.ExternalServices.BitcoinRpcUser,
-		config.ExternalServices.BitcoinRpcPass,
+		cfg.ExternalServices.BitcoinRpcHost,
+		cfg.ExternalServices.BitcoinRpcUser,
+		cfg.ExternalServices.BitcoinRpcPass,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create bitcoin client: %w", err)
 	}
 
 	// TON client
-	tonClient, err := tonclient.New(config.ExternalServices.TonConfigUrl)
+	tonClient, err := tonclient.New(cfg.ExternalServices.TonConfigUrl)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create ton client: %w", err)
 	}
 
 	// Teleport contract
 	var teleportContract *teleportcontract.TeleportContract = nil
-	if config.ExternalServices.TeleportContractAddr != nil {
+	if cfg.ExternalServices.TeleportContractAddr != nil {
 		teleportContract = teleportcontract.New(
-			config.ExternalServices.TeleportContractAddr,
+			cfg.ExternalServices.TeleportContractAddr,
 			tonClient,
 			nil,
 			context.Background(),
@@ -104,9 +108,9 @@ func initialize() (*App, error) {
 
 	// Coordinator contract
 	var coordinatorContract coordinator.Coordinator = nil
-	if config.ExternalServices.CoordinatorContractAddr != nil {
+	if cfg.ExternalServices.CoordinatorContractAddr != nil {
 		coordinatorContract = coordinator.New(
-			config.ExternalServices.CoordinatorContractAddr,
+			cfg.ExternalServices.CoordinatorContractAddr,
 			tonClient,
 			nil,
 			context.Background(),
@@ -116,19 +120,44 @@ func initialize() (*App, error) {
 
 	// Bitcoin client contract
 	var bitcoinClientContract *bitcoinclientcontract.BitcoinClientContract = nil
-	if config.ExternalServices.BitcoinClientContractAddr != nil {
+	if cfg.ExternalServices.BitcoinClientContractAddr != nil {
 		bitcoinClientContract = bitcoinclientcontract.NewBitcoinClientContract(
-			config.ExternalServices.BitcoinClientContractAddr,
+			cfg.ExternalServices.BitcoinClientContractAddr,
 			tonClient,
 			nil,
 			context.Background(),
 		)
 	}
 
-	repo, err := ent.Open(dialect.Postgres, config.ExternalServices.DatabaseUrl)
-	if err != nil {
-		log.Fatalf("failed to create repo: %v", err)
+	// Open DB connection
+	var dbConnPoolMetrics *sql.DB = nil
+	var dbConnPoolGraphql *sql.DB = nil
+	{
+		dbConnPoolMetrics, err = sql.Open("postgres", cfg.ExternalServices.DatabaseUrl)
+		if err != nil {
+			return nil, err
+		}
+
+		dbConnPoolGraphql, err = sql.Open("postgres", cfg.ExternalServices.DatabaseUrl)
+		if err != nil {
+			return nil, err
+		}
+
+		// Setup DB pooling (metrics)
+		dbConnPoolMetrics.SetMaxOpenConns(cfg.ExternalServices.DatabaseMaxConn)
+		dbConnPoolMetrics.SetMaxIdleConns(cfg.ExternalServices.DatabaseMaxIdleConn)
+		dbConnPoolMetrics.SetConnMaxLifetime(-1)
+		dbConnPoolMetrics.SetConnMaxIdleTime(-1)
+
+		// Setup DB pooling (graphql)
+		dbConnPoolGraphql.SetMaxOpenConns(cfg.ExternalServices.DatabaseMaxConn)
+		dbConnPoolGraphql.SetMaxIdleConns(cfg.ExternalServices.DatabaseMaxIdleConn)
+		dbConnPoolGraphql.SetConnMaxLifetime(1 * time.Minute)
+		dbConnPoolGraphql.SetConnMaxIdleTime(1 * time.Minute)
 	}
+
+	drv := entsql.OpenDB(dialect.Postgres, dbConnPoolGraphql)
+	repo := ent.NewClient(ent.Driver(drv))
 
 	if err := repo.Schema.Create(
 		context.Background(),
@@ -141,7 +170,7 @@ func initialize() (*App, error) {
 
 	// Mint service
 	var mintService *mintservice.MintService = nil
-	if config.RunServices.RunMintService {
+	if cfg.RunServices.RunMintService {
 		if teleportContract == nil {
 			return nil, fmt.Errorf("failed to start MintService: TeleportContract is null. Please set the COMMON_TON_CONTRACT_TELEPORT_ADDR value in the .env")
 		}
@@ -156,7 +185,7 @@ func initialize() (*App, error) {
 
 	// Pegout manager
 	var pegoutManager *pegoutmanager.PegoutManager = nil
-	if config.RunServices.RunPegoutManager {
+	if cfg.RunServices.RunPegoutManager {
 		if teleportContract == nil {
 			return nil, fmt.Errorf("failed to start PegoutManager: TeleportContract is null. Please set the COMMON_TON_CONTRACT_TELEPORT_ADDR value in the .env")
 		}
@@ -175,7 +204,7 @@ func initialize() (*App, error) {
 
 	// Event service
 	var eventService *events.EventService = nil
-	if config.RunServices.RunEventService {
+	if cfg.RunServices.RunEventService {
 		if teleportContract == nil {
 			return nil, fmt.Errorf("failed to start EventService: TeleportContract is null. Please set the COMMON_TON_CONTRACT_TELEPORT_ADDR value in the .env")
 		}
@@ -192,32 +221,17 @@ func initialize() (*App, error) {
 		)
 	}
 
-	// Open DB connection
-	var db *sql.DB = nil
-	{
-		db, err = sql.Open("postgres", config.ExternalServices.DatabaseUrl)
-		if err != nil {
-			return nil, err
-		}
-
-		// Setup DB pooling
-		db.SetMaxOpenConns(2)
-		db.SetMaxIdleConns(2)
-		db.SetConnMaxLifetime(-1)
-		db.SetConnMaxIdleTime(-1)
-	}
-
 	// Metrics service
 	var metricsService *metrics.MetricsService = nil
-	if config.RunServices.RunMetricsService {
+	if cfg.RunServices.RunMetricsService {
 		metricsService, err = metrics.NewService(
 			coordinatorContract,
 			bitcoinClientContract,
 			teleportContract,
 			bitcoinClient,
 			tonClient,
-			config,
-			db,
+			cfg,
+			dbConnPoolMetrics,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create matrics manager: %w", err)
@@ -226,13 +240,13 @@ func initialize() (*App, error) {
 
 	// HTTP service
 	var httpService *httpservice.HttpService = nil
-	if config.RunServices.RunHttpService {
+	if cfg.RunServices.RunHttpService {
 		httpService = httpservice.New(
 			repo,
 			bitcoinClient,
 			tonClient,
 			teleportContract,
-			db,
+			dbConnPoolMetrics,
 		)
 	}
 
@@ -251,7 +265,6 @@ func initialize() (*App, error) {
 		EventService:        eventService,
 		MetricsService:      metricsService,
 		HttpService:         httpService,
-		Db:                  db,
 	}, nil
 }
 
