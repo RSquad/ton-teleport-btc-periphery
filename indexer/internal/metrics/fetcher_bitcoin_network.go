@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/btcsuite/btcd/btcjson"
-	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	bu "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/bitcoinutils"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
@@ -129,43 +128,6 @@ func (fb *FetcherBitcoinNetwork) getSVB(blockCount int, mode *btcjson.EstimateSm
 	return fee, nil
 }
 
-func (fetcher *FetcherBitcoinNetwork) getLastPegoutId() (*chainhash.Hash, error) {
-	rows, err := fetcher.db.Query(
-		`	SELECT payload::json
-			FROM metrics_data
-			WHERE type_id = 4
-			ORDER BY id DESC
-			LIMIT 1`,
-	)
-	if err != nil {
-		return &chainhash.Hash{}, err
-	}
-
-	defer rows.Close()
-
-	var data string
-	if rows.Next() {
-		err = rows.Scan(&data)
-		if err != nil {
-			return &chainhash.Hash{}, err
-		}
-	}
-	var storage ContractTeleportData
-	err = json.Unmarshal([]byte(data), &storage)
-	if err != nil {
-		return &chainhash.Hash{}, err
-	}
-	return storage.LastPegoutTxID, nil
-}
-
-func (fetcher FetcherBitcoinNetwork) getCPFPCount(pegoutId *chainhash.Hash) (*bitcoin.TxChildrenCount, error) {
-	txChildrenCount, err := fetcher.bitcoinClient.GetTxChildrenCount(pegoutId)
-	if err != nil {
-		return &bitcoin.TxChildrenCount{}, err
-	}
-	return txChildrenCount, nil
-}
-
 func (fetcher *FetcherBitcoinNetwork) setBitcoinTxExistsMetric(pegouts []SignedPegout) {
 	for _, pegout := range pegouts {
 		txExists, _, _ := bu.BitcoinTxExists(fetcher.bitcoinClient, pegout.bitcoinTxId)
@@ -175,17 +137,6 @@ func (fetcher *FetcherBitcoinNetwork) setBitcoinTxExistsMetric(pegouts []SignedP
 			unprocessedPegout.WithLabelValues(pegout.pegoutAddr, pegout.bitcoinTxId).Set(0)
 		}
 
-	}
-}
-
-func (fb *FetcherBitcoinNetwork) setSVBExceededMetric(svb float64, baseSvb float64) {
-	svbCurrent.Set(svb)
-	svbBase.Set(baseSvb)
-}
-
-func (fetcher *FetcherBitcoinNetwork) setCPFPCountMetric(count bitcoin.TxChildrenCount) {
-	if count.ParentTxID != nil {
-		cpfpCounter.WithLabelValues(count.ParentTxID.String()).Set(float64(count.ChildrenCount))
 	}
 }
 
@@ -204,39 +155,6 @@ func (fetcher *FetcherBitcoinNetwork) Fetch() {
 			Msg("fetch failed")
 	}
 	fetcher.setBitcoinTxExistsMetric(signedPegouts)
-
-	LastPegoutTxID, err := fetcher.getLastPegoutId()
-	if err != nil {
-		logger.Log.Error().Err(err).
-			Str("component", "FetcherBitcoinNetwork").
-			Msg("fetch failed")
-	}
-	if err != nil {
-		logger.Log.Error().Err(err).
-			Str("component", "FetcherBitcoinNetwork").
-			Msg("fetch failed")
-	}
-	cpfpCount, err := fetcher.getCPFPCount(LastPegoutTxID)
-	if err != nil {
-		logger.Log.Error().Err(err).
-			Str("component", "FetcherBitcoinNetwork").
-			Msg("fetch failed")
-	}
-	fetcher.setCPFPCountMetric(*cpfpCount)
-
-	baseSvb, err := fetcher.getBaseSVB()
-	if err != nil {
-		logger.Log.Error().Err(err).
-			Str("component", "FetcherBitcoinTx").
-			Msg("fetch failed at get base svb")
-	}
-	svb, err := fetcher.getSVB(1, nil)
-	if err != nil {
-		logger.Log.Error().Err(err).
-			Str("component", "FetcherBitcoinTx").
-			Msg("fetch failed at get svb")
-	}
-	fetcher.setSVBExceededMetric(svb, baseSvb)
 
 	// Serialize
 	data := FetcherBitcoinNetworkData{
