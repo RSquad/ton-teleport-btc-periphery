@@ -7,7 +7,7 @@ import (
 	"github.com/xssnick/tonutils-go/address"
 )
 
-type ExternalServicesConfig struct {
+type ServicesConfig struct {
 	BitcoinRpcHost          string
 	BitcoinRpcUser          string
 	BitcoinRpcPass          string
@@ -18,36 +18,7 @@ type ExternalServicesConfig struct {
 	CoordinatorContractAddr *address.Address
 }
 
-type ServicesConfig struct {
-	ExternalServices *ExternalServicesConfig
-}
-
 func NewServicesConfig(indexerConfig *IndexerConfig) (*ServicesConfig, error) {
-	externalServices, err := ParseExternalServices(indexerConfig)
-	if err != nil {
-		return nil, err
-	}
-
-	servicesConfig := &ServicesConfig{
-		ExternalServices: externalServices,
-	}
-
-	return servicesConfig, nil
-}
-
-func CfgToString(indexerConfig *IndexerConfig) string {
-	return fmt.Sprintf(
-		`BitcoinRpcHost: %s
-TonConfigUrl: %s
-CoordinatorContractAddr: %s
-`,
-		indexerConfig.BitcoinRpcHost,
-		indexerConfig.TonConfigUrl,
-		indexerConfig.CoordinatorContractAddr,
-	)
-}
-
-func ParseExternalServices(indexerConfig *IndexerConfig) (*ExternalServicesConfig, error) {
 	databaseMaxConn := 8
 	databaseMaxIdleConn := 8
 
@@ -72,7 +43,7 @@ func ParseExternalServices(indexerConfig *IndexerConfig) (*ExternalServicesConfi
 		return nil, fmt.Errorf("parsing the Coordinator Contract address '%s' failed", indexerConfig.CoordinatorContractAddr)
 	}
 
-	cfg := &ExternalServicesConfig{
+	cfg := &ServicesConfig{
 		BitcoinRpcHost:          indexerConfig.BitcoinRpcHost,
 		BitcoinRpcUser:          indexerConfig.BitcoinRpcUser,
 		BitcoinRpcPass:          indexerConfig.BitcoinRpcPass,
@@ -84,6 +55,18 @@ func ParseExternalServices(indexerConfig *IndexerConfig) (*ExternalServicesConfi
 	}
 
 	return cfg, nil
+}
+
+func CfgToString(indexerConfig *IndexerConfig) string {
+	return fmt.Sprintf(
+		`BitcoinRpcHost: %s
+TonConfigUrl: %s
+CoordinatorContractAddr: %s
+`,
+		indexerConfig.BitcoinRpcHost,
+		indexerConfig.TonConfigUrl,
+		indexerConfig.CoordinatorContractAddr,
+	)
 }
 
 func ParseInt(value string, name string) (int, error) {

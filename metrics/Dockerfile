@@ -7,17 +7,19 @@ COPY go.work go.work.sum ./
 RUN go work edit -dropuse ./relayer
 RUN go work edit -dropuse ./frost
 RUN go work edit -dropuse ./oracle
-COPY indexer/go.mod indexer/go.sum ./indexer/
+RUN go work edit -dropuse ./indexer
+
+COPY metrics/go.mod metrics/go.sum ./metrics/
 COPY lib/go.mod lib/go.sum ./lib/
 
 RUN go mod download
 
-COPY indexer/ ./indexer/
+COPY metrics/ ./metrics/
 COPY lib/ ./lib/
 
-RUN cd ./indexer && go generate . && cd ..
+RUN cd ./metrics && go generate . && cd ..
 
-RUN go build -o ./bin ./indexer/cmd/main.go
+RUN go build -o ./bin ./metrics/cmd/main.go
 
 FROM debian:bookworm-slim
 

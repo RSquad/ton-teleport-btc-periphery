@@ -34,8 +34,8 @@ type App struct {
 	TonClient             *tonclient.TonClient
 	BitcoinClient         *bitcoin.Client
 	EventService          *events.EventService
-	TeleportContract      *teleportcontract.TeleportContract
 	CoordinatorContract   coordinator.Coordinator
+	TeleportContract      *teleportcontract.TeleportContract
 	BitcoinClientContract *bitcoinclientcontract.BitcoinClientContract
 	PegoutManager         *pegoutmanager.PegoutManager
 	MintService           *mintservice.MintService
@@ -79,31 +79,28 @@ func initialize() (*App, error) {
 
 	// Bitcoin client
 	bitcoinClient, err := bitcoin.NewClient(
-		cfg.ExternalServices.BitcoinRpcHost,
-		cfg.ExternalServices.BitcoinRpcUser,
-		cfg.ExternalServices.BitcoinRpcPass,
+		cfg.BitcoinRpcHost,
+		cfg.BitcoinRpcUser,
+		cfg.BitcoinRpcPass,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create bitcoin client: %w", err)
 	}
 
 	// TON client
-	tonClient, err := tonclient.New(cfg.ExternalServices.TonConfigUrl)
+	tonClient, err := tonclient.New(cfg.TonConfigUrl)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create ton client: %w", err)
 	}
 
 	// Coordinator contract
-	var coordinatorContract coordinator.Coordinator = nil
-	if cfg.ExternalServices.CoordinatorContractAddr != nil {
-		coordinatorContract = coordinator.New(
-			cfg.ExternalServices.CoordinatorContractAddr,
-			tonClient,
-			nil,
-			context.Background(),
-			30,
-		)
-	}
+	coordinatorContract := coordinator.New(
+		cfg.CoordinatorContractAddr,
+		tonClient,
+		nil,
+		context.Background(),
+		30,
+	)
 
 	// Teleport contract
 	coordinatorContractStorage, err := coordinatorContract.GetStorage(nil)
@@ -121,14 +118,14 @@ func initialize() (*App, error) {
 	// Open DB connection
 	var dbConnPoolGraphql *sql.DB = nil
 	{
-		dbConnPoolGraphql, err = sql.Open("postgres", cfg.ExternalServices.DatabaseUrl)
+		dbConnPoolGraphql, err = sql.Open("postgres", cfg.DatabaseUrl)
 		if err != nil {
 			return nil, err
 		}
 
 		// Setup DB pooling (graphql)
-		dbConnPoolGraphql.SetMaxOpenConns(cfg.ExternalServices.DatabaseMaxConn)
-		dbConnPoolGraphql.SetMaxIdleConns(cfg.ExternalServices.DatabaseMaxIdleConn)
+		dbConnPoolGraphql.SetMaxOpenConns(cfg.DatabaseMaxConn)
+		dbConnPoolGraphql.SetMaxIdleConns(cfg.DatabaseMaxIdleConn)
 		dbConnPoolGraphql.SetConnMaxLifetime(1 * time.Minute)
 		dbConnPoolGraphql.SetConnMaxIdleTime(1 * time.Minute)
 	}

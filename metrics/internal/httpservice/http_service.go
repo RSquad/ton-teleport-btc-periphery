@@ -5,22 +5,15 @@ import (
 	"database/sql"
 	"net/http"
 
-	"entgo.io/contrib/entgql"
-	"github.com/99designs/gqlgen/graphql/handler"
-	"github.com/99designs/gqlgen/graphql/playground"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/cors"
-	ent "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated"
-	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/gql"
-	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/metrics"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/teleportcontract"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
+	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/metrics"
 )
 
 type HttpService struct {
-	repo             *ent.Client
 	bitcoinClient    *bitcoin.Client
 	tonClient        *tonclient.TonClient
 	teleportContract *teleportcontract.TeleportContract
@@ -28,14 +21,12 @@ type HttpService struct {
 }
 
 func New(
-	repo *ent.Client,
 	bitcoinClient *bitcoin.Client,
 	tonClient *tonclient.TonClient,
 	teleportContract *teleportcontract.TeleportContract,
 	db *sql.DB,
 ) *HttpService {
 	return &HttpService{
-		repo:             repo,
 		bitcoinClient:    bitcoinClient,
 		tonClient:        tonClient,
 		teleportContract: teleportContract,
@@ -44,16 +35,8 @@ func New(
 }
 
 func (s *HttpService) Work(ctx context.Context) {
-	srv := handler.NewDefaultServer(
-		gql.NewSchema(s.repo, s.bitcoinClient, s.teleportContract, s.tonClient),
-	)
-	srv.Use(entgql.Transactioner{TxOpener: s.repo})
-
 	mux := http.NewServeMux()
-	mux.Handle("/indexer/graphql", srv)
-	mux.Handle("/", playground.ApolloSandboxHandler("Indexer", "/indexer/graphql"))
-	mux.Handle("/metrics", promhttp.Handler())
-	mux.Handle("/indexer/api/metrics", metrics.NewJsonApiHandler(s.db, s.tonClient))
+	mux.Handle("/api", metrics.NewJsonApiHandler(s.db, s.tonClient))
 
 	c := cors.New(cors.Options{
 		AllowedOrigins:   []string{"*"},

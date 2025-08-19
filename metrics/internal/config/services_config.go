@@ -26,14 +26,6 @@ type MetricsConfig struct {
 	MetricsPegoutsFetchPeriod        int
 }
 
-type RunServicesConfig struct {
-	RunMintService    bool
-	RunEventService   bool
-	RunPegoutManager  bool
-	RunHttpService    bool
-	RunMetricsService bool
-}
-
 type ExternalServicesConfig struct {
 	BitcoinRpcHost            string
 	BitcoinRpcUser            string
@@ -51,29 +43,22 @@ type ExternalServicesConfig struct {
 
 type ServicesConfig struct {
 	ExternalServices *ExternalServicesConfig
-	RunServices      *RunServicesConfig
 	Metrics          *MetricsConfig
 }
 
-func NewServicesConfig(indexerConfig *IndexerConfig) (*ServicesConfig, error) {
-	externalServices, err := ParseExternalServices(indexerConfig)
+func NewServicesConfig(config *Config) (*ServicesConfig, error) {
+	externalServices, err := ParseExternalServices(config)
 	if err != nil {
 		return nil, err
 	}
 
-	runServices, err := ParseRunServices(indexerConfig.RunServices)
-	if err != nil {
-		return nil, err
-	}
-
-	metrics, err := ParseMetrics(indexerConfig)
+	metrics, err := ParseMetrics(config)
 	if err != nil {
 		return nil, err
 	}
 
 	servicesConfig := &ServicesConfig{
 		ExternalServices: externalServices,
-		RunServices:      runServices,
 		Metrics:          metrics,
 	}
 
@@ -85,99 +70,94 @@ func NewServicesConfig(indexerConfig *IndexerConfig) (*ServicesConfig, error) {
 	return servicesConfig, nil
 }
 
-func CfgToString(indexerConfig *IndexerConfig) string {
+func CfgToString(config *Config) string {
 	return fmt.Sprintf(
 		`BitcoinRpcHost: %s
 TonConfigUrl: %s
 TeleportContractAddr: %s
-RelayerWalletV4Secret: %s
 CoordinatorContractAddr: %s
 BitcoinClientContractAddr: %s
 JettonMinterContractAddr: %s
-RunServices: %s
 Metrics: %s
 MetricsArgs: %s
 `,
-		indexerConfig.BitcoinRpcHost,
-		indexerConfig.TonConfigUrl,
-		indexerConfig.TeleportContractAddr,
-		indexerConfig.RelayerWalletV4Secret,
-		indexerConfig.CoordinatorContractAddr,
-		indexerConfig.BitcoinClientContractAddr,
-		indexerConfig.JettonMinterContractAddr,
-		indexerConfig.RunServices,
-		indexerConfig.Metrics,
-		indexerConfig.MetricsArgs,
+		config.BitcoinRpcHost,
+		config.TonConfigUrl,
+		config.TeleportContractAddr,
+		config.CoordinatorContractAddr,
+		config.BitcoinClientContractAddr,
+		config.JettonMinterContractAddr,
+		config.Metrics,
+		config.MetricsArgs,
 	)
 }
 
-func ParseExternalServices(indexerConfig *IndexerConfig) (*ExternalServicesConfig, error) {
+func ParseExternalServices(config *Config) (*ExternalServicesConfig, error) {
 	cfg := &ExternalServicesConfig{
-		BitcoinRpcHost:            indexerConfig.BitcoinRpcHost,
-		BitcoinRpcUser:            indexerConfig.BitcoinRpcUser,
-		BitcoinRpcPass:            indexerConfig.BitcoinRpcPass,
-		TonConfigUrl:              indexerConfig.TonConfigUrl,
-		DatabaseUrl:               indexerConfig.DatabaseUrl,
+		BitcoinRpcHost:            config.BitcoinRpcHost,
+		BitcoinRpcUser:            config.BitcoinRpcUser,
+		BitcoinRpcPass:            config.BitcoinRpcPass,
+		TonConfigUrl:              config.TonConfigUrl,
+		DatabaseUrl:               config.DatabaseUrl,
 		DatabaseMaxConn:           8,
 		DatabaseMaxIdleConn:       8,
-		RelayerWalletV4Secret:     indexerConfig.RelayerWalletV4Secret,
 		TeleportContractAddr:      nil,
 		CoordinatorContractAddr:   nil,
 		BitcoinClientContractAddr: nil,
 		JettonMinterContractAddr:  nil,
 	}
 
-	if len(indexerConfig.DatabaseMaxConn) > 0 {
-		value, err := ParseInt(indexerConfig.DatabaseMaxConn, "DatabaseMaxConn")
+	if len(config.DatabaseMaxConn) > 0 {
+		value, err := ParseInt(config.DatabaseMaxConn, "DatabaseMaxConn")
 		if err != nil {
-			return nil, fmt.Errorf("wrong `DATABASE_MAX_CONN` .env argument value '%s'. %w", indexerConfig.DatabaseMaxConn, err)
+			return nil, fmt.Errorf("wrong `DATABASE_MAX_CONN` .env argument value '%s'. %w", config.DatabaseMaxConn, err)
 		}
 
 		cfg.DatabaseMaxConn = value
 	}
 
-	if len(indexerConfig.DatabaseMaxIdleConn) > 0 {
-		value, err := ParseInt(indexerConfig.DatabaseMaxIdleConn, "DatabaseMaxIdleConn")
+	if len(config.DatabaseMaxIdleConn) > 0 {
+		value, err := ParseInt(config.DatabaseMaxIdleConn, "DatabaseMaxIdleConn")
 		if err != nil {
-			return nil, fmt.Errorf("wrong `DATABASE_MAX_IDLE_CONN` .env argument value '%s'. %w", indexerConfig.DatabaseMaxIdleConn, err)
+			return nil, fmt.Errorf("wrong `DATABASE_MAX_IDLE_CONN` .env argument value '%s'. %w", config.DatabaseMaxIdleConn, err)
 		}
 
 		cfg.DatabaseMaxIdleConn = value
 	}
 
 	var err error = nil
-	if len(indexerConfig.TeleportContractAddr) > 0 {
-		cfg.TeleportContractAddr, err = address.ParseAddr(indexerConfig.TeleportContractAddr)
+	if len(config.TeleportContractAddr) > 0 {
+		cfg.TeleportContractAddr, err = address.ParseAddr(config.TeleportContractAddr)
 		if err != nil {
-			return nil, fmt.Errorf("parsing the Teleport Contract address '%s' failed", indexerConfig.TeleportContractAddr)
+			return nil, fmt.Errorf("parsing the Teleport Contract address '%s' failed", config.TeleportContractAddr)
 		}
 	}
 
-	if len(indexerConfig.CoordinatorContractAddr) > 0 {
-		cfg.CoordinatorContractAddr, err = address.ParseAddr(indexerConfig.CoordinatorContractAddr)
+	if len(config.CoordinatorContractAddr) > 0 {
+		cfg.CoordinatorContractAddr, err = address.ParseAddr(config.CoordinatorContractAddr)
 		if err != nil {
-			return nil, fmt.Errorf("parsing the Coordinator Contract address '%s' failed", indexerConfig.CoordinatorContractAddr)
+			return nil, fmt.Errorf("parsing the Coordinator Contract address '%s' failed", config.CoordinatorContractAddr)
 		}
 	}
 
-	if len(indexerConfig.BitcoinClientContractAddr) > 0 {
-		cfg.BitcoinClientContractAddr, err = address.ParseAddr(indexerConfig.BitcoinClientContractAddr)
+	if len(config.BitcoinClientContractAddr) > 0 {
+		cfg.BitcoinClientContractAddr, err = address.ParseAddr(config.BitcoinClientContractAddr)
 		if err != nil {
-			return nil, fmt.Errorf("parsing the Bitcoin Client Contract address '%s' failed", indexerConfig.BitcoinClientContractAddr)
+			return nil, fmt.Errorf("parsing the Bitcoin Client Contract address '%s' failed", config.BitcoinClientContractAddr)
 		}
 	}
 
-	if len(indexerConfig.JettonMinterContractAddr) > 0 {
-		cfg.JettonMinterContractAddr, err = address.ParseAddr(indexerConfig.JettonMinterContractAddr)
+	if len(config.JettonMinterContractAddr) > 0 {
+		cfg.JettonMinterContractAddr, err = address.ParseAddr(config.JettonMinterContractAddr)
 		if err != nil {
-			return nil, fmt.Errorf("parsing the Jetton Minter Contract address '%s' failed", indexerConfig.JettonMinterContractAddr)
+			return nil, fmt.Errorf("parsing the Jetton Minter Contract address '%s' failed", config.JettonMinterContractAddr)
 		}
 	}
 
 	return cfg, nil
 }
 
-func ParseMetrics(indexerConfig *IndexerConfig) (*MetricsConfig, error) {
+func ParseMetrics(config *Config) (*MetricsConfig, error) {
 	cfg := &MetricsConfig{
 		RunFetcherDKG:                   true,
 		RunFetcherContractBalances:      true,
@@ -197,8 +177,8 @@ func ParseMetrics(indexerConfig *IndexerConfig) (*MetricsConfig, error) {
 	}
 
 	// Run fetchers
-	if len(indexerConfig.Metrics) > 0 {
-		envStr := indexerConfig.Metrics
+	if len(config.Metrics) > 0 {
+		envStr := config.Metrics
 		parts := strings.Split(envStr, ",")
 
 		for _, part := range parts {
@@ -235,8 +215,8 @@ func ParseMetrics(indexerConfig *IndexerConfig) (*MetricsConfig, error) {
 	}
 
 	// Fine tune arguments
-	if len(indexerConfig.MetricsArgs) > 0 {
-		envStr := indexerConfig.MetricsArgs
+	if len(config.MetricsArgs) > 0 {
+		envStr := config.MetricsArgs
 		parts := strings.Split(envStr, ",")
 
 		for _, part := range parts {

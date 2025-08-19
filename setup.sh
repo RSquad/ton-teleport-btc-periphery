@@ -8,7 +8,7 @@ echo "Installing gofumpt code formatter..."
 go install mvdan.cc/gofumpt@latest
 
 echo "Setting up environment files..."
-dirs=(./relayer ./oracle ./indexer)
+dirs=(./relayer ./oracle ./indexer ./metrics)
 
 for dir in "${dirs[@]}"; do
   echo "Processing directory: $dir"

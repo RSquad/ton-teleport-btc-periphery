@@ -1,13 +1,10 @@
-module github.com/rsquad/ton-teleport-btc-periphery/indexer
+module github.com/rsquad/ton-teleport-btc-periphery/metrics
 
 go 1.23.1
 
 replace github.com/rsquad/ton-teleport-btc-periphery/lib => ../lib
 
 require (
-	entgo.io/contrib v0.6.0
-	entgo.io/ent v0.14.3
-	github.com/99designs/gqlgen v0.17.57
 	github.com/btcsuite/btcd v0.24.2
 	github.com/btcsuite/btcd/btcec/v2 v2.1.3
 	github.com/btcsuite/btcd/btcutil v1.1.5
@@ -19,7 +16,6 @@ require (
 	github.com/rs/cors v1.11.1
 	github.com/rsquad/ton-teleport-btc-periphery/lib v0.0.0-00010101000000-000000000000
 	github.com/stretchr/testify v1.10.0
-	github.com/vektah/gqlparser/v2 v2.5.20
 	github.com/xssnick/tonutils-go v1.13.0
 	golang.org/x/sync v0.14.0
 )
