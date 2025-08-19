@@ -18,6 +18,7 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated/migrate"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/events"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/httpservice"
+	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/metrics"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/mintservice"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/pegoutmanager"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
@@ -39,6 +40,7 @@ type App struct {
 	BitcoinClientContract *bitcoinclientcontract.BitcoinClientContract
 	PegoutManager         *pegoutmanager.PegoutManager
 	MintService           *mintservice.MintService
+	MetricsService        *metrics.MetricsService
 	HttpService           *httpservice.HttpService
 }
 
@@ -116,13 +118,36 @@ func initialize() (*App, error) {
 		)
 	}
 
+	// Bitcoin client contract
+	var bitcoinClientContract *bitcoinclientcontract.BitcoinClientContract = nil
+	if cfg.ExternalServices.BitcoinClientContractAddr != nil {
+		bitcoinClientContract = bitcoinclientcontract.NewBitcoinClientContract(
+			cfg.ExternalServices.BitcoinClientContractAddr,
+			tonClient,
+			nil,
+			context.Background(),
+		)
+	}
+
 	// Open DB connection
+	var dbConnPoolMetrics *sql.DB = nil
 	var dbConnPoolGraphql *sql.DB = nil
 	{
+		dbConnPoolMetrics, err = sql.Open("postgres", cfg.ExternalServices.DatabaseUrl)
+		if err != nil {
+			return nil, err
+		}
+
 		dbConnPoolGraphql, err = sql.Open("postgres", cfg.ExternalServices.DatabaseUrl)
 		if err != nil {
 			return nil, err
 		}
+
+		// Setup DB pooling (metrics)
+		dbConnPoolMetrics.SetMaxOpenConns(cfg.ExternalServices.DatabaseMaxConn)
+		dbConnPoolMetrics.SetMaxIdleConns(cfg.ExternalServices.DatabaseMaxIdleConn)
+		dbConnPoolMetrics.SetConnMaxLifetime(-1)
+		dbConnPoolMetrics.SetConnMaxIdleTime(-1)
 
 		// Setup DB pooling (graphql)
 		dbConnPoolGraphql.SetMaxOpenConns(cfg.ExternalServices.DatabaseMaxConn)
@@ -144,56 +169,86 @@ func initialize() (*App, error) {
 	}
 
 	// Mint service
-	if teleportContract == nil {
-		return nil, fmt.Errorf("failed to start MintService: TeleportContract is null. Please set the COMMON_TON_CONTRACT_TELEPORT_ADDR value in the .env")
-	}
+	var mintService *mintservice.MintService = nil
+	if cfg.RunServices.RunMintService {
+		if teleportContract == nil {
+			return nil, fmt.Errorf("failed to start MintService: TeleportContract is null. Please set the COMMON_TON_CONTRACT_TELEPORT_ADDR value in the .env")
+		}
 
-	mintService := mintservice.New(
-		repo,
-		bitcoinClient,
-		tonClient,
-		teleportContract,
-	)
+		mintService = mintservice.New(
+			repo,
+			bitcoinClient,
+			tonClient,
+			teleportContract,
+		)
+	}
 
 	// Pegout manager
-	if teleportContract == nil {
-		return nil, fmt.Errorf("failed to start PegoutManager: TeleportContract is null. Please set the COMMON_TON_CONTRACT_TELEPORT_ADDR value in the .env")
-	}
+	var pegoutManager *pegoutmanager.PegoutManager = nil
+	if cfg.RunServices.RunPegoutManager {
+		if teleportContract == nil {
+			return nil, fmt.Errorf("failed to start PegoutManager: TeleportContract is null. Please set the COMMON_TON_CONTRACT_TELEPORT_ADDR value in the .env")
+		}
 
-	pegoutManager, err := pegoutmanager.New(
-		context.Background(),
-		repo,
-		bitcoinClient,
-		tonClient,
-		teleportContract,
-	)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create pegout manager: %w", err)
+		pegoutManager, err = pegoutmanager.New(
+			context.Background(),
+			repo,
+			bitcoinClient,
+			tonClient,
+			teleportContract,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create pegout manager: %w", err)
+		}
 	}
 
 	// Event service
-	if teleportContract == nil {
-		return nil, fmt.Errorf("failed to start EventService: TeleportContract is null. Please set the COMMON_TON_CONTRACT_TELEPORT_ADDR value in the .env")
+	var eventService *events.EventService = nil
+	if cfg.RunServices.RunEventService {
+		if teleportContract == nil {
+			return nil, fmt.Errorf("failed to start EventService: TeleportContract is null. Please set the COMMON_TON_CONTRACT_TELEPORT_ADDR value in the .env")
+		}
+
+		if coordinatorContract == nil {
+			return nil, fmt.Errorf("failed to start EventService: CoordinatorContract is null. Please set the COMMON_TON_CONTRACT_COORDINATOR value in the .env")
+		}
+
+		eventService = events.NewEventService(
+			tonClient,
+			repo,
+			teleportContract,
+			coordinatorContract,
+		)
 	}
 
-	if coordinatorContract == nil {
-		return nil, fmt.Errorf("failed to start EventService: CoordinatorContract is null. Please set the COMMON_TON_CONTRACT_COORDINATOR value in the .env")
+	// Metrics service
+	var metricsService *metrics.MetricsService = nil
+	if cfg.RunServices.RunMetricsService {
+		metricsService, err = metrics.NewService(
+			coordinatorContract,
+			bitcoinClientContract,
+			teleportContract,
+			bitcoinClient,
+			tonClient,
+			cfg,
+			dbConnPoolMetrics,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create matrics manager: %w", err)
+		}
 	}
-
-	eventService := events.NewEventService(
-		tonClient,
-		repo,
-		teleportContract,
-		coordinatorContract,
-	)
 
 	// HTTP service
-	httpService := httpservice.New(
-		repo,
-		bitcoinClient,
-		tonClient,
-		teleportContract,
-	)
+	var httpService *httpservice.HttpService = nil
+	if cfg.RunServices.RunHttpService {
+		httpService = httpservice.New(
+			repo,
+			bitcoinClient,
+			tonClient,
+			teleportContract,
+			dbConnPoolMetrics,
+		)
+	}
 
 	logger.Log.Info().
 		Str("component", "main").
@@ -208,6 +263,7 @@ func initialize() (*App, error) {
 		PegoutManager:       pegoutManager,
 		MintService:         mintService,
 		EventService:        eventService,
+		MetricsService:      metricsService,
 		HttpService:         httpService,
 	}, nil
 }
@@ -238,6 +294,14 @@ func run(app *App) error {
 		go func() {
 			defer wg.Done()
 			app.MintService.Work(context.Background())
+		}()
+	}
+
+	if app.MetricsService != nil {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			app.MetricsService.Work(context.Background())
 		}()
 	}
 

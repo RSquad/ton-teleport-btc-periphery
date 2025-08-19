@@ -8,8 +8,11 @@ type IndexerConfig struct {
 	DatabaseUrl               string `env:"INDEXER_DATABASE_URL,required"`
 	DatabaseMaxConn           string `env:"INDEXER_DATABASE_MAX_CONN"`
 	DatabaseMaxIdleConn       string `env:"INDEXER_DATABASE_MAX_IDLE_CONN"`
+	RelayerWalletV4Secret     string `env:"RELAYER_WALLET_V4_SECRET,required"`
 	TeleportContractAddr      string `env:"COMMON_TON_CONTRACT_TELEPORT_ADDR"`
 	CoordinatorContractAddr   string `env:"COMMON_TON_CONTRACT_COORDINATOR"`
 	BitcoinClientContractAddr string `env:"COMMON_TON_CONTRACT_BITCLIENT_ADDR"`
 	JettonMinterContractAddr  string `env:"COMMON_TON_CONTRACT_MINTER_ADDR"`
+	Metrics                   string `env:"METRICS"`
+	MetricsArgs               string `env:"METRICS_ARGS"`
 }
