@@ -23,7 +23,6 @@ import (
 type App struct {
 	TonClient             *tonclient.TonClient
 	BitcoinClient         *bitcoin.Client
-	TeleportContract      *teleportcontract.TeleportContract
 	CoordinatorContract   coordinator.Coordinator
 	BitcoinClientContract *bitcoinclientcontract.BitcoinClientContract
 	MetricsService        *metrics.MetricsService
@@ -150,7 +149,6 @@ func initialize() (*App, error) {
 	return &App{
 		TonClient:           tonClient,
 		BitcoinClient:       bitcoinClient,
-		TeleportContract:    teleportContract,
 		CoordinatorContract: coordinatorContract,
 		MetricsService:      metricsService,
 		HttpService:         httpService,

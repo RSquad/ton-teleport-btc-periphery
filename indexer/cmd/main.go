@@ -35,7 +35,6 @@ type App struct {
 	BitcoinClient         *bitcoin.Client
 	EventService          *events.EventService
 	CoordinatorContract   coordinator.Coordinator
-	TeleportContract      *teleportcontract.TeleportContract
 	BitcoinClientContract *bitcoinclientcontract.BitcoinClientContract
 	PegoutManager         *pegoutmanager.PegoutManager
 	MintService           *mintservice.MintService
@@ -102,12 +101,12 @@ func initialize() (*App, error) {
 		30,
 	)
 
-	// Teleport contract
 	coordinatorContractStorage, err := coordinatorContract.GetStorage(nil)
 	if err != nil {
 		return nil, fmt.Errorf("FetcherContractCoordinator: failed to retrieve storage cell, error: %v", err)
 	}
 
+	// Teleport contract
 	teleportContract := teleportcontract.New(
 		coordinatorContractStorage.TeleportAddr,
 		tonClient,
@@ -186,7 +185,6 @@ func initialize() (*App, error) {
 		Repo:                repo,
 		TonClient:           tonClient,
 		BitcoinClient:       bitcoinClient,
-		TeleportContract:    teleportContract,
 		CoordinatorContract: coordinatorContract,
 		PegoutManager:       pegoutManager,
 		MintService:         mintService,

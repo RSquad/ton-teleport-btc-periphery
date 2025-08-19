@@ -9,9 +9,9 @@ type Config struct {
 	CoordinatorContractAddr   string `env:"COMMON_TON_CONTRACT_COORDINATOR,required"`
 	BitcoinClientContractAddr string `env:"COMMON_TON_CONTRACT_BITCLIENT_ADDR,required"`
 	JettonMinterContractAddr  string `env:"COMMON_TON_CONTRACT_MINTER_ADDR,required"`
-	DatabaseUrl               string `env:"DATABASE_URL,required"`
-	DatabaseMaxConn           string `env:"DATABASE_MAX_CONN"`
-	DatabaseMaxIdleConn       string `env:"DATABASE_MAX_IDLE_CONN"`
+	DatabaseUrl               string `env:"METRICS_DATABASE_URL,required"`
+	DatabaseMaxConn           string `env:"METRICS_DATABASE_MAX_CONN"`
+	DatabaseMaxIdleConn       string `env:"METRICS_DATABASE_MAX_IDLE_CONN"`
 	Metrics                   string `env:"METRICS"`
 	MetricsArgs               string `env:"METRICS_ARGS"`
 }
