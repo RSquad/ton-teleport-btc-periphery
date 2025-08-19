@@ -63,18 +63,18 @@ func initialize() (*App, error) {
 		Str("component", "main").
 		Msg("initializing")
 
-	indexerConfig, err := utils.LoadCfg[config.IndexerConfig]()
+	envConfig, err := utils.LoadCfg[config.EnvConfig]()
 	if err != nil {
 		return nil, err
 	}
 
 	// Read .env config
-	cfg, err := config.NewServicesConfig(&indexerConfig)
+	cfg, err := config.NewServicesConfig(&envConfig)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse .env config: %w", err)
 	}
 
-	logger.Log.Debug().Msg(config.CfgToString(&indexerConfig))
+	logger.Log.Debug().Msg(config.CfgToString(cfg))
 
 	// Bitcoin client
 	bitcoinClient, err := bitcoin.NewClient(

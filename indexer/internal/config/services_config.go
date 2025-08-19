@@ -18,37 +18,37 @@ type ServicesConfig struct {
 	CoordinatorContractAddr *address.Address
 }
 
-func NewServicesConfig(indexerConfig *IndexerConfig) (*ServicesConfig, error) {
+func NewServicesConfig(envConfig *EnvConfig) (*ServicesConfig, error) {
 	databaseMaxConn := 8
 	databaseMaxIdleConn := 8
 
-	if len(indexerConfig.DatabaseMaxConn) > 0 {
-		value, err := ParseInt(indexerConfig.DatabaseMaxConn, "DatabaseMaxConn")
+	if len(envConfig.DatabaseMaxConn) > 0 {
+		value, err := ParseInt(envConfig.DatabaseMaxConn, "DatabaseMaxConn")
 		if err != nil {
-			return nil, fmt.Errorf("wrong `DATABASE_MAX_CONN` .env argument value '%s'. %w", indexerConfig.DatabaseMaxConn, err)
+			return nil, fmt.Errorf("wrong `INDEXER_DATABASE_MAX_CONN` .env argument value '%s'. %w", envConfig.DatabaseMaxConn, err)
 		}
 		databaseMaxConn = value
 	}
 
-	if len(indexerConfig.DatabaseMaxIdleConn) > 0 {
-		value, err := ParseInt(indexerConfig.DatabaseMaxIdleConn, "DatabaseMaxIdleConn")
+	if len(envConfig.DatabaseMaxIdleConn) > 0 {
+		value, err := ParseInt(envConfig.DatabaseMaxIdleConn, "DatabaseMaxIdleConn")
 		if err != nil {
-			return nil, fmt.Errorf("wrong `DATABASE_MAX_IDLE_CONN` .env argument value '%s'. %w", indexerConfig.DatabaseMaxIdleConn, err)
+			return nil, fmt.Errorf("wrong `INDEXER_DATABASE_MAX_IDLE_CONN` .env argument value '%s'. %w", envConfig.DatabaseMaxIdleConn, err)
 		}
 		databaseMaxIdleConn = value
 	}
 
-	coordinatorContractAddr, err := address.ParseAddr(indexerConfig.CoordinatorContractAddr)
+	coordinatorContractAddr, err := address.ParseAddr(envConfig.CoordinatorContractAddr)
 	if err != nil {
-		return nil, fmt.Errorf("parsing the Coordinator Contract address '%s' failed", indexerConfig.CoordinatorContractAddr)
+		return nil, fmt.Errorf("parsing the Coordinator Contract address '%s' failed", envConfig.CoordinatorContractAddr)
 	}
 
 	cfg := &ServicesConfig{
-		BitcoinRpcHost:          indexerConfig.BitcoinRpcHost,
-		BitcoinRpcUser:          indexerConfig.BitcoinRpcUser,
-		BitcoinRpcPass:          indexerConfig.BitcoinRpcPass,
-		TonConfigUrl:            indexerConfig.TonConfigUrl,
-		DatabaseUrl:             indexerConfig.DatabaseUrl,
+		BitcoinRpcHost:          envConfig.BitcoinRpcHost,
+		BitcoinRpcUser:          envConfig.BitcoinRpcUser,
+		BitcoinRpcPass:          envConfig.BitcoinRpcPass,
+		TonConfigUrl:            envConfig.TonConfigUrl,
+		DatabaseUrl:             envConfig.DatabaseUrl,
 		DatabaseMaxConn:         databaseMaxConn,
 		DatabaseMaxIdleConn:     databaseMaxIdleConn,
 		CoordinatorContractAddr: coordinatorContractAddr,
@@ -57,15 +57,19 @@ func NewServicesConfig(indexerConfig *IndexerConfig) (*ServicesConfig, error) {
 	return cfg, nil
 }
 
-func CfgToString(indexerConfig *IndexerConfig) string {
+func CfgToString(config *ServicesConfig) string {
 	return fmt.Sprintf(
 		`BitcoinRpcHost: %s
 TonConfigUrl: %s
+DatabaseMaxConn: %d
+DatabaseMaxIdleConn: %d
 CoordinatorContractAddr: %s
 `,
-		indexerConfig.BitcoinRpcHost,
-		indexerConfig.TonConfigUrl,
-		indexerConfig.CoordinatorContractAddr,
+		config.BitcoinRpcHost,
+		config.TonConfigUrl,
+		config.DatabaseMaxConn,
+		config.DatabaseMaxIdleConn,
+		config.CoordinatorContractAddr,
 	)
 }
 

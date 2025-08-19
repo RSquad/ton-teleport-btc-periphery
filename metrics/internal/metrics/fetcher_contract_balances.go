@@ -25,23 +25,25 @@ func NewFetcherContractBalances(
 	tonClient *tonclient.TonClient,
 	cfg *config.ServicesConfig,
 ) *FetcherContractBalances {
-	jwv4r2contract, err := createJWV4R2Contract(tonClient, cfg.ExternalServices.RelayerWalletV4Secret)
-	var relayerAddr *address.Address
-	if err != nil {
-		logger.Log.Error().
-			Msg(fmt.Sprintf("FetcherContractBalances: can't create jwv4r2contract, error: %v", err))
-		relayerAddr = &address.Address{}
-	} else {
-		relayerAddr = jwv4r2contract.Address()
-	}
+	/*
+		jwv4r2contract, err := createJWV4R2Contract(tonClient, cfg.RelayerWalletV4Secret)
+		var relayerAddr *address.Address
+		if err != nil {
+			logger.Log.Error().
+				Msg(fmt.Sprintf("FetcherContractBalances: can't create jwv4r2contract, error: %v", err))
+			relayerAddr = &address.Address{}
+		} else {
+			relayerAddr = jwv4r2contract.Address()
+		}
+	*/
 	return &FetcherContractBalances{
 		tonClient: tonClient,
 		contractAddrs: map[string]*address.Address{
-			"teleport":    cfg.ExternalServices.TeleportContractAddr,
-			"coordinator": cfg.ExternalServices.CoordinatorContractAddr,
-			"bitclient":   cfg.ExternalServices.BitcoinClientContractAddr,
-			"minter":      cfg.ExternalServices.JettonMinterContractAddr,
-			"relayer":     relayerAddr,
+			"teleport":    cfg.TeleportContractAddr,
+			"coordinator": cfg.CoordinatorContractAddr,
+			"bitclient":   cfg.BitcoinClientContractAddr,
+			"minter":      cfg.JettonMinterContractAddr,
+			//"relayer":     relayerAddr,
 		},
 	}
 }

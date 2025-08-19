@@ -1,6 +1,6 @@
 package config
 
-type IndexerConfig struct {
+type EnvConfig struct {
 	BitcoinRpcHost          string `env:"COMMON_BITCOIN_RPC_HOST,required"`
 	BitcoinRpcUser          string `env:"COMMON_BITCOIN_RPC_USER,required"`
 	BitcoinRpcPass          string `env:"COMMON_BITCOIN_RPC_PASS,required"`

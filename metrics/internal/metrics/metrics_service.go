@@ -3,7 +3,6 @@ package metrics
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"sync"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
@@ -36,73 +35,32 @@ func NewService(
 	db *sql.DB,
 ) (*MetricsService, error) {
 	// Writer DB
-	writerDbChan := make(chan PayloadDB, cfg.Metrics.WriterDbChainSize)
+	writerDbChan := make(chan PayloadDB, cfg.WriterDbChainSize)
 	writerDB, err := NewWriterDB(writerDbChan, db)
 	if err != nil {
 		return nil, err
 	}
 
 	// Fetcher: Contract DKG
-	var fetcherDKG *FetcherDKG = nil
-	if cfg.Metrics.RunFetcherDKG {
-		if coordinatorContract == nil {
-			return nil, fmt.Errorf("failed to start FetcherDKG: CoordinatorContract is null. Please set the COMMON_TON_CONTRACT_COORDINATOR value in the .env")
-		}
-
-		fetcherDKG = NewFetcherDKG(writerDbChan, coordinatorContract, int64(cfg.Metrics.DkgFetchPeriod))
-	}
+	fetcherDKG := NewFetcherDKG(writerDbChan, coordinatorContract, int64(cfg.DkgFetchPeriod))
 
 	// Fetcher: Contract balances
-	var fetcherContractBalances *FetcherContractBalances = nil
-	if cfg.Metrics.RunFetcherContractBalances {
-		fetcherContractBalances = NewFetcherContractBalances(tonClient, cfg)
-	}
+	fetcherContractBalances := NewFetcherContractBalances(tonClient, cfg)
 
 	// Fetcher: Contract Bitcoin client
-	var fetcherContractBitcoinClient *FetcherContractBitcoinClient = nil
-	if cfg.Metrics.RunFetcherContractBitcoinClient {
-		if bitcoinClientContract == nil {
-			return nil, fmt.Errorf("failed to start FetcherContractBitcoinClient: BitcoinClientContract is null. Please set the COMMON_TON_CONTRACT_BITCLIENT_ADDR value in the .env")
-		}
-
-		fetcherContractBitcoinClient = NewFetcherContractBitcoinClient(writerDbChan, db, bitcoinClient, bitcoinClientContract, int64(cfg.Metrics.BitcoinClientContractFetchPeriod))
-	}
+	fetcherContractBitcoinClient := NewFetcherContractBitcoinClient(writerDbChan, db, bitcoinClient, bitcoinClientContract, int64(cfg.BitcoinClientContractFetchPeriod))
 
 	// Fetcher: BitcoinNetwork
-	var fetcherBitcoinNetwork *FetcherBitcoinNetwork = nil
-	if cfg.Metrics.RunFetcherBitcoinNetwork {
-		fetcherBitcoinNetwork = NewFetcherBitcoinNetwork(writerDbChan, db, bitcoinClient, int64(cfg.Metrics.BitcoinNetworkFetchPeriod))
-	}
+	fetcherBitcoinNetwork := NewFetcherBitcoinNetwork(writerDbChan, db, bitcoinClient, int64(cfg.BitcoinNetworkFetchPeriod))
 
 	// Fetcher: ContractTeleport
-	var fetcherContractTeleport *FetcherContractTeleport = nil
-	if cfg.Metrics.RunFetcherContractTeleport {
-		if teleportContract == nil {
-			return nil, fmt.Errorf("failed to start FetcherContractTeleport: TeleportContract is null. Please set the COMMON_TON_CONTRACT_TELEPORT_ADDR value in the .env")
-		}
-
-		fetcherContractTeleport = NewFetcherContractTeleport(writerDbChan, teleportContract, int64(cfg.Metrics.TeleportContractFetchPeriod))
-	}
+	fetcherContractTeleport := NewFetcherContractTeleport(writerDbChan, teleportContract, int64(cfg.TeleportContractFetchPeriod))
 
 	// Fetcher: ContractCoordinator
-	var fetcherContractCoordinator *FetcherContractCoordinator = nil
-	if cfg.Metrics.RunFetcherContractCoordinator {
-		if coordinatorContract == nil {
-			return nil, fmt.Errorf("failed to start FetcherContractCoordinator: CoordinatorContract is null. Please set the COMMON_TON_CONTRACT_COORDINATOR value in the .env")
-		}
-
-		fetcherContractCoordinator = NewFetcherContractCoordinator(writerDbChan, coordinatorContract, int64(cfg.Metrics.CoordinatorContractFetchPeriod))
-	}
+	fetcherContractCoordinator := NewFetcherContractCoordinator(writerDbChan, coordinatorContract, int64(cfg.CoordinatorContractFetchPeriod))
 
 	// Fetcher: Pegouts
-	var fetcherPegouts *FetcherPegouts = nil
-	if cfg.Metrics.RunFetcherPegouts {
-		if coordinatorContract == nil {
-			return nil, fmt.Errorf("failed to start FetcherPegouts: CoordinatorContract is null. Please set the COMMON_TON_CONTRACT_COORDINATOR value in the .env")
-		}
-
-		fetcherPegouts = NewFetcherPegouts(tonClient, bitcoinClient, coordinatorContract, db, int64(cfg.Metrics.MetricsPegoutsFetchPeriod))
-	}
+	fetcherPegouts := NewFetcherPegouts(tonClient, bitcoinClient, coordinatorContract, db, int64(cfg.MetricsPegoutsFetchPeriod))
 
 	return &MetricsService{
 		writerDB:                     writerDB,

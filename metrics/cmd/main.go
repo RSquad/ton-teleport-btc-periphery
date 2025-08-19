@@ -51,38 +51,38 @@ func initialize() (*App, error) {
 		Str("component", "main").
 		Msg("initializing")
 
-	metricsConfig, err := utils.LoadCfg[config.Config]()
+	envConfig, err := utils.LoadCfg[config.EnvConfig]()
 	if err != nil {
 		return nil, err
 	}
 
 	// Read .env config
-	cfg, err := config.NewServicesConfig(&metricsConfig)
+	cfg, err := config.NewServicesConfig(&envConfig)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse .env config: %w", err)
 	}
 
-	logger.Log.Debug().Msg(config.CfgToString(&metricsConfig))
+	logger.Log.Debug().Msg(config.CfgToString(cfg))
 
 	// Bitcoin client
 	bitcoinClient, err := bitcoin.NewClient(
-		cfg.ExternalServices.BitcoinRpcHost,
-		cfg.ExternalServices.BitcoinRpcUser,
-		cfg.ExternalServices.BitcoinRpcPass,
+		envConfig.BitcoinRpcHost,
+		envConfig.BitcoinRpcUser,
+		envConfig.BitcoinRpcPass,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create bitcoin client: %w", err)
 	}
 
 	// TON client
-	tonClient, err := tonclient.New(cfg.ExternalServices.TonConfigUrl)
+	tonClient, err := tonclient.New(envConfig.TonConfigUrl)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create ton client: %w", err)
 	}
 
 	// Teleport contract
 	teleportContract := teleportcontract.New(
-		cfg.ExternalServices.TeleportContractAddr,
+		cfg.TeleportContractAddr,
 		tonClient,
 		nil,
 		context.Background(),
@@ -90,7 +90,7 @@ func initialize() (*App, error) {
 
 	// Coordinator contract
 	coordinatorContract := coordinator.New(
-		cfg.ExternalServices.CoordinatorContractAddr,
+		cfg.CoordinatorContractAddr,
 		tonClient,
 		nil,
 		context.Background(),
@@ -99,7 +99,7 @@ func initialize() (*App, error) {
 
 	// Bitcoin client contract
 	bitcoinClientContract := bitcoinclientcontract.NewBitcoinClientContract(
-		cfg.ExternalServices.BitcoinClientContractAddr,
+		cfg.BitcoinClientContractAddr,
 		tonClient,
 		nil,
 		context.Background(),
@@ -108,14 +108,14 @@ func initialize() (*App, error) {
 	// Open DB connection
 	var dbConnPoolMetrics *sql.DB = nil
 	{
-		dbConnPoolMetrics, err = sql.Open("postgres", cfg.ExternalServices.DatabaseUrl)
+		dbConnPoolMetrics, err = sql.Open("postgres", cfg.DatabaseUrl)
 		if err != nil {
 			return nil, err
 		}
 
 		// Setup DB pooling (metrics)
-		dbConnPoolMetrics.SetMaxOpenConns(cfg.ExternalServices.DatabaseMaxConn)
-		dbConnPoolMetrics.SetMaxIdleConns(cfg.ExternalServices.DatabaseMaxIdleConn)
+		dbConnPoolMetrics.SetMaxOpenConns(cfg.DatabaseMaxConn)
+		dbConnPoolMetrics.SetMaxIdleConns(cfg.DatabaseMaxIdleConn)
 		dbConnPoolMetrics.SetConnMaxLifetime(-1)
 		dbConnPoolMetrics.SetConnMaxIdleTime(-1)
 	}
