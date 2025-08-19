@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/btcsuite/btcd/btcjson"
-	bu "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/bitcoinutils"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/teleportcontract"
@@ -128,7 +127,7 @@ func (fb *FetcherBitcoinNetwork) getSVB(blockCount int, mode *btcjson.EstimateSm
 	return fee, nil
 }
 
-func (fetcher *FetcherBitcoinNetwork) setBitcoinTxExistsMetric(pegouts []SignedPegout) {
+/*func (fetcher *FetcherBitcoinNetwork) setBitcoinTxExistsMetric(pegouts []SignedPegout) {
 	for _, pegout := range pegouts {
 		txExists, _, _ := bu.BitcoinTxExists(fetcher.bitcoinClient, pegout.bitcoinTxId)
 		if !txExists {
@@ -138,7 +137,7 @@ func (fetcher *FetcherBitcoinNetwork) setBitcoinTxExistsMetric(pegouts []SignedP
 		}
 
 	}
-}
+}*/
 
 func (fetcher *FetcherBitcoinNetwork) Fetch() {
 	//
@@ -148,13 +147,15 @@ func (fetcher *FetcherBitcoinNetwork) Fetch() {
 		return
 	}
 
-	signedPegouts, err := fetcher.getSignedPegouts()
-	if err != nil {
-		logger.Log.Error().Err(err).
-			Str("component", "FetcherBitcoinNetwork").
-			Msg("fetch failed")
-	}
-	fetcher.setBitcoinTxExistsMetric(signedPegouts)
+	/*
+		signedPegouts, err := fetcher.getSignedPegouts()
+		if err != nil {
+			logger.Log.Error().Err(err).
+				Str("component", "FetcherBitcoinNetwork").
+				Msg("fetch failed")
+		}
+		fetcher.setBitcoinTxExistsMetric(signedPegouts)
+	*/
 
 	// Serialize
 	data := FetcherBitcoinNetworkData{

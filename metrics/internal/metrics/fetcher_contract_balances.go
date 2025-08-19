@@ -8,11 +8,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/config"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 	jwv4r2contract "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/jw_v4r2_contract"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
+	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/config"
 	"github.com/xssnick/tonutils-go/address"
 )
 
@@ -25,23 +25,25 @@ func NewFetcherContractBalances(
 	tonClient *tonclient.TonClient,
 	cfg *config.ServicesConfig,
 ) *FetcherContractBalances {
-	jwv4r2contract, err := createJWV4R2Contract(tonClient, cfg.ExternalServices.RelayerWalletV4Secret)
-	var relayerAddr *address.Address
-	if err != nil {
-		logger.Log.Error().
-			Msg(fmt.Sprintf("FetcherContractBalances: can't create jwv4r2contract, error: %v", err))
-		relayerAddr = &address.Address{}
-	} else {
-		relayerAddr = jwv4r2contract.Address()
-	}
+	/*
+		jwv4r2contract, err := createJWV4R2Contract(tonClient, cfg.RelayerWalletV4Secret)
+		var relayerAddr *address.Address
+		if err != nil {
+			logger.Log.Error().
+				Msg(fmt.Sprintf("FetcherContractBalances: can't create jwv4r2contract, error: %v", err))
+			relayerAddr = &address.Address{}
+		} else {
+			relayerAddr = jwv4r2contract.Address()
+		}
+	*/
 	return &FetcherContractBalances{
 		tonClient: tonClient,
 		contractAddrs: map[string]*address.Address{
-			"teleport":    cfg.ExternalServices.TeleportContractAddr,
-			"coordinator": cfg.ExternalServices.CoordinatorContractAddr,
-			"bitclient":   cfg.ExternalServices.BitcoinClientContractAddr,
-			"minter":      cfg.ExternalServices.JettonMinterContractAddr,
-			"relayer":     relayerAddr,
+			"teleport":    cfg.TeleportContractAddr,
+			"coordinator": cfg.CoordinatorContractAddr,
+			"bitclient":   cfg.BitcoinClientContractAddr,
+			"minter":      cfg.JettonMinterContractAddr,
+			//"relayer":     relayerAddr,
 		},
 	}
 }

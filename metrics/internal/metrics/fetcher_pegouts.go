@@ -12,7 +12,6 @@ import (
 
 	"slices"
 
-	bu "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/bitcoinutils"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
@@ -238,6 +237,7 @@ func (f *FetcherPegouts) getInternalKey(typeId int) ([]byte, error) {
 	return dkgData.R3.Data.InternalKey, nil
 }
 
+/*
 func (f *FetcherPegouts) setBitcoinTxExistsMetric(pegouts map[string]SignedPegout) {
 	if len(pegouts) == 0 {
 		unprocessedPegout.WithLabelValues(utils.AddrToRawString(&address.Address{}), "").Set(0)
@@ -253,6 +253,7 @@ func (f *FetcherPegouts) setBitcoinTxExistsMetric(pegouts map[string]SignedPegou
 
 	}
 }
+*/
 
 func (f *FetcherPegouts) setAutopegoutDelayedMetric(pegouts map[uint64]coordinator.PegoutRecord) {
 	autopegoutDelayed.Set(0)
@@ -377,37 +378,39 @@ func (f *FetcherPegouts) Fetch() {
 		logger.Log.Debug().Msg("FetcherPegouts: Contract returns unsignedPegouts is null")
 	}
 
-	unsignedPegoutsLen.WithLabelValues("Unsigned pegouts length").Set(float64(len(unsignedPegouts)))
+	/*
+		unsignedPegoutsLen.WithLabelValues("Unsigned pegouts length").Set(float64(len(unsignedPegouts)))
 
-	f.setDelayedMetric(unsignedPegouts)
-	f.setAutopegoutDelayedMetric(unsignedPegouts)
-	f.setPegoutMaxSignersMetric(unsignedPegouts)
-	f.setSigningRestartMetric(unsignedPegouts)
-	f.setRestartSigningPegoutCountMetric(f.pegoutTempData.expirations)
-	keys := getMapKeysUint64(unsignedPegouts)
-	if len(keys) == 0 {
-		logger.Log.Debug().Msg("FetcherPegouts: Contract returns unsignedPegouts is empty")
-		f.setSigningMaskMetrics(EMPTY_PEGOUT)
-		f.setCulpritMetrics(EMPTY_PEGOUT)
-	} else {
-		f.setSigningMaskMetrics(unsignedPegouts[keys[0]])
-		f.setCulpritMetrics(unsignedPegouts[keys[0]])
-	}
-	var signedPegouts = make(map[string]SignedPegout)
-	signedCache, ok := f.pegoutTempData.signedPegouts.Get("SignedPegouts")
-
-	if ok {
-		signedPegouts = signedCache
-	} else {
-		signedPegouts, err = f.getSignedPegouts()
-		if err != nil {
-			logger.Log.Error().Err(err).
-				Str("component", "FetcherPegouts").
-				Msg("fetch failed")
+		f.setDelayedMetric(unsignedPegouts)
+		f.setAutopegoutDelayedMetric(unsignedPegouts)
+		f.setPegoutMaxSignersMetric(unsignedPegouts)
+		f.setSigningRestartMetric(unsignedPegouts)
+		f.setRestartSigningPegoutCountMetric(f.pegoutTempData.expirations)
+		keys := getMapKeysUint64(unsignedPegouts)
+		if len(keys) == 0 {
+			logger.Log.Debug().Msg("FetcherPegouts: Contract returns unsignedPegouts is empty")
+			f.setSigningMaskMetrics(EMPTY_PEGOUT)
+			f.setCulpritMetrics(EMPTY_PEGOUT)
+		} else {
+			f.setSigningMaskMetrics(unsignedPegouts[keys[0]])
+			f.setCulpritMetrics(unsignedPegouts[keys[0]])
 		}
-		f.pegoutTempData.signedPegouts.Set("SignedPegouts", signedPegouts, time.Duration(f.period)*time.Second)
-	}
-	f.setBitcoinTxExistsMetric(signedPegouts)
+		var signedPegouts = make(map[string]SignedPegout)
+		signedCache, ok := f.pegoutTempData.signedPegouts.Get("SignedPegouts")
+
+		if ok {
+			signedPegouts = signedCache
+		} else {
+			signedPegouts, err = f.getSignedPegouts()
+			if err != nil {
+				logger.Log.Error().Err(err).
+					Str("component", "FetcherPegouts").
+					Msg("fetch failed")
+			}
+			f.pegoutTempData.signedPegouts.Set("SignedPegouts", signedPegouts, time.Duration(f.period)*time.Second)
+		}
+		f.setBitcoinTxExistsMetric(signedPegouts)
+	*/
 
 	var internalKeys InternalKeys
 	internalKeysCache, ok := f.pegoutTempData.internalKeys.Get("InternalKeys")
