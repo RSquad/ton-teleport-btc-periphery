@@ -93,17 +93,6 @@ func initialize() (*App, error) {
 		return nil, fmt.Errorf("failed to create ton client: %w", err)
 	}
 
-	// Teleport contract
-	var teleportContract *teleportcontract.TeleportContract = nil
-	if cfg.ExternalServices.TeleportContractAddr != nil {
-		teleportContract = teleportcontract.New(
-			cfg.ExternalServices.TeleportContractAddr,
-			tonClient,
-			nil,
-			context.Background(),
-		)
-	}
-
 	// Coordinator contract
 	var coordinatorContract coordinator.Coordinator = nil
 	if cfg.ExternalServices.CoordinatorContractAddr != nil {
@@ -115,6 +104,19 @@ func initialize() (*App, error) {
 			30,
 		)
 	}
+
+	// Teleport contract
+	coordinatorContractStorage, err := coordinatorContract.GetStorage(nil)
+	if err != nil {
+		return nil, fmt.Errorf("FetcherContractCoordinator: failed to retrieve storage cell, error: %v", err)
+	}
+
+	teleportContract := teleportcontract.New(
+		coordinatorContractStorage.TeleportAddr,
+		tonClient,
+		nil,
+		context.Background(),
+	)
 
 	// Open DB connection
 	var dbConnPoolGraphql *sql.DB = nil
@@ -144,10 +146,6 @@ func initialize() (*App, error) {
 	}
 
 	// Mint service
-	if teleportContract == nil {
-		return nil, fmt.Errorf("failed to start MintService: TeleportContract is null. Please set the COMMON_TON_CONTRACT_TELEPORT_ADDR value in the .env")
-	}
-
 	mintService := mintservice.New(
 		repo,
 		bitcoinClient,
@@ -156,10 +154,6 @@ func initialize() (*App, error) {
 	)
 
 	// Pegout manager
-	if teleportContract == nil {
-		return nil, fmt.Errorf("failed to start PegoutManager: TeleportContract is null. Please set the COMMON_TON_CONTRACT_TELEPORT_ADDR value in the .env")
-	}
-
 	pegoutManager, err := pegoutmanager.New(
 		context.Background(),
 		repo,
@@ -172,14 +166,6 @@ func initialize() (*App, error) {
 	}
 
 	// Event service
-	if teleportContract == nil {
-		return nil, fmt.Errorf("failed to start EventService: TeleportContract is null. Please set the COMMON_TON_CONTRACT_TELEPORT_ADDR value in the .env")
-	}
-
-	if coordinatorContract == nil {
-		return nil, fmt.Errorf("failed to start EventService: CoordinatorContract is null. Please set the COMMON_TON_CONTRACT_COORDINATOR value in the .env")
-	}
-
 	eventService := events.NewEventService(
 		tonClient,
 		repo,

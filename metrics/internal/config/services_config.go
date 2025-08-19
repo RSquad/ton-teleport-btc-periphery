@@ -130,7 +130,7 @@ func ParseExternalServices(indexerConfig *IndexerConfig) (*ExternalServicesConfi
 	if len(indexerConfig.DatabaseMaxConn) > 0 {
 		value, err := ParseInt(indexerConfig.DatabaseMaxConn, "DatabaseMaxConn")
 		if err != nil {
-			return nil, fmt.Errorf("wrong `INDEXER_DATABASE_MAX_CONN` .env argument value '%s'. %w", indexerConfig.DatabaseMaxConn, err)
+			return nil, fmt.Errorf("wrong `DATABASE_MAX_CONN` .env argument value '%s'. %w", indexerConfig.DatabaseMaxConn, err)
 		}
 
 		cfg.DatabaseMaxConn = value
@@ -139,7 +139,7 @@ func ParseExternalServices(indexerConfig *IndexerConfig) (*ExternalServicesConfi
 	if len(indexerConfig.DatabaseMaxIdleConn) > 0 {
 		value, err := ParseInt(indexerConfig.DatabaseMaxIdleConn, "DatabaseMaxIdleConn")
 		if err != nil {
-			return nil, fmt.Errorf("wrong `INDEXER_DATABASE_MAX_IDLE_CONN` .env argument value '%s'. %w", indexerConfig.DatabaseMaxIdleConn, err)
+			return nil, fmt.Errorf("wrong `DATABASE_MAX_IDLE_CONN` .env argument value '%s'. %w", indexerConfig.DatabaseMaxIdleConn, err)
 		}
 
 		cfg.DatabaseMaxIdleConn = value

@@ -13,15 +13,10 @@ The Indexer is configured using environment variables. You can set these in a `.
 - `COMMON_BITCOIN_RPC_USER` - Bitcoin RPC username (optional)
 - `COMMON_BITCOIN_RPC_PASS` - Bitcoin RPC password (optional)
 - `COMMON_TON_CONFIG_URL` - TON configuration URL or local path to TON config json (required)
-- `INDEXER_DATABASE_URL` - Database connection URL (required)
-- `INDEXER_DATABASE_MAX_CONN` – Maximum number of connections to the database (optional, default: 8)
-> **Note:** Two separate connection pools are created — one for GraphQL and another for all other services.  
-> This means the total number of active connections can be up to `INDEXER_DATABASE_MAX_CONN * 2`.
-- `INDEXER_DATABASE_MAX_IDLE_CONN` – Maximum number of idle connections to the database (optional, default: 8)
-- `COMMON_TON_CONTRACT_TELEPORT_ADDR` - Address of the Teleport contract on TON (optional)
 - `COMMON_TON_CONTRACT_COORDINATOR` - Address of the Coordinator contract on TON (optional)
-- `COMMON_TON_CONTRACT_BITCLIENT_ADDR` - Address of the Bitcoin Client contract on TON (optional)
-- `COMMON_TON_CONTRACT_MINTER_ADDR` - Address of the Minter contract on TON (optional)
+- `DATABASE_URL` - Database connection URL (required)
+- `DATABASE_MAX_CONN` – Maximum number of connections to the database (optional, default: 8)
+- `DATABASE_MAX_IDLE_CONN` – Maximum number of idle connections to the database (optional, default: 8)
 
 #### Metrics
 
