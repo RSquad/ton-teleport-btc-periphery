@@ -14,7 +14,7 @@ jobs:
     if: github.ref == 'refs/heads/develop'
     uses: ./.github/workflows/build-and-push.yml
     with:
-      APPS: '["indexer", "relayer", "oracle", "db-backup"]'
+      APPS: '["indexer", "relayer", "oracle", "db-backup", "metrics"]'
       STAGE: develop
       DOCKER_REGISTRY_URL: registry.digitalocean.com/rsquad-dev
     secrets:
@@ -24,7 +24,7 @@ jobs:
     if: github.ref == 'refs/heads/sandbox'
     uses: ./.github/workflows/build-and-push.yml
     with:
-      APPS: '["indexer", "relayer", "db-backup"]'
+      APPS: '["indexer", "relayer", "db-backup", "metrics"]'
       STAGE: sandbox
       DOCKER_REGISTRY_URL: registry.digitalocean.com/rsquad-dev
     secrets:
@@ -34,7 +34,7 @@ jobs:
     if: github.ref == 'refs/heads/master'
     uses: ./.github/workflows/build-and-push.yml
     with:
-      APPS: '["indexer", "relayer", "oracle", "db-backup"]'
+      APPS: '["indexer", "relayer", "oracle", "db-backup", "metrics"]'
       STAGE: prod
       DOCKER_REGISTRY_URL: registry.digitalocean.com/rsquad-prod
     secrets:
