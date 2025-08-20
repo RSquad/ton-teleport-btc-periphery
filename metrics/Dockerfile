@@ -17,8 +17,6 @@ RUN go mod download
 COPY metrics/ ./metrics/
 COPY lib/ ./lib/
 
-RUN cd ./metrics && go generate . && cd ..
-
 RUN go build -o ./bin ./metrics/cmd/main.go
 
 FROM debian:bookworm-slim
