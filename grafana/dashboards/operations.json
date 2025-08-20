@@ -250,7 +250,7 @@
                     "root_selector": "",
                     "source": "url",
                     "type": "json",
-                    "url": "http://metrics/api?source=mints",
+                    "url": "http://metrics/metrics/api?source=mints",
                     "url_options": {
                         "data": "",
                         "method": "GET"
@@ -532,7 +532,7 @@
                     "root_selector": "",
                     "source": "url",
                     "type": "json",
-                    "url": "http://metrics/api?source=burns",
+                    "url": "http://metrics/metrics/api?source=burns",
                     "url_options": {
                         "data": "",
                         "method": "GET"
@@ -789,7 +789,7 @@
                     "root_selector": "",
                     "source": "url",
                     "type": "json",
-                    "url": "http://metrics/api?source=reinits",
+                    "url": "http://metrics/metrics/api?source=reinits",
                     "url_options": {
                         "data": "",
                         "method": "GET"
