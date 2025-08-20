@@ -1,4 +1,4 @@
-FROM golang:1.23.1 as builder
+FROM golang:1.23.1 AS builder
 
 WORKDIR /app
 
@@ -7,6 +7,7 @@ COPY go.work go.work.sum ./
 RUN go work edit -dropuse ./indexer
 RUN go work edit -dropuse ./frost
 RUN go work edit -dropuse ./oracle
+RUN go work edit -dropuse ./metrics
 
 COPY relayer/go.mod relayer/go.sum ./relayer/
 COPY lib/go.mod lib/go.sum ./lib/
