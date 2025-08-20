@@ -26,7 +26,9 @@ COPY oracle/go.mod oracle/go.sum ./oracle/
 COPY lib/go.mod lib/go.sum ./lib/
 COPY frost/go.mod frost/go.sum ./frost/
 
-RUN go work edit -dropuse ./relayer -dropuse ./indexer
+RUN go work edit -dropuse ./relayer
+RUN go work edit -dropuse ./indexer
+RUN go work edit -dropuse ./metrics
 
 RUN go mod download
 
