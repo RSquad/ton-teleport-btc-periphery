@@ -3,8 +3,8 @@ go 1.23.1
 use (
 	./frost
 	./indexer
-	./metrics
 	./lib
+	./metrics
 	./oracle
 	./relayer
 )
