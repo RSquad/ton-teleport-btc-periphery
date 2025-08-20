@@ -78,7 +78,7 @@
                     "root_selector": "",
                     "source": "url",
                     "type": "json",
-                    "url": "http://metrics/api?source=plots_summary",
+                    "url": "http://metrics/metrics/api?source=plots_summary",
                     "url_options": {
                         "data": "",
                         "method": "GET"
@@ -161,7 +161,7 @@
                     "root_selector": "",
                     "source": "url",
                     "type": "json",
-                    "url": "http://metrics/api?source=plots_summary",
+                    "url": "http://metrics/metrics/api?source=plots_summary",
                     "url_options": {
                         "data": "",
                         "method": "GET"
@@ -245,7 +245,7 @@
                     "root_selector": "",
                     "source": "url",
                     "type": "json",
-                    "url": "http://metrics/api?source=plots_summary",
+                    "url": "http://metrics/metrics/api?source=plots_summary",
                     "url_options": {
                         "data": "",
                         "method": "GET"
@@ -341,7 +341,7 @@
                     "root_selector": "",
                     "source": "url",
                     "type": "json",
-                    "url": "http://metrics/api?source=plots_summary",
+                    "url": "http://metrics/metrics/api?source=plots_summary",
                     "url_options": {
                         "data": "",
                         "method": "GET"
@@ -425,7 +425,7 @@
                     "root_selector": "",
                     "source": "url",
                     "type": "json",
-                    "url": "http://metrics/api?source=plots_summary",
+                    "url": "http://metrics/metrics/api?source=plots_summary",
                     "url_options": {
                         "data": "",
                         "method": "GET"
@@ -560,7 +560,7 @@
                     "root_selector": "",
                     "source": "url",
                     "type": "json",
-                    "url": "http://metrics/api?source=plot_total_supply",
+                    "url": "http://metrics/metrics/api?source=plot_total_supply",
                     "url_options": {
                         "data": "",
                         "method": "GET"
@@ -680,7 +680,7 @@
                     "root_selector": "",
                     "source": "url",
                     "type": "json",
-                    "url": "http://metrics/api?source=plot_minted",
+                    "url": "http://metrics/metrics/api?source=plot_minted",
                     "url_options": {
                         "data": "",
                         "method": "GET"
@@ -710,7 +710,7 @@
                     "root_selector": "",
                     "source": "url",
                     "type": "json",
-                    "url": "http://metrics/api?source=plot_burned",
+                    "url": "http://metrics/metrics/api?source=plot_burned",
                     "url_options": {
                         "data": "",
                         "method": "GET"
@@ -855,7 +855,7 @@
                     "root_selector": "",
                     "source": "url",
                     "type": "json",
-                    "url": "http://metrics/api?source=plot_minted",
+                    "url": "http://metrics/metrics/api?source=plot_minted",
                     "url_options": {
                         "data": "",
                         "method": "GET"
@@ -885,7 +885,7 @@
                     "root_selector": "",
                     "source": "url",
                     "type": "json",
-                    "url": "http://metrics/api?source=plot_burned",
+                    "url": "http://metrics/metrics/api?source=plot_burned",
                     "url_options": {
                         "data": "",
                         "method": "GET"

@@ -36,7 +36,7 @@ func New(
 
 func (s *HttpService) Work(ctx context.Context) {
 	mux := http.NewServeMux()
-	mux.Handle("/api", metrics.NewJsonApiHandler(s.db, s.tonClient))
+	mux.Handle("/metrics/api", metrics.NewJsonApiHandler(s.db, s.tonClient))
 
 	c := cors.New(cors.Options{
 		AllowedOrigins:   []string{"*"},

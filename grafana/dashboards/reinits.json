@@ -252,7 +252,7 @@
                     "root_selector": "",
                     "source": "url",
                     "type": "json",
-                    "url": "http://metrics/api?source=reinits",
+                    "url": "http://metrics/metrics/api?source=reinits",
                     "url_options": {
                         "data": "",
                         "method": "GET"

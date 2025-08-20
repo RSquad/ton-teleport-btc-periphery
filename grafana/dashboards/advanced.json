@@ -131,7 +131,7 @@
                     "root_selector": "",
                     "source": "url",
                     "type": "json",
-                    "url": "http://metrics/api?source=info",
+                    "url": "http://metrics/metrics/api?source=info",
                     "url_options": {
                         "data": "",
                         "method": "GET"
@@ -294,7 +294,7 @@
                     "root_selector": "",
                     "source": "url",
                     "type": "json",
-                    "url": "http://metrics/api?source=info",
+                    "url": "http://metrics/metrics/api?source=info",
                     "url_options": {
                         "data": "",
                         "method": "GET"
@@ -453,7 +453,7 @@
                     "root_selector": "",
                     "source": "url",
                     "type": "json",
-                    "url": "http://metrics/api?source=info",
+                    "url": "http://metrics/metrics/api?source=info",
                     "url_options": {
                         "data": "",
                         "method": "GET"
@@ -591,7 +591,7 @@
                     "root_selector": "",
                     "source": "url",
                     "type": "json",
-                    "url": "http://metrics/api?source=info",
+                    "url": "http://metrics/metrics/api?source=info",
                     "url_options": {
                         "data": "",
                         "method": "GET"
@@ -736,7 +736,7 @@
                     "root_selector": "contractTeleport",
                     "source": "url",
                     "type": "json",
-                    "url": "http://metrics/api?source=info",
+                    "url": "http://metrics/metrics/api?source=info",
                     "url_options": {
                         "data": "",
                         "method": "GET"
@@ -870,7 +870,7 @@
                     "root_selector": "contractTeleport.Limits",
                     "source": "url",
                     "type": "json",
-                    "url": "http://metrics/api?source=info",
+                    "url": "http://metrics/metrics/api?source=info",
                     "url_options": {
                         "data": "",
                         "method": "GET"
@@ -1069,7 +1069,7 @@
                     "root_selector": "",
                     "source": "url",
                     "type": "json",
-                    "url": "http://metrics/api?source=info",
+                    "url": "http://metrics/metrics/api?source=info",
                     "url_options": {
                         "data": "",
                         "method": "GET"
@@ -1229,7 +1229,7 @@
                     "root_selector": "",
                     "source": "url",
                     "type": "json",
-                    "url": "http://metrics/api?source=info",
+                    "url": "http://metrics/metrics/api?source=info",
                     "url_options": {
                         "data": "",
                         "method": "GET"
@@ -1358,7 +1358,7 @@
                     "root_selector": "contractBitcoinClient",
                     "source": "url",
                     "type": "json",
-                    "url": "http://metrics/api?source=info",
+                    "url": "http://metrics/metrics/api?source=info",
                     "url_options": {
                         "data": "",
                         "method": "GET"
@@ -1570,7 +1570,7 @@
                     "source": "url",
                     "type": "json",
                     "uql": "parse-json\n  project UTXOset=\"contractTeleport.UTXOset\"\n          -- mv-expand UTXO=UTXOset\n          -- project\n          --   Address=UTXO.Address,\n          --   Amount=UTXO.Amount,\n          --   Index=UTXO.Index,\n          --   Script=UTXO.Script,\n          --   MintAddress=UTXO.MintAddress,\n          --   TapMerkleRoot=UTXO.TapMerkleRoot\n          -- order by Amount desc",
-                    "url": "http://metrics/api?source=info",
+                    "url": "http://metrics/metrics/api?source=info",
                     "url_options": {
                         "data": "",
                         "method": "GET"

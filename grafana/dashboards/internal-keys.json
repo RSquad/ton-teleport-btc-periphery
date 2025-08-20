@@ -146,7 +146,7 @@
                     "root_selector": "",
                     "source": "url",
                     "type": "json",
-                    "url": "http://metrics/api?source=internal_keys",
+                    "url": "http://metrics/metrics/api?source=internal_keys",
                     "url_options": {
                         "data": "",
                         "method": "GET"
