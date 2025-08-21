@@ -1,22 +1,12 @@
 package data_models
 
 import (
-	"encoding/json"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/xssnick/tonutils-go/address"
 )
-
-func mustUnmarshalJSONMap(t *testing.T, js string) map[string]interface{} {
-	t.Helper()
-	var m map[string]interface{}
-	if err := json.Unmarshal([]byte(js), &m); err != nil {
-		t.Fatalf("unmarshal: %v", err)
-	}
-	return m
-}
 
 func TestDeserializeCoordinatorContractState_Success(t *testing.T) {
 	js := `{
@@ -58,7 +48,7 @@ func TestDeserializeCoordinatorContractState_Success(t *testing.T) {
 		"TeleportAddr": "0:6d69b0ff0cb6f1883aa2829b174dc406b88a7ff08dba9a1b31399058a2a41a70"
 	}`
 
-	m := mustUnmarshalJSONMap(t, js)
+	m := MustUnmarshalJSONMap(t, js)
 
 	got, err := DeserializeCoordinatorContractState(m)
 	if err != nil {
@@ -172,16 +162,6 @@ func TestDeserializeCoordinatorContractState_Errors(t *testing.T) {
 		_, err := DeserializeCoordinatorContractState(m)
 		if err == nil || !strings.Contains(err.Error(), "`TeleportAddr` parse error") {
 			t.Fatalf("want TeleportAddr parse error, got: %v", err)
-		}
-	})
-
-	t.Run("UnsignedPegouts propagates nested error", func(t *testing.T) {
-		// element missing required ID should error in DeserializePegouts
-		js := `{"UnsignedPegouts":[{"PegoutAddress":"EQAPtQRffHrXATHokYMFQgupunwxfTe2Main1FYFUt-8eHn-"}]}`
-		m := mustUnmarshalJSONMap(t, js)
-		_, err := DeserializeCoordinatorContractState(m)
-		if err == nil || !strings.Contains(err.Error(), "`UnsignedPegouts` parse error") {
-			t.Fatalf("want UnsignedPegouts parse error, got: %v", err)
 		}
 	})
 

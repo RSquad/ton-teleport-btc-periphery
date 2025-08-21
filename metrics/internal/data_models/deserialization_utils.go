@@ -2,6 +2,7 @@ package data_models
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
@@ -35,6 +36,9 @@ func ToBool(v interface{}) (bool, error) {
 
 func ToUint64(v interface{}) (uint64, error) {
 	switch t := v.(type) {
+	case json.Number:
+		i64, err := t.Int64()
+		return uint64(i64), err
 	case float64:
 		if t < 0 || t > math.MaxUint64 {
 			return 0, fmt.Errorf("float64 out of uint64 range: %v", t)
@@ -68,6 +72,13 @@ func ToUint64(v interface{}) (uint64, error) {
 
 func ToBigInt(v interface{}) (*big.Int, error) {
 	switch t := v.(type) {
+	case json.Number:
+		str := t.String()
+		z, ok := new(big.Int).SetString(str, 10)
+		if !ok {
+			return nil, fmt.Errorf("invalid big.Int string %q", str)
+		}
+		return z, nil
 	case string:
 		z, ok := new(big.Int).SetString(t, 10)
 		if !ok {

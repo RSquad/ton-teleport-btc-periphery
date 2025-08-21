@@ -61,11 +61,15 @@ func DeserializeCoordinatorContractState(json map[string]interface{}) (*coordina
 
 	// UnsignedPegouts []PegoutRecord
 	if v, ok := json["UnsignedPegouts"].([]interface{}); ok {
-		a, err := DeserializePegouts(v, -1)
-		if err != nil {
-			return nil, fmt.Errorf("`UnsignedPegouts` parse error: %w", err)
+		if len(v) > 0 {
+			a, err := DeserializePegouts(v, -1)
+			if err != nil {
+				return nil, fmt.Errorf("`UnsignedPegouts` parse error: %w", err)
+			}
+			storage.UnsignedPegouts = a
+		} else {
+			storage.UnsignedPegouts = make([]coordinator.PegoutRecord, 0)
 		}
-		storage.UnsignedPegouts = a
 	}
 
 	// MinClaimsPercent (uint16)

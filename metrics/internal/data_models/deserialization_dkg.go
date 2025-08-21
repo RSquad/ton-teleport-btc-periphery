@@ -3,232 +3,275 @@ package data_models
 import (
 	"encoding/base64"
 	"fmt"
-	"math/big"
 	"time"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
-	"github.com/xssnick/tonutils-go/address"
 )
 
-func DeserializeDkg(json interface{}, limit int) ([]coordinator.DKG, error) {
+func DeserializeDkg(json map[string]interface{}) (*coordinator.DKG, error) {
+	var dkg coordinator.DKG
 
-	for i := 0; i < limit; i++ {
-		raw, ok := json[i].(map[string]interface{})
-		if !ok {
-			return nil, fmt.Errorf("element %d is not an object", i)
+	// State (DKGState)
+	if v, ok := json["State"]; ok {
+		u, err := ToUint64(v)
+		if err != nil {
+			return nil, fmt.Errorf("`State` parse error: %w", err)
 		}
-
-		var pegout coordinator.PegoutRecord
-
-		// ID (uint64)
-		if v, ok := raw["ID"]; ok {
-			id64, err := ToUint64(v)
-			if err != nil {
-				return nil, fmt.Errorf("ID at %d: %w", i, err)
-			}
-			pegout.ID = id64
-		} else {
-			return nil, fmt.Errorf("missing ID at %d", i)
-		}
-
-		// PegoutAddress (*address.Address)
-		if v, ok := raw["PegoutAddress"]; ok {
-			addrStr, err := ToString(v)
-			if err != nil {
-				return nil, fmt.Errorf("PegoutAddress at %d: %w", i, err)
-			}
-			a, err := address.ParseAddr(addrStr)
-			if err != nil {
-				return nil, fmt.Errorf("PegoutAddress parse at %d: %w", i, err)
-			}
-			pegout.PegoutAddress = a
-		}
-
-		// InternalKey ([]byte, base64)
-		if v, ok := raw["InternalKey"]; ok {
-			b64, err := ToString(v)
-			if err != nil {
-				return nil, fmt.Errorf("InternalKey at %d: %w", i, err)
-			}
-			bs, err := base64.StdEncoding.DecodeString(b64)
-			if err != nil {
-				return nil, fmt.Errorf("InternalKey decode at %d: %w", i, err)
-			}
-			pegout.InternalKey = bs
-		}
-
-		// IsAutopegout (bool)
-		if v, ok := raw["IsAutopegout"]; ok {
-			b, err := ToBool(v)
-			if err != nil {
-				return nil, fmt.Errorf("IsAutopegout at %d: %w", i, err)
-			}
-			pegout.IsAutopegout = b
-		}
-
-		// Commitments (map[uint16][]byte) values are base64 strings
-		if v, ok := raw["Commitments"]; ok && v != nil {
-			m, err := MapStringToBytesByUint16Key(v)
-			if err != nil {
-				return nil, fmt.Errorf("commitments at %d: %w", i, err)
-			}
-			pegout.Commitments = m
-		}
-
-		// CommitmentsMaskAccepted (*big.Int)
-		if v, ok := raw["CommitmentsMaskAccepted"]; ok {
-			bi, err := ToBigInt(v)
-			if err != nil {
-				return nil, fmt.Errorf("CommitmentsMaskAccepted at %d: %w", i, err)
-			}
-			pegout.CommitmentsMaskAccepted = bi
-		}
-
-		// CommitmentsMaskOther (*big.Int)
-		if v, ok := raw["CommitmentsMaskOther"]; ok {
-			bi, err := ToBigInt(v)
-			if err != nil {
-				return nil, fmt.Errorf("CommitmentsMaskOther at %d: %w", i, err)
-			}
-			pegout.CommitmentsMaskOther = bi
-		}
-
-		// SigningShares (map[uint16]map[uint16][]byte) base64 values
-		if v, ok := raw["SigningShares"]; ok && v != nil {
-			m, err := Map2DStringToBytesByUint16Keys(v)
-			if err != nil {
-				return nil, fmt.Errorf("SigningShares at %d: %w", i, err)
-			}
-			pegout.SigningShares = m
-		}
-
-		// SigningSharesMask ([]byte, base64)
-		if v, ok := raw["SigningSharesMask"]; ok {
-			b64, err := ToString(v)
-			if err != nil {
-				return nil, fmt.Errorf("SigningSharesMask at %d: %w", i, err)
-			}
-			bs, err := base64.StdEncoding.DecodeString(b64)
-			if err != nil {
-				return nil, fmt.Errorf("SigningSharesMask decode at %d: %w", i, err)
-			}
-			pegout.SigningSharesMask = bs
-		}
-
-		// Signatures (coordinator.PegoutSignatures) — customize fillSignatures if your type differs
-		if v, ok := raw["Signatures"]; ok && v != nil {
-			sig, err := ParsePegoutSignatures(v)
-			if err != nil {
-				return nil, fmt.Errorf("signatures at %d: %w", i, err)
-			}
-
-			pegout.Signatures = *sig
-		}
-
-		// ClaimsMask (*big.Int)
-		if v, ok := raw["ClaimsMask"]; ok {
-			bi, err := ToBigInt(v)
-			if err != nil {
-				return nil, fmt.Errorf("ClaimsMask at %d: %w", i, err)
-			}
-			pegout.ClaimsMask = bi
-		}
-
-		// ClaimsCount (uint16)
-		if v, ok := raw["ClaimsCount"]; ok {
-			u, err := ToUint64(v)
-			if err != nil {
-				return nil, fmt.Errorf("ClaimsCount at %d: %w", i, err)
-			}
-			pegout.ClaimsCount = uint16(u)
-		}
-
-		// ClaimsCounters (map[uint16]uint16)
-		if v, ok := raw["ClaimsCounters"]; ok && v != nil {
-			m, err := MapStringToUint16ByUint16Key(v)
-			if err != nil {
-				return nil, fmt.Errorf("ClaimsCounters at %d: %w", i, err)
-			}
-			pegout.ClaimsCounters = m
-		}
-
-		// MaxSigners (uint16)
-		if v, ok := raw["MaxSigners"]; ok {
-			u, err := ToUint64(v)
-			if err != nil {
-				return nil, fmt.Errorf("MaxSigners at %d: %w", i, err)
-			}
-			pegout.MaxSigners = uint16(u)
-		}
-
-		// ExpiredAt (time.Time, RFC3339)
-		if v, ok := raw["ExpiredAt"]; ok {
-			s, err := ToString(v)
-			if err != nil {
-				return nil, fmt.Errorf("ExpiredAt at %d: %w", i, err)
-			}
-			t, err := time.Parse(time.RFC3339, s)
-			if err != nil {
-				return nil, fmt.Errorf("ExpiredAt parse at %d: %w", i, err)
-			}
-			pegout.ExpiredAt = t
-		}
-
-		// SigningMask (*big.Int)
-		if v, ok := raw["SigningMask"]; ok {
-			bi, err := ToBigInt(v)
-			if err != nil {
-				return nil, fmt.Errorf("SigningMask at %d: %w", i, err)
-			}
-			pegout.SigningMask = bi
-		}
-
-		pegouts = append(pegouts, pegout)
+		dkg.State = coordinator.DKGState(u)
 	}
 
-	return pegouts, nil
+	// VSet (VSet: map[uint16][]byte)
+	if v, ok := json["VSet"]; ok && v != nil {
+		m, err := MapStringToBytesByUint16Key(v)
+		if err != nil {
+			return nil, fmt.Errorf("`VSet` parse error: %w", err)
+		}
+		dkg.VSet = m
+	}
+
+	// MaxSigners (uint16)
+	if v, ok := json["MaxSigners"]; ok {
+		u, err := ToUint64(v)
+		if err != nil {
+			return nil, fmt.Errorf("`MaxSigners` parse error: %w", err)
+		}
+		dkg.MaxSigners = uint16(u)
+	}
+
+	// VSetMask (*big.Int)
+	if v, ok := json["VSetMask"]; ok {
+		bi, err := ToBigInt(v)
+		if err != nil {
+			return nil, fmt.Errorf("`VSetMask` parse error: %w", err)
+		}
+		dkg.VSetMask = bi
+	}
+
+	// SessionKeys (*SessionKeys)
+	if v1, ok := json["SessionKeys"].(map[string]interface{}); ok {
+		if v2, ok := v1["PubKeys"]; ok {
+			m, err := MapStringToBytesByUint16Key(v2)
+			if err != nil {
+				return nil, fmt.Errorf("`SessionKeys:PubKeys` parse error: %w", err)
+			}
+			dkg.SessionKeys = &coordinator.SessionKeys{
+				PubKeys: m,
+			}
+		}
+	}
+
+	// R1 (*DKGR1)
+	if v, ok := json["R1"].(map[string]interface{}); ok {
+		r1, err := DeserializeDkgR1(v)
+		if err != nil {
+			return nil, fmt.Errorf("`R1` parse error: %w", err)
+		}
+		dkg.R1 = r1
+	}
+
+	// R2 (*DKGR2)
+	if v, ok := json["R2"].(map[string]interface{}); ok {
+		r2, err := DeserializeDkgR2(v)
+		if err != nil {
+			return nil, fmt.Errorf("`R2` parse error: %w", err)
+		}
+		dkg.R2 = r2
+	}
+
+	// R3 (*DKGR3)
+	if v, ok := json["R3"].(map[string]interface{}); ok {
+		r3, err := DeserializeDkgR3(v)
+		if err != nil {
+			return nil, fmt.Errorf("`R3` parse error: %w", err)
+		}
+		dkg.R3 = r3
+	}
+
+	// Claims (*DKGClaims)
+	if v, ok := json["Claims"].(map[string]interface{}); ok {
+		claims, err := DeserializeDkgClaims(v)
+		if err != nil {
+			return nil, fmt.Errorf("`Claims` parse error: %w", err)
+		}
+		dkg.Claims = claims
+	}
+
+	// CfgHash ([]byte, base64)
+	if v, ok := json["CfgHash"]; ok {
+		b64, err := ToString(v)
+		if err != nil {
+			return nil, fmt.Errorf("`CfgHash` parse error: %w", err)
+		}
+		bs, err := base64.StdEncoding.DecodeString(b64)
+		if err != nil {
+			return nil, fmt.Errorf("`CfgHash` parse error: %w", err)
+		}
+		dkg.CfgHash = bs
+	}
+
+	// Attempts (uint64)
+	if v, ok := json["Attempts"]; ok {
+		id64, err := ToUint64(v)
+		if err != nil {
+			return nil, fmt.Errorf("`Attempts` parse error: %w", err)
+		}
+		dkg.Attempts = id64
+	}
+
+	// Until (time.Time, RFC3339)
+	if v, ok := json["Until"]; ok {
+		s, err := ToString(v)
+		if err != nil {
+			return nil, fmt.Errorf("`Until` parse error: %w", err)
+		}
+		t, err := time.Parse(time.RFC3339, s)
+		if err != nil {
+			return nil, fmt.Errorf("`Until` parse error: %w", err)
+		}
+		dkg.Until = t
+	}
+
+	return &dkg, nil
 }
 
-func ParsePegoutSignatures(v interface{}) (*coordinator.PegoutSignatures, error) {
-	obj, ok := v.(map[string]interface{})
-	if !ok {
-		return nil, fmt.Errorf("signatures is not an object")
+func DeserializeDkgR1(json map[string]interface{}) (*coordinator.DKGR1, error) {
+	var r1 coordinator.DKGR1
+
+	// Mask (*big.Int)
+	if v, ok := json["Mask"]; ok {
+		bi, err := ToBigInt(v)
+		if err != nil {
+			return nil, fmt.Errorf("`Mask` parse error: %w", err)
+		}
+		r1.Mask = bi
 	}
 
-	var mask *big.Int
-	if mv, ok := obj["Mask"]; ok {
-		bi, err := ToBigInt(mv)
+	// Count (uint64)
+	if v, ok := json["Count"]; ok {
+		id64, err := ToUint64(v)
 		if err != nil {
-			return nil, fmt.Errorf("signatures.Mask: %w", err)
+			return nil, fmt.Errorf("`Count` parse error: %w", err)
 		}
-		mask = bi
+		r1.Count = id64
 	}
 
-	var count uint16
-	if cv, ok := obj["Count"]; ok {
-		u, err := ToUint64(cv)
+	return &r1, nil
+}
+
+func DeserializeDkgR2(json map[string]interface{}) (*coordinator.DKGR2, error) {
+	var r2 coordinator.DKGR2
+
+	// Mask (*big.Int)
+	if v, ok := json["Mask"]; ok {
+		bi, err := ToBigInt(v)
 		if err != nil {
-			return nil, fmt.Errorf("signatures.Count: %w", err)
+			return nil, fmt.Errorf("`Mask` parse error: %w", err)
 		}
-		count = uint16(u)
+		r2.Mask = bi
 	}
 
-	var hash []byte
-	if hv, ok := obj["Hash"]; ok {
-		s, err := ToString(hv)
+	// Count (uint64)
+	if v, ok := json["Count"]; ok {
+		id64, err := ToUint64(v)
 		if err != nil {
-			return nil, fmt.Errorf("signatures.Hash: %w", err)
+			return nil, fmt.Errorf("`Count` parse error: %w", err)
 		}
-		bs, err := base64.StdEncoding.DecodeString(s)
-		if err != nil {
-			return nil, fmt.Errorf("signatures.Hash decode: %w", err)
-		}
-		hash = bs
+		r2.Count = id64
 	}
 
-	return &coordinator.PegoutSignatures{
-		Mask:  mask,
-		Count: count,
-		Hash:  hash,
-	}, nil
+	return &r2, nil
+}
+
+func DeserializeDkgR3(json map[string]interface{}) (*coordinator.DKGR3, error) {
+	var r3 coordinator.DKGR3
+
+	// Mask (*big.Int)
+	if v, ok := json["Mask"]; ok {
+		bi, err := ToBigInt(v)
+		if err != nil {
+			return nil, fmt.Errorf("`Mask` parse error: %w", err)
+		}
+		r3.Mask = bi
+	}
+
+	// Count (uint64)
+	if v, ok := json["Count"]; ok {
+		id64, err := ToUint64(v)
+		if err != nil {
+			return nil, fmt.Errorf("`Count` parse error: %w", err)
+		}
+		r3.Count = uint16(id64)
+	}
+
+	// Data (*PubkeyData)
+	if v, ok := json["Data"].(map[string]interface{}); ok {
+		pubkeyPackage := make([]byte, 0)
+		internalKey := make([]byte, 0)
+
+		// PubkeyPackage ([]byte, base64)
+		if pubkeyPackageV, ok := v["PubkeyPackage"]; ok {
+			b64, err := ToString(pubkeyPackageV)
+			if err != nil {
+				return nil, fmt.Errorf("`PubkeyPackage` parse error: %w", err)
+			}
+			bs, err := base64.StdEncoding.DecodeString(b64)
+			if err != nil {
+				return nil, fmt.Errorf("`PubkeyPackage` parse error: %w", err)
+			}
+			pubkeyPackage = bs
+		}
+
+		// InternalKey ([]byte)
+		if internalKeyV, ok := v["InternalKey"]; ok {
+			b64, err := ToString(internalKeyV)
+			if err != nil {
+				return nil, fmt.Errorf("`InternalKey` parse error: %w", err)
+			}
+			bs, err := base64.StdEncoding.DecodeString(b64)
+			if err != nil {
+				return nil, fmt.Errorf("`InternalKey` parse error: %w", err)
+			}
+			internalKey = bs
+		}
+
+		r3.Data = &coordinator.PubkeyData{
+			PubkeyPackage: pubkeyPackage,
+			InternalKey:   internalKey,
+		}
+	}
+
+	return &r3, nil
+}
+
+func DeserializeDkgClaims(json map[string]interface{}) (*coordinator.DKGClaims, error) {
+	var claims coordinator.DKGClaims
+
+	// Mask (*big.Int)
+	if v, ok := json["Mask"]; ok {
+		bi, err := ToBigInt(v)
+		if err != nil {
+			return nil, fmt.Errorf("`Mask` parse error: %w", err)
+		}
+		claims.Mask = bi
+	}
+
+	// Count (uint16)
+	if v, ok := json["Count"]; ok {
+		u, err := ToUint64(v)
+		if err != nil {
+			return nil, fmt.Errorf("`Count` parse error: %w", err)
+		}
+		claims.Count = uint16(u)
+	}
+
+	// Counters (DKGClaimcounters: map[uint16]uint16)
+	if v, ok := json["Counters"].(map[string]interface{}); ok {
+		counters, err := MapStringToUint16ByUint16Key(v)
+		if err != nil {
+			return nil, fmt.Errorf("`Counters` parse error: %w", err)
+		}
+		claims.Counters = counters
+	}
+
+	return &claims, nil
 }

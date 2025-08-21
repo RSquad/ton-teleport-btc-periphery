@@ -13,3 +13,12 @@ func MustUnmarshalJSONArray(t *testing.T, js string) []interface{} {
 	}
 	return arr
 }
+
+func MustUnmarshalJSONMap(t *testing.T, js string) map[string]interface{} {
+	t.Helper()
+	var m map[string]interface{}
+	if err := json.Unmarshal([]byte(js), &m); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	return m
+}

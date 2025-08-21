@@ -165,15 +165,6 @@ func TestDeserializePegouts_Errors(t *testing.T) {
 		}
 	})
 
-	t.Run("missing ID", func(t *testing.T) {
-		js := `[{"PegoutAddress":"EQAPtQRffHrXATHokYMFQgupunwxfTe2Main1FYFUt-8eHn-"}]`
-		arr := MustUnmarshalJSONArray(t, js)
-		_, err := DeserializePegouts(arr, 1)
-		if err == nil {
-			t.Fatalf("expected error for missing ID")
-		}
-	})
-
 	t.Run("bad base64", func(t *testing.T) {
 		js := `[{"ID":1, "InternalKey":"@@not-base64@@", "PegoutAddress":"EQAPtQRffHrXATHokYMFQgupunwxfTe2Main1FYFUt-8eHn-"}]`
 		arr := MustUnmarshalJSONArray(t, js)

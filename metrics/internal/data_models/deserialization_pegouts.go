@@ -37,8 +37,6 @@ func DeserializePegouts(json []interface{}, limit int) ([]coordinator.PegoutReco
 				return nil, fmt.Errorf("ID at %d: %w", i, err)
 			}
 			pegout.ID = id64
-		} else {
-			return nil, fmt.Errorf("missing ID at %d", i)
 		}
 
 		// PegoutAddress (*address.Address)

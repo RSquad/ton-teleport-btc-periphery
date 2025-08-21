@@ -9,6 +9,6 @@ func NewAlertDispatcherPrometheus() *AlertDispatcherPrometheus {
 	return &dispatcher
 }
 
-func (dispatcher *AlertDispatcherPrometheus) OnAlert(name string, severity int) {
+func (dispatcher *AlertDispatcherPrometheus) OnAlert(name string, severity Severity) {
 	// TODO: implement
 }

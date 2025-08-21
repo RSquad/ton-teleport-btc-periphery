@@ -22,7 +22,7 @@ func MulDivCeil(a, b, c uint) uint {
 	return uint(result)
 }
 
-func popcnt(n *big.Int) int {
+func Popcnt(n *big.Int) int {
 	count := 0
 	zero := big.NewInt(0)
 	one := big.NewInt(1)
