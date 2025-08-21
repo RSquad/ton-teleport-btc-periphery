@@ -1,10 +1,9 @@
-package metrics
+package fetchers
 
+/*
 import (
-	"bytes"
 	"context"
 	"database/sql"
-	"encoding/base64"
 	"encoding/json"
 	"math/big"
 	"sync"
@@ -202,7 +201,7 @@ func (f *FetcherPegouts) getSignedPegouts() (map[string]SignedPegout, error) {
 func (f *FetcherPegouts) getInternalKey(typeId int) ([]byte, error) {
 	query := `
     SELECT payload::json
-    FROM metrics_data 
+    FROM metrics_data
     WHERE type_id = $1
     ORDER BY id DESC
     LIMIT 1
@@ -237,7 +236,6 @@ func (f *FetcherPegouts) getInternalKey(typeId int) ([]byte, error) {
 	return dkgData.R3.Data.InternalKey, nil
 }
 
-/*
 func (f *FetcherPegouts) setBitcoinTxExistsMetric(pegouts map[string]SignedPegout) {
 	if len(pegouts) == 0 {
 		unprocessedPegout.WithLabelValues(utils.AddrToRawString(&address.Address{}), "").Set(0)
@@ -255,6 +253,7 @@ func (f *FetcherPegouts) setBitcoinTxExistsMetric(pegouts map[string]SignedPegou
 }
 */
 
+/*
 func (f *FetcherPegouts) setAutopegoutDelayedMetric(pegouts map[uint64]coordinator.PegoutRecord) {
 	autopegoutDelayed.Set(0)
 	now := time.Now()
@@ -378,7 +377,6 @@ func (f *FetcherPegouts) Fetch() {
 		logger.Log.Debug().Msg("FetcherPegouts: Contract returns unsignedPegouts is null")
 	}
 
-	/*
 		unsignedPegoutsLen.WithLabelValues("Unsigned pegouts length").Set(float64(len(unsignedPegouts)))
 
 		f.setDelayedMetric(unsignedPegouts)
@@ -410,7 +408,6 @@ func (f *FetcherPegouts) Fetch() {
 			f.pegoutTempData.signedPegouts.Set("SignedPegouts", signedPegouts, time.Duration(f.period)*time.Second)
 		}
 		f.setBitcoinTxExistsMetric(signedPegouts)
-	*/
 
 	var internalKeys InternalKeys
 	internalKeysCache, ok := f.pegoutTempData.internalKeys.Get("InternalKeys")
@@ -458,3 +455,4 @@ func (fetcher *FetcherPegouts) Work(ctx context.Context, wg *sync.WaitGroup) {
 		}
 	}
 }
+*/

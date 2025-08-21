@@ -10,7 +10,6 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/teleportcontract"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
-	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/metrics"
 )
 
 type HttpService struct {
@@ -36,7 +35,7 @@ func New(
 
 func (s *HttpService) Work(ctx context.Context) {
 	mux := http.NewServeMux()
-	mux.Handle("/metrics/api", metrics.NewJsonApiHandler(s.db, s.tonClient))
+	mux.Handle("/metrics/api", NewJsonApiHandler(s.db, s.tonClient))
 
 	c := cors.New(cors.Options{
 		AllowedOrigins:   []string{"*"},

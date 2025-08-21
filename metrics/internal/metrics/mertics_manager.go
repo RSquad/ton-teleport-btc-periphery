@@ -7,94 +7,30 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
-	"net/http"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
 )
 
-type JsonApiHandler struct {
+type MetricsManager struct {
 	db                   *sql.DB
 	tonClient            *tonclient.TonClient
 	tonMaxMainValidators int
-	cache                *Cache[string]
 }
 
-func NewJsonApiHandler(db *sql.DB, tonClient *tonclient.TonClient) *JsonApiHandler {
-	return &JsonApiHandler{
+func NewMetricsManager(db *sql.DB, tonClient *tonclient.TonClient) *MetricsManager {
+	return &MetricsManager{
 		db:                   db,
 		tonClient:            tonClient,
 		tonMaxMainValidators: -1,
-		cache:                NewCache[string](),
 	}
 }
 
-func (apiHandler JsonApiHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	// Check if 'source' parameter exists
-	queryParams := r.URL.Query()
-	sourceName := queryParams.Get("source")
-	if sourceName == "" {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("Please set `source` argument"))
-		return
-	}
-
-	var payload string
-	var err error = nil
-
-	cachedValue, ok := apiHandler.cache.Get(sourceName)
-
-	if ok {
-		payload = cachedValue
-	} else {
-		switch sourceName {
-		case "mints":
-			payload, err = apiHandler.GetMints()
-		case "burns":
-			payload, err = apiHandler.GetBurns()
-		case "reinits":
-			payload, err = apiHandler.GetReinits()
-		case "info":
-			payload, err = apiHandler.GetInfo()
-		case "internal_keys":
-			payload, err = apiHandler.GetInternalKeys()
-		case "plot_minted":
-			payload, err = apiHandler.PlotMinted()
-		case "plot_burned":
-			payload, err = apiHandler.PlotBurned()
-		case "plot_total_supply":
-			payload, err = apiHandler.PlotTotalSupply()
-		case "plots_summary":
-			payload, err = apiHandler.GetPlotsSummary()
-		case "dkg_status":
-			payload, err = apiHandler.GetDkgStatus(r.Context())
-		default:
-			w.WriteHeader(http.StatusNotFound)
-			w.Write([]byte("Please select one of the next values: mints, burns, reinits, info, internal_keys, plot_minted, plot_burned, plot_total_supply, plots_summary, dkg_status"))
-			return
-		}
-
-		apiHandler.cache.Set(sourceName, payload, 30*time.Second)
-	}
-
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(err.Error()))
-		return
-	}
-
-	// Write data
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(payload))
-}
-
-func (apiHandler JsonApiHandler) GetMints() (string, error) {
+func (manager MetricsManager) GetMints() (string, error) {
 	const limit = 5000 // Yes, we will select only last 5000 mints
 
-	rows, err := apiHandler.db.Query(
+	rows, err := manager.db.Query(
 		`SELECT COALESCE(json_agg(result), '[]') AS data FROM (
 			SELECT
 				m.created_at,
@@ -133,10 +69,10 @@ func (apiHandler JsonApiHandler) GetMints() (string, error) {
 	return data, nil
 }
 
-func (apiHandler JsonApiHandler) GetBurns() (string, error) {
+func (manager MetricsManager) GetBurns() (string, error) {
 	const limit = 5000 // Yes, we will select only last 5000 burns
 
-	rows, err := apiHandler.db.Query(
+	rows, err := manager.db.Query(
 		`SELECT COALESCE(json_agg(result), '[]') AS data FROM (
 			SELECT
 				tt.created_at,
@@ -177,10 +113,10 @@ func (apiHandler JsonApiHandler) GetBurns() (string, error) {
 	return data, nil
 }
 
-func (apiHandler JsonApiHandler) GetReinits() (string, error) {
+func (manager MetricsManager) GetReinits() (string, error) {
 	const limit = 5000 // Yes, we will select only last 5000 reinits
 
-	rows, err := apiHandler.db.Query(
+	rows, err := manager.db.Query(
 		`SELECT COALESCE(json_agg(result), '[]') AS data FROM (
 		  SELECT
 		    tt.created_at AS created_at,
@@ -219,10 +155,10 @@ func (apiHandler JsonApiHandler) GetReinits() (string, error) {
 	return data, nil
 }
 
-func (apiHandler JsonApiHandler) GetInternalKeys() (string, error) {
+func (manager MetricsManager) GetInternalKeys() (string, error) {
 	const limit = 5000 // Yes, we will select only last 5000 internal keys
 
-	rows, err := apiHandler.db.Query(
+	rows, err := manager.db.Query(
 		`SELECT COALESCE(json_agg(result), '[]') AS data FROM (
 		  SELECT 
 			  ik.completed_at,
@@ -256,8 +192,8 @@ func (apiHandler JsonApiHandler) GetInternalKeys() (string, error) {
 	return data, nil
 }
 
-func (apiHandler JsonApiHandler) GetInfo() (string, error) {
-	rows, err := apiHandler.db.Query(
+func (manager MetricsManager) GetInfo() (string, error) {
+	rows, err := manager.db.Query(
 		`SELECT jsonb_build_object(
 				'contractBitcoinClient', (
 						SELECT payload::json
@@ -303,8 +239,8 @@ func (apiHandler JsonApiHandler) GetInfo() (string, error) {
 	return data, nil
 }
 
-func (apiHandler JsonApiHandler) PlotMinted() (string, error) {
-	rows, err := apiHandler.db.Query(
+func (manager MetricsManager) PlotMinted() (string, error) {
+	rows, err := manager.db.Query(
 		`SELECT COALESCE(json_agg(result), '[]') AS data FROM (
 			WITH data_by_days AS (
 				SELECT
@@ -338,8 +274,8 @@ func (apiHandler JsonApiHandler) PlotMinted() (string, error) {
 	return data, nil
 }
 
-func (apiHandler JsonApiHandler) PlotBurned() (string, error) {
-	rows, err := apiHandler.db.Query(
+func (manager MetricsManager) PlotBurned() (string, error) {
+	rows, err := manager.db.Query(
 		`SELECT COALESCE(json_agg(result), '[]') AS data FROM (
 			WITH data_by_days AS (
 				SELECT
@@ -375,8 +311,8 @@ func (apiHandler JsonApiHandler) PlotBurned() (string, error) {
 	return data, nil
 }
 
-func (apiHandler JsonApiHandler) PlotTotalSupply() (string, error) {
-	rows, err := apiHandler.db.Query(
+func (manager MetricsManager) PlotTotalSupply() (string, error) {
+	rows, err := manager.db.Query(
 		`SELECT COALESCE(json_agg(result), '[]') AS data FROM (
 			WITH unified_events AS (
 				SELECT
@@ -432,8 +368,8 @@ func (apiHandler JsonApiHandler) PlotTotalSupply() (string, error) {
 	return data, nil
 }
 
-func (apiHandler JsonApiHandler) GetPlotsSummary() (string, error) {
-	rows, err := apiHandler.db.Query(
+func (manager MetricsManager) GetPlotsSummary() (string, error) {
+	rows, err := manager.db.Query(
 		`SELECT jsonb_build_object(
 				'mints_count', (
 						SELECT COUNT(1) AS row_count FROM mints WHERE status = 'SUCCESS'
@@ -470,7 +406,7 @@ func (apiHandler JsonApiHandler) GetPlotsSummary() (string, error) {
 	return data, nil
 }
 
-func (apiHandler JsonApiHandler) GetDkgStatus(ctx context.Context) (string, error) {
+func (manager MetricsManager) GetDkgStatus(ctx context.Context) (string, error) {
 	type OriginalData struct {
 		Dkg     map[string]interface{}
 		PrevDkg map[string]interface{}
@@ -493,13 +429,13 @@ func (apiHandler JsonApiHandler) GetDkgStatus(ctx context.Context) (string, erro
 	}
 
 	// Select DKG
-	dkg, err := apiHandler.SelectToObject("SELECT payload FROM metrics_data WHERE type_id = 0 ORDER BY id DESC LIMIT 1")
+	dkg, err := manager.SelectToObject("SELECT payload FROM metrics_data WHERE type_id = 0 ORDER BY id DESC LIMIT 1")
 	if err != nil {
 		return "", err
 	}
 
 	// Select prevDKG
-	prevDkg, err := apiHandler.SelectToObject("SELECT payload FROM metrics_data WHERE type_id = 1 ORDER BY id DESC LIMIT 1")
+	prevDkg, err := manager.SelectToObject("SELECT payload FROM metrics_data WHERE type_id = 1 ORDER BY id DESC LIMIT 1")
 	if err != nil {
 		return "", err
 	}
@@ -544,13 +480,13 @@ func (apiHandler JsonApiHandler) GetDkgStatus(ctx context.Context) (string, erro
 			}
 
 			// tonMaxMainValidators
-			if apiHandler.tonMaxMainValidators < 0 {
-				block, err := apiHandler.tonClient.API.GetMasterchainInfo(ctx)
+			if manager.tonMaxMainValidators < 0 {
+				block, err := manager.tonClient.API.GetMasterchainInfo(ctx)
 				if err != nil {
 					return nil, fmt.Errorf("failed to get block: %v", err)
 				}
 
-				tonConfig, err := apiHandler.tonClient.API.GetBlockchainConfig(ctx, block, 16)
+				tonConfig, err := manager.tonClient.API.GetBlockchainConfig(ctx, block, 16)
 				if err != nil {
 					return nil, fmt.Errorf("failed to get config: %v", err)
 				}
@@ -558,10 +494,10 @@ func (apiHandler JsonApiHandler) GetDkgStatus(ctx context.Context) (string, erro
 				tonConfigParam16 := tonConfig.Get(16)
 				s := tonConfigParam16.BeginParse()
 				s.MustLoadUInt(16)
-				apiHandler.tonMaxMainValidators = int(s.MustLoadUInt(16))
+				manager.tonMaxMainValidators = int(s.MustLoadUInt(16))
 			}
 
-			dkgInfo.ValidatorsCountMax = apiHandler.tonMaxMainValidators
+			dkgInfo.ValidatorsCountMax = manager.tonMaxMainValidators
 			dkgInfo.VSetSize = len(vset)
 			dkgInfo.ValidatorsCountTotal = dkgInfo.ValidatorsCountMax
 			dkgInfo.ValidatorsCountInDkg = int(maxSigners)
@@ -623,8 +559,20 @@ func (apiHandler JsonApiHandler) GetDkgStatus(ctx context.Context) (string, erro
 	return string(jsonData), nil
 }
 
-func (apiHandler JsonApiHandler) SelectToObject(sql string) (map[string]interface{}, error) {
-	rows, err := apiHandler.db.Query(sql)
+func (manager MetricsManager) CoordinatorContractState() (map[string]interface{}, error) {
+	return manager.SelectToObject("SELECT payload FROM metrics_data WHERE type_id = 5 ORDER BY id DESC LIMIT 1")
+}
+
+func (manager MetricsManager) Dkg() (map[string]interface{}, error) {
+	return manager.SelectToObject("SELECT payload FROM metrics_data WHERE type_id = 0 ORDER BY id DESC LIMIT 1")
+}
+
+func (manager MetricsManager) PrevDkg() (map[string]interface{}, error) {
+	return manager.SelectToObject("SELECT payload FROM metrics_data WHERE type_id = 1 ORDER BY id DESC LIMIT 1")
+}
+
+func (manager MetricsManager) SelectToObject(sql string) (map[string]interface{}, error) {
+	rows, err := manager.db.Query(sql)
 	if err != nil {
 		return nil, err
 	}

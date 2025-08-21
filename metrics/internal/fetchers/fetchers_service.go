@@ -1,4 +1,4 @@
-package metrics
+package fetchers
 
 import (
 	"context"
@@ -14,7 +14,7 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/config"
 )
 
-type MetricsService struct {
+type FetcherService struct {
 	writerDB                     *WriterDB
 	fetcherDKG                   *FetcherDKG
 	fetcherContractBalances      *FetcherContractBalances
@@ -22,7 +22,6 @@ type MetricsService struct {
 	fetcherBitcoinNetwork        *FetcherBitcoinNetwork
 	fetcherContractTeleport      *FetcherContractTeleport
 	fetcherContractCoordinator   *FetcherContractCoordinator
-	fetcherPegouts               *FetcherPegouts
 }
 
 func NewService(
@@ -33,7 +32,7 @@ func NewService(
 	tonClient *tonclient.TonClient,
 	cfg *config.ServicesConfig,
 	db *sql.DB,
-) (*MetricsService, error) {
+) (*FetcherService, error) {
 	// Writer DB
 	writerDbChan := make(chan PayloadDB, cfg.WriterDbChainSize)
 	writerDB, err := NewWriterDB(writerDbChan, db)
@@ -59,10 +58,7 @@ func NewService(
 	// Fetcher: ContractCoordinator
 	fetcherContractCoordinator := NewFetcherContractCoordinator(writerDbChan, coordinatorContract, int64(cfg.CoordinatorContractFetchPeriod))
 
-	// Fetcher: Pegouts
-	fetcherPegouts := NewFetcherPegouts(tonClient, bitcoinClient, coordinatorContract, db, int64(cfg.MetricsPegoutsFetchPeriod))
-
-	return &MetricsService{
+	return &FetcherService{
 		writerDB:                     writerDB,
 		fetcherDKG:                   fetcherDKG,
 		fetcherContractBalances:      fetcherContractBalances,
@@ -70,11 +66,10 @@ func NewService(
 		fetcherBitcoinNetwork:        fetcherBitcoinNetwork,
 		fetcherContractTeleport:      fetcherContractTeleport,
 		fetcherContractCoordinator:   fetcherContractCoordinator,
-		fetcherPegouts:               fetcherPegouts,
 	}, nil
 }
 
-func (s *MetricsService) Work(ctx context.Context) {
+func (s *FetcherService) Work(ctx context.Context) {
 	defer logger.Log.Info().Msg("MetricsService: stopped")
 	logger.DefaultLogStartWork("MetricsService: starting...")
 
@@ -131,14 +126,6 @@ func (s *MetricsService) Work(ctx context.Context) {
 		wg.Add(1)
 		go func() {
 			s.fetcherContractCoordinator.Work(ctx, &wg)
-		}()
-	}
-
-	// Fetcher Pegouts
-	if s.fetcherPegouts != nil {
-		wg.Add(1)
-		go func() {
-			s.fetcherPegouts.Work(ctx, &wg)
 		}()
 	}
 

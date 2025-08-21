@@ -25,7 +25,7 @@ type ServicesConfig struct {
 	BitcoinNetworkFetchPeriod        int
 	TeleportContractFetchPeriod      int
 	CoordinatorContractFetchPeriod   int
-	MetricsPegoutsFetchPeriod        int
+	AlertsCheckPeriod                int
 }
 
 func NewServicesConfig(config *EnvConfig) (*ServicesConfig, error) {
@@ -37,7 +37,7 @@ func NewServicesConfig(config *EnvConfig) (*ServicesConfig, error) {
 	bitcoinNetworkFetchPeriod := 59
 	teleportContractFetchPeriod := 27
 	coordinatorContractFetchPeriod := 12
-	metricsPegoutsFetchPeriod := 59
+	alertsCheckPeriod := 15
 
 	if len(config.DatabaseMaxConn) > 0 {
 		value, err := ParseInt(config.DatabaseMaxConn, "DatabaseMaxConn")
@@ -131,13 +131,13 @@ func NewServicesConfig(config *EnvConfig) (*ServicesConfig, error) {
 		coordinatorContractFetchPeriod = value
 	}
 
-	if len(config.MetricsPegoutsFetchPeriod) > 0 {
-		value, err := ParseInt(config.MetricsPegoutsFetchPeriod, "MetricsPegoutsFetchPeriod")
+	if len(config.AlertsCheckPeriod) > 0 {
+		value, err := ParseInt(config.AlertsCheckPeriod, "AlertsCheckPeriod")
 		if err != nil {
-			return nil, fmt.Errorf("wrong `METRICS_PEGOUTS_FETCH_PERIOD` .env argument value '%s'. %w", config.DatabaseMaxConn, err)
+			return nil, fmt.Errorf("wrong `ALERTS_CHECK_PERIOD` .env argument value '%s'. %w", config.DatabaseMaxConn, err)
 		}
 
-		metricsPegoutsFetchPeriod = value
+		alertsCheckPeriod = value
 	}
 
 	servicesConfig := &ServicesConfig{
@@ -158,7 +158,7 @@ func NewServicesConfig(config *EnvConfig) (*ServicesConfig, error) {
 		BitcoinNetworkFetchPeriod:        bitcoinNetworkFetchPeriod,
 		TeleportContractFetchPeriod:      teleportContractFetchPeriod,
 		CoordinatorContractFetchPeriod:   coordinatorContractFetchPeriod,
-		MetricsPegoutsFetchPeriod:        metricsPegoutsFetchPeriod,
+		AlertsCheckPeriod:                alertsCheckPeriod,
 	}
 
 	return servicesConfig, nil
@@ -175,12 +175,12 @@ JettonMinterContractAddr: %s
 DatabaseMaxConn: %d
 DatabaseMaxIdleConn: %d
 WriterDbChainSize: %d
-DkgFetchPeriod: %d
-BitcoinClientContractFetchPeriod: %d
-BitcoinNetworkFetchPeriod: %d
-TeleportContractFetchPeriod: %d
-CoordinatorContractFetchPeriod: %d
-MetricsPegoutsFetchPeriod: %d
+DkgFetchPeriod: %d sec.
+BitcoinClientContractFetchPeriod: %d sec.
+BitcoinNetworkFetchPeriod: %d sec.
+TeleportContractFetchPeriod: %d sec.
+CoordinatorContractFetchPeriod: %d sec.
+AlertsCheckPeriod: %d sec.
 `,
 		config.BitcoinRpcHost,
 		config.TonConfigUrl,
@@ -196,7 +196,7 @@ MetricsPegoutsFetchPeriod: %d
 		config.BitcoinNetworkFetchPeriod,
 		config.TeleportContractFetchPeriod,
 		config.CoordinatorContractFetchPeriod,
-		config.MetricsPegoutsFetchPeriod,
+		config.AlertsCheckPeriod,
 	)
 }
 

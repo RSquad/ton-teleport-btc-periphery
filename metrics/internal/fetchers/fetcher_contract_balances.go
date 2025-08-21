@@ -1,4 +1,4 @@
-package metrics
+package fetchers
 
 import (
 	"context"
@@ -119,18 +119,22 @@ func (fetcher *FetcherContractBalances) Work(ctx context.Context, wg *sync.WaitG
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
-			balances, err := fetcher.GetBalances()
-			if err != nil {
-				return err
-			}
+			// TOOD: write to DB
 
-			for name, value := range balances {
-				contractAddr := fetcher.contractAddrs[name]
-
-				if contractAddr != nil {
-					contractBalances.WithLabelValues(utils.AddrToRawString(contractAddr), name).Set(value)
+			/*
+				balances, err := fetcher.GetBalances()
+				if err != nil {
+					return err
 				}
-			}
+
+				for name, value := range balances {
+					contractAddr := fetcher.contractAddrs[name]
+
+					if contractAddr != nil {
+						contractBalances.WithLabelValues(utils.AddrToRawString(contractAddr), name).Set(value)
+					}
+				}
+			*/
 
 			// TODO: reimplement with time.NewTicker
 			time.Sleep(10 * time.Second)

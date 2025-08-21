@@ -18,5 +18,5 @@ type EnvConfig struct {
 	BitcoinNetworkFetchPeriod        string `env:"BITCOIN_NETWORK_FETCH_PERIOD"`
 	TeleportContractFetchPeriod      string `env:"TELEPORT_CONTRACT_FETCH_PERIOD"`
 	CoordinatorContractFetchPeriod   string `env:"COORDINATOR_CONTRACT_FETCH_PERIOD"`
-	MetricsPegoutsFetchPeriod        string `env:"METRICS_PEGOUTS_FETCH_PERIOD"`
+	AlertsCheckPeriod                string `env:"ALERTS_CHECK_PERIOD"`
 }

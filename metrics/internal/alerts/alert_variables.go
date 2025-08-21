@@ -1,5 +1,6 @@
-package metrics
+package alerts
 
+/*
 import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
@@ -192,3 +193,4 @@ var (
 		[]string{"expected", "found"},
 	)
 )
+*/
