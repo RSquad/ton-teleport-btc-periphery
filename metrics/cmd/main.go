@@ -15,18 +15,16 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/teleportcontract"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
+	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/alerts"
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/config"
+	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/fetchers"
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/httpservice"
-	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/metrics"
 )
 
 type App struct {
-	TonClient             *tonclient.TonClient
-	BitcoinClient         *bitcoin.Client
-	CoordinatorContract   coordinator.Coordinator
-	BitcoinClientContract *bitcoinclientcontract.BitcoinClientContract
-	MetricsService        *metrics.MetricsService
-	HttpService           *httpservice.HttpService
+	HttpService    *httpservice.HttpService
+	FetcherService *fetchers.FetcherService
+	AlertService   *alerts.AlertService
 }
 
 func main() {
@@ -94,7 +92,7 @@ func initialize() (*App, error) {
 		tonClient,
 		nil,
 		context.Background(),
-		30,
+		30, // TODO: move to config
 	)
 
 	// Bitcoin client contract
@@ -106,29 +104,29 @@ func initialize() (*App, error) {
 	)
 
 	// Open DB connection
-	var dbConnPoolMetrics *sql.DB = nil
+	var dbConnPool *sql.DB = nil
 	{
-		dbConnPoolMetrics, err = sql.Open("postgres", cfg.DatabaseUrl)
+		dbConnPool, err = sql.Open("postgres", cfg.DatabaseUrl)
 		if err != nil {
 			return nil, err
 		}
 
 		// Setup DB pooling (metrics)
-		dbConnPoolMetrics.SetMaxOpenConns(cfg.DatabaseMaxConn)
-		dbConnPoolMetrics.SetMaxIdleConns(cfg.DatabaseMaxIdleConn)
-		dbConnPoolMetrics.SetConnMaxLifetime(-1)
-		dbConnPoolMetrics.SetConnMaxIdleTime(-1)
+		dbConnPool.SetMaxOpenConns(cfg.DatabaseMaxConn)
+		dbConnPool.SetMaxIdleConns(cfg.DatabaseMaxIdleConn)
+		dbConnPool.SetConnMaxLifetime(-1)
+		dbConnPool.SetConnMaxIdleTime(-1)
 	}
 
-	// Metrics service
-	metricsService, err := metrics.NewService(
+	// Fetcher service
+	fetcherService, err := fetchers.NewService(
 		coordinatorContract,
 		bitcoinClientContract,
 		teleportContract,
 		bitcoinClient,
 		tonClient,
 		cfg,
-		dbConnPoolMetrics,
+		dbConnPool,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create matrics manager: %w", err)
@@ -139,7 +137,14 @@ func initialize() (*App, error) {
 		bitcoinClient,
 		tonClient,
 		teleportContract,
-		dbConnPoolMetrics,
+		dbConnPool,
+	)
+
+	// Alerts service
+	alertsService := alerts.NewAlertService(
+		alerts.NewAlertDataSourceLive(dbConnPool, tonClient),
+		alerts.NewAlertDispatcherPrometheus(),
+		cfg,
 	)
 
 	logger.Log.Info().
@@ -147,32 +152,35 @@ func initialize() (*App, error) {
 		Msg("initialized")
 
 	return &App{
-		TonClient:           tonClient,
-		BitcoinClient:       bitcoinClient,
-		CoordinatorContract: coordinatorContract,
-		MetricsService:      metricsService,
-		HttpService:         httpService,
+		FetcherService: fetcherService,
+		HttpService:    httpService,
+		AlertService:   alertsService,
 	}, nil
 }
 
 func run(app *App) error {
 	var wg sync.WaitGroup
 
-	if app.MetricsService != nil {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			app.MetricsService.Work(context.Background())
-		}()
-	}
+	// FetcherService
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		app.FetcherService.Work(context.Background())
+	}()
 
-	if app.HttpService != nil {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			app.HttpService.Work(context.Background())
-		}()
-	}
+	// HttpService
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		app.HttpService.Work(context.Background())
+	}()
+
+	// AlertService
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		app.AlertService.Work(context.Background())
+	}()
 
 	wg.Wait()
 

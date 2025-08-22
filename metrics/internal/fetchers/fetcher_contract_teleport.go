@@ -1,4 +1,4 @@
-package metrics
+package fetchers
 
 import (
 	"context"
@@ -83,6 +83,7 @@ func (fetcher *FetcherContractTeleport) Work(ctx context.Context, wg *sync.WaitG
 	}
 }
 
+/*
 func (fetcher *FetcherContractTeleport) setAutopegoutFeeMetric(autopegoutFee *big.Int) {
 	if autopegoutFee == nil {
 		autopegoutFeeGauge.Set(-1)
@@ -101,6 +102,7 @@ func (fetcher *FetcherContractTeleport) setUtxoDifferentKeysMetric(utxo *[]Contr
 		utxoKeysDifference.WithLabelValues(prevKey.String(), utxo.TapMerkleRoot.String()).Set(0)
 	}
 }
+*/
 
 func (fetcher *FetcherContractTeleport) Fetch() {
 	storage, err := fetcher.teleportContract.GetStorage(nil)
@@ -131,19 +133,21 @@ func (fetcher *FetcherContractTeleport) Fetch() {
 		UTXOset:              ConvertUTXOSet(storage.UTXOset),
 	}
 
-	autopegoutFee, err := fetcher.teleportContract.GetAutoPegoutFee(nil)
-	if err != nil {
-		logger.Log.Error().Err(err).
-			Str("component", "FetcherContractTeleport").
-			Msg("failed to get autopegout fee")
-	}
-	var utxoLimit float64 = 252 // TODO: get limit value from teleport
-	utxoLimitGauge.Set(float64(utxoLimit))
-	utxoCountGauge.Set(float64(len(*contractTeleportData.UTXOset)))
-	totalSetrviceFeeGauge.Set(float64(contractTeleportData.TotalServiceFee))
-	fetcher.setAutopegoutFeeMetric(autopegoutFee)
+	/*
+		autopegoutFee, err := fetcher.teleportContract.GetAutoPegoutFee(nil)
+		if err != nil {
+			logger.Log.Error().Err(err).
+				Str("component", "FetcherContractTeleport").
+				Msg("failed to get autopegout fee")
+		}
+	*/
+	//var utxoLimit float64 = 252 // TODO: get limit value from teleport
+	//utxoLimitGauge.Set(float64(utxoLimit))
+	//utxoCountGauge.Set(float64(len(*contractTeleportData.UTXOset)))
+	//totalSetrviceFeeGauge.Set(float64(contractTeleportData.TotalServiceFee))
+	//fetcher.setAutopegoutFeeMetric(autopegoutFee)
 
-	fetcher.setUtxoDifferentKeysMetric(contractTeleportData.UTXOset)
+	//fetcher.setUtxoDifferentKeysMetric(contractTeleportData.UTXOset)
 
 	jsonData, err := json.Marshal(contractTeleportData)
 	if err != nil {
