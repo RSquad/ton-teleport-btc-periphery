@@ -167,7 +167,7 @@ groups:
   - name: fees.health
     rules:
       # 0 - total_service_fee is enough
-      # 1 - total_service_fee is less than 5 * autopegout_fee
+      # 1 - total_service_fee is less than 1000 satoshi
       # 2 - total_service_fee is negative
       - alert: TotalServiceFeeWarning
         expr: alert_total_service_fee == 1
@@ -226,18 +226,18 @@ groups:
       # 0 - culprit not found 
       # 0xXX01 - culprit found and evicted
       # 0xXX02 - culprit found and not evicted (voting threshold is not reached)
-      - alert: DkgCulpritCritical
+      - alert: DkgCulpritEvictedCritical
         expr: alert_dkg_culprit_found % 0xFF == 1
         labels:
           severity: critical
         annotations:
           description: "DKG culprit found and evicted"
-          culprit_id: "{{ (alert_dkg_culprit_found / 0xFF) }}"
+          culprit_id: '{{ printf "0x%x" $value }}'
       
-      - alert: DkgCulpritCritical
+      - alert: DkgCulpritNotEvictedCritical
         expr: alert_dkg_culprit_found % 0xFF == 2
         labels:
           severity: critical
         annotations:
-          description: "DKG culprit found but NOT evicted"
-          culprit_id: "{{ (alert_dkg_culprit_found / 0xFF) - (alert_dkg_culprit_found % 0xFF) }}"
+          description: "DKG culprit found but NOT evicted"        
+          culprit_id:  '{{ printf "0x%x" $value }}'
