@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"net/http"
 
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/cors"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
@@ -36,6 +37,7 @@ func New(
 func (s *HttpService) Work(ctx context.Context) {
 	mux := http.NewServeMux()
 	mux.Handle("/metrics/api", NewJsonApiHandler(s.db, s.tonClient))
+	mux.Handle("/metrics/prom", promhttp.Handler())
 
 	c := cors.New(cors.Options{
 		AllowedOrigins:   []string{"*"},

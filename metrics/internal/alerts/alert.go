@@ -10,5 +10,5 @@ const (
 )
 
 type Alert interface {
-	Check(dataSource AlertDataSource) (Severity, error)
+	Check(dataSource AlertDataSource) (Severity, []string, error)
 }

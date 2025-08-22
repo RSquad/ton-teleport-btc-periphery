@@ -1,5 +1,5 @@
 package alerts
 
 type AlertDispatcher interface {
-	OnAlert(name string, severity Severity)
+	OnAlert(name string, labels []string, severity Severity)
 }

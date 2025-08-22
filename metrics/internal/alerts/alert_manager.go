@@ -37,14 +37,14 @@ func (manager *AlertManager) RegisterAlert(name string, alert Alert) error {
 
 func (manager *AlertManager) CheckAll() {
 	for alertName, alert := range manager.alerts {
-		severity, err := alert.Check(manager.dataSource)
+		severity, labels, err := alert.Check(manager.dataSource)
 		if err != nil {
 			manager.LogAlertError(alertName, err)
 			continue
 		}
 
 		if severity >= 0 {
-			manager.alertDispatcher.OnAlert(alertName, severity)
+			manager.alertDispatcher.OnAlert(alertName, labels, severity)
 		}
 	}
 }

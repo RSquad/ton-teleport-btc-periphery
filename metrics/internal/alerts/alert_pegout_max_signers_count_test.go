@@ -5,10 +5,12 @@ import (
 	"testing"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
+	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/mutils"
 )
 
 type want struct {
 	severity Severity
+	labels   []string
 	err      error
 }
 
@@ -33,7 +35,7 @@ func TestAlertPegoutMaxSignersCount_Check(t *testing.T) {
 					}, nil
 				},
 			}),
-			expect: want{severity: SEVERITY_OK, err: nil},
+			expect: want{severity: SEVERITY_OK, labels: []string{}, err: nil},
 		},
 		{
 			name: "SEVERITY_INFO (9 of 10)",
@@ -50,7 +52,7 @@ func TestAlertPegoutMaxSignersCount_Check(t *testing.T) {
 					}, nil
 				},
 			}),
-			expect: want{severity: SEVERITY_INFO, err: nil},
+			expect: want{severity: SEVERITY_INFO, labels: []string{}, err: nil},
 		},
 		{
 			name: "SEVERITY_WARNING (8 of 10)",
@@ -67,7 +69,7 @@ func TestAlertPegoutMaxSignersCount_Check(t *testing.T) {
 					}, nil
 				},
 			}),
-			expect: want{severity: SEVERITY_WARNING, err: nil},
+			expect: want{severity: SEVERITY_WARNING, labels: []string{}, err: nil},
 		},
 		{
 			name: "SEVERITY_CRITICAL (7 of 10)",
@@ -84,7 +86,7 @@ func TestAlertPegoutMaxSignersCount_Check(t *testing.T) {
 					}, nil
 				},
 			}),
-			expect: want{severity: SEVERITY_CRITICAL, err: nil},
+			expect: want{severity: SEVERITY_CRITICAL, labels: []string{}, err: nil},
 		},
 		{
 			name: "SEVERITY_CRITICAL (6 of 10)",
@@ -101,14 +103,14 @@ func TestAlertPegoutMaxSignersCount_Check(t *testing.T) {
 					}, nil
 				},
 			}),
-			expect: want{severity: SEVERITY_CRITICAL, err: nil},
+			expect: want{severity: SEVERITY_CRITICAL, labels: []string{}, err: nil},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			alert := NewAlertPegoutMaxSignersCount()
-			severity, err := alert.Check(tt.dataSource)
+			severity, labels, err := alert.Check(tt.dataSource)
 
 			// Assert
 			if tt.expect.err != nil {
@@ -121,6 +123,10 @@ func TestAlertPegoutMaxSignersCount_Check(t *testing.T) {
 
 			if severity != tt.expect.severity {
 				t.Fatalf("expected severity %v, got %v", tt.expect.severity, severity)
+			}
+
+			if mutils.IsEqual(labels, tt.expect.labels) == false {
+				t.Fatalf("expected labels %v, got %v", tt.expect.labels, labels)
 			}
 		})
 	}

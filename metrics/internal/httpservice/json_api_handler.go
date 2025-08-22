@@ -7,18 +7,18 @@ import (
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/metrics"
-	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/utils"
+	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/mutils"
 )
 
 type JsonApiHandler struct {
 	metricsManager *metrics.MetricsManager
-	cache          *utils.Cache[string]
+	cache          *mutils.Cache[string]
 }
 
 func NewJsonApiHandler(db *sql.DB, tonClient *tonclient.TonClient) *JsonApiHandler {
 	return &JsonApiHandler{
 		metricsManager: metrics.NewMetricsManager(db, tonClient),
-		cache:          utils.NewCache[string](),
+		cache:          mutils.NewCache[string](),
 	}
 }
 
