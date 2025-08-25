@@ -20,7 +20,23 @@ func NewAlertService(
 ) *AlertService {
 	alertManager := NewAlertManager(dataSource, alertDispatcher)
 
-	alertManager.RegisterAlert("alert_pegout_max_signers_count", NewAlertPegoutMaxSignersCount())
+	// pegout.signers
+	alertManager.RegisterAlert(
+		"pegout.signers",
+		NewAlertPegoutMaxSignersCount(),
+	)
+
+	// pegout.signing
+	alertManager.RegisterAlert(
+		"pegout.signing",
+		NewAlertPegoutSigningDuration(),
+	)
+
+	// pegout.restarts
+	alertManager.RegisterAlert(
+		"pegout.restarts",
+		NewAlertPegoutRestarts(),
+	)
 
 	return &AlertService{
 		alertManager: alertManager,

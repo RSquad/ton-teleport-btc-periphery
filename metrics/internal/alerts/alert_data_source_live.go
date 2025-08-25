@@ -3,6 +3,7 @@ package alerts
 import (
 	"database/sql"
 	"errors"
+	"time"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
@@ -45,7 +46,7 @@ func (dataSource *AlertDataSourceLive) FirstUnsignedPegout() (*coordinator.Pegou
 	return &unsignedPegouts[0], nil
 }
 
-func (dataSource *AlertDataSourceLive) ConfiguratorContractData() (*coordinator.Storage, error) {
+func (dataSource *AlertDataSourceLive) CoordinatorContractData() (*coordinator.Storage, error) {
 	coordinatorContractStateJson, err := dataSource.metricsManager.CoordinatorContractState()
 	if err != nil {
 		return nil, err
@@ -85,4 +86,8 @@ func (dataSource *AlertDataSourceLive) PrevDkg() (*coordinator.DKG, error) {
 	}
 
 	return prevDkg, nil
+}
+
+func (dataSource *AlertDataSourceLive) NowUnixTs() int64 {
+	return time.Now().Unix()
 }

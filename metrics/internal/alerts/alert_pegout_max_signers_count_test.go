@@ -5,24 +5,13 @@ import (
 	"testing"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
-	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/mutils"
 )
 
-type want struct {
-	severity Severity
-	labels   []string
-	err      error
-}
-
-func TestAlertPegoutMaxSignersCount_Check(t *testing.T) {
-	tests := []struct {
-		name       string
-		dataSource AlertDataSource
-		expect     want
-	}{
+func TestAlertPegoutMaxSignersCount(t *testing.T) {
+	tests := []TestDesc{
 		{
-			name: "SEVERITY_OK (10 of 10)",
-			dataSource: NewAlertDataSourceTesting(AlertDataSourceTestingConfig{
+			Name: "SEVERITY_OK (10 of 10)",
+			DataSource: NewAlertDataSourceTesting(AlertDataSourceTestingConfig{
 				FirstUnsignedPegoutFn: func() (*coordinator.PegoutRecord, error) {
 					return &coordinator.PegoutRecord{
 						CommitmentsMaskAccepted: new(big.Int).SetUint64(0b0111101100101),
@@ -35,11 +24,11 @@ func TestAlertPegoutMaxSignersCount_Check(t *testing.T) {
 					}, nil
 				},
 			}),
-			expect: want{severity: SEVERITY_OK, labels: []string{}, err: nil},
+			Expect: TestResWant{Severity: SEVERITY_OK, Labels: []string{}, Err: nil},
 		},
 		{
-			name: "SEVERITY_INFO (9 of 10)",
-			dataSource: NewAlertDataSourceTesting(AlertDataSourceTestingConfig{
+			Name: "SEVERITY_INFO (9 of 10)",
+			DataSource: NewAlertDataSourceTesting(AlertDataSourceTestingConfig{
 				FirstUnsignedPegoutFn: func() (*coordinator.PegoutRecord, error) {
 					return &coordinator.PegoutRecord{
 						CommitmentsMaskAccepted: new(big.Int).SetUint64(0b0111101100101),
@@ -52,11 +41,11 @@ func TestAlertPegoutMaxSignersCount_Check(t *testing.T) {
 					}, nil
 				},
 			}),
-			expect: want{severity: SEVERITY_INFO, labels: []string{}, err: nil},
+			Expect: TestResWant{Severity: SEVERITY_INFO, Labels: []string{}, Err: nil},
 		},
 		{
-			name: "SEVERITY_WARNING (8 of 10)",
-			dataSource: NewAlertDataSourceTesting(AlertDataSourceTestingConfig{
+			Name: "SEVERITY_WARNING (8 of 10)",
+			DataSource: NewAlertDataSourceTesting(AlertDataSourceTestingConfig{
 				FirstUnsignedPegoutFn: func() (*coordinator.PegoutRecord, error) {
 					return &coordinator.PegoutRecord{
 						CommitmentsMaskAccepted: new(big.Int).SetUint64(0b0101101100101),
@@ -69,11 +58,11 @@ func TestAlertPegoutMaxSignersCount_Check(t *testing.T) {
 					}, nil
 				},
 			}),
-			expect: want{severity: SEVERITY_WARNING, labels: []string{}, err: nil},
+			Expect: TestResWant{Severity: SEVERITY_WARNING, Labels: []string{}, Err: nil},
 		},
 		{
-			name: "SEVERITY_CRITICAL (7 of 10)",
-			dataSource: NewAlertDataSourceTesting(AlertDataSourceTestingConfig{
+			Name: "SEVERITY_CRITICAL (7 of 10)",
+			DataSource: NewAlertDataSourceTesting(AlertDataSourceTestingConfig{
 				FirstUnsignedPegoutFn: func() (*coordinator.PegoutRecord, error) {
 					return &coordinator.PegoutRecord{
 						CommitmentsMaskAccepted: new(big.Int).SetUint64(0b0001101100101),
@@ -86,11 +75,11 @@ func TestAlertPegoutMaxSignersCount_Check(t *testing.T) {
 					}, nil
 				},
 			}),
-			expect: want{severity: SEVERITY_CRITICAL, labels: []string{}, err: nil},
+			Expect: TestResWant{Severity: SEVERITY_CRITICAL, Labels: []string{}, Err: nil},
 		},
 		{
-			name: "SEVERITY_CRITICAL (6 of 10)",
-			dataSource: NewAlertDataSourceTesting(AlertDataSourceTestingConfig{
+			Name: "SEVERITY_CRITICAL (6 of 10)",
+			DataSource: NewAlertDataSourceTesting(AlertDataSourceTestingConfig{
 				FirstUnsignedPegoutFn: func() (*coordinator.PegoutRecord, error) {
 					return &coordinator.PegoutRecord{
 						CommitmentsMaskAccepted: new(big.Int).SetUint64(0b0001101000101),
@@ -103,31 +92,9 @@ func TestAlertPegoutMaxSignersCount_Check(t *testing.T) {
 					}, nil
 				},
 			}),
-			expect: want{severity: SEVERITY_CRITICAL, labels: []string{}, err: nil},
+			Expect: TestResWant{Severity: SEVERITY_CRITICAL, Labels: []string{}, Err: nil},
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			alert := NewAlertPegoutMaxSignersCount()
-			severity, labels, err := alert.Check(tt.dataSource)
-
-			// Assert
-			if tt.expect.err != nil {
-				if err == nil || err.Error() != tt.expect.err.Error() {
-					t.Fatalf("expected error %v, got %v", tt.expect.err, err)
-				}
-			} else if err != nil {
-				t.Fatalf("unexpected error: %v", err)
-			}
-
-			if severity != tt.expect.severity {
-				t.Fatalf("expected severity %v, got %v", tt.expect.severity, severity)
-			}
-
-			if mutils.IsEqual(labels, tt.expect.labels) == false {
-				t.Fatalf("expected labels %v, got %v", tt.expect.labels, labels)
-			}
-		})
-	}
+	DoAlertTests(t, tests, NewAlertPegoutMaxSignersCount())
 }
