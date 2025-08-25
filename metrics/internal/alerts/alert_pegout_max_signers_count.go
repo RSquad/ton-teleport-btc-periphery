@@ -18,7 +18,7 @@ func (alert *AlertPegoutMaxSignersCount) Check(dataSource AlertDataSource) (Seve
 	// Get first unsigned pegout
 	unsignedPegout, err := dataSource.FirstUnsignedPegout()
 	if err != nil {
-		return SEVERITY_OK, nil, err
+		return SEVERITY_UNKNOWN, nil, err
 	}
 
 	// No unsigned pegouts
@@ -29,11 +29,11 @@ func (alert *AlertPegoutMaxSignersCount) Check(dataSource AlertDataSource) (Seve
 	// Get prev DKG
 	prevDkg, err := dataSource.PrevDkg()
 	if err != nil {
-		return SEVERITY_OK, nil, err
+		return SEVERITY_UNKNOWN, nil, err
 	}
 
 	if prevDkg == nil {
-		return SEVERITY_OK, []string{}, errors.New("PrevDKG is null")
+		return SEVERITY_UNKNOWN, []string{}, errors.New("PrevDKG is null")
 	}
 
 	// Calulate commitmentsPercentage
@@ -46,6 +46,12 @@ func (alert *AlertPegoutMaxSignersCount) Check(dataSource AlertDataSource) (Seve
 	commitmentsPercentage := mutils.MulDivCeil(uint(commitmentsCount), 100, uint(maxSigners))
 
 	// Calulate severity
+	severity := alert.GetSeverity(commitmentsPercentage)
+
+	return severity, []string{}, nil
+}
+
+func (alert *AlertPegoutMaxSignersCount) GetSeverity(commitmentsPercentage uint) Severity {
 	severity := SEVERITY_OK
 
 	if commitmentsPercentage <= 70 {
@@ -56,5 +62,5 @@ func (alert *AlertPegoutMaxSignersCount) Check(dataSource AlertDataSource) (Seve
 		severity = SEVERITY_INFO
 	}
 
-	return severity, []string{}, nil
+	return severity
 }

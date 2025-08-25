@@ -3,31 +3,36 @@ package metrics
 import (
 	"context"
 	"database/sql"
+	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"math/big"
-	"strconv"
 	"strings"
+	"sync"
 
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
+	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/data_models"
 )
 
 type MetricsManager struct {
-	db                   *sql.DB
-	tonClient            *tonclient.TonClient
-	tonMaxMainValidators int
+	db        *sql.DB
+	tonClient *tonclient.TonClient
+
+	mu                      sync.RWMutex
+	tonMaxMainValidators    int
+	coordinatorContractData *coordinator.Storage
 }
 
 func NewMetricsManager(db *sql.DB, tonClient *tonclient.TonClient) *MetricsManager {
 	return &MetricsManager{
-		db:                   db,
-		tonClient:            tonClient,
-		tonMaxMainValidators: -1,
+		db:                      db,
+		tonClient:               tonClient,
+		tonMaxMainValidators:    -1,
+		coordinatorContractData: nil,
 	}
 }
 
-func (manager MetricsManager) GetMints() (string, error) {
+func (manager *MetricsManager) GetMints() (string, error) {
 	const limit = 5000 // Yes, we will select only last 5000 mints
 
 	rows, err := manager.db.Query(
@@ -69,7 +74,7 @@ func (manager MetricsManager) GetMints() (string, error) {
 	return data, nil
 }
 
-func (manager MetricsManager) GetBurns() (string, error) {
+func (manager *MetricsManager) GetBurns() (string, error) {
 	const limit = 5000 // Yes, we will select only last 5000 burns
 
 	rows, err := manager.db.Query(
@@ -113,7 +118,7 @@ func (manager MetricsManager) GetBurns() (string, error) {
 	return data, nil
 }
 
-func (manager MetricsManager) GetReinits() (string, error) {
+func (manager *MetricsManager) GetReinits() (string, error) {
 	const limit = 5000 // Yes, we will select only last 5000 reinits
 
 	rows, err := manager.db.Query(
@@ -155,7 +160,7 @@ func (manager MetricsManager) GetReinits() (string, error) {
 	return data, nil
 }
 
-func (manager MetricsManager) GetInternalKeys() (string, error) {
+func (manager *MetricsManager) GetInternalKeys() (string, error) {
 	const limit = 5000 // Yes, we will select only last 5000 internal keys
 
 	rows, err := manager.db.Query(
@@ -192,7 +197,7 @@ func (manager MetricsManager) GetInternalKeys() (string, error) {
 	return data, nil
 }
 
-func (manager MetricsManager) GetInfo() (string, error) {
+func (manager *MetricsManager) GetInfo() (string, error) {
 	rows, err := manager.db.Query(
 		`SELECT jsonb_build_object(
 				'contractBitcoinClient', (
@@ -239,7 +244,7 @@ func (manager MetricsManager) GetInfo() (string, error) {
 	return data, nil
 }
 
-func (manager MetricsManager) PlotMinted() (string, error) {
+func (manager *MetricsManager) PlotMinted() (string, error) {
 	rows, err := manager.db.Query(
 		`SELECT COALESCE(json_agg(result), '[]') AS data FROM (
 			WITH data_by_days AS (
@@ -274,7 +279,7 @@ func (manager MetricsManager) PlotMinted() (string, error) {
 	return data, nil
 }
 
-func (manager MetricsManager) PlotBurned() (string, error) {
+func (manager *MetricsManager) PlotBurned() (string, error) {
 	rows, err := manager.db.Query(
 		`SELECT COALESCE(json_agg(result), '[]') AS data FROM (
 			WITH data_by_days AS (
@@ -311,7 +316,7 @@ func (manager MetricsManager) PlotBurned() (string, error) {
 	return data, nil
 }
 
-func (manager MetricsManager) PlotTotalSupply() (string, error) {
+func (manager *MetricsManager) PlotTotalSupply() (string, error) {
 	rows, err := manager.db.Query(
 		`SELECT COALESCE(json_agg(result), '[]') AS data FROM (
 			WITH unified_events AS (
@@ -368,7 +373,7 @@ func (manager MetricsManager) PlotTotalSupply() (string, error) {
 	return data, nil
 }
 
-func (manager MetricsManager) GetPlotsSummary() (string, error) {
+func (manager *MetricsManager) GetPlotsSummary() (string, error) {
 	rows, err := manager.db.Query(
 		`SELECT jsonb_build_object(
 				'mints_count', (
@@ -406,10 +411,10 @@ func (manager MetricsManager) GetPlotsSummary() (string, error) {
 	return data, nil
 }
 
-func (manager MetricsManager) GetDkgStatus(ctx context.Context) (string, error) {
+func (manager *MetricsManager) GetDkgStatus(ctx context.Context) (string, error) {
 	type OriginalData struct {
-		Dkg     map[string]interface{}
-		PrevDkg map[string]interface{}
+		Dkg     *coordinator.DKG
+		PrevDkg *coordinator.DKG
 	}
 
 	type DkgInfo struct {
@@ -417,139 +422,100 @@ func (manager MetricsManager) GetDkgStatus(ctx context.Context) (string, error) 
 		ValidatorsCountInDkg    int
 		ValidatorsCountNotInDkg int
 		ValidatorsCountMax      int
-		ValidatorsCountTotal    int
 		ValidatorsIdxInDkg      map[int]string
 		ValidatorsIdxNotInDkg   map[int]string
 	}
 
 	type DkgStatus struct {
-		Dkg      DkgInfo
-		PrevDkg  DkgInfo
-		Original OriginalData
+		StandaloneMode bool
+		DkgInfo        DkgInfo
+		PrevDkgInfo    DkgInfo
+		Original       OriginalData
 	}
 
-	// Select DKG
-	dkg, err := manager.SelectToObject("SELECT payload FROM metrics_data WHERE type_id = 0 ORDER BY id DESC LIMIT 1")
+	dkgJson, err := manager.Dkg()
 	if err != nil {
 		return "", err
 	}
 
-	// Select prevDKG
-	prevDkg, err := manager.SelectToObject("SELECT payload FROM metrics_data WHERE type_id = 1 ORDER BY id DESC LIMIT 1")
+	prevDkgJson, err := manager.PrevDkg()
+	if err != nil {
+		return "", err
+	}
+
+	dkg, err := data_models.DeserializeDkg(dkgJson)
+	if err != nil {
+		return "", err
+	}
+
+	prevDkg, err := data_models.DeserializeDkg(prevDkgJson)
+	if err != nil {
+		return "", err
+	}
+
+	coordinatorContractData, err := manager.CoordinatorStorage()
 	if err != nil {
 		return "", err
 	}
 
 	var status DkgStatus
+	status.StandaloneMode = coordinatorContractData.StandaloneMode
+	status.Original.Dkg = dkg
+	status.Original.PrevDkg = prevDkg
 
-	// Fill DkgStatus
-	{
-		status.Original.Dkg = dkg
-		status.Original.PrevDkg = prevDkg
+	sumarizeDkgInfo := func(*coordinator.DKG) (*DkgInfo, error) {
+		var info DkgInfo
 
-		fillFn := func(dkg map[string]interface{}) (*DkgInfo, error) {
-			var dkgInfo DkgInfo
+		info.VSetSize = len(dkg.VSet)
 
-			vset, ok := dkg["VSet"].(map[string]interface{})
-			if !ok {
-				return nil, errors.New("VSet has wrong type")
-			}
+		if dkg.R1 != nil {
+			info.ValidatorsCountInDkg = int(dkg.R1.Count)
+		} else {
+			info.ValidatorsCountInDkg = 0
+		}
 
-			maxSignersJson, ok := dkg["MaxSigners"].(json.Number)
-			if !ok {
-				return nil, errors.New("MaxSigners has wrong type")
-			}
-
-			var dkgLastRound *map[string]interface{} = nil
-			roundNames := []string{"R3", "R2", "R1"}
-			for _, roundName := range roundNames {
-				if _, exists := dkg[roundName]; exists {
-					res, ok := dkg[roundName].(map[string]interface{})
-					if !ok {
-						return nil, fmt.Errorf("`%s` has wrong type", roundName)
-					}
-
-					dkgLastRound = &res
-					break
-				}
-			}
-
-			maxSigners, err := maxSignersJson.Int64()
+		if coordinatorContractData.StandaloneMode {
+			maxValidators, err := manager.TonMaxMainValidators(ctx)
 			if err != nil {
 				return nil, err
 			}
 
-			// tonMaxMainValidators
-			if manager.tonMaxMainValidators < 0 {
-				block, err := manager.tonClient.API.GetMasterchainInfo(ctx)
-				if err != nil {
-					return nil, fmt.Errorf("failed to get block: %v", err)
-				}
-
-				tonConfig, err := manager.tonClient.API.GetBlockchainConfig(ctx, block, 16)
-				if err != nil {
-					return nil, fmt.Errorf("failed to get config: %v", err)
-				}
-
-				tonConfigParam16 := tonConfig.Get(16)
-				s := tonConfigParam16.BeginParse()
-				s.MustLoadUInt(16)
-				manager.tonMaxMainValidators = int(s.MustLoadUInt(16))
-			}
-
-			dkgInfo.ValidatorsCountMax = manager.tonMaxMainValidators
-			dkgInfo.VSetSize = len(vset)
-			dkgInfo.ValidatorsCountTotal = dkgInfo.ValidatorsCountMax
-			dkgInfo.ValidatorsCountInDkg = int(maxSigners)
-			if len(vset) < dkgInfo.ValidatorsCountTotal {
-				dkgInfo.ValidatorsCountTotal = len(vset)
-			}
-			dkgInfo.ValidatorsCountNotInDkg = dkgInfo.ValidatorsCountTotal - dkgInfo.ValidatorsCountInDkg
-
-			if dkgLastRound != nil {
-				maskJson, ok := (*dkgLastRound)["Mask"].(json.Number)
-				if !ok {
-					return nil, errors.New("mask has wrong type")
-				}
-
-				mask := new(big.Int)
-				mask, ok = mask.SetString(maskJson.String(), 10)
-				if !ok {
-					return nil, errors.New("invalid bigint")
-				}
-
-				dkgInfo.ValidatorsIdxInDkg = make(map[int]string)
-				dkgInfo.ValidatorsIdxNotInDkg = make(map[int]string)
-
-				for i := 0; i < dkgInfo.ValidatorsCountTotal; i++ {
-					pubKeyBase64, ok := vset[strconv.Itoa(i)].(string)
-					if !ok {
-						return nil, errors.New("invalid vset pubkey type")
-					}
-
-					if mask.Bit(i) == 1 {
-						dkgInfo.ValidatorsIdxInDkg[i] = pubKeyBase64
-					} else {
-						dkgInfo.ValidatorsIdxNotInDkg[i] = pubKeyBase64
-					}
-				}
-			}
-
-			return &dkgInfo, nil
+			info.ValidatorsCountMax = maxValidators
+		} else {
+			info.ValidatorsCountMax = info.VSetSize
 		}
 
-		statusDkg, err := fillFn(status.Original.Dkg)
-		if err != nil {
-			return "", err
-		}
-		status.Dkg = *statusDkg
+		info.ValidatorsCountNotInDkg = info.ValidatorsCountMax - info.ValidatorsCountInDkg
+		info.ValidatorsIdxInDkg = make(map[int]string)
+		info.ValidatorsIdxNotInDkg = make(map[int]string)
 
-		statusPrevDkg, err := fillFn(status.Original.PrevDkg)
-		if err != nil {
-			return "", err
+		count := min(info.VSetSize, info.ValidatorsCountMax)
+
+		for i := 0; i < count; i++ {
+			pubkey := dkg.VSet[uint16(i)]
+			pubkeyBase64 := base64.StdEncoding.EncodeToString(pubkey)
+
+			if dkg.VSetMask.Bit(i) == 1 {
+				info.ValidatorsIdxInDkg[i] = pubkeyBase64
+			} else {
+				info.ValidatorsIdxNotInDkg[i] = pubkeyBase64
+			}
 		}
-		status.PrevDkg = *statusPrevDkg
+
+		return &info, nil
 	}
+
+	dkgInfo, err := sumarizeDkgInfo(status.Original.Dkg)
+	if err != nil {
+		return "", err
+	}
+	status.DkgInfo = *dkgInfo
+
+	prevDkgInfo, err := sumarizeDkgInfo(status.Original.PrevDkg)
+	if err != nil {
+		return "", err
+	}
+	status.PrevDkgInfo = *prevDkgInfo
 
 	jsonData, err := json.Marshal(status)
 	if err != nil {
@@ -559,19 +525,19 @@ func (manager MetricsManager) GetDkgStatus(ctx context.Context) (string, error) 
 	return string(jsonData), nil
 }
 
-func (manager MetricsManager) CoordinatorContractState() (map[string]interface{}, error) {
+func (manager *MetricsManager) CoordinatorContractState() (map[string]interface{}, error) {
 	return manager.SelectToObject("SELECT payload FROM metrics_data WHERE type_id = 5 ORDER BY id DESC LIMIT 1")
 }
 
-func (manager MetricsManager) Dkg() (map[string]interface{}, error) {
+func (manager *MetricsManager) Dkg() (map[string]interface{}, error) {
 	return manager.SelectToObject("SELECT payload FROM metrics_data WHERE type_id = 0 ORDER BY id DESC LIMIT 1")
 }
 
-func (manager MetricsManager) PrevDkg() (map[string]interface{}, error) {
+func (manager *MetricsManager) PrevDkg() (map[string]interface{}, error) {
 	return manager.SelectToObject("SELECT payload FROM metrics_data WHERE type_id = 1 ORDER BY id DESC LIMIT 1")
 }
 
-func (manager MetricsManager) SelectToObject(sql string) (map[string]interface{}, error) {
+func (manager *MetricsManager) SelectToObject(sql string) (map[string]interface{}, error) {
 	rows, err := manager.db.Query(sql)
 	if err != nil {
 		return nil, err
@@ -599,4 +565,45 @@ func (manager MetricsManager) SelectToObject(sql string) (map[string]interface{}
 		return nil, err
 	}
 	return m, nil
+}
+
+func (manager *MetricsManager) TonMaxMainValidators(ctx context.Context) (int, error) {
+	manager.mu.Lock()
+	defer manager.mu.Unlock()
+
+	if manager.tonMaxMainValidators < 0 {
+		block, err := manager.tonClient.API.GetMasterchainInfo(ctx)
+		if err != nil {
+			return 0, fmt.Errorf("failed to get block: %v", err)
+		}
+
+		tonConfig, err := manager.tonClient.API.GetBlockchainConfig(ctx, block, 16)
+		if err != nil {
+			return 0, fmt.Errorf("failed to get config: %v", err)
+		}
+
+		tonConfigParam16 := tonConfig.Get(16)
+		s := tonConfigParam16.BeginParse()
+		s.MustLoadUInt(16)
+		manager.tonMaxMainValidators = int(s.MustLoadUInt(16))
+	}
+
+	return manager.tonMaxMainValidators, nil
+}
+
+func (manager *MetricsManager) CoordinatorStorage() (*coordinator.Storage, error) {
+	manager.mu.Lock()
+	defer manager.mu.Unlock()
+
+	coordinatorContractStateJson, err := manager.CoordinatorContractState()
+	if err != nil {
+		return nil, err
+	}
+
+	coordinatorContractState, err := data_models.DeserializeCoordinatorContractState(coordinatorContractStateJson)
+	if err != nil {
+		return nil, err
+	}
+
+	return coordinatorContractState, nil
 }
