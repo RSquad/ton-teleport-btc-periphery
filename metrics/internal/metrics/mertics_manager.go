@@ -463,7 +463,7 @@ func (manager *MetricsManager) GetDkgStatus(ctx context.Context) (string, error)
 	status.Original.Dkg = dkg
 	status.Original.PrevDkg = prevDkg
 
-	sumarizeDkgInfo := func(*coordinator.DKG) (*DkgInfo, error) {
+	sumarizeDkgInfo := func(dkg *coordinator.DKG) (*DkgInfo, error) {
 		var info DkgInfo
 
 		info.VSetSize = len(dkg.VSet)
