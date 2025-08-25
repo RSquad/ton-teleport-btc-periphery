@@ -474,7 +474,7 @@ func (manager *MetricsManager) GetDkgStatus(ctx context.Context) (string, error)
 			info.ValidatorsCountInDkg = 0
 		}
 
-		if coordinatorContractData.StandaloneMode {
+		if !coordinatorContractData.StandaloneMode {
 			maxValidators, err := manager.TonMaxMainValidators(ctx)
 			if err != nil {
 				return nil, err
