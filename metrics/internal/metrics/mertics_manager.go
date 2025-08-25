@@ -424,6 +424,7 @@ func (manager *MetricsManager) GetDkgStatus(ctx context.Context) (string, error)
 		ValidatorsCountMax      int
 		ValidatorsIdxInDkg      map[int]string
 		ValidatorsIdxNotInDkg   map[int]string
+		ValidatorsIdxEvicted    map[int]string
 	}
 
 	type DkgStatus struct {
@@ -488,6 +489,7 @@ func (manager *MetricsManager) GetDkgStatus(ctx context.Context) (string, error)
 		info.ValidatorsCountNotInDkg = info.ValidatorsCountMax - info.ValidatorsCountInDkg
 		info.ValidatorsIdxInDkg = make(map[int]string)
 		info.ValidatorsIdxNotInDkg = make(map[int]string)
+		info.ValidatorsIdxEvicted = make(map[int]string)
 
 		count := min(info.VSetSize, info.ValidatorsCountMax)
 
@@ -496,9 +498,13 @@ func (manager *MetricsManager) GetDkgStatus(ctx context.Context) (string, error)
 			pubkeyBase64 := base64.StdEncoding.EncodeToString(pubkey)
 
 			if dkg.VSetMask.Bit(i) == 1 {
-				info.ValidatorsIdxInDkg[i] = pubkeyBase64
+				if dkg.R1.Mask.Bit(i) == 1 {
+					info.ValidatorsIdxInDkg[i] = pubkeyBase64
+				} else {
+					info.ValidatorsIdxNotInDkg[i] = pubkeyBase64
+				}
 			} else {
-				info.ValidatorsIdxNotInDkg[i] = pubkeyBase64
+				info.ValidatorsIdxEvicted[i] = pubkeyBase64
 			}
 		}
 
