@@ -3,6 +3,7 @@ package httpservice
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"net/http"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -11,6 +12,7 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/teleportcontract"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
+	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/config"
 )
 
 type HttpService struct {
@@ -18,6 +20,7 @@ type HttpService struct {
 	tonClient        *tonclient.TonClient
 	teleportContract *teleportcontract.TeleportContract
 	db               *sql.DB
+	httpPort         int
 }
 
 func New(
@@ -25,12 +28,14 @@ func New(
 	tonClient *tonclient.TonClient,
 	teleportContract *teleportcontract.TeleportContract,
 	db *sql.DB,
+	cfg *config.ServicesConfig,
 ) *HttpService {
 	return &HttpService{
 		bitcoinClient:    bitcoinClient,
 		tonClient:        tonClient,
 		teleportContract: teleportContract,
 		db:               db,
+		httpPort:         cfg.HttpPort,
 	}
 }
 
@@ -47,11 +52,12 @@ func (s *HttpService) Work(ctx context.Context) {
 	})
 
 	handlerWithCORS := c.Handler(mux)
+	httpBindAddrStr := fmt.Sprintf(":%d", s.httpPort)
 
 	logger.Log.Info().
 		Str("component", "main").
-		Msg("listening on :3000")
-	if err := http.ListenAndServe(":3000", handlerWithCORS); err != nil {
+		Msgf("listening on %s", httpBindAddrStr)
+	if err := http.ListenAndServe(httpBindAddrStr, handlerWithCORS); err != nil {
 		logger.Log.Error().
 			Str("component", "main").
 			Err(err).

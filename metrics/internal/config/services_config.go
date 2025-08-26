@@ -15,6 +15,7 @@ type ServicesConfig struct {
 	DatabaseUrl                      string
 	DatabaseMaxConn                  int
 	DatabaseMaxIdleConn              int
+	HttpPort                         int
 	TeleportContractAddr             *address.Address
 	CoordinatorContractAddr          *address.Address
 	BitcoinClientContractAddr        *address.Address
@@ -31,6 +32,7 @@ type ServicesConfig struct {
 func NewServicesConfig(config *EnvConfig) (*ServicesConfig, error) {
 	databaseMaxConn := 8
 	databaseMaxIdleConn := 8
+	httpPort := 3000
 	writerDbChainSize := 5
 	dkgFetchPeriod := 10
 	bitcoinClientContractFetchPeriod := 60
@@ -55,6 +57,15 @@ func NewServicesConfig(config *EnvConfig) (*ServicesConfig, error) {
 		}
 
 		databaseMaxIdleConn = value
+	}
+
+	if len(config.HttpPort) > 0 {
+		value, err := ParseInt(config.HttpPort, "HttpPort")
+		if err != nil {
+			return nil, fmt.Errorf("wrong `METRICS_HTTP_PORT` .env argument value '%s'. %w", config.HttpPort, err)
+		}
+
+		httpPort = value
 	}
 
 	teleportContractAddr, err := address.ParseAddr(config.TeleportContractAddr)
@@ -148,6 +159,7 @@ func NewServicesConfig(config *EnvConfig) (*ServicesConfig, error) {
 		DatabaseUrl:                      config.DatabaseUrl,
 		DatabaseMaxConn:                  databaseMaxConn,
 		DatabaseMaxIdleConn:              databaseMaxIdleConn,
+		HttpPort:                         httpPort,
 		TeleportContractAddr:             teleportContractAddr,
 		CoordinatorContractAddr:          coordinatorContractAddr,
 		BitcoinClientContractAddr:        bitcoinClientContractAddr,
