@@ -12,6 +12,7 @@ type EnvConfig struct {
 	DatabaseUrl                      string `env:"METRICS_DATABASE_URL,required"`
 	DatabaseMaxConn                  string `env:"METRICS_DATABASE_MAX_CONN"`
 	DatabaseMaxIdleConn              string `env:"METRICS_DATABASE_MAX_IDLE_CONN"`
+	HttpPort                         string `env:"METRICS_HTTP_PORT"`
 	WriterDbChainSize                string `env:"WRITE_DB_CHAIN_SIZE"`
 	DkgFetchPeriod                   string `env:"DKG_FETCH_PERIOD"`
 	BitcoinClientContractFetchPeriod string `env:"BITCOIN_CLIENT_CONTRACT_FETCH_PERIOD"`

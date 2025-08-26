@@ -138,6 +138,7 @@ func initialize() (*App, error) {
 		tonClient,
 		teleportContract,
 		dbConnPool,
+		cfg,
 	)
 
 	// Alerts service
