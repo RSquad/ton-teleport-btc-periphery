@@ -1,23 +1,27 @@
 package httpservice
 
 import (
-	"database/sql"
 	"net/http"
 	"time"
 
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
+	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/alerts"
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/metrics"
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/mutils"
 )
 
 type JsonApiHandler struct {
 	metricsManager *metrics.MetricsManager
+	alertsManager  *alerts.AlertManager
 	cache          *mutils.Cache[string]
 }
 
-func NewJsonApiHandler(db *sql.DB, tonClient *tonclient.TonClient) *JsonApiHandler {
+func NewJsonApiHandler(
+	metricsManager *metrics.MetricsManager,
+	alertsManager *alerts.AlertManager,
+) *JsonApiHandler {
 	return &JsonApiHandler{
-		metricsManager: metrics.NewMetricsManager(db, tonClient),
+		metricsManager: metricsManager,
+		alertsManager:  alertsManager,
 		cache:          mutils.NewCache[string](),
 	}
 }
@@ -42,15 +46,15 @@ func (apiHandler JsonApiHandler) ServeHTTP(w http.ResponseWriter, r *http.Reques
 	} else {
 		switch sourceName {
 		case "mints":
-			payload, err = apiHandler.metricsManager.GetMints()
+			payload, err = apiHandler.metricsManager.Mints()
 		case "burns":
-			payload, err = apiHandler.metricsManager.GetBurns()
+			payload, err = apiHandler.metricsManager.Burns()
 		case "reinits":
-			payload, err = apiHandler.metricsManager.GetReinits()
+			payload, err = apiHandler.metricsManager.Reinits()
 		case "info":
-			payload, err = apiHandler.metricsManager.GetInfo()
+			payload, err = apiHandler.metricsManager.Info()
 		case "internal_keys":
-			payload, err = apiHandler.metricsManager.GetInternalKeys()
+			payload, err = apiHandler.metricsManager.InternalKeys()
 		case "plot_minted":
 			payload, err = apiHandler.metricsManager.PlotMinted()
 		case "plot_burned":
@@ -58,12 +62,14 @@ func (apiHandler JsonApiHandler) ServeHTTP(w http.ResponseWriter, r *http.Reques
 		case "plot_total_supply":
 			payload, err = apiHandler.metricsManager.PlotTotalSupply()
 		case "plots_summary":
-			payload, err = apiHandler.metricsManager.GetPlotsSummary()
+			payload, err = apiHandler.metricsManager.PlotsSummary()
 		case "dkg_status":
-			payload, err = apiHandler.metricsManager.GetDkgStatus(r.Context())
+			payload, err = apiHandler.metricsManager.DkgStatus(r.Context())
+		case "alerts":
+			payload, err = apiHandler.alertsManager.GetInfoJsonStr()
 		default:
 			w.WriteHeader(http.StatusNotFound)
-			w.Write([]byte("Please select one of the next values: mints, burns, reinits, info, internal_keys, plot_minted, plot_burned, plot_total_supply, plots_summary, dkg_status"))
+			w.Write([]byte("Please select one of the next values: mints, burns, reinits, info, internal_keys, plot_minted, plot_burned, plot_total_supply, plots_summary, dkg_status, alerts"))
 			return
 		}
 

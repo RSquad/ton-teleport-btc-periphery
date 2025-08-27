@@ -16,6 +16,7 @@ type ServicesConfig struct {
 	DatabaseMaxConn                  int
 	DatabaseMaxIdleConn              int
 	HttpPort                         int
+	AlertsTestApiEnable              bool
 	TeleportContractAddr             *address.Address
 	CoordinatorContractAddr          *address.Address
 	BitcoinClientContractAddr        *address.Address
@@ -33,6 +34,7 @@ func NewServicesConfig(config *EnvConfig) (*ServicesConfig, error) {
 	databaseMaxConn := 8
 	databaseMaxIdleConn := 8
 	httpPort := 3000
+	alertsTestApiEnable := false
 	writerDbChainSize := 5
 	dkgFetchPeriod := 10
 	bitcoinClientContractFetchPeriod := 60
@@ -66,6 +68,15 @@ func NewServicesConfig(config *EnvConfig) (*ServicesConfig, error) {
 		}
 
 		httpPort = value
+	}
+
+	if len(config.AlertsTestApiEnable) > 0 {
+		value, err := ParseBool(config.AlertsTestApiEnable, "AlertsTestApiEnable")
+		if err != nil {
+			return nil, fmt.Errorf("wrong `METRICS_ALERTS_TEST_API_ENABLE` .env argument value '%s'. %w", config.AlertsTestApiEnable, err)
+		}
+
+		alertsTestApiEnable = value
 	}
 
 	teleportContractAddr, err := address.ParseAddr(config.TeleportContractAddr)
@@ -160,6 +171,7 @@ func NewServicesConfig(config *EnvConfig) (*ServicesConfig, error) {
 		DatabaseMaxConn:                  databaseMaxConn,
 		DatabaseMaxIdleConn:              databaseMaxIdleConn,
 		HttpPort:                         httpPort,
+		AlertsTestApiEnable:              alertsTestApiEnable,
 		TeleportContractAddr:             teleportContractAddr,
 		CoordinatorContractAddr:          coordinatorContractAddr,
 		BitcoinClientContractAddr:        bitcoinClientContractAddr,
@@ -186,6 +198,8 @@ BitcoinClientContractAddr: %s
 JettonMinterContractAddr: %s
 DatabaseMaxConn: %d
 DatabaseMaxIdleConn: %d
+HttpPort: %d                        ,
+AlertsTestApiEnable: %t,
 WriterDbChainSize: %d
 DkgFetchPeriod: %d sec.
 BitcoinClientContractFetchPeriod: %d sec.
@@ -202,6 +216,8 @@ AlertsCheckPeriod: %d sec.
 		config.JettonMinterContractAddr,
 		config.DatabaseMaxConn,
 		config.DatabaseMaxIdleConn,
+		config.HttpPort,
+		config.AlertsTestApiEnable,
 		config.WriterDbChainSize,
 		config.DkgFetchPeriod,
 		config.BitcoinClientContractFetchPeriod,
@@ -219,4 +235,13 @@ func ParseInt(value string, name string) (int, error) {
 	}
 
 	return int(val), nil
+}
+
+func ParseBool(value string, name string) (bool, error) {
+	val, err := strconv.ParseBool(value)
+	if err != nil {
+		return false, fmt.Errorf("incorrect bool value '%s' assigned to %s", value, name)
+	}
+
+	return val, nil
 }
