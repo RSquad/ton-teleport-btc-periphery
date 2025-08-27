@@ -22,6 +22,3 @@ type EnvConfig struct {
 	CoordinatorContractFetchPeriod   string `env:"COORDINATOR_CONTRACT_FETCH_PERIOD"`
 	AlertsCheckPeriod                string `env:"ALERTS_CHECK_PERIOD"`
 }
-
-// ssh -v -p 22 -N -L 0.0.0.0:3000:localhost:3000 fox@65.21.162.174
-// ssh -v -p 22 -N -R localhost:3000:localhost:3000 fox@65.21.162.174
