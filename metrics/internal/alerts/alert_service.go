@@ -14,30 +14,9 @@ type AlertService struct {
 }
 
 func NewAlertService(
-	dataSource AlertDataSource,
-	alertDispatcher AlertDispatcher,
+	alertManager *AlertManager,
 	cfg *config.ServicesConfig,
 ) *AlertService {
-	alertManager := NewAlertManager(dataSource, alertDispatcher)
-
-	// pegout.signers
-	alertManager.RegisterAlert(
-		"pegout.signers",
-		NewAlertPegoutMaxSignersCount(),
-	)
-
-	// pegout.signing
-	alertManager.RegisterAlert(
-		"pegout.signing",
-		NewAlertPegoutSigningDuration(),
-	)
-
-	// pegout.restarts
-	alertManager.RegisterAlert(
-		"pegout.restarts",
-		NewAlertPegoutRestarts(),
-	)
-
 	return &AlertService{
 		alertManager: alertManager,
 		period:       int64(cfg.AlertsCheckPeriod),

@@ -19,9 +19,9 @@ func NewAlertDispatcherPrometheus() *AlertDispatcherPrometheus {
 	}
 }
 
-func (d *AlertDispatcherPrometheus) getOrCreateGaugeVec(name string, labels []string) *prometheus.GaugeVec {
+func (d *AlertDispatcherPrometheus) getOrCreateGaugeVec(state *AlertState) *prometheus.GaugeVec {
 	d.mu.RLock()
-	gv, ok := d.gauges[name]
+	gv, ok := d.gauges[state.Name]
 	d.mu.RUnlock()
 	if ok {
 		return gv
@@ -30,22 +30,22 @@ func (d *AlertDispatcherPrometheus) getOrCreateGaugeVec(name string, labels []st
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
-	if gv, ok = d.gauges[name]; ok {
+	if gv, ok = d.gauges[state.Name]; ok {
 		return gv
 	}
 
 	gv = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Name: name,
-			Help: fmt.Sprintf("Severity gauge for `%s`", name),
+			Name: state.Name,
+			Help: fmt.Sprintf("Severity gauge for `%s`", state.Name),
 		},
-		labels,
+		state.Labels,
 	)
-	d.gauges[name] = gv
+	d.gauges[state.Name] = gv
 	return gv
 }
 
-func (d *AlertDispatcherPrometheus) OnAlert(name string, labels []string, severity Severity) {
-	gv := d.getOrCreateGaugeVec(name, labels)
-	gv.WithLabelValues().Set(float64(severity))
+func (d *AlertDispatcherPrometheus) OnAlert(state *AlertState) {
+	gv := d.getOrCreateGaugeVec(state)
+	gv.WithLabelValues().Set(float64(state.Severity))
 }

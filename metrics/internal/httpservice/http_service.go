@@ -2,47 +2,45 @@ package httpservice
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"net/http"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/cors"
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/teleportcontract"
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
+	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/alerts"
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/config"
+	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/metrics"
 )
 
 type HttpService struct {
-	bitcoinClient    *bitcoin.Client
-	tonClient        *tonclient.TonClient
-	teleportContract *teleportcontract.TeleportContract
-	db               *sql.DB
-	httpPort         int
+	metricsManager      *metrics.MetricsManager
+	alertManager        *alerts.AlertManager
+	httpPort            int
+	alertsTestApiEnable bool
 }
 
 func New(
-	bitcoinClient *bitcoin.Client,
-	tonClient *tonclient.TonClient,
-	teleportContract *teleportcontract.TeleportContract,
-	db *sql.DB,
+	metricsManager *metrics.MetricsManager,
+	alertManager *alerts.AlertManager,
 	cfg *config.ServicesConfig,
 ) *HttpService {
 	return &HttpService{
-		bitcoinClient:    bitcoinClient,
-		tonClient:        tonClient,
-		teleportContract: teleportContract,
-		db:               db,
-		httpPort:         cfg.HttpPort,
+		metricsManager:      metricsManager,
+		alertManager:        alertManager,
+		httpPort:            cfg.HttpPort,
+		alertsTestApiEnable: cfg.AlertsTestApiEnable,
 	}
 }
 
 func (s *HttpService) Work(ctx context.Context) {
 	mux := http.NewServeMux()
-	mux.Handle("/metrics/api", NewJsonApiHandler(s.db, s.tonClient))
+	mux.Handle("/metrics/api", NewJsonApiHandler(s.metricsManager, s.alertManager))
 	mux.Handle("/metrics/prom", promhttp.Handler())
+
+	if s.alertsTestApiEnable {
+		mux.Handle("/metrics/alerts_testing", NewAlertsTestingApiHandler(s.alertManager))
+	}
 
 	c := cors.New(cors.Options{
 		AllowedOrigins:   []string{"*"},

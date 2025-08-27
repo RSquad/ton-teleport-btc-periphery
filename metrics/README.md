@@ -17,6 +17,7 @@ The Metrics is configured using environment variables. You can set these in a `.
 - `METRICS_DATABASE_MAX_CONN` – Maximum number of connections to the database (optional, default: 8)
 - `METRICS_DATABASE_MAX_IDLE_CONN` – Maximum number of idle connections to the database (optional, default: 8)
 - `METRICS_HTTP_PORT` - HTTP port for API requests
+- `METRICS_ALERTS_TEST_API_ENABLE` – if `true`, then the API for alerts testing will be available at '/metrics/alerts_testing'.
 - `WRITE_DB_CHAIN_SIZE` - Size of chain messages sent from fetchers to the database writer (default 5)
 - `DKG_FETCH_PERIOD` - DKG fetch period (default 10 seconds)
 - `BITCOIN_CLIENT_CONTRACT_FETCH_PERIOD` - Bitcoin Client Contract fetch period (default 60 seconds)

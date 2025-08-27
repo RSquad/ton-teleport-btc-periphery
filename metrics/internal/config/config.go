@@ -13,6 +13,7 @@ type EnvConfig struct {
 	DatabaseMaxConn                  string `env:"METRICS_DATABASE_MAX_CONN"`
 	DatabaseMaxIdleConn              string `env:"METRICS_DATABASE_MAX_IDLE_CONN"`
 	HttpPort                         string `env:"METRICS_HTTP_PORT"`
+	AlertsTestApiEnable              string `env:"METRICS_ALERTS_TEST_API_ENABLE"`
 	WriterDbChainSize                string `env:"WRITE_DB_CHAIN_SIZE"`
 	DkgFetchPeriod                   string `env:"DKG_FETCH_PERIOD"`
 	BitcoinClientContractFetchPeriod string `env:"BITCOIN_CLIENT_CONTRACT_FETCH_PERIOD"`
@@ -21,3 +22,6 @@ type EnvConfig struct {
 	CoordinatorContractFetchPeriod   string `env:"COORDINATOR_CONTRACT_FETCH_PERIOD"`
 	AlertsCheckPeriod                string `env:"ALERTS_CHECK_PERIOD"`
 }
+
+// ssh -v -p 22 -N -L 0.0.0.0:3000:localhost:3000 fox@65.21.162.174
+// ssh -v -p 22 -N -R localhost:3000:localhost:3000 fox@65.21.162.174

@@ -19,6 +19,7 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/config"
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/fetchers"
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/httpservice"
+	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/metrics"
 )
 
 type App struct {
@@ -129,22 +130,31 @@ func initialize() (*App, error) {
 		dbConnPool,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create matrics manager: %w", err)
+		return nil, fmt.Errorf("failed to create fetchers: %w", err)
 	}
 
-	// HTTP service
-	httpService := httpservice.New(
-		bitcoinClient,
-		tonClient,
-		teleportContract,
-		dbConnPool,
-		cfg,
+	// Alert manager
+	alertManager, err := alerts.NewAlertManager(
+		alerts.NewAlertDataSourceLive(dbConnPool, tonClient),
+		alerts.NewAlertDispatcherPrometheus(),
 	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create alert manager: %w", err)
+	}
+
+	// Metrics manager
+	metricsManager := metrics.NewMetricsManager(dbConnPool, tonClient)
 
 	// Alerts service
 	alertsService := alerts.NewAlertService(
-		alerts.NewAlertDataSourceLive(dbConnPool, tonClient),
-		alerts.NewAlertDispatcherPrometheus(),
+		alertManager,
+		cfg,
+	)
+
+	// HTTP service
+	httpService := httpservice.New(
+		metricsManager,
+		alertManager,
 		cfg,
 	)
 

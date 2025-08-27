@@ -23,7 +23,10 @@ type MetricsManager struct {
 	coordinatorContractData *coordinator.Storage
 }
 
-func NewMetricsManager(db *sql.DB, tonClient *tonclient.TonClient) *MetricsManager {
+func NewMetricsManager(
+	db *sql.DB,
+	tonClient *tonclient.TonClient,
+) *MetricsManager {
 	return &MetricsManager{
 		db:                      db,
 		tonClient:               tonClient,
@@ -32,7 +35,7 @@ func NewMetricsManager(db *sql.DB, tonClient *tonclient.TonClient) *MetricsManag
 	}
 }
 
-func (manager *MetricsManager) GetMints() (string, error) {
+func (manager *MetricsManager) Mints() (string, error) {
 	const limit = 5000 // Yes, we will select only last 5000 mints
 
 	rows, err := manager.db.Query(
@@ -74,7 +77,7 @@ func (manager *MetricsManager) GetMints() (string, error) {
 	return data, nil
 }
 
-func (manager *MetricsManager) GetBurns() (string, error) {
+func (manager *MetricsManager) Burns() (string, error) {
 	const limit = 5000 // Yes, we will select only last 5000 burns
 
 	rows, err := manager.db.Query(
@@ -118,7 +121,7 @@ func (manager *MetricsManager) GetBurns() (string, error) {
 	return data, nil
 }
 
-func (manager *MetricsManager) GetReinits() (string, error) {
+func (manager *MetricsManager) Reinits() (string, error) {
 	const limit = 5000 // Yes, we will select only last 5000 reinits
 
 	rows, err := manager.db.Query(
@@ -160,7 +163,7 @@ func (manager *MetricsManager) GetReinits() (string, error) {
 	return data, nil
 }
 
-func (manager *MetricsManager) GetInternalKeys() (string, error) {
+func (manager *MetricsManager) InternalKeys() (string, error) {
 	const limit = 5000 // Yes, we will select only last 5000 internal keys
 
 	rows, err := manager.db.Query(
@@ -197,7 +200,7 @@ func (manager *MetricsManager) GetInternalKeys() (string, error) {
 	return data, nil
 }
 
-func (manager *MetricsManager) GetInfo() (string, error) {
+func (manager *MetricsManager) Info() (string, error) {
 	rows, err := manager.db.Query(
 		`SELECT jsonb_build_object(
 				'contractBitcoinClient', (
@@ -373,7 +376,7 @@ func (manager *MetricsManager) PlotTotalSupply() (string, error) {
 	return data, nil
 }
 
-func (manager *MetricsManager) GetPlotsSummary() (string, error) {
+func (manager *MetricsManager) PlotsSummary() (string, error) {
 	rows, err := manager.db.Query(
 		`SELECT jsonb_build_object(
 				'mints_count', (
@@ -411,7 +414,7 @@ func (manager *MetricsManager) GetPlotsSummary() (string, error) {
 	return data, nil
 }
 
-func (manager *MetricsManager) GetDkgStatus(ctx context.Context) (string, error) {
+func (manager *MetricsManager) DkgStatus(ctx context.Context) (string, error) {
 	type OriginalData struct {
 		Dkg     *coordinator.DKG
 		PrevDkg *coordinator.DKG
