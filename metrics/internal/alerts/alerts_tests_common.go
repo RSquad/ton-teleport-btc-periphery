@@ -2,13 +2,11 @@ package alerts
 
 import (
 	"testing"
-
-	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/mutils"
 )
 
 type TestResWant struct {
 	Severity Severity
-	Labels   []string
+	Labels   Labels
 	Err      error
 }
 
@@ -36,9 +34,23 @@ func DoAlertTests(t *testing.T, tests []TestDesc, alert Alert) {
 				t.Fatalf("expected severity %v, got %v", tt.Expect.Severity, severity)
 			}
 
-			if !mutils.IsEqual(labels, tt.Expect.Labels) {
+			if !IsEqual(labels, tt.Expect.Labels) {
 				t.Fatalf("expected labels %v, got %v", tt.Expect.Labels, labels)
 			}
 		})
 	}
+}
+
+func IsEqual(a, b Labels) bool {
+	if len(a) != len(b) {
+		return false
+	}
+
+	for k, v := range a {
+		if bv, ok := b[k]; !ok || bv != v {
+			return false
+		}
+	}
+
+	return true
 }

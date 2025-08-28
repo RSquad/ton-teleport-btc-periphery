@@ -7,33 +7,46 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/mutils"
 )
 
-type AlertPegoutMaxSignersCount struct {
+type AlertPegoutSigners struct {
 }
 
-func NewAlertPegoutMaxSignersCount() Alert {
-	return &AlertPegoutMaxSignersCount{}
+func NewAlertPegoutSigners() Alert {
+	return &AlertPegoutSigners{}
 }
 
-func (alert *AlertPegoutMaxSignersCount) Check(dataSource AlertDataSource) (Severity, []string, error) {
+func (alert *AlertPegoutSigners) Check(dataSource AlertDataSource) (Severity, Labels, error) {
+	labels := Labels{
+		"bitcoin_tx_id": "",
+		"pegout_addr":   "",
+	}
+
 	// Get first unsigned pegout
 	unsignedPegout, err := dataSource.FirstUnsignedPegout()
 	if err != nil {
-		return SEVERITY_UNKNOWN, nil, err
+		return SEVERITY_UNKNOWN, labels, err
 	}
 
 	// No unsigned pegouts
 	if unsignedPegout == nil {
-		return SEVERITY_OK, nil, nil
+		return SEVERITY_OK, labels, nil
 	}
 
 	// Get prev DKG
 	prevDkg, err := dataSource.PrevDkg()
 	if err != nil {
-		return SEVERITY_UNKNOWN, nil, err
+		return SEVERITY_UNKNOWN, labels, err
 	}
 
 	if prevDkg == nil {
-		return SEVERITY_UNKNOWN, []string{}, errors.New("PrevDKG is null")
+		return SEVERITY_UNKNOWN, labels, errors.New("PrevDKG is null")
+	}
+
+	labels["bitcoin_tx_id"] = "unknonwn"
+	labels["pegout_addr"] = unsignedPegout.PegoutAddress.StringRaw()
+
+	// Wait until the signing stage starts
+	if unsignedPegout.Signatures.Count == 0 {
+		return SEVERITY_OK, labels, nil
 	}
 
 	// Calulate commitmentsPercentage
@@ -48,10 +61,10 @@ func (alert *AlertPegoutMaxSignersCount) Check(dataSource AlertDataSource) (Seve
 	// Calulate severity
 	severity := alert.GetSeverity(commitmentsPercentage)
 
-	return severity, []string{}, nil
+	return severity, labels, nil
 }
 
-func (alert *AlertPegoutMaxSignersCount) GetSeverity(commitmentsPercentage uint) Severity {
+func (alert *AlertPegoutSigners) GetSeverity(commitmentsPercentage uint) Severity {
 	severity := SEVERITY_OK
 
 	if commitmentsPercentage <= 70 {

@@ -14,6 +14,21 @@ func TestAlertPegoutSigningDuration(t *testing.T) {
 	pegoutAddress1, _ := address.ParseAddr("EQAPtQRffHrXATHokYMFQgupunwxfTe2Main1FYFUt-8eHn-")
 	pegoutAddress2, _ := address.ParseAddr("Ef8VjV6LGTyiNLzefOm1dpuCMLcoewhqfQubtgbWcPwt2Gwp")
 
+	pegoutLabels1 := Labels{
+		"bitcoin_tx_id": "unknonwn",
+		"pegout_addr":   pegoutAddress1.StringRaw(),
+	}
+
+	pegoutLabels2 := Labels{
+		"bitcoin_tx_id": "unknonwn",
+		"pegout_addr":   pegoutAddress2.StringRaw(),
+	}
+
+	pegoutLabelsEmpty := Labels{
+		"bitcoin_tx_id": "",
+		"pegout_addr":   "",
+	}
+
 	tests := []TestDesc{
 		{
 			Name: "SEVERITY_OK (new unsigned pegout)",
@@ -33,7 +48,7 @@ func TestAlertPegoutSigningDuration(t *testing.T) {
 					return beginTs
 				},
 			}),
-			Expect: TestResWant{Severity: SEVERITY_OK, Labels: []string{}, Err: nil},
+			Expect: TestResWant{Severity: SEVERITY_OK, Labels: pegoutLabels1, Err: nil},
 		},
 		{
 			Name: "SEVERITY_OK (same unsigned pegout, 1 minute later)",
@@ -48,10 +63,10 @@ func TestAlertPegoutSigningDuration(t *testing.T) {
 					return beginTs + 60*1
 				},
 			}),
-			Expect: TestResWant{Severity: SEVERITY_OK, Labels: []string{}, Err: nil},
+			Expect: TestResWant{Severity: SEVERITY_OK, Labels: pegoutLabels1, Err: nil},
 		},
 		{
-			Name: "SEVERITY_WARNING (same unsigned pegout, 11 minute later)",
+			Name: "SEVERITY_OK (same unsigned pegout, 11 minute later)",
 			DataSource: NewAlertDataSourceTesting(AlertDataSourceTestingConfig{
 				FirstUnsignedPegoutFn: func() (*coordinator.PegoutRecord, error) {
 					return &coordinator.PegoutRecord{
@@ -63,7 +78,7 @@ func TestAlertPegoutSigningDuration(t *testing.T) {
 					return beginTs + 60*11
 				},
 			}),
-			Expect: TestResWant{Severity: SEVERITY_WARNING, Labels: []string{}, Err: nil},
+			Expect: TestResWant{Severity: SEVERITY_OK, Labels: pegoutLabels1, Err: nil},
 		},
 		{
 			Name: "SEVERITY_CRITICAL (same unsigned pegout, 20 minute later)",
@@ -78,7 +93,7 @@ func TestAlertPegoutSigningDuration(t *testing.T) {
 					return beginTs + 60*20
 				},
 			}),
-			Expect: TestResWant{Severity: SEVERITY_CRITICAL, Labels: []string{}, Err: nil},
+			Expect: TestResWant{Severity: SEVERITY_CRITICAL, Labels: pegoutLabels1, Err: nil},
 		},
 		{
 			Name: "SEVERITY_CRITICAL (same unsigned pegout, 2 minute later after restart, 22 minutes total)",
@@ -93,7 +108,7 @@ func TestAlertPegoutSigningDuration(t *testing.T) {
 					return beginTs + 60*22
 				},
 			}),
-			Expect: TestResWant{Severity: SEVERITY_CRITICAL, Labels: []string{}, Err: nil},
+			Expect: TestResWant{Severity: SEVERITY_CRITICAL, Labels: pegoutLabels1, Err: nil},
 		},
 		{
 			Name: "SEVERITY_CRITICAL (new unsigned pegout, Its still SEVERITY_CRITICAL, and we dont know how much time it will take to sign the current pegout)",
@@ -109,7 +124,7 @@ func TestAlertPegoutSigningDuration(t *testing.T) {
 					return beginTs + 60*25
 				},
 			}),
-			Expect: TestResWant{Severity: SEVERITY_CRITICAL, Labels: []string{}, Err: nil},
+			Expect: TestResWant{Severity: SEVERITY_CRITICAL, Labels: pegoutLabels2, Err: nil},
 		},
 		{
 			Name: "SEVERITY_OK, all pegout are signed",
@@ -118,7 +133,7 @@ func TestAlertPegoutSigningDuration(t *testing.T) {
 					return nil, nil
 				},
 			}),
-			Expect: TestResWant{Severity: SEVERITY_OK, Labels: []string{}, Err: nil},
+			Expect: TestResWant{Severity: SEVERITY_OK, Labels: pegoutLabelsEmpty, Err: nil},
 		},
 	}
 

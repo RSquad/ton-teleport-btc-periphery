@@ -33,25 +33,25 @@ func NewAlertManager(
 	// alert_pegout_signers
 	err := alertManager.RegisterAlert(
 		"alert_pegout_signers",
-		NewAlertPegoutMaxSignersCount(),
+		NewAlertPegoutSigners(),
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	// alert_pegout_signing
-	err = alertManager.RegisterAlert(
-		"alert_pegout_signing",
-		NewAlertPegoutSigningDuration(),
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	// alert_pegout_restarts
+	// alert_pegout_restarts (pegout.restarts)
 	err = alertManager.RegisterAlert(
 		"alert_pegout_restarts",
 		NewAlertPegoutRestarts(),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	// alert_pegout_signing_duration (pegout.signing.duration)
+	err = alertManager.RegisterAlert(
+		"alert_pegout_signing_duration",
+		NewAlertPegoutSigningDuration(),
 	)
 	if err != nil {
 		return nil, err
