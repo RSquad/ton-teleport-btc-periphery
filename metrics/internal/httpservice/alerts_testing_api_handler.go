@@ -3,8 +3,10 @@ package httpservice
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/alerts"
 )
@@ -83,21 +85,48 @@ func (apiHandler AlertsTestingApiHandler) ServeHTTP(w http.ResponseWriter, r *ht
 }
 
 func (apiHandler AlertsTestingApiHandler) ParseState(queryParams *url.Values) (*alerts.AlertState, error) {
-	nameStr := queryParams.Get("name")
-	if nameStr == "" {
-		return nil, errors.New("Please set `name` argument")
-	}
-
-	severityStr := queryParams.Get("severity")
-	var severity alerts.Severity = alerts.SEVERITY_UNKNOWN
-	var err error = nil
-
-	if severityStr != "" {
-		severity, err = alerts.StrToSeverity(severityStr)
-		if err != nil {
-			return nil, err
+	// name
+	var nameStr string
+	{
+		nameStr = queryParams.Get("name")
+		if nameStr == "" {
+			return nil, errors.New("please set `name` argument")
 		}
 	}
 
-	return alerts.NewAlertState(nameStr, severity, nil, nil, true), nil
+	// severity
+	var severity alerts.Severity = alerts.SEVERITY_UNKNOWN
+	{
+		severityStr := queryParams.Get("severity")
+
+		var err error = nil
+		if severityStr != "" {
+			severity, err = alerts.StrToSeverity(severityStr)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	// labels
+	var labels alerts.Labels = nil
+	{
+		labelsStr := queryParams.Get("labels")
+
+		if labelsStr != "" {
+			labels = make(alerts.Labels)
+			values := strings.Split(labelsStr, "|")
+
+			for _, v := range values {
+				parts := strings.Split(v, "=")
+				if len(parts) != 2 {
+					return nil, fmt.Errorf("wrong label value '%s'", labelsStr)
+				}
+
+				labels[parts[0]] = parts[1]
+			}
+		}
+	}
+
+	return alerts.NewAlertState(nameStr, severity, labels, nil, true), nil
 }

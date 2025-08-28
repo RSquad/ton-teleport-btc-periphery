@@ -5,7 +5,7 @@ import "time"
 type AlertState struct {
 	Name         string
 	Severity     Severity
-	Labels       []string
+	Labels       Labels
 	LastErr      error
 	Enforced     bool
 	LastUpdateTs time.Time
@@ -14,7 +14,7 @@ type AlertState struct {
 func NewAlertState(
 	name string,
 	severity Severity,
-	labels []string,
+	labels Labels,
 	lastErr error,
 	enforced bool,
 ) *AlertState {

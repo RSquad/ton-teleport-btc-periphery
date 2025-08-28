@@ -13,6 +13,21 @@ func TestAlertPegoutRestarts(t *testing.T) {
 	pegoutAddress1, _ := address.ParseAddr("EQAPtQRffHrXATHokYMFQgupunwxfTe2Main1FYFUt-8eHn-")
 	pegoutAddress2, _ := address.ParseAddr("Ef8VjV6LGTyiNLzefOm1dpuCMLcoewhqfQubtgbWcPwt2Gwp")
 
+	pegoutLabels1 := Labels{
+		"bitcoin_tx_id": "unknonwn",
+		"pegout_addr":   pegoutAddress1.StringRaw(),
+	}
+
+	pegoutLabels2 := Labels{
+		"bitcoin_tx_id": "unknonwn",
+		"pegout_addr":   pegoutAddress2.StringRaw(),
+	}
+
+	pegoutLabelsEmpty := Labels{
+		"bitcoin_tx_id": "",
+		"pegout_addr":   "",
+	}
+
 	tests := []TestDesc{
 		{
 			Name: "SEVERITY_OK (new unsigned pegout)",
@@ -24,7 +39,7 @@ func TestAlertPegoutRestarts(t *testing.T) {
 					}, nil
 				},
 			}),
-			Expect: TestResWant{Severity: SEVERITY_OK, Labels: []string{}, Err: nil},
+			Expect: TestResWant{Severity: SEVERITY_OK, Labels: pegoutLabels1, Err: nil},
 		},
 		{
 			Name: "SEVERITY_OK (no restart, just ExpiredAt != 0)",
@@ -36,10 +51,10 @@ func TestAlertPegoutRestarts(t *testing.T) {
 					}, nil
 				},
 			}),
-			Expect: TestResWant{Severity: SEVERITY_OK, Labels: []string{}, Err: nil},
+			Expect: TestResWant{Severity: SEVERITY_OK, Labels: pegoutLabels1, Err: nil},
 		},
 		{
-			Name: "SEVERITY_INFO (1 restart)",
+			Name: "SEVERITY_WARNING (1 restart)",
 			DataSource: NewAlertDataSourceTesting(AlertDataSourceTestingConfig{
 				FirstUnsignedPegoutFn: func() (*coordinator.PegoutRecord, error) {
 					return &coordinator.PegoutRecord{
@@ -48,7 +63,7 @@ func TestAlertPegoutRestarts(t *testing.T) {
 					}, nil
 				},
 			}),
-			Expect: TestResWant{Severity: SEVERITY_INFO, Labels: []string{}, Err: nil},
+			Expect: TestResWant{Severity: SEVERITY_WARNING, Labels: pegoutLabels1, Err: nil},
 		},
 		{
 			Name: "SEVERITY_WARNING (2 restarts)",
@@ -60,7 +75,7 @@ func TestAlertPegoutRestarts(t *testing.T) {
 					}, nil
 				},
 			}),
-			Expect: TestResWant{Severity: SEVERITY_WARNING, Labels: []string{}, Err: nil},
+			Expect: TestResWant{Severity: SEVERITY_WARNING, Labels: pegoutLabels1, Err: nil},
 		},
 		{
 			Name: "SEVERITY_WARNING (3 restarts)",
@@ -72,7 +87,7 @@ func TestAlertPegoutRestarts(t *testing.T) {
 					}, nil
 				},
 			}),
-			Expect: TestResWant{Severity: SEVERITY_WARNING, Labels: []string{}, Err: nil},
+			Expect: TestResWant{Severity: SEVERITY_WARNING, Labels: pegoutLabels1, Err: nil},
 		},
 		{
 			Name: "SEVERITY_WARNING (4 restarts)",
@@ -84,7 +99,7 @@ func TestAlertPegoutRestarts(t *testing.T) {
 					}, nil
 				},
 			}),
-			Expect: TestResWant{Severity: SEVERITY_WARNING, Labels: []string{}, Err: nil},
+			Expect: TestResWant{Severity: SEVERITY_WARNING, Labels: pegoutLabels1, Err: nil},
 		},
 		{
 			Name: "SEVERITY_WARNING (5 restarts)",
@@ -96,7 +111,7 @@ func TestAlertPegoutRestarts(t *testing.T) {
 					}, nil
 				},
 			}),
-			Expect: TestResWant{Severity: SEVERITY_WARNING, Labels: []string{}, Err: nil},
+			Expect: TestResWant{Severity: SEVERITY_WARNING, Labels: pegoutLabels1, Err: nil},
 		},
 		{
 			Name: "SEVERITY_WARNING (6 restarts)",
@@ -108,7 +123,7 @@ func TestAlertPegoutRestarts(t *testing.T) {
 					}, nil
 				},
 			}),
-			Expect: TestResWant{Severity: SEVERITY_WARNING, Labels: []string{}, Err: nil},
+			Expect: TestResWant{Severity: SEVERITY_WARNING, Labels: pegoutLabels1, Err: nil},
 		},
 		{
 			Name: "SEVERITY_WARNING (7 restarts)",
@@ -120,7 +135,7 @@ func TestAlertPegoutRestarts(t *testing.T) {
 					}, nil
 				},
 			}),
-			Expect: TestResWant{Severity: SEVERITY_WARNING, Labels: []string{}, Err: nil},
+			Expect: TestResWant{Severity: SEVERITY_WARNING, Labels: pegoutLabels1, Err: nil},
 		},
 		{
 			Name: "SEVERITY_WARNING (8 restarts)",
@@ -132,7 +147,7 @@ func TestAlertPegoutRestarts(t *testing.T) {
 					}, nil
 				},
 			}),
-			Expect: TestResWant{Severity: SEVERITY_WARNING, Labels: []string{}, Err: nil},
+			Expect: TestResWant{Severity: SEVERITY_WARNING, Labels: pegoutLabels1, Err: nil},
 		},
 		{
 			Name: "SEVERITY_WARNING (9 restarts)",
@@ -144,7 +159,7 @@ func TestAlertPegoutRestarts(t *testing.T) {
 					}, nil
 				},
 			}),
-			Expect: TestResWant{Severity: SEVERITY_WARNING, Labels: []string{}, Err: nil},
+			Expect: TestResWant{Severity: SEVERITY_WARNING, Labels: pegoutLabels1, Err: nil},
 		},
 		{
 			Name: "SEVERITY_CRITICAL (10 restarts)",
@@ -156,7 +171,7 @@ func TestAlertPegoutRestarts(t *testing.T) {
 					}, nil
 				},
 			}),
-			Expect: TestResWant{Severity: SEVERITY_CRITICAL, Labels: []string{}, Err: nil},
+			Expect: TestResWant{Severity: SEVERITY_CRITICAL, Labels: pegoutLabels1, Err: nil},
 		},
 		{
 			Name: "SEVERITY_OK (0 restarts, new pegout)",
@@ -168,7 +183,16 @@ func TestAlertPegoutRestarts(t *testing.T) {
 					}, nil
 				},
 			}),
-			Expect: TestResWant{Severity: SEVERITY_OK, Labels: []string{}, Err: nil},
+			Expect: TestResWant{Severity: SEVERITY_OK, Labels: pegoutLabels2, Err: nil},
+		},
+		{
+			Name: "SEVERITY_OK (0 restarts, new pegout)",
+			DataSource: NewAlertDataSourceTesting(AlertDataSourceTestingConfig{
+				FirstUnsignedPegoutFn: func() (*coordinator.PegoutRecord, error) {
+					return nil, nil
+				},
+			}),
+			Expect: TestResWant{Severity: SEVERITY_OK, Labels: pegoutLabelsEmpty, Err: nil},
 		},
 	}
 

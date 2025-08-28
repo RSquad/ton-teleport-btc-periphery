@@ -15,11 +15,12 @@ groups:
 
   - name: pegout.signers
     rules:
-      # 0 - greater or equal to 80% of max signers
-      # 1 -  less than 80% of max signers
-      # 2 - less than 70% of max signers
+      # 0 (SEVERITY_OK) - greater or equal to 90% of max signers
+      # 1 (SEVERITY_INFO) - greater or equal to 80% of max signers
+      # 2 (SEVERITY_WARNING) - less than 80% of max signers
+      # 3 (SEVERITY_CRITICAL) - less than 70% of max signers
       - alert: PegoutSignersWarning
-        expr: alert_pegout_signers == 1
+        expr: alert_pegout_signers >= 2
         labels:
           severity: warning
         annotations:
@@ -28,7 +29,7 @@ groups:
           pegout_addr: "{{ $labels.pegout_addr }}"
 
       - alert: PegoutSignersCritical
-        expr: alert_pegout_signers == 2
+        expr: alert_pegout_signers >= 3
         labels:
           severity: critical
         annotations:
@@ -38,11 +39,11 @@ groups:
   
   - name: pegout.restarts
     rules:
-      # 0 - no restarts
-      # 1 - 1 restart
-      # 2 - 10 restarts
+      # 0 (SEVERITY_OK) - no restarts
+      # 2 (SEVERITY_WARNING) - 1 restart
+      # 3 (SEVERITY_CRITICAL) - 10 restarts
       - alert: PegoutRestartsWarning
-        expr: alert_pegout_restarts == 1
+        expr: alert_pegout_restarts >= 2
         labels:
           severity: warning
         annotations:
@@ -51,7 +52,7 @@ groups:
           pegout_addr: "{{ $labels.pegout_addr }}"
 
       - alert: PegoutRestartsCritical
-        expr: alert_pegout_restarts == 2
+        expr: alert_pegout_restarts >= 3
         labels:
           severity: critical
         annotations:
@@ -116,12 +117,12 @@ groups:
           pegout_txid: "{{ $labels.bitcoin_tx_id }}"
           pegout_addr: "{{ $labels.pegout_addr }}"
 
-  - name: pegout.signing
+  - name: pegout.signing.duration
     rules:
-      # 0 - pegout is signed or signing is in progress for less than 20 minutes
-      # 1 - pegout is unsigned for 20 minutes or more
+      # 0 (SEVERITY_OK) - pegout is signed or signing is in progress for less than 20 minutes
+      # 3 (SEVERITY_CRITICAL) - pegout is unsigned for 20 minutes or more
       - alert: PegoutSigningCritical
-        expr: alert_pegout_unsigned == 1
+        expr: alert_pegout_signing_duration >= 3
         labels:
           severity: critical
         annotations:

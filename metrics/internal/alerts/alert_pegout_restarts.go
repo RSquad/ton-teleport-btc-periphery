@@ -18,18 +18,26 @@ func NewAlertPegoutRestarts() Alert {
 	}
 }
 
-func (alert *AlertPegoutRestarts) Check(dataSource AlertDataSource) (Severity, []string, error) {
+func (alert *AlertPegoutRestarts) Check(dataSource AlertDataSource) (Severity, Labels, error) {
+	labels := Labels{
+		"bitcoin_tx_id": "",
+		"pegout_addr":   "",
+	}
+
 	// Get first unsigned pegout
 	unsignedPegout, err := dataSource.FirstUnsignedPegout()
 	if err != nil {
-		return SEVERITY_UNKNOWN, nil, err
+		return SEVERITY_UNKNOWN, labels, err
 	}
 
 	// No unsigned pegouts
 	if unsignedPegout == nil {
 		alert.restartsCounter = 0
-		return SEVERITY_OK, nil, nil
+		return SEVERITY_OK, labels, nil
 	}
+
+	labels["bitcoin_tx_id"] = "unknonwn"
+	labels["pegout_addr"] = unsignedPegout.PegoutAddress.StringRaw()
 
 	// Check if pegout is new: current is null or new PegoutAddress
 	if (alert.currentUnsignedPegout == nil) ||
@@ -38,7 +46,7 @@ func (alert *AlertPegoutRestarts) Check(dataSource AlertDataSource) (Severity, [
 		alert.currentUnsignedPegout = unsignedPegout
 		alert.restartsCounter = 0
 
-		return SEVERITY_OK, nil, nil
+		return SEVERITY_OK, labels, nil
 	}
 
 	// Check for restart
@@ -53,7 +61,7 @@ func (alert *AlertPegoutRestarts) Check(dataSource AlertDataSource) (Severity, [
 	// Calulate severity
 	severity := alert.GetSeverity(alert.restartsCounter)
 
-	return severity, []string{}, nil
+	return severity, labels, nil
 }
 
 func (alert *AlertPegoutRestarts) GetSeverity(restartsCount int) Severity {
@@ -61,10 +69,8 @@ func (alert *AlertPegoutRestarts) GetSeverity(restartsCount int) Severity {
 
 	if restartsCount >= 10 {
 		severity = SEVERITY_CRITICAL
-	} else if restartsCount >= 2 {
-		severity = SEVERITY_WARNING
 	} else if restartsCount >= 1 {
-		severity = SEVERITY_INFO
+		severity = SEVERITY_WARNING
 	}
 
 	return severity

@@ -34,12 +34,17 @@ func (d *AlertDispatcherPrometheus) getOrCreateGaugeVec(state *AlertState) *prom
 		return gv
 	}
 
+	labelNames := make([]string, 0)
+	for name, _ := range state.Labels {
+		labelNames = append(labelNames, name)
+	}
+
 	gv = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: state.Name,
 			Help: fmt.Sprintf("Severity gauge for `%s`", state.Name),
 		},
-		state.Labels,
+		labelNames,
 	)
 	d.gauges[state.Name] = gv
 	return gv
@@ -47,5 +52,5 @@ func (d *AlertDispatcherPrometheus) getOrCreateGaugeVec(state *AlertState) *prom
 
 func (d *AlertDispatcherPrometheus) OnAlert(state *AlertState) {
 	gv := d.getOrCreateGaugeVec(state)
-	gv.WithLabelValues().Set(float64(state.Severity))
+	gv.With(prometheus.Labels(state.Labels)).Set(float64(state.Severity))
 }
