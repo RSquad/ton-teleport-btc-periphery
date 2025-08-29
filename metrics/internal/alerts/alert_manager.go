@@ -115,7 +115,7 @@ func (manager *AlertManager) LogAlertError(alertName string, err error) {
 		Msg("Alert finished work with error")
 }
 
-func (manager *AlertManager) GetInfoJsonStr() (string, error) {
+func (manager *AlertManager) GetInfoJson() (string, error) {
 	manager.mu.RLock()
 	defer manager.mu.RUnlock()
 

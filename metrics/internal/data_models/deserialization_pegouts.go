@@ -2,6 +2,7 @@ package data_models
 
 import (
 	"encoding/base64"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"math/big"
@@ -239,4 +240,102 @@ func ParsePegoutSignatures(v interface{}) (*coordinator.PegoutSignatures, error)
 		Count: count,
 		Hash:  hash,
 	}, nil
+}
+
+func DeserializePegoutDbRow(json map[string]interface{}) (*PegoutDbRow, error) {
+	var pegoutDbRow PegoutDbRow
+
+	// Id
+	if v, ok := json["id"]; ok {
+		u, err := ToUint64(v)
+		if err != nil {
+			return nil, fmt.Errorf("`id` parse error: %w", err)
+		}
+		pegoutDbRow.Id = u
+	}
+
+	// Addr
+	if v, ok := json["addr"]; ok {
+		s, err := ToString(v)
+		if err != nil {
+			return nil, fmt.Errorf("`addr` parse error: %w", err)
+		}
+
+		addr, err := address.ParseAddr(s)
+		if err != nil {
+			return nil, err
+		}
+		pegoutDbRow.Addr = addr
+	}
+
+	// Status
+	if v, ok := json["status"]; ok {
+		s, err := ToString(v)
+		if err != nil {
+			return nil, fmt.Errorf("`status` parse error: %w", err)
+		}
+
+		status, err := PegoutStatusFromString(s)
+		if err != nil {
+			return nil, fmt.Errorf("`status` parse error: %w", err)
+		}
+
+		pegoutDbRow.Status = status
+	}
+
+	// BitcoinTxRaw
+	if v, ok := json["bitcoin_tx_raw"]; ok {
+		s, err := ToString(v)
+		if err != nil {
+			return nil, fmt.Errorf("`bitcoin_tx_raw` parse error: %w", err)
+		}
+
+		var data []byte = nil
+		if len(s) > 0 {
+			data, err = hex.DecodeString(s)
+			if err != nil {
+				return nil, fmt.Errorf("`bitcoin_tx_raw` parse error: %w", err)
+			}
+		}
+
+		pegoutDbRow.BitcoinTxRaw = data
+	}
+
+	// BitcoinTxId
+	if v, ok := json["bitcoin_tx_id"]; ok {
+		s, err := ToString(v)
+		if err != nil {
+			return nil, fmt.Errorf("`bitcoin_tx_id` parse error: %w", err)
+		}
+
+		var data []byte = nil
+		if len(s) > 0 {
+			data, err = hex.DecodeString(s)
+			if err != nil {
+				return nil, fmt.Errorf("`bitcoin_tx_id` parse error: %w", err)
+			}
+		}
+
+		pegoutDbRow.BitcoinTxId = data
+	}
+
+	// BitcoinBlockHash
+	if v, ok := json["bitcoin_block_hash"]; ok {
+		s, err := ToString(v)
+		if err != nil {
+			return nil, fmt.Errorf("`bitcoin_block_hash` parse error: %w", err)
+		}
+
+		var data []byte = nil
+		if len(s) > 0 {
+			data, err = hex.DecodeString(s)
+			if err != nil {
+				return nil, fmt.Errorf("`bitcoin_block_hash` parse error: %w", err)
+			}
+		}
+
+		pegoutDbRow.BitcoinBlockHash = data
+	}
+
+	return &pegoutDbRow, nil
 }

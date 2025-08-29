@@ -7,7 +7,7 @@ import (
 	"github.com/xssnick/tonutils-go/address"
 )
 
-func DeserializeCoordinatorContractState(json map[string]interface{}) (*coordinator.Storage, error) {
+func DeserializeCoordinatorContractStorage(json map[string]interface{}) (*coordinator.Storage, error) {
 	var storage coordinator.Storage
 
 	// Initiated (bool)

@@ -33,13 +33,13 @@ func TestAlertPegoutSigningDuration(t *testing.T) {
 		{
 			Name: "SEVERITY_OK (new unsigned pegout)",
 			DataSource: NewAlertDataSourceTesting(AlertDataSourceTestingConfig{
-				FirstUnsignedPegoutFn: func() (*coordinator.PegoutRecord, error) {
+				FirstUnsignedPegoutDbFn: func() (*coordinator.PegoutRecord, error) {
 					return &coordinator.PegoutRecord{
 						PegoutAddress: pegoutAddress1,
 						ExpiredAt:     time.Unix(0, 0),
 					}, nil
 				},
-				CoordinatorContractDataFn: func() (*coordinator.Storage, error) {
+				CoordinatorContractDataDbFn: func() (*coordinator.Storage, error) {
 					return &coordinator.Storage{
 						SigningTimeout: uint32(signingTimeout),
 					}, nil
@@ -53,7 +53,7 @@ func TestAlertPegoutSigningDuration(t *testing.T) {
 		{
 			Name: "SEVERITY_OK (same unsigned pegout, 1 minute later)",
 			DataSource: NewAlertDataSourceTesting(AlertDataSourceTestingConfig{
-				FirstUnsignedPegoutFn: func() (*coordinator.PegoutRecord, error) {
+				FirstUnsignedPegoutDbFn: func() (*coordinator.PegoutRecord, error) {
 					return &coordinator.PegoutRecord{
 						PegoutAddress: pegoutAddress1,
 						ExpiredAt:     time.Unix(beginTs+signingTimeout*1, 0),
@@ -68,7 +68,7 @@ func TestAlertPegoutSigningDuration(t *testing.T) {
 		{
 			Name: "SEVERITY_OK (same unsigned pegout, 11 minute later)",
 			DataSource: NewAlertDataSourceTesting(AlertDataSourceTestingConfig{
-				FirstUnsignedPegoutFn: func() (*coordinator.PegoutRecord, error) {
+				FirstUnsignedPegoutDbFn: func() (*coordinator.PegoutRecord, error) {
 					return &coordinator.PegoutRecord{
 						PegoutAddress: pegoutAddress1,
 						ExpiredAt:     time.Unix(beginTs+signingTimeout*1, 0),
@@ -83,7 +83,7 @@ func TestAlertPegoutSigningDuration(t *testing.T) {
 		{
 			Name: "SEVERITY_CRITICAL (same unsigned pegout, 20 minute later)",
 			DataSource: NewAlertDataSourceTesting(AlertDataSourceTestingConfig{
-				FirstUnsignedPegoutFn: func() (*coordinator.PegoutRecord, error) {
+				FirstUnsignedPegoutDbFn: func() (*coordinator.PegoutRecord, error) {
 					return &coordinator.PegoutRecord{
 						PegoutAddress: pegoutAddress1,
 						ExpiredAt:     time.Unix(beginTs+signingTimeout*1, 0),
@@ -98,7 +98,7 @@ func TestAlertPegoutSigningDuration(t *testing.T) {
 		{
 			Name: "SEVERITY_CRITICAL (same unsigned pegout, 2 minute later after restart, 22 minutes total)",
 			DataSource: NewAlertDataSourceTesting(AlertDataSourceTestingConfig{
-				FirstUnsignedPegoutFn: func() (*coordinator.PegoutRecord, error) {
+				FirstUnsignedPegoutDbFn: func() (*coordinator.PegoutRecord, error) {
 					return &coordinator.PegoutRecord{
 						PegoutAddress: pegoutAddress1,
 						ExpiredAt:     time.Unix(beginTs+signingTimeout*2, 0),
@@ -113,7 +113,7 @@ func TestAlertPegoutSigningDuration(t *testing.T) {
 		{
 			Name: "SEVERITY_CRITICAL (new unsigned pegout, Its still SEVERITY_CRITICAL, and we dont know how much time it will take to sign the current pegout)",
 			DataSource: NewAlertDataSourceTesting(AlertDataSourceTestingConfig{
-				FirstUnsignedPegoutFn: func() (*coordinator.PegoutRecord, error) {
+				FirstUnsignedPegoutDbFn: func() (*coordinator.PegoutRecord, error) {
 					beginTs = beginTs + 60*24 // Update beginTs for new pegout pegoutAddress2
 					return &coordinator.PegoutRecord{
 						PegoutAddress: pegoutAddress2,
@@ -129,7 +129,7 @@ func TestAlertPegoutSigningDuration(t *testing.T) {
 		{
 			Name: "SEVERITY_OK, all pegout are signed",
 			DataSource: NewAlertDataSourceTesting(AlertDataSourceTestingConfig{
-				FirstUnsignedPegoutFn: func() (*coordinator.PegoutRecord, error) {
+				FirstUnsignedPegoutDbFn: func() (*coordinator.PegoutRecord, error) {
 					return nil, nil
 				},
 			}),

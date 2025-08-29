@@ -1,6 +1,7 @@
 package alerts
 
 import (
+	"encoding/hex"
 	"errors"
 	"math/big"
 
@@ -21,7 +22,7 @@ func (alert *AlertPegoutSigners) Check(dataSource AlertDataSource) (Severity, La
 	}
 
 	// Get first unsigned pegout
-	unsignedPegout, err := dataSource.FirstUnsignedPegout()
+	unsignedPegout, err := dataSource.FirstUnsignedPegoutDB()
 	if err != nil {
 		return SEVERITY_UNKNOWN, labels, err
 	}
@@ -32,7 +33,7 @@ func (alert *AlertPegoutSigners) Check(dataSource AlertDataSource) (Severity, La
 	}
 
 	// Get prev DKG
-	prevDkg, err := dataSource.PrevDkg()
+	prevDkg, err := dataSource.PrevDkgDB()
 	if err != nil {
 		return SEVERITY_UNKNOWN, labels, err
 	}
@@ -41,7 +42,15 @@ func (alert *AlertPegoutSigners) Check(dataSource AlertDataSource) (Severity, La
 		return SEVERITY_UNKNOWN, labels, errors.New("PrevDKG is null")
 	}
 
-	labels["bitcoin_tx_id"] = "unknonwn"
+	// Get pegout record from DB
+	pegoutDbRow, err := dataSource.PegoutDB(unsignedPegout.PegoutAddress)
+	if err != nil {
+		return SEVERITY_UNKNOWN, labels, err
+	}
+
+	if pegoutDbRow.BitcoinTxId != nil {
+		labels["bitcoin_tx_id"] = hex.EncodeToString(pegoutDbRow.BitcoinTxId)
+	}
 	labels["pegout_addr"] = unsignedPegout.PegoutAddress.StringRaw()
 
 	// Wait until the signing stage starts

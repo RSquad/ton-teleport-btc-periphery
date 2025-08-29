@@ -34,7 +34,7 @@ func (alert *AlertPegoutSigningDuration) Check(dataSource AlertDataSource) (Seve
 	}
 
 	// Get first unsigned pegout
-	unsignedPegout, err := dataSource.FirstUnsignedPegout()
+	unsignedPegout, err := dataSource.FirstUnsignedPegoutDB()
 	if err != nil {
 		return SEVERITY_UNKNOWN, labels, err
 	}
@@ -48,7 +48,7 @@ func (alert *AlertPegoutSigningDuration) Check(dataSource AlertDataSource) (Seve
 
 	// Get pegout signingTimeout (from Coordinator)
 	if alert.signingTimeout == 0 {
-		coordinatorData, err := dataSource.CoordinatorContractData()
+		coordinatorData, err := dataSource.CoordinatorContractDataDB()
 		if err != nil {
 			return SEVERITY_UNKNOWN, labels, err
 		}
@@ -83,18 +83,15 @@ func (alert *AlertPegoutSigningDuration) Check(dataSource AlertDataSource) (Seve
 		}
 
 		alert.beginTimestamp = beginTimestamp
-		labels["bitcoin_tx_id"] = "unknonwn"
-		labels["pegout_addr"] = alert.currentUnsignedPegout.PegoutAddress.StringRaw()
+	} else {
 
-		return alert.severity, labels, nil
-	}
+		// Calulate severity
+		duration := time.Duration(dataSource.NowUnixTs()-alert.beginTimestamp) * time.Second
+		currentSeverity := alert.GetSeverity(duration)
 
-	// Calulate severity
-	duration := time.Duration(dataSource.NowUnixTs()-alert.beginTimestamp) * time.Second
-	currentSeverity := alert.GetSeverity(duration)
-
-	if currentSeverity > alert.severity {
-		alert.severity = currentSeverity
+		if currentSeverity > alert.severity {
+			alert.severity = currentSeverity
+		}
 	}
 
 	labels["bitcoin_tx_id"] = "unknonwn"

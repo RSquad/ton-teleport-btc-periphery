@@ -11,6 +11,10 @@ import (
 )
 
 func ToString(v interface{}) (string, error) {
+	if v == nil {
+		return "", nil
+	}
+
 	switch t := v.(type) {
 	case string:
 		return t, nil

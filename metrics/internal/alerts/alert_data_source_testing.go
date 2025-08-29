@@ -4,61 +4,72 @@ import (
 	"errors"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
+	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/data_models"
+	"github.com/xssnick/tonutils-go/address"
 )
 
 type (
-	FirstUnsignedPegoutFn     func() (*coordinator.PegoutRecord, error)
-	CoordinatorContractDataFn func() (*coordinator.Storage, error)
-	DkgFn                     func() (*coordinator.DKG, error)
-	PrevDkgFn                 func() (*coordinator.DKG, error)
-	NowUnixTsFn               func() int64
+	FirstUnsignedPegoutDbFn     func() (*coordinator.PegoutRecord, error)
+	CoordinatorContractDataDbFn func() (*coordinator.Storage, error)
+	DkgDbFn                     func() (*coordinator.DKG, error)
+	PrevDkgDbFn                 func() (*coordinator.DKG, error)
+	PegoutDbFn                  func(address *address.Address) (*data_models.PegoutDbRow, error)
+	NowUnixTsFn                 func() int64
 )
 
 // Config holds optional function callbacks
 type AlertDataSourceTestingConfig struct {
-	FirstUnsignedPegoutFn     FirstUnsignedPegoutFn
-	CoordinatorContractDataFn CoordinatorContractDataFn
-	DkgFn                     DkgFn
-	PrevDkgFn                 PrevDkgFn
-	NowUnixTsFn               NowUnixTsFn
+	FirstUnsignedPegoutDbFn     FirstUnsignedPegoutDbFn
+	CoordinatorContractDataDbFn CoordinatorContractDataDbFn
+	DkgDbFn                     DkgDbFn
+	PrevDkgDbFn                 PrevDkgDbFn
+	PegoutDbFn                  PegoutDbFn
+	NowUnixTsFn                 NowUnixTsFn
 }
 
 type AlertDataSourceTesting struct {
 	cfg AlertDataSourceTestingConfig
 }
 
-func NewAlertDataSourceTesting(cfg AlertDataSourceTestingConfig) *AlertDataSourceTesting {
+func NewAlertDataSourceTesting(cfg AlertDataSourceTestingConfig) AlertDataSource {
 	return &AlertDataSourceTesting{cfg: cfg}
 }
 
-func (ds *AlertDataSourceTesting) FirstUnsignedPegout() (*coordinator.PegoutRecord, error) {
-	if ds.cfg.FirstUnsignedPegoutFn == nil {
-		return nil, errors.New("FirstUnsignedPegout callback not set")
+func (dataSource *AlertDataSourceTesting) FirstUnsignedPegoutDB() (*coordinator.PegoutRecord, error) {
+	if dataSource.cfg.FirstUnsignedPegoutDbFn == nil {
+		return nil, errors.New("FirstUnsignedPegoutDbFn callback not set")
 	}
-	return ds.cfg.FirstUnsignedPegoutFn()
+	return dataSource.cfg.FirstUnsignedPegoutDbFn()
 }
 
-func (ds *AlertDataSourceTesting) CoordinatorContractData() (*coordinator.Storage, error) {
-	if ds.cfg.CoordinatorContractDataFn == nil {
-		return nil, errors.New("CoordinatorContractData callback not set")
+func (dataSource *AlertDataSourceTesting) CoordinatorContractDataDB() (*coordinator.Storage, error) {
+	if dataSource.cfg.CoordinatorContractDataDbFn == nil {
+		return nil, errors.New("CoordinatorContractDataDbFn callback not set")
 	}
-	return ds.cfg.CoordinatorContractDataFn()
+	return dataSource.cfg.CoordinatorContractDataDbFn()
 }
 
-func (ds *AlertDataSourceTesting) Dkg() (*coordinator.DKG, error) {
-	if ds.cfg.DkgFn == nil {
-		return nil, errors.New("Dkg callback not set")
+func (dataSource *AlertDataSourceTesting) DkgDB() (*coordinator.DKG, error) {
+	if dataSource.cfg.DkgDbFn == nil {
+		return nil, errors.New("DkgDbFn callback not set")
 	}
-	return ds.cfg.DkgFn()
+	return dataSource.cfg.DkgDbFn()
 }
 
-func (ds *AlertDataSourceTesting) PrevDkg() (*coordinator.DKG, error) {
-	if ds.cfg.PrevDkgFn == nil {
-		return nil, errors.New("PrevDkg callback not set")
+func (dataSource *AlertDataSourceTesting) PrevDkgDB() (*coordinator.DKG, error) {
+	if dataSource.cfg.PrevDkgDbFn == nil {
+		return nil, errors.New("PrevDkgDbFn callback not set")
 	}
-	return ds.cfg.PrevDkgFn()
+	return dataSource.cfg.PrevDkgDbFn()
 }
 
-func (ds *AlertDataSourceTesting) NowUnixTs() int64 {
-	return ds.cfg.NowUnixTsFn()
+func (dataSource *AlertDataSourceTesting) PegoutDB(address *address.Address) (*data_models.PegoutDbRow, error) {
+	if dataSource.cfg.PegoutDbFn == nil {
+		return nil, errors.New("PegoutDbFn callback not set")
+	}
+	return dataSource.cfg.PegoutDbFn(address)
+}
+
+func (dataSource *AlertDataSourceTesting) NowUnixTs() int64 {
+	return dataSource.cfg.NowUnixTsFn()
 }

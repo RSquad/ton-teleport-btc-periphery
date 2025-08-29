@@ -1,6 +1,7 @@
 package alerts
 
 import (
+	"encoding/hex"
 	"time"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
@@ -25,7 +26,7 @@ func (alert *AlertPegoutRestarts) Check(dataSource AlertDataSource) (Severity, L
 	}
 
 	// Get first unsigned pegout
-	unsignedPegout, err := dataSource.FirstUnsignedPegout()
+	unsignedPegout, err := dataSource.FirstUnsignedPegoutDB()
 	if err != nil {
 		return SEVERITY_UNKNOWN, labels, err
 	}
@@ -36,7 +37,15 @@ func (alert *AlertPegoutRestarts) Check(dataSource AlertDataSource) (Severity, L
 		return SEVERITY_OK, labels, nil
 	}
 
-	labels["bitcoin_tx_id"] = "unknonwn"
+	// Get pegout record from DB
+	pegoutDbRow, err := dataSource.PegoutDB(unsignedPegout.PegoutAddress)
+	if err != nil {
+		return SEVERITY_UNKNOWN, labels, err
+	}
+
+	if pegoutDbRow.BitcoinTxId != nil {
+		labels["bitcoin_tx_id"] = hex.EncodeToString(pegoutDbRow.BitcoinTxId)
+	}
 	labels["pegout_addr"] = unsignedPegout.PegoutAddress.StringRaw()
 
 	// Check if pegout is new: current is null or new PegoutAddress

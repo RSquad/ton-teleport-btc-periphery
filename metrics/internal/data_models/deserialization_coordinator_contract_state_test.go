@@ -8,7 +8,7 @@ import (
 	"github.com/xssnick/tonutils-go/address"
 )
 
-func TestDeserializeCoordinatorContractState_Success(t *testing.T) {
+func TestDeserializeCoordinatorContractStorage_Success(t *testing.T) {
 	js := `{
 		"Initiated": true,
 		"StandaloneMode": true,
@@ -50,9 +50,9 @@ func TestDeserializeCoordinatorContractState_Success(t *testing.T) {
 
 	m := MustUnmarshalJSONMap(t, js)
 
-	got, err := DeserializeCoordinatorContractState(m)
+	got, err := DeserializeCoordinatorContractStorage(m)
 	if err != nil {
-		t.Fatalf("DeserializeCoordinatorContractState error: %v", err)
+		t.Fatalf("DeserializeCoordinatorContractStorage error: %v", err)
 	}
 
 	// Simple scalars
@@ -109,10 +109,10 @@ func TestDeserializeCoordinatorContractState_Success(t *testing.T) {
 	}
 }
 
-func TestDeserializeCoordinatorContractState_EmptyOK(t *testing.T) {
+func TestDeserializeCoordinatorContractStorage_EmptyOK(t *testing.T) {
 	m := map[string]interface{}{}
 
-	got, err := DeserializeCoordinatorContractState(m)
+	got, err := DeserializeCoordinatorContractStorage(m)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -132,10 +132,10 @@ func TestDeserializeCoordinatorContractState_EmptyOK(t *testing.T) {
 	}
 }
 
-func TestDeserializeCoordinatorContractState_Errors(t *testing.T) {
+func TestDeserializeCoordinatorContractStorage_Errors(t *testing.T) {
 	t.Run("Initiated bad type", func(t *testing.T) {
 		m := map[string]interface{}{"Initiated": "nope"}
-		_, err := DeserializeCoordinatorContractState(m)
+		_, err := DeserializeCoordinatorContractStorage(m)
 		if err == nil || !strings.Contains(err.Error(), "`Initiated` parse error") {
 			t.Fatalf("want Initiated parse error, got: %v", err)
 		}
@@ -143,7 +143,7 @@ func TestDeserializeCoordinatorContractState_Errors(t *testing.T) {
 
 	t.Run("Id not a number", func(t *testing.T) {
 		m := map[string]interface{}{"Id": "abc"}
-		_, err := DeserializeCoordinatorContractState(m)
+		_, err := DeserializeCoordinatorContractStorage(m)
 		if err == nil || !strings.Contains(err.Error(), "`Id` parse error") {
 			t.Fatalf("want Id parse error, got: %v", err)
 		}
@@ -151,7 +151,7 @@ func TestDeserializeCoordinatorContractState_Errors(t *testing.T) {
 
 	t.Run("ConfiguratorAddr bad format", func(t *testing.T) {
 		m := map[string]interface{}{"ConfiguratorAddr": "not-an-addr"}
-		_, err := DeserializeCoordinatorContractState(m)
+		_, err := DeserializeCoordinatorContractStorage(m)
 		if err == nil || !strings.Contains(err.Error(), "`ConfiguratorAddr` parse error") {
 			t.Fatalf("want ConfiguratorAddr parse error, got: %v", err)
 		}
@@ -159,7 +159,7 @@ func TestDeserializeCoordinatorContractState_Errors(t *testing.T) {
 
 	t.Run("TeleportAddr bad format", func(t *testing.T) {
 		m := map[string]interface{}{"TeleportAddr": "bad-addr"}
-		_, err := DeserializeCoordinatorContractState(m)
+		_, err := DeserializeCoordinatorContractStorage(m)
 		if err == nil || !strings.Contains(err.Error(), "`TeleportAddr` parse error") {
 			t.Fatalf("want TeleportAddr parse error, got: %v", err)
 		}
@@ -167,7 +167,7 @@ func TestDeserializeCoordinatorContractState_Errors(t *testing.T) {
 
 	t.Run("NextPegoutIdx wrong type", func(t *testing.T) {
 		m := map[string]interface{}{"NextPegoutIdx": "oops"}
-		_, err := DeserializeCoordinatorContractState(m)
+		_, err := DeserializeCoordinatorContractStorage(m)
 		if err == nil || !strings.Contains(err.Error(), "`NextPegoutIdx` parse error") {
 			t.Fatalf("want NextPegoutIdx parse error, got: %v", err)
 		}

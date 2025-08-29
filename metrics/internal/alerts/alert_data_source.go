@@ -1,11 +1,17 @@
 package alerts
 
-import "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
+import (
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
+	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/data_models"
+	"github.com/xssnick/tonutils-go/address"
+)
 
 type AlertDataSource interface {
-	CoordinatorContractData() (*coordinator.Storage, error)
-	FirstUnsignedPegout() (*coordinator.PegoutRecord, error)
-	PrevDkg() (*coordinator.DKG, error)
+	CoordinatorContractDataDB() (*coordinator.Storage, error)
+	FirstUnsignedPegoutDB() (*coordinator.PegoutRecord, error)
+	DkgDB() (*coordinator.DKG, error)
+	PrevDkgDB() (*coordinator.DKG, error)
+	PegoutDB(address *address.Address) (*data_models.PegoutDbRow, error)
 
 	NowUnixTs() int64
 }

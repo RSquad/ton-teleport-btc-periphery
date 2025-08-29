@@ -2,90 +2,57 @@ package alerts
 
 import (
 	"database/sql"
-	"errors"
 	"time"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/data_models"
+	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/data_sources"
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/metrics"
+	"github.com/xssnick/tonutils-go/address"
 )
 
 type AlertDataSourceLive struct {
 	metricsManager *metrics.MetricsManager
+	dataSourceDB   *data_sources.DataSourceDB
 }
 
-func NewAlertDataSourceLive(db *sql.DB, tonClient *tonclient.TonClient) *AlertDataSourceLive {
+func NewAlertDataSourceLive(db *sql.DB, tonClient *tonclient.TonClient) AlertDataSource {
 	dataSource := AlertDataSourceLive{
 		metricsManager: metrics.NewMetricsManager(db, tonClient),
+		dataSourceDB:   data_sources.NewDataSourceDB(db),
 	}
 
 	return &dataSource
 }
 
-func (dataSource *AlertDataSourceLive) FirstUnsignedPegout() (*coordinator.PegoutRecord, error) {
-	coordinatorContractStateJson, err := dataSource.metricsManager.CoordinatorContractState()
+func (dataSource *AlertDataSourceLive) FirstUnsignedPegoutDB() (*coordinator.PegoutRecord, error) {
+	coordinatorContractStorage, err := dataSource.dataSourceDB.CoordinatorContractStorage()
 	if err != nil {
 		return nil, err
 	}
 
-	unsignedPegoutsJson, ok := coordinatorContractStateJson["UnsignedPegouts"].([]interface{})
-	if !ok {
-		return nil, errors.New("UnsignedPegouts has wrong type")
-	}
-
-	if len(unsignedPegoutsJson) == 0 {
+	if len(coordinatorContractStorage.UnsignedPegouts) == 0 {
 		return nil, nil
 	}
 
-	unsignedPegouts, err := data_models.DeserializePegouts(unsignedPegoutsJson, 1)
-	if err != nil {
-		return nil, err
-	}
-
-	return &unsignedPegouts[0], nil
+	return &coordinatorContractStorage.UnsignedPegouts[0], nil
 }
 
-func (dataSource *AlertDataSourceLive) CoordinatorContractData() (*coordinator.Storage, error) {
-	coordinatorContractStateJson, err := dataSource.metricsManager.CoordinatorContractState()
-	if err != nil {
-		return nil, err
-	}
-
-	coordinatorContractState, err := data_models.DeserializeCoordinatorContractState(coordinatorContractStateJson)
-	if err != nil {
-		return nil, err
-	}
-
-	return coordinatorContractState, nil
+func (dataSource *AlertDataSourceLive) CoordinatorContractDataDB() (*coordinator.Storage, error) {
+	return dataSource.dataSourceDB.CoordinatorContractStorage()
 }
 
-func (dataSource *AlertDataSourceLive) Dkg() (*coordinator.DKG, error) {
-	prevDkgJson, err := dataSource.metricsManager.Dkg()
-	if err != nil {
-		return nil, err
-	}
-
-	prevDkg, err := data_models.DeserializeDkg(prevDkgJson)
-	if err != nil {
-		return nil, err
-	}
-
-	return prevDkg, nil
+func (dataSource *AlertDataSourceLive) DkgDB() (*coordinator.DKG, error) {
+	return dataSource.dataSourceDB.Dkg()
 }
 
-func (dataSource *AlertDataSourceLive) PrevDkg() (*coordinator.DKG, error) {
-	prevDkgJson, err := dataSource.metricsManager.PrevDkg()
-	if err != nil {
-		return nil, err
-	}
+func (dataSource *AlertDataSourceLive) PrevDkgDB() (*coordinator.DKG, error) {
+	return dataSource.dataSourceDB.PrevDkg()
+}
 
-	prevDkg, err := data_models.DeserializeDkg(prevDkgJson)
-	if err != nil {
-		return nil, err
-	}
-
-	return prevDkg, nil
+func (dataSource *AlertDataSourceLive) PegoutDB(address *address.Address) (*data_models.PegoutDbRow, error) {
+	return dataSource.dataSourceDB.PegoutDbRow(address)
 }
 
 func (dataSource *AlertDataSourceLive) NowUnixTs() int64 {
