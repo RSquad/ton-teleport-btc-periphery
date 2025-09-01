@@ -43,8 +43,8 @@ func TestAlertPegoutRestarts(t *testing.T) {
 						ExpiredAt:     time.Unix(0, 0),
 					}, nil
 				},
-				PegoutDbFn: func(address *address.Address) (*data_models.PegoutDbRow, error) {
-					return &data_models.PegoutDbRow{
+				PegoutDbFn: func(address *address.Address) (*data_models.Pegout, error) {
+					return &data_models.Pegout{
 						BitcoinTxId: bitcoin_tx_id_1,
 					}, nil
 				},
@@ -60,8 +60,8 @@ func TestAlertPegoutRestarts(t *testing.T) {
 						ExpiredAt:     time.Unix(beginTs, 0),
 					}, nil
 				},
-				PegoutDbFn: func(address *address.Address) (*data_models.PegoutDbRow, error) {
-					return &data_models.PegoutDbRow{
+				PegoutDbFn: func(address *address.Address) (*data_models.Pegout, error) {
+					return &data_models.Pegout{
 						BitcoinTxId: bitcoin_tx_id_1,
 					}, nil
 				},
@@ -77,8 +77,8 @@ func TestAlertPegoutRestarts(t *testing.T) {
 						ExpiredAt:     time.Unix(beginTs+1, 0),
 					}, nil
 				},
-				PegoutDbFn: func(address *address.Address) (*data_models.PegoutDbRow, error) {
-					return &data_models.PegoutDbRow{
+				PegoutDbFn: func(address *address.Address) (*data_models.Pegout, error) {
+					return &data_models.Pegout{
 						BitcoinTxId: bitcoin_tx_id_1,
 					}, nil
 				},
@@ -94,8 +94,8 @@ func TestAlertPegoutRestarts(t *testing.T) {
 						ExpiredAt:     time.Unix(beginTs+2, 0),
 					}, nil
 				},
-				PegoutDbFn: func(address *address.Address) (*data_models.PegoutDbRow, error) {
-					return &data_models.PegoutDbRow{
+				PegoutDbFn: func(address *address.Address) (*data_models.Pegout, error) {
+					return &data_models.Pegout{
 						BitcoinTxId: bitcoin_tx_id_1,
 					}, nil
 				},
@@ -111,8 +111,8 @@ func TestAlertPegoutRestarts(t *testing.T) {
 						ExpiredAt:     time.Unix(beginTs+3, 0),
 					}, nil
 				},
-				PegoutDbFn: func(address *address.Address) (*data_models.PegoutDbRow, error) {
-					return &data_models.PegoutDbRow{
+				PegoutDbFn: func(address *address.Address) (*data_models.Pegout, error) {
+					return &data_models.Pegout{
 						BitcoinTxId: bitcoin_tx_id_1,
 					}, nil
 				},
@@ -128,8 +128,8 @@ func TestAlertPegoutRestarts(t *testing.T) {
 						ExpiredAt:     time.Unix(beginTs+4, 0),
 					}, nil
 				},
-				PegoutDbFn: func(address *address.Address) (*data_models.PegoutDbRow, error) {
-					return &data_models.PegoutDbRow{
+				PegoutDbFn: func(address *address.Address) (*data_models.Pegout, error) {
+					return &data_models.Pegout{
 						BitcoinTxId: bitcoin_tx_id_1,
 					}, nil
 				},
@@ -145,8 +145,8 @@ func TestAlertPegoutRestarts(t *testing.T) {
 						ExpiredAt:     time.Unix(beginTs+5, 0),
 					}, nil
 				},
-				PegoutDbFn: func(address *address.Address) (*data_models.PegoutDbRow, error) {
-					return &data_models.PegoutDbRow{
+				PegoutDbFn: func(address *address.Address) (*data_models.Pegout, error) {
+					return &data_models.Pegout{
 						BitcoinTxId: bitcoin_tx_id_1,
 					}, nil
 				},
@@ -162,8 +162,8 @@ func TestAlertPegoutRestarts(t *testing.T) {
 						ExpiredAt:     time.Unix(beginTs+6, 0),
 					}, nil
 				},
-				PegoutDbFn: func(address *address.Address) (*data_models.PegoutDbRow, error) {
-					return &data_models.PegoutDbRow{
+				PegoutDbFn: func(address *address.Address) (*data_models.Pegout, error) {
+					return &data_models.Pegout{
 						BitcoinTxId: bitcoin_tx_id_1,
 					}, nil
 				},
@@ -179,8 +179,8 @@ func TestAlertPegoutRestarts(t *testing.T) {
 						ExpiredAt:     time.Unix(beginTs+7, 0),
 					}, nil
 				},
-				PegoutDbFn: func(address *address.Address) (*data_models.PegoutDbRow, error) {
-					return &data_models.PegoutDbRow{
+				PegoutDbFn: func(address *address.Address) (*data_models.Pegout, error) {
+					return &data_models.Pegout{
 						BitcoinTxId: bitcoin_tx_id_1,
 					}, nil
 				},
@@ -196,8 +196,8 @@ func TestAlertPegoutRestarts(t *testing.T) {
 						ExpiredAt:     time.Unix(beginTs+8, 0),
 					}, nil
 				},
-				PegoutDbFn: func(address *address.Address) (*data_models.PegoutDbRow, error) {
-					return &data_models.PegoutDbRow{
+				PegoutDbFn: func(address *address.Address) (*data_models.Pegout, error) {
+					return &data_models.Pegout{
 						BitcoinTxId: bitcoin_tx_id_1,
 					}, nil
 				},
@@ -213,8 +213,8 @@ func TestAlertPegoutRestarts(t *testing.T) {
 						ExpiredAt:     time.Unix(beginTs+9, 0),
 					}, nil
 				},
-				PegoutDbFn: func(address *address.Address) (*data_models.PegoutDbRow, error) {
-					return &data_models.PegoutDbRow{
+				PegoutDbFn: func(address *address.Address) (*data_models.Pegout, error) {
+					return &data_models.Pegout{
 						BitcoinTxId: bitcoin_tx_id_1,
 					}, nil
 				},
@@ -230,8 +230,8 @@ func TestAlertPegoutRestarts(t *testing.T) {
 						ExpiredAt:     time.Unix(beginTs+10, 0),
 					}, nil
 				},
-				PegoutDbFn: func(address *address.Address) (*data_models.PegoutDbRow, error) {
-					return &data_models.PegoutDbRow{
+				PegoutDbFn: func(address *address.Address) (*data_models.Pegout, error) {
+					return &data_models.Pegout{
 						BitcoinTxId: bitcoin_tx_id_1,
 					}, nil
 				},
@@ -247,8 +247,8 @@ func TestAlertPegoutRestarts(t *testing.T) {
 						ExpiredAt:     time.Unix(0, 0),
 					}, nil
 				},
-				PegoutDbFn: func(address *address.Address) (*data_models.PegoutDbRow, error) {
-					return &data_models.PegoutDbRow{
+				PegoutDbFn: func(address *address.Address) (*data_models.Pegout, error) {
+					return &data_models.Pegout{
 						BitcoinTxId: bitcoin_tx_id_2,
 					}, nil
 				},

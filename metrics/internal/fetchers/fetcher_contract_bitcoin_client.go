@@ -3,23 +3,15 @@ package fetchers
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"sync"
 	"time"
 
-	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/bitcoinclientcontract"
+	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/data_models"
 )
-
-type ContractBitcoinClientData struct {
-	CandidateBlockHashes     []*chainhash.Hash
-	LastConfirmedBlockHash   *chainhash.Hash
-	ConfirmationsNeeded      int64
-	LastConfirmedBlockHeight int64
-}
 
 type FetcherContractBitcoinClient struct {
 	chDB                  chan PayloadDB
@@ -65,42 +57,6 @@ func (fetcher *FetcherContractBitcoinClient) Work(ctx context.Context, wg *sync.
 	}
 }
 
-func (fetcher *FetcherContractBitcoinClient) GetBitcoinInfo() (FetcherBitcoinNetworkData, error) {
-	rows, err := fetcher.db.Query(
-		`SELECT payload::json
-			FROM metrics_data
-			WHERE type_id = 3
-			ORDER BY id DESC
-			LIMIT 1
-		`,
-	)
-	if err != nil {
-		return FetcherBitcoinNetworkData{}, err
-	}
-
-	defer rows.Close()
-
-	var data string
-	if rows.Next() {
-		err = rows.Scan(&data)
-		if err != nil {
-			return FetcherBitcoinNetworkData{}, err
-		}
-	}
-
-	if len(data) == 0 {
-		data = "{}"
-	}
-
-	var bitcoinNetworkData FetcherBitcoinNetworkData
-	err = json.Unmarshal([]byte(data), &bitcoinNetworkData)
-	if err != nil {
-		return FetcherBitcoinNetworkData{}, err
-	}
-
-	return bitcoinNetworkData, nil
-}
-
 func (fetcher *FetcherContractBitcoinClient) Fetch() {
 	storageCell, err := fetcher.bitcoinClientContract.GetStorageCell()
 	if err != nil {
@@ -132,7 +88,7 @@ func (fetcher *FetcherContractBitcoinClient) Fetch() {
 		return
 	}
 
-	data := &ContractBitcoinClientData{
+	storage := &data_models.BitcoinClientContractStorage{
 		CandidateBlockHashes:     candidateBlockHashes,
 		ConfirmationsNeeded:      confirmationsNeeded,
 		LastConfirmedBlockHash:   lastConfirmedBlockHash,
@@ -140,7 +96,7 @@ func (fetcher *FetcherContractBitcoinClient) Fetch() {
 	}
 
 	// Serialize
-	jsonData, err := json.Marshal(data)
+	jsonData, err := data_models.SerializeBitcoinContractStorageDB(storage)
 	if err != nil {
 		logger.Log.Error().Err(err).
 			Str("component", "FetcherContractBitcoinClient").

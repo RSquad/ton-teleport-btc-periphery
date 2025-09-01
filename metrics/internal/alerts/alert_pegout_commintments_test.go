@@ -17,11 +17,13 @@ func TestAlertPegoutCommintments(t *testing.T) {
 	pegoutLabels1 := Labels{
 		"bitcoin_tx_id": "f7df2a86684e500a3c6c7ca785b8500e4e3c89d1751edf86b6deb68e761a329b",
 		"pegout_addr":   pegoutAddress1.StringRaw(),
+		"threshold":     "",
 	}
 
 	pegoutLabels2 := Labels{
 		"bitcoin_tx_id": "3d46303861d5336c3ebdea3a20883a1cb77f4f3a66a2fb5e6494d3a0ab878bd1",
 		"pegout_addr":   pegoutAddress2.StringRaw(),
+		"threshold":     "",
 	}
 
 	bitcoin_tx_id_1, _ := hex.DecodeString(pegoutLabels1["bitcoin_tx_id"])
@@ -30,6 +32,7 @@ func TestAlertPegoutCommintments(t *testing.T) {
 	pegoutLabelsEmpty := Labels{
 		"bitcoin_tx_id": "",
 		"pegout_addr":   "",
+		"threshold":     "",
 	}
 
 	tests := []TestDesc{
@@ -42,15 +45,11 @@ func TestAlertPegoutCommintments(t *testing.T) {
 						CommitmentsMaskAccepted: new(big.Int).SetUint64(0b0111100000000),
 						CommitmentsMaskOther:    new(big.Int).SetUint64(0b01110100000000),
 						Signatures:              coordinator.PegoutSignatures{Count: 0},
+						MaxSigners:              10,
 					}, nil
 				},
-				PrevDkgDbFn: func() (*coordinator.DKG, error) {
-					return &coordinator.DKG{
-						MaxSigners: 10,
-					}, nil
-				},
-				PegoutDbFn: func(address *address.Address) (*data_models.PegoutDbRow, error) {
-					return &data_models.PegoutDbRow{
+				PegoutDbFn: func(address *address.Address) (*data_models.Pegout, error) {
+					return &data_models.Pegout{
 						BitcoinTxId: bitcoin_tx_id_1,
 					}, nil
 				},
@@ -66,15 +65,11 @@ func TestAlertPegoutCommintments(t *testing.T) {
 						CommitmentsMaskAccepted: new(big.Int).SetUint64(0b0111101100101),
 						CommitmentsMaskOther:    new(big.Int).SetUint64(0b0111011100111),
 						Signatures:              coordinator.PegoutSignatures{Count: 1},
+						MaxSigners:              10,
 					}, nil
 				},
-				PrevDkgDbFn: func() (*coordinator.DKG, error) {
-					return &coordinator.DKG{
-						MaxSigners: 10,
-					}, nil
-				},
-				PegoutDbFn: func(address *address.Address) (*data_models.PegoutDbRow, error) {
-					return &data_models.PegoutDbRow{
+				PegoutDbFn: func(address *address.Address) (*data_models.Pegout, error) {
+					return &data_models.Pegout{
 						BitcoinTxId: bitcoin_tx_id_1,
 					}, nil
 				},
@@ -90,15 +85,11 @@ func TestAlertPegoutCommintments(t *testing.T) {
 						CommitmentsMaskAccepted: new(big.Int).SetUint64(0b0111101100101),
 						CommitmentsMaskOther:    new(big.Int).SetUint64(0b0111011100101),
 						Signatures:              coordinator.PegoutSignatures{Count: 1},
+						MaxSigners:              10,
 					}, nil
 				},
-				PrevDkgDbFn: func() (*coordinator.DKG, error) {
-					return &coordinator.DKG{
-						MaxSigners: 10,
-					}, nil
-				},
-				PegoutDbFn: func(address *address.Address) (*data_models.PegoutDbRow, error) {
-					return &data_models.PegoutDbRow{
+				PegoutDbFn: func(address *address.Address) (*data_models.Pegout, error) {
+					return &data_models.Pegout{
 						BitcoinTxId: bitcoin_tx_id_1,
 					}, nil
 				},
@@ -114,15 +105,11 @@ func TestAlertPegoutCommintments(t *testing.T) {
 						CommitmentsMaskAccepted: new(big.Int).SetUint64(0b0101101100101),
 						CommitmentsMaskOther:    new(big.Int).SetUint64(0b0101011100101),
 						Signatures:              coordinator.PegoutSignatures{Count: 1},
+						MaxSigners:              10,
 					}, nil
 				},
-				PrevDkgDbFn: func() (*coordinator.DKG, error) {
-					return &coordinator.DKG{
-						MaxSigners: 10,
-					}, nil
-				},
-				PegoutDbFn: func(address *address.Address) (*data_models.PegoutDbRow, error) {
-					return &data_models.PegoutDbRow{
+				PegoutDbFn: func(address *address.Address) (*data_models.Pegout, error) {
+					return &data_models.Pegout{
 						BitcoinTxId: bitcoin_tx_id_1,
 					}, nil
 				},
@@ -138,15 +125,11 @@ func TestAlertPegoutCommintments(t *testing.T) {
 						CommitmentsMaskAccepted: new(big.Int).SetUint64(0b0001101100101),
 						CommitmentsMaskOther:    new(big.Int).SetUint64(0b0001011100101),
 						Signatures:              coordinator.PegoutSignatures{Count: 1},
+						MaxSigners:              10,
 					}, nil
 				},
-				PrevDkgDbFn: func() (*coordinator.DKG, error) {
-					return &coordinator.DKG{
-						MaxSigners: 10,
-					}, nil
-				},
-				PegoutDbFn: func(address *address.Address) (*data_models.PegoutDbRow, error) {
-					return &data_models.PegoutDbRow{
+				PegoutDbFn: func(address *address.Address) (*data_models.Pegout, error) {
+					return &data_models.Pegout{
 						BitcoinTxId: bitcoin_tx_id_1,
 					}, nil
 				},
@@ -162,15 +145,11 @@ func TestAlertPegoutCommintments(t *testing.T) {
 						CommitmentsMaskAccepted: new(big.Int).SetUint64(0b0001101000101),
 						CommitmentsMaskOther:    new(big.Int).SetUint64(0b0001011000101),
 						Signatures:              coordinator.PegoutSignatures{Count: 1},
+						MaxSigners:              10,
 					}, nil
 				},
-				PrevDkgDbFn: func() (*coordinator.DKG, error) {
-					return &coordinator.DKG{
-						MaxSigners: 10,
-					}, nil
-				},
-				PegoutDbFn: func(address *address.Address) (*data_models.PegoutDbRow, error) {
-					return &data_models.PegoutDbRow{
+				PegoutDbFn: func(address *address.Address) (*data_models.Pegout, error) {
+					return &data_models.Pegout{
 						BitcoinTxId: bitcoin_tx_id_1,
 					}, nil
 				},
@@ -186,15 +165,11 @@ func TestAlertPegoutCommintments(t *testing.T) {
 						CommitmentsMaskAccepted: new(big.Int).SetUint64(0b0111100000000),
 						CommitmentsMaskOther:    new(big.Int).SetUint64(0b01110100000000),
 						Signatures:              coordinator.PegoutSignatures{Count: 0},
+						MaxSigners:              10,
 					}, nil
 				},
-				PrevDkgDbFn: func() (*coordinator.DKG, error) {
-					return &coordinator.DKG{
-						MaxSigners: 10,
-					}, nil
-				},
-				PegoutDbFn: func(address *address.Address) (*data_models.PegoutDbRow, error) {
-					return &data_models.PegoutDbRow{
+				PegoutDbFn: func(address *address.Address) (*data_models.Pegout, error) {
+					return &data_models.Pegout{
 						BitcoinTxId: bitcoin_tx_id_2,
 					}, nil
 				},
@@ -207,12 +182,7 @@ func TestAlertPegoutCommintments(t *testing.T) {
 				FirstUnsignedPegoutDbFn: func() (*coordinator.PegoutRecord, error) {
 					return nil, nil
 				},
-				PrevDkgDbFn: func() (*coordinator.DKG, error) {
-					return &coordinator.DKG{
-						MaxSigners: 10,
-					}, nil
-				},
-				PegoutDbFn: func(address *address.Address) (*data_models.PegoutDbRow, error) {
+				PegoutDbFn: func(address *address.Address) (*data_models.Pegout, error) {
 					return nil, nil
 				},
 			}),

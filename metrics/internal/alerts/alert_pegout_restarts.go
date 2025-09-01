@@ -38,14 +38,14 @@ func (alert *AlertPegoutRestarts) Check(dataSource AlertDataSource) (Severity, L
 	}
 
 	// Get pegout record from DB
-	pegoutDbRow, err := dataSource.PegoutDB(unsignedPegout.PegoutAddress)
+	pegout, err := dataSource.PegoutDB(unsignedPegout.PegoutAddress)
 	if err != nil {
 		return SEVERITY_UNKNOWN, labels, err
 	}
 
 	// Update labels
-	if pegoutDbRow.BitcoinTxId != nil {
-		labels["bitcoin_tx_id"] = hex.EncodeToString(pegoutDbRow.BitcoinTxId)
+	if pegout.BitcoinTxId != nil {
+		labels["bitcoin_tx_id"] = hex.EncodeToString(pegout.BitcoinTxId)
 	}
 	labels["pegout_addr"] = unsignedPegout.PegoutAddress.StringRaw()
 

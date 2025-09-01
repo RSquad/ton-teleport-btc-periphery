@@ -1035,22 +1035,22 @@
                 {
                     "columns": [
                         {
-                            "selector": "blockChainInfo.chain",
+                            "selector": "bitcoinNetworkInfo.Chain",
                             "text": "Chain",
                             "type": "string"
                         },
                         {
-                            "selector": "blockChainInfo.blocks",
+                            "selector": "bitcoinNetworkInfo.Blocks",
                             "text": "Chain Height",
                             "type": "string"
                         },
                         {
-                            "selector": "blockChainInfo.bestblockhash",
+                            "selector": "bitcoinNetworkInfo.BestBlockHash",
                             "text": "Best Block Hash",
                             "type": "string"
                         },
                         {
-                            "selector": "blockChainInfo.mediantime",
+                            "selector": "bitcoinNetworkInfo.MedianTime",
                             "text": "Median Time",
                             "type": "timestamp_epoch_s"
                         },
@@ -1259,10 +1259,10 @@
                             "ConfirmationsNeeded": "Confirmations Needed",
                             "LastConfirmedBlockHash": "Last Confirmed Block Hash",
                             "LastConfirmedBlockHeight": "Last Confirmed Block Height",
-                            "bestblockhash": "Chain Best Block Hash",
-                            "blocks": "Height",
-                            "chain": "Chain",
-                            "mediantime": "Median Time"
+                            "BestBlockHash": "Chain Best Block Hash",
+                            "Blocks": "Height",
+                            "Chain": "Chain",
+                            "MedianTime": "Median Time"
                         }
                     }
                 },

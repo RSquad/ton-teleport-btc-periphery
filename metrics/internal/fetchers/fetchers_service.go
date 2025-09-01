@@ -19,9 +19,9 @@ type FetcherService struct {
 	fetcherDKG                   *FetcherDKG
 	fetcherContractBalances      *FetcherContractBalances
 	fetcherContractBitcoinClient *FetcherContractBitcoinClient
-	fetcherBitcoinNetwork        *FetcherBitcoinNetwork
 	fetcherContractTeleport      *FetcherContractTeleport
 	fetcherContractCoordinator   *FetcherContractCoordinator
+	fetcherBitcoinNetwork        *FetcherBitcoinNetwork
 }
 
 func NewService(
@@ -49,23 +49,23 @@ func NewService(
 	// Fetcher: Contract Bitcoin client
 	fetcherContractBitcoinClient := NewFetcherContractBitcoinClient(writerDbChan, db, bitcoinClient, bitcoinClientContract, int64(cfg.BitcoinClientContractFetchPeriod))
 
-	// Fetcher: BitcoinNetwork
-	fetcherBitcoinNetwork := NewFetcherBitcoinNetwork(writerDbChan, db, bitcoinClient, int64(cfg.BitcoinNetworkFetchPeriod))
-
 	// Fetcher: ContractTeleport
 	fetcherContractTeleport := NewFetcherContractTeleport(writerDbChan, teleportContract, int64(cfg.TeleportContractFetchPeriod))
 
 	// Fetcher: ContractCoordinator
 	fetcherContractCoordinator := NewFetcherContractCoordinator(writerDbChan, coordinatorContract, int64(cfg.CoordinatorContractFetchPeriod))
 
+	// Fetcher: BitcoinNetwork
+	fetcherBitcoinNetwork := NewFetcherBitcoinNetwork(writerDbChan, db, bitcoinClient, int64(cfg.BitcoinNetworkFetchPeriod))
+
 	return &FetcherService{
 		writerDB:                     writerDB,
 		fetcherDKG:                   fetcherDKG,
 		fetcherContractBalances:      fetcherContractBalances,
 		fetcherContractBitcoinClient: fetcherContractBitcoinClient,
-		fetcherBitcoinNetwork:        fetcherBitcoinNetwork,
 		fetcherContractTeleport:      fetcherContractTeleport,
 		fetcherContractCoordinator:   fetcherContractCoordinator,
+		fetcherBitcoinNetwork:        fetcherBitcoinNetwork,
 	}, nil
 }
 
@@ -105,14 +105,6 @@ func (s *FetcherService) Work(ctx context.Context) {
 		}()
 	}
 
-	// Fetcher BitcoinNetwork
-	if s.fetcherBitcoinNetwork != nil {
-		wg.Add(1)
-		go func() {
-			s.fetcherBitcoinNetwork.Work(ctx, &wg)
-		}()
-	}
-
 	// Fetcher ContractTeleport
 	if s.fetcherContractTeleport != nil {
 		wg.Add(1)
@@ -126,6 +118,14 @@ func (s *FetcherService) Work(ctx context.Context) {
 		wg.Add(1)
 		go func() {
 			s.fetcherContractCoordinator.Work(ctx, &wg)
+		}()
+	}
+
+	// Fetcher BitcoinNetwork
+	if s.fetcherBitcoinNetwork != nil {
+		wg.Add(1)
+		go func() {
+			s.fetcherBitcoinNetwork.Work(ctx, &wg)
 		}()
 	}
 

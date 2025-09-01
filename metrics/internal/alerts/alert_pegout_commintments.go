@@ -2,7 +2,6 @@ package alerts
 
 import (
 	"encoding/hex"
-	"errors"
 	"math/big"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/mutils"
@@ -33,25 +32,15 @@ func (alert *AlertPegoutCommintments) Check(dataSource AlertDataSource) (Severit
 		return SEVERITY_OK, labels, nil
 	}
 
-	// Get prev DKG
-	prevDkg, err := dataSource.PrevDkgDB()
-	if err != nil {
-		return SEVERITY_UNKNOWN, labels, err
-	}
-
-	if prevDkg == nil {
-		return SEVERITY_UNKNOWN, labels, errors.New("PrevDKG is null")
-	}
-
 	// Get pegout record from DB
-	pegoutDbRow, err := dataSource.PegoutDB(unsignedPegout.PegoutAddress)
+	pegout, err := dataSource.PegoutDB(unsignedPegout.PegoutAddress)
 	if err != nil {
 		return SEVERITY_UNKNOWN, labels, err
 	}
 
 	// Update labels
-	if pegoutDbRow.BitcoinTxId != nil {
-		labels["bitcoin_tx_id"] = hex.EncodeToString(pegoutDbRow.BitcoinTxId)
+	if pegout.BitcoinTxId != nil {
+		labels["bitcoin_tx_id"] = hex.EncodeToString(pegout.BitcoinTxId)
 	}
 	labels["pegout_addr"] = unsignedPegout.PegoutAddress.StringRaw()
 
@@ -61,7 +50,7 @@ func (alert *AlertPegoutCommintments) Check(dataSource AlertDataSource) (Severit
 	}
 
 	// Calulate commitmentsPercentage
-	maxSigners := prevDkg.MaxSigners
+	maxSigners := unsignedPegout.MaxSigners
 	commitmentsMask := new(big.Int).Or(
 		unsignedPegout.CommitmentsMaskAccepted,
 		unsignedPegout.CommitmentsMaskOther,

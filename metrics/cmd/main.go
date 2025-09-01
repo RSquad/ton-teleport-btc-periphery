@@ -135,13 +135,8 @@ func initialize() (*App, error) {
 
 	// Alert manager
 	alertManager, err := alerts.NewAlertManager(
-		alerts.NewAlertDataSourceLive(dbConnPool, tonClient),
+		alerts.NewAlertDataSourceLive(dbConnPool, tonClient, bitcoinClient),
 		alerts.NewAlertDispatcherPrometheus(),
-
-		// TODO: move to AlertDataSource
-		bitcoinClient,
-		bitcoinClientContract,
-		teleportContract,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create alert manager: %w", err)

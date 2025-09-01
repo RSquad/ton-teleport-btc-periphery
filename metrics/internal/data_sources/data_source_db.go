@@ -2,11 +2,11 @@ package data_sources
 
 import (
 	"database/sql"
-	"encoding/json"
-	"strings"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/teleportcontract"
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/data_models"
+	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/fetchers"
 	"github.com/xssnick/tonutils-go/address"
 )
 
@@ -20,17 +20,20 @@ func NewDataSourceDB(db *sql.DB) *DataSourceDB {
 	}
 }
 
-func (dataSource *DataSourceDB) CoordinatorContractStorageJson() (map[string]interface{}, error) {
-	return dataSource.SelectToObject("SELECT payload FROM metrics_data WHERE type_id = 5 ORDER BY id DESC LIMIT 1")
+func (dataSource *DataSourceDB) CoordinatorContractStorageJson() ([]byte, error) {
+	return dataSource.SelectToObject(
+		"SELECT payload FROM metrics_data WHERE type_id = $1 ORDER BY id DESC LIMIT 1",
+		fetchers.PayloadTypeContractCoordinator,
+	)
 }
 
 func (dataSource *DataSourceDB) CoordinatorContractStorage() (*coordinator.Storage, error) {
-	json, err := dataSource.CoordinatorContractStorageJson()
+	jsonData, err := dataSource.CoordinatorContractStorageJson()
 	if err != nil {
 		return nil, err
 	}
 
-	data, err := data_models.DeserializeCoordinatorContractStorage(json)
+	data, err := data_models.DeserializeCoordinatorContractStorage(jsonData)
 	if err != nil {
 		return nil, err
 	}
@@ -38,17 +41,62 @@ func (dataSource *DataSourceDB) CoordinatorContractStorage() (*coordinator.Stora
 	return data, nil
 }
 
-func (dataSource *DataSourceDB) DkgJson() (map[string]interface{}, error) {
-	return dataSource.SelectToObject("SELECT payload FROM metrics_data WHERE type_id = 0 ORDER BY id DESC LIMIT 1")
+func (dataSource *DataSourceDB) TeleportContractStorageJson() ([]byte, error) {
+	return dataSource.SelectToObject(
+		"SELECT payload FROM metrics_data WHERE type_id = $1 ORDER BY id DESC LIMIT 1",
+		fetchers.PayloadTypeContractTeleport,
+	)
+}
+
+func (dataSource *DataSourceDB) TeleportContractStorage() (*teleportcontract.Storage, error) {
+	jsonData, err := dataSource.TeleportContractStorageJson()
+	if err != nil {
+		return nil, err
+	}
+
+	data, err := data_models.DeserializeTeleportContractStorage(jsonData)
+	if err != nil {
+		return nil, err
+	}
+
+	return data, nil
+}
+
+func (dataSource *DataSourceDB) BitcoinClientContractStorageJson() ([]byte, error) {
+	return dataSource.SelectToObject(
+		"SELECT payload FROM metrics_data WHERE type_id = $1 ORDER BY id DESC LIMIT 1",
+		fetchers.PayloadTypeContractBitcoinClient,
+	)
+}
+
+func (dataSource *DataSourceDB) BitcoinClientContractStorage() (*data_models.BitcoinClientContractStorage, error) {
+	jsonData, err := dataSource.BitcoinClientContractStorageJson()
+	if err != nil {
+		return nil, err
+	}
+
+	data, err := data_models.DeserializeBitcoinContractStorageDB(jsonData)
+	if err != nil {
+		return nil, err
+	}
+
+	return data, nil
+}
+
+func (dataSource *DataSourceDB) DkgJson() ([]byte, error) {
+	return dataSource.SelectToObject(
+		"SELECT payload FROM metrics_data WHERE type_id = $1 ORDER BY id DESC LIMIT 1",
+		fetchers.PayloadTypeDKG,
+	)
 }
 
 func (dataSource *DataSourceDB) Dkg() (*coordinator.DKG, error) {
-	json, err := dataSource.DkgJson()
+	jsonData, err := dataSource.DkgJson()
 	if err != nil {
 		return nil, err
 	}
 
-	data, err := data_models.DeserializeDkg(json)
+	data, err := data_models.DeserializeDkg(jsonData)
 	if err != nil {
 		return nil, err
 	}
@@ -56,17 +104,20 @@ func (dataSource *DataSourceDB) Dkg() (*coordinator.DKG, error) {
 	return data, nil
 }
 
-func (dataSource *DataSourceDB) PrevDkgJson() (map[string]interface{}, error) {
-	return dataSource.SelectToObject("SELECT payload FROM metrics_data WHERE type_id = 1 ORDER BY id DESC LIMIT 1")
+func (dataSource *DataSourceDB) PrevDkgJson() ([]byte, error) {
+	return dataSource.SelectToObject(
+		"SELECT payload FROM metrics_data WHERE type_id = $1 ORDER BY id DESC LIMIT 1",
+		fetchers.PayloadTypePrevDKG,
+	)
 }
 
 func (dataSource *DataSourceDB) PrevDkg() (*coordinator.DKG, error) {
-	json, err := dataSource.PrevDkgJson()
+	jsonData, err := dataSource.PrevDkgJson()
 	if err != nil {
 		return nil, err
 	}
 
-	data, err := data_models.DeserializeDkg(json)
+	data, err := data_models.DeserializeDkg(jsonData)
 	if err != nil {
 		return nil, err
 	}
@@ -74,20 +125,20 @@ func (dataSource *DataSourceDB) PrevDkg() (*coordinator.DKG, error) {
 	return data, nil
 }
 
-func (dataSource *DataSourceDB) PegoutJson(address *address.Address) (map[string]interface{}, error) {
+func (dataSource *DataSourceDB) PegoutJson(address *address.Address) ([]byte, error) {
 	return dataSource.SelectToObject(
 		"SELECT row_to_json(t) FROM (SELECT * FROM public.pegouts WHERE addr=$1) t",
 		address.StringRaw(),
 	)
 }
 
-func (dataSource *DataSourceDB) PegoutDbRow(address *address.Address) (*data_models.PegoutDbRow, error) {
-	pegoutJson, err := dataSource.PegoutJson(address)
+func (dataSource *DataSourceDB) Pegout(address *address.Address) (*data_models.Pegout, error) {
+	jsonData, err := dataSource.PegoutJson(address)
 	if err != nil {
 		return nil, err
 	}
 
-	pegout, err := data_models.DeserializePegoutDbRow(pegoutJson)
+	pegout, err := data_models.DeserializePegoutDB(jsonData)
 	if err != nil {
 		return nil, err
 	}
@@ -95,19 +146,19 @@ func (dataSource *DataSourceDB) PegoutDbRow(address *address.Address) (*data_mod
 	return pegout, nil
 }
 
-func (dataSource *DataSourceDB) LastSignedPegoutJson() (map[string]interface{}, error) {
+func (dataSource *DataSourceDB) LastSignedPegoutJson() ([]byte, error) {
 	return dataSource.SelectToObject(
 		"SELECT row_to_json(t) FROM (SELECT * FROM public.pegouts WHERE status = 'SIGNED' ORDER BY id DESC LIMIT 1) t",
 	)
 }
 
-func (dataSource *DataSourceDB) LastSignedPegoutDbRow() (*data_models.PegoutDbRow, error) {
-	pegoutJson, err := dataSource.LastSignedPegoutJson()
+func (dataSource *DataSourceDB) LastSignedPegout() (*data_models.Pegout, error) {
+	jsonData, err := dataSource.LastSignedPegoutJson()
 	if err != nil {
 		return nil, err
 	}
 
-	pegout, err := data_models.DeserializePegoutDbRow(pegoutJson)
+	pegout, err := data_models.DeserializePegoutDB(jsonData)
 	if err != nil {
 		return nil, err
 	}
@@ -115,7 +166,7 @@ func (dataSource *DataSourceDB) LastSignedPegoutDbRow() (*data_models.PegoutDbRo
 	return pegout, nil
 }
 
-func (dataSource *DataSourceDB) SelectToObject(sql string, args ...interface{}) (map[string]interface{}, error) {
+func (dataSource *DataSourceDB) SelectToObject(sql string, args ...interface{}) ([]byte, error) {
 	rows, err := dataSource.db.Query(sql, args...)
 	if err != nil {
 		return nil, err
@@ -135,12 +186,5 @@ func (dataSource *DataSourceDB) SelectToObject(sql string, args ...interface{}) 
 		data = "{}"
 	}
 
-	jsonDec := json.NewDecoder(strings.NewReader(data))
-	jsonDec.UseNumber()
-
-	var m map[string]interface{}
-	if err := jsonDec.Decode(&m); err != nil {
-		return nil, err
-	}
-	return m, nil
+	return []byte(data), nil
 }

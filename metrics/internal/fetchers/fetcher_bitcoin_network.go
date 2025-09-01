@@ -3,35 +3,20 @@ package fetchers
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"sync"
 	"time"
 
-	"github.com/btcsuite/btcd/btcjson"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/teleportcontract"
+	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/data_models"
 )
-
-type FetcherBitcoinNetworkData struct {
-	Chain         string `json:"chain"`
-	Blocks        int32  `json:"blocks"`
-	BestBlockHash string `json:"bestblockhash"`
-	MedianTime    int64  `json:"mediantime"`
-}
 
 type FetcherBitcoinNetwork struct {
 	chDB          chan PayloadDB
 	db            *sql.DB
 	bitcoinClient *bitcoin.Client
 	period        int64 // Fetch period (in seconds)
-}
-
-type SignedPegout struct {
-	createdAt   time.Time
-	pegoutAddr  string
-	bitcoinTxId string
 }
 
 func NewFetcherBitcoinNetwork(
@@ -48,124 +33,22 @@ func NewFetcherBitcoinNetwork(
 	}
 }
 
-func (fetcher *FetcherBitcoinNetwork) getSignedPegouts() ([]SignedPegout, error) {
-	rows, err := fetcher.db.Query(
-		`SELECT 
-			tt.created_at,
-			p.addr AS pegout_addr,
-			p.bitcoin_tx_id AS bitcoin_tx_id
-		FROM burns AS b
-		JOIN ton_txes AS tt ON tt.id = b.ton_tx_burn
-		JOIN pegouts AS p ON p.id = b.pegout_burn
-		WHERE 
-			p.status = 'SIGNED'
-		-- AND 
-			-- created_at > NOW() - INTERVAL '1 day'
-		ORDER BY created_at DESC
-	`)
-	if err != nil {
-		return []SignedPegout{}, err
-	}
-
-	defer rows.Close()
-
-	var pegouts []SignedPegout
-	for rows.Next() {
-		var pegout SignedPegout
-		err = rows.Scan(&pegout.createdAt, &pegout.pegoutAddr, &pegout.bitcoinTxId)
-		if err != nil {
-			return []SignedPegout{}, err
-		}
-		pegouts = append(pegouts, pegout)
-	}
-	return pegouts, nil
-}
-
-func (fb *FetcherBitcoinNetwork) getBaseSVB() (float64, error) {
-	rows, err := fb.db.Query(
-		`SELECT jsonb_build_object(
-				'contractTeleport', (
-						SELECT payload::json
-						FROM metrics_data
-						WHERE type_id = 4
-						ORDER BY id DESC
-						LIMIT 1
-				)
-		) AS result;`,
-	)
-	if err != nil {
-		return 0, err
-	}
-
-	defer rows.Close()
-
-	var data string
-	if rows.Next() {
-		err = rows.Scan(&data)
-		if err != nil {
-			return 0, err
-		}
-	}
-
-	var storage teleportcontract.Storage
-	err = json.Unmarshal([]byte(data), &storage)
-	if err != nil {
-		return 0, err
-	}
-	return float64(storage.BaseSVB), nil
-}
-
-func (fb *FetcherBitcoinNetwork) getSVB(blockCount int, mode *btcjson.EstimateSmartFeeMode) (float64, error) {
-	if mode == nil {
-		mode = &btcjson.EstimateModeEconomical
-	}
-	fee, err := fb.bitcoinClient.EstimateFee(blockCount, mode)
-	if err != nil {
-		return 0, err
-	}
-
-	return fee, nil
-}
-
-/*func (fetcher *FetcherBitcoinNetwork) setBitcoinTxExistsMetric(pegouts []SignedPegout) {
-	for _, pegout := range pegouts {
-		txExists, _, _ := bu.BitcoinTxExists(fetcher.bitcoinClient, pegout.bitcoinTxId)
-		if !txExists {
-			unprocessedPegout.WithLabelValues(pegout.pegoutAddr, pegout.bitcoinTxId).Set(1)
-		} else {
-			unprocessedPegout.WithLabelValues(pegout.pegoutAddr, pegout.bitcoinTxId).Set(0)
-		}
-
-	}
-}*/
-
 func (fetcher *FetcherBitcoinNetwork) Fetch() {
-	//
 	blockChainInfo, err := fetcher.bitcoinClient.GetBlockChainInfo()
 	if err != nil {
 		logger.Log.Error().Msg(fmt.Sprintf("FetcherBitcoinNetwork: failed to retrieve BlockChainInfo, error: %v", err))
 		return
 	}
 
-	/*
-		signedPegouts, err := fetcher.getSignedPegouts()
-		if err != nil {
-			logger.Log.Error().Err(err).
-				Str("component", "FetcherBitcoinNetwork").
-				Msg("fetch failed")
-		}
-		fetcher.setBitcoinTxExistsMetric(signedPegouts)
-	*/
-
 	// Serialize
-	data := FetcherBitcoinNetworkData{
+	bitcoinNetworkInfo := data_models.BitcoinNetworkInfo{
 		Chain:         blockChainInfo.Chain,
 		Blocks:        blockChainInfo.Blocks,
 		BestBlockHash: blockChainInfo.BestBlockHash,
 		MedianTime:    blockChainInfo.MedianTime,
 	}
 
-	jsonData, err := json.Marshal(data)
+	jsonData, err := data_models.SerializeBitcoinNetworkInfoDB(&bitcoinNetworkInfo)
 	if err != nil {
 		logger.Log.Error().Err(err).
 			Str("component", "FetcherBitcoinNetwork").
@@ -174,7 +57,7 @@ func (fetcher *FetcherBitcoinNetwork) Fetch() {
 
 	fetcher.chDB <- PayloadDB{
 		timestamp: time.Now(),
-		typeId:    PayloadTypeBlockChainInfo,
+		typeId:    PayloadTypeBitcoinNetwork,
 		payload:   string(jsonData),
 	}
 }

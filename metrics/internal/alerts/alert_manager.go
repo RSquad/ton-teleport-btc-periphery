@@ -5,10 +5,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/bitcoinclientcontract"
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/teleportcontract"
 )
 
 type AlertManager struct {
@@ -24,11 +21,6 @@ type AlertManager struct {
 func NewAlertManager(
 	dataSource AlertDataSource,
 	alertDispatcher AlertDispatcher,
-
-	// TODO: move to AlertDataSource
-	bitcoinClient *bitcoin.Client,
-	bitcoinClientContract *bitcoinclientcontract.BitcoinClientContract,
-	teleportContract *teleportcontract.TeleportContract,
 ) (*AlertManager, error) {
 	alertManager := AlertManager{
 		alerts:              make(map[string]Alert),
@@ -43,16 +35,16 @@ func NewAlertManager(
 	// alert_pegout_fee_not_reset (pegout.fee.not.reset)
 	err = alertManager.RegisterAlert(
 		"alert_pegout_fee_not_reset",
-		NewAlertPegoutFeeNotReset(bitcoinClient, bitcoinClientContract, teleportContract),
+		NewAlertPegoutFeeNotReset(),
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	// alert_pegout_commintments (pegout.commitments)
+	// alert_pegout_signers (pegout.signers)
 	err = alertManager.RegisterAlert(
-		"alert_pegout_commintments",
-		NewAlertPegoutCommintments(),
+		"alert_pegout_signers",
+		NewAlertPegoutSigners(),
 	)
 	if err != nil {
 		return nil, err
@@ -67,6 +59,18 @@ func NewAlertManager(
 		return nil, err
 	}
 
+	// alert_pegout_commintments (pegout.commitments)
+	err = alertManager.RegisterAlert(
+		"alert_pegout_commintments",
+		NewAlertPegoutCommintments(),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	// pegout_mempool (pegout.mempool)
+	// TODO: add
+
 	// alert_pegout_signing_duration (pegout.signing.duration)
 	err = alertManager.RegisterAlert(
 		"alert_pegout_signing_duration",
@@ -76,14 +80,23 @@ func NewAlertManager(
 		return nil, err
 	}
 
-	// alert_pegout_signers (pegout.signers)
-	err = alertManager.RegisterAlert(
-		"alert_pegout_signers",
-		NewAlertPegoutSigners(),
-	)
-	if err != nil {
-		return nil, err
-	}
+	// dkg_status (dkg.status)
+	// TODO: add
+
+	// contract_balances (contract.balances)
+	// TODO: add
+
+	// fees_health (fees.health)
+	// TODO: add
+
+	// dkg_restarts (dkg.restarts)
+	// TODO: add
+
+	// dkg_participants (dkg.participants)
+	// TODO: add
+
+	// dkg_culprit (dkg.culprit)
+	// TODO: add
 
 	return &alertManager, nil
 }

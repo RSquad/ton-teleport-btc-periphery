@@ -1,30 +1,15 @@
 package alerts
 
 import (
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/bitcoinclientcontract"
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/teleportcontract"
+	"encoding/hex"
+
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/mutils"
 )
 
-type AlertPegoutFeeNotReset struct {
-	// TODO: move to AlertDataSource
-	bitcoinClient         *bitcoin.Client
-	bitcoinClientContract *bitcoinclientcontract.BitcoinClientContract
-	teleportContract      *teleportcontract.TeleportContract
-}
+type AlertPegoutFeeNotReset struct{}
 
-func NewAlertPegoutFeeNotReset(
-	// TODO: move to AlertDataSource
-	bitcoinClient *bitcoin.Client,
-	bitcoinClientContract *bitcoinclientcontract.BitcoinClientContract,
-	teleportContract *teleportcontract.TeleportContract,
-) Alert {
-	return &AlertPegoutFeeNotReset{
-		bitcoinClient:         bitcoinClient,
-		bitcoinClientContract: bitcoinClientContract,
-		teleportContract:      teleportContract,
-	}
+func NewAlertPegoutFeeNotReset() Alert {
+	return &AlertPegoutFeeNotReset{}
 }
 
 func (alert *AlertPegoutFeeNotReset) Check(dataSource AlertDataSource) (Severity, Labels, error) {
@@ -39,18 +24,17 @@ func (alert *AlertPegoutFeeNotReset) Check(dataSource AlertDataSource) (Severity
 		return SEVERITY_UNKNOWN, labels, err
 	}
 
+	if pegout == nil {
+		return SEVERITY_OK, labels, nil
+	}
+
 	pegoutBlockHeight := int64(0)
 	lastConfirmedBlockHeight := int64(0)
 	nextSvb := int64(0)
 
 	// Get info from bitcoin network
 	{
-		blockHash, err := alert.bitcoinClient.GetBlockHashByTxID(mutils.BytesToBTCHash(pegout.BitcoinTxId))
-		if err != nil {
-			return SEVERITY_UNKNOWN, labels, err
-		}
-
-		blockHeight, err := alert.bitcoinClient.GetBlockHeightByHash(blockHash)
+		blockHeight, err := dataSource.BtcGetBlockHeightByHash(mutils.BytesToBTCHash(pegout.BitcoinBlockHash))
 		if err != nil {
 			return SEVERITY_UNKNOWN, labels, err
 		}
@@ -60,28 +44,29 @@ func (alert *AlertPegoutFeeNotReset) Check(dataSource AlertDataSource) (Severity
 
 	// Get last confirmed block
 	{
-		lastConfirmedBlockHash, err := alert.bitcoinClientContract.GetLastConfirmedBlockHash()
+		bitcoinClientContractStorage, err := dataSource.BitcoinClientContractStorageDB()
 		if err != nil {
 			return SEVERITY_UNKNOWN, labels, err
 		}
 
-		blockHeight, err := alert.bitcoinClient.GetBlockHeightByHash(lastConfirmedBlockHash)
-		if err != nil {
-			return SEVERITY_UNKNOWN, labels, err
-		}
-
-		lastConfirmedBlockHeight = blockHeight
+		lastConfirmedBlockHeight = bitcoinClientContractStorage.LastConfirmedBlockHeight
 	}
 
 	// Get next_svb
 	{
-		storage, err := alert.teleportContract.GetStorage(nil)
+		storage, err := dataSource.TeleportContractStorageDB()
 		if err != nil {
 			return SEVERITY_UNKNOWN, labels, err
 		}
 
 		nextSvb = int64(storage.NextSVB)
 	}
+
+	// Update labels
+	if pegout.BitcoinTxId != nil {
+		labels["bitcoin_tx_id"] = hex.EncodeToString(pegout.BitcoinTxId)
+	}
+	labels["pegout_addr"] = pegout.Addr.StringRaw()
 
 	// Calulate severity
 	severity := alert.GetSeverity(pegoutBlockHeight, lastConfirmedBlockHeight, nextSvb)

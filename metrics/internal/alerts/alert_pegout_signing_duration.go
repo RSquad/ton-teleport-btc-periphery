@@ -49,7 +49,7 @@ func (alert *AlertPegoutSigningDuration) Check(dataSource AlertDataSource) (Seve
 
 	// Get pegout signingTimeout (from Coordinator)
 	if alert.signingTimeout == 0 {
-		coordinatorData, err := dataSource.CoordinatorContractDataDB()
+		coordinatorData, err := dataSource.CoordinatorContractStorageDB()
 		if err != nil {
 			return SEVERITY_UNKNOWN, labels, err
 		}
@@ -96,14 +96,14 @@ func (alert *AlertPegoutSigningDuration) Check(dataSource AlertDataSource) (Seve
 	}
 
 	// Get pegout record from DB
-	pegoutDbRow, err := dataSource.PegoutDB(alert.currentUnsignedPegout.PegoutAddress)
+	pegout, err := dataSource.PegoutDB(alert.currentUnsignedPegout.PegoutAddress)
 	if err != nil {
 		return SEVERITY_UNKNOWN, labels, err
 	}
 
 	// Update labels
-	if pegoutDbRow.BitcoinTxId != nil {
-		labels["bitcoin_tx_id"] = hex.EncodeToString(pegoutDbRow.BitcoinTxId)
+	if pegout.BitcoinTxId != nil {
+		labels["bitcoin_tx_id"] = hex.EncodeToString(pegout.BitcoinTxId)
 	}
 	labels["pegout_addr"] = alert.currentUnsignedPegout.PegoutAddress.StringRaw()
 

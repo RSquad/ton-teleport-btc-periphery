@@ -67,7 +67,7 @@ groups:
       # 2 (SEVERITY_WARNING) - commitments count is in range (threshold%)-80%
       # 3 (SEVERITY_CRITICAL) - commitments count is less than threshold
       - alert: PegoutCommitmentsInfo
-        expr: alert_pegout_commitments_count == 1
+        expr: alert_pegout_commitments_count >= 1
         labels:
           severity: info
         annotations:
@@ -76,7 +76,7 @@ groups:
           pegout_addr: "{{ $labels.pegout_addr }}"
 
       - alert: PegoutCommitmentsWarning
-        expr: alert_pegout_commitments_count == 2
+        expr: alert_pegout_commitments_count >= 2
         labels:
           severity: warning
         annotations:
@@ -85,7 +85,7 @@ groups:
           pegout_addr: "{{ $labels.pegout_addr }}"
 
       - alert: PegoutCommitmentsCritical
-        expr: alert_pegout_commitments_count == 3
+        expr: alert_pegout_commitments_count >= 3
         labels:
           severity: critical
         annotations:

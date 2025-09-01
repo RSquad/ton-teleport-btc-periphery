@@ -11,6 +11,7 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/data_sources"
+	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/fetchers"
 )
 
 type MetricsManager struct {
@@ -207,25 +208,28 @@ func (manager *MetricsManager) InfoJson() (string, error) {
 				'contractBitcoinClient', (
 						SELECT payload::json
 						FROM metrics_data
-						WHERE type_id = 2
+						WHERE type_id = $1
 						ORDER BY id DESC
 						LIMIT 1
 				),
-				'blockChainInfo', (
+				'bitcoinNetworkInfo', (
 						SELECT payload::json
 						FROM metrics_data
-						WHERE type_id = 3
+						WHERE type_id = $2
 						ORDER BY id DESC
 						LIMIT 1
 				),
 				'contractTeleport', (
 						SELECT payload::json
 						FROM metrics_data
-						WHERE type_id = 4
+						WHERE type_id = $3
 						ORDER BY id DESC
 						LIMIT 1
 				)
 		) AS result;`,
+		fetchers.PayloadTypeContractBitcoinClient,
+		fetchers.PayloadTypeBitcoinNetwork,
+		fetchers.PayloadTypeContractTeleport,
 	)
 	if err != nil {
 		return "", err

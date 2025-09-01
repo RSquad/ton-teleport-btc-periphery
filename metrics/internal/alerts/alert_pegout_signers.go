@@ -2,7 +2,6 @@ package alerts
 
 import (
 	"encoding/hex"
-	"errors"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/mutils"
 )
@@ -31,52 +30,37 @@ func (alert *AlertPegoutSigners) Check(dataSource AlertDataSource) (Severity, La
 		return SEVERITY_OK, labels, nil
 	}
 
-	// Get prev DKG
-	prevDkg, err := dataSource.PrevDkgDB()
-	if err != nil {
-		return SEVERITY_UNKNOWN, labels, err
-	}
-
-	if prevDkg == nil {
-		return SEVERITY_UNKNOWN, labels, errors.New("PrevDKG is null")
-	}
-
 	// Get pegout record from DB
-	pegoutDbRow, err := dataSource.PegoutDB(unsignedPegout.PegoutAddress)
+	pegout, err := dataSource.PegoutDB(unsignedPegout.PegoutAddress)
 	if err != nil {
 		return SEVERITY_UNKNOWN, labels, err
 	}
 
 	// Update labels
-	if pegoutDbRow.BitcoinTxId != nil {
-		labels["bitcoin_tx_id"] = hex.EncodeToString(pegoutDbRow.BitcoinTxId)
+	if pegout.BitcoinTxId != nil {
+		labels["bitcoin_tx_id"] = hex.EncodeToString(pegout.BitcoinTxId)
 	}
 	labels["pegout_addr"] = unsignedPegout.PegoutAddress.StringRaw()
 
-	// Wait until the signing stage starts
-	if unsignedPegout.Signatures.Count == 0 {
-		return SEVERITY_OK, labels, nil
-	}
-
-	// Calulate signersPercentage
-	maxSigners := prevDkg.MaxSigners
-	signersCount := unsignedPegout.CommitmentsCount()
-	signersPercentage := mutils.MulDivCeil(uint(signersCount), 100, uint(maxSigners))
+	// Calulate signersAllowedPercentage
+	maxSigners := unsignedPegout.MaxSigners
+	signersAllowedCount := mutils.Popcnt(unsignedPegout.SigningMask)
+	signersAllowedPercentage := mutils.MulDivCeil(uint(signersAllowedCount), 100, uint(maxSigners))
 
 	// Calulate severity
-	severity := alert.GetSeverity(signersPercentage)
+	severity := alert.GetSeverity(signersAllowedPercentage)
 
 	return severity, labels, nil
 }
 
-func (alert *AlertPegoutSigners) GetSeverity(signersPercentage uint) Severity {
+func (alert *AlertPegoutSigners) GetSeverity(signersAllowedPercentage uint) Severity {
 	severity := SEVERITY_OK
 
-	if signersPercentage <= 70 {
+	if signersAllowedPercentage <= 70 {
 		severity = SEVERITY_CRITICAL
-	} else if signersPercentage <= 80 {
+	} else if signersAllowedPercentage <= 80 {
 		severity = SEVERITY_WARNING
-	} else if signersPercentage <= 90 {
+	} else if signersAllowedPercentage <= 90 {
 		severity = SEVERITY_INFO
 	}
 

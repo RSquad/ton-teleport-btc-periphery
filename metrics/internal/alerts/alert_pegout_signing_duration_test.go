@@ -44,13 +44,13 @@ func TestAlertPegoutSigningDuration(t *testing.T) {
 						ExpiredAt:     time.Unix(0, 0),
 					}, nil
 				},
-				CoordinatorContractDataDbFn: func() (*coordinator.Storage, error) {
+				CoordinatorContractStorageDbFn: func() (*coordinator.Storage, error) {
 					return &coordinator.Storage{
 						SigningTimeout: uint32(signingTimeout),
 					}, nil
 				},
-				PegoutDbFn: func(address *address.Address) (*data_models.PegoutDbRow, error) {
-					return &data_models.PegoutDbRow{
+				PegoutDbFn: func(address *address.Address) (*data_models.Pegout, error) {
+					return &data_models.Pegout{
 						BitcoinTxId: bitcoin_tx_id_1,
 					}, nil
 				},
@@ -69,8 +69,8 @@ func TestAlertPegoutSigningDuration(t *testing.T) {
 						ExpiredAt:     time.Unix(beginTs+signingTimeout*1, 0),
 					}, nil
 				},
-				PegoutDbFn: func(address *address.Address) (*data_models.PegoutDbRow, error) {
-					return &data_models.PegoutDbRow{
+				PegoutDbFn: func(address *address.Address) (*data_models.Pegout, error) {
+					return &data_models.Pegout{
 						BitcoinTxId: bitcoin_tx_id_1,
 					}, nil
 				},
@@ -89,8 +89,8 @@ func TestAlertPegoutSigningDuration(t *testing.T) {
 						ExpiredAt:     time.Unix(beginTs+signingTimeout*1, 0),
 					}, nil
 				},
-				PegoutDbFn: func(address *address.Address) (*data_models.PegoutDbRow, error) {
-					return &data_models.PegoutDbRow{
+				PegoutDbFn: func(address *address.Address) (*data_models.Pegout, error) {
+					return &data_models.Pegout{
 						BitcoinTxId: bitcoin_tx_id_1,
 					}, nil
 				},
@@ -109,8 +109,8 @@ func TestAlertPegoutSigningDuration(t *testing.T) {
 						ExpiredAt:     time.Unix(beginTs+signingTimeout*1, 0),
 					}, nil
 				},
-				PegoutDbFn: func(address *address.Address) (*data_models.PegoutDbRow, error) {
-					return &data_models.PegoutDbRow{
+				PegoutDbFn: func(address *address.Address) (*data_models.Pegout, error) {
+					return &data_models.Pegout{
 						BitcoinTxId: bitcoin_tx_id_1,
 					}, nil
 				},
@@ -129,8 +129,8 @@ func TestAlertPegoutSigningDuration(t *testing.T) {
 						ExpiredAt:     time.Unix(beginTs+signingTimeout*2, 0),
 					}, nil
 				},
-				PegoutDbFn: func(address *address.Address) (*data_models.PegoutDbRow, error) {
-					return &data_models.PegoutDbRow{
+				PegoutDbFn: func(address *address.Address) (*data_models.Pegout, error) {
+					return &data_models.Pegout{
 						BitcoinTxId: bitcoin_tx_id_1,
 					}, nil
 				},
@@ -150,8 +150,8 @@ func TestAlertPegoutSigningDuration(t *testing.T) {
 						ExpiredAt:     time.Unix(beginTs+signingTimeout*1, 0),
 					}, nil
 				},
-				PegoutDbFn: func(address *address.Address) (*data_models.PegoutDbRow, error) {
-					return &data_models.PegoutDbRow{
+				PegoutDbFn: func(address *address.Address) (*data_models.Pegout, error) {
+					return &data_models.Pegout{
 						BitcoinTxId: bitcoin_tx_id_2,
 					}, nil
 				},
@@ -167,7 +167,7 @@ func TestAlertPegoutSigningDuration(t *testing.T) {
 				FirstUnsignedPegoutDbFn: func() (*coordinator.PegoutRecord, error) {
 					return nil, nil
 				},
-				PegoutDbFn: func(address *address.Address) (*data_models.PegoutDbRow, error) {
+				PegoutDbFn: func(address *address.Address) (*data_models.Pegout, error) {
 					return nil, nil
 				},
 			}),

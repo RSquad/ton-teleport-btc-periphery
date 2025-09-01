@@ -2,14 +2,12 @@ package fetchers
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"sync"
 	"time"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/teleportcontract"
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/data_models"
 )
 
@@ -58,33 +56,14 @@ func (fetcher *FetcherContractTeleport) Fetch() {
 		return
 	}
 
-	contractTeleportData := data_models.ContractTeleportStorageDbRow{
-		Id:                   storage.Id,
-		TeleportAddress:      utils.AddrToRawString(fetcher.teleportContract.Addr),
-		MinterAddress:        utils.AddrToRawString(storage.MinterAddress),
-		BitcoinClientAddress: utils.AddrToRawString(storage.BitcoinClientAddress),
-		CoordinatorAddress:   utils.AddrToRawString(storage.CoordinatorAddress),
-		InspectorAddress:     utils.AddrToRawString(storage.InspectorAddress),
-		ConfiguratorAddress:  utils.AddrToRawString(storage.ConfiguratorAddress),
-		TweakedPubkey:        storage.TweakedPubkey,
-		InternalKey:          storage.InternalKey,
-		NextSVB:              storage.NextSVB,
-		BaseSVB:              storage.BaseSVB,
-		PegoutChainCounter:   storage.PegoutChainCounter,
-		LastPegoutTxID:       storage.LastPegoutTxID,
-		CsvLock:              storage.CsvLock,
-		Limits:               storage.Limits,
-		TotalServiceFee:      storage.TotalServiceFee,
-		Enabled:              storage.Enabled,
-		PeginsCount:          ConvertDeposits(storage.Deposits),
-		UTXOset:              ConvertUTXOSet(storage.UTXOset),
-	}
+	storage.BlockCode = nil
+	storage.PegoutContractCode = nil
+	storage.PeginContractCode = nil
 
-	jsonData, err := json.Marshal(contractTeleportData)
+	jsonData, err := data_models.SerializeTeleportContractStorage(&storage)
 	if err != nil {
-		logger.Log.Error().Err(err).
-			Str("component", "FetcherContractTeleport").
-			Msg("failed to serialize FetcherContractTeleport->json")
+		logger.Log.Error().Msg(fmt.Sprintf("FetcherContractTeleport: failed to SerializeTeleportContractStorage: %v", err))
+		return
 	}
 
 	fetcher.chDB <- PayloadDB{
@@ -92,27 +71,4 @@ func (fetcher *FetcherContractTeleport) Fetch() {
 		typeId:    PayloadTypeContractTeleport,
 		payload:   string(jsonData),
 	}
-}
-
-func ConvertDeposits(data map[uint64]teleportcontract.DepositData) int32 {
-	return int32(len(data))
-}
-
-func ConvertUTXOSet(utxoSet map[string]teleportcontract.UTXOData) *[]data_models.ContractTeleportUTXO {
-	contractTeleportUTXOData := []data_models.ContractTeleportUTXO{}
-
-	for address, utxo := range utxoSet {
-		cutxo := data_models.ContractTeleportUTXO{
-			Address:       address,
-			Amount:        utxo.Amount,
-			Index:         utxo.Index,
-			TapMerkleRoot: utxo.TapMerkleRoot,
-			MintAddress:   utils.AddrToRawString(utxo.MintAddress),
-			Script:        utxo.Script,
-		}
-
-		contractTeleportUTXOData = append(contractTeleportUTXOData, cutxo)
-	}
-
-	return &contractTeleportUTXOData
 }
