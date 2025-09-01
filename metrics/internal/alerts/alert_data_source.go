@@ -9,9 +9,10 @@ import (
 type AlertDataSource interface {
 	CoordinatorContractDataDB() (*coordinator.Storage, error)
 	FirstUnsignedPegoutDB() (*coordinator.PegoutRecord, error)
+	LastSignedPegoutDB() (*data_models.PegoutDbRow, error)
+	PegoutDB(address *address.Address) (*data_models.PegoutDbRow, error)
 	DkgDB() (*coordinator.DKG, error)
 	PrevDkgDB() (*coordinator.DKG, error)
-	PegoutDB(address *address.Address) (*data_models.PegoutDbRow, error)
 
 	NowUnixTs() int64
 }

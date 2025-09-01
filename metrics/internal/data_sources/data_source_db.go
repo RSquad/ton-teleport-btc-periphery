@@ -95,6 +95,26 @@ func (dataSource *DataSourceDB) PegoutDbRow(address *address.Address) (*data_mod
 	return pegout, nil
 }
 
+func (dataSource *DataSourceDB) LastSignedPegoutJson() (map[string]interface{}, error) {
+	return dataSource.SelectToObject(
+		"SELECT row_to_json(t) FROM (SELECT * FROM public.pegouts WHERE status = 'SIGNED' ORDER BY id DESC LIMIT 1) t",
+	)
+}
+
+func (dataSource *DataSourceDB) LastSignedPegoutDbRow() (*data_models.PegoutDbRow, error) {
+	pegoutJson, err := dataSource.LastSignedPegoutJson()
+	if err != nil {
+		return nil, err
+	}
+
+	pegout, err := data_models.DeserializePegoutDbRow(pegoutJson)
+	if err != nil {
+		return nil, err
+	}
+
+	return pegout, nil
+}
+
 func (dataSource *DataSourceDB) SelectToObject(sql string, args ...interface{}) (map[string]interface{}, error) {
 	rows, err := dataSource.db.Query(sql, args...)
 	if err != nil {

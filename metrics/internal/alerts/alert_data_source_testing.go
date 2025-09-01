@@ -9,21 +9,23 @@ import (
 )
 
 type (
-	FirstUnsignedPegoutDbFn     func() (*coordinator.PegoutRecord, error)
 	CoordinatorContractDataDbFn func() (*coordinator.Storage, error)
+	FirstUnsignedPegoutDbFn     func() (*coordinator.PegoutRecord, error)
+	LastSignedPegoutDbFn        func() (*data_models.PegoutDbRow, error)
+	PegoutDbFn                  func(address *address.Address) (*data_models.PegoutDbRow, error)
 	DkgDbFn                     func() (*coordinator.DKG, error)
 	PrevDkgDbFn                 func() (*coordinator.DKG, error)
-	PegoutDbFn                  func(address *address.Address) (*data_models.PegoutDbRow, error)
 	NowUnixTsFn                 func() int64
 )
 
 // Config holds optional function callbacks
 type AlertDataSourceTestingConfig struct {
-	FirstUnsignedPegoutDbFn     FirstUnsignedPegoutDbFn
 	CoordinatorContractDataDbFn CoordinatorContractDataDbFn
+	FirstUnsignedPegoutDbFn     FirstUnsignedPegoutDbFn
+	LastSignedPegoutDbFn        LastSignedPegoutDbFn
+	PegoutDbFn                  PegoutDbFn
 	DkgDbFn                     DkgDbFn
 	PrevDkgDbFn                 PrevDkgDbFn
-	PegoutDbFn                  PegoutDbFn
 	NowUnixTsFn                 NowUnixTsFn
 }
 
@@ -35,6 +37,13 @@ func NewAlertDataSourceTesting(cfg AlertDataSourceTestingConfig) AlertDataSource
 	return &AlertDataSourceTesting{cfg: cfg}
 }
 
+func (dataSource *AlertDataSourceTesting) CoordinatorContractDataDB() (*coordinator.Storage, error) {
+	if dataSource.cfg.CoordinatorContractDataDbFn == nil {
+		return nil, errors.New("CoordinatorContractDataDbFn callback not set")
+	}
+	return dataSource.cfg.CoordinatorContractDataDbFn()
+}
+
 func (dataSource *AlertDataSourceTesting) FirstUnsignedPegoutDB() (*coordinator.PegoutRecord, error) {
 	if dataSource.cfg.FirstUnsignedPegoutDbFn == nil {
 		return nil, errors.New("FirstUnsignedPegoutDbFn callback not set")
@@ -42,11 +51,11 @@ func (dataSource *AlertDataSourceTesting) FirstUnsignedPegoutDB() (*coordinator.
 	return dataSource.cfg.FirstUnsignedPegoutDbFn()
 }
 
-func (dataSource *AlertDataSourceTesting) CoordinatorContractDataDB() (*coordinator.Storage, error) {
-	if dataSource.cfg.CoordinatorContractDataDbFn == nil {
-		return nil, errors.New("CoordinatorContractDataDbFn callback not set")
+func (dataSource *AlertDataSourceTesting) LastSignedPegoutDB() (*data_models.PegoutDbRow, error) {
+	if dataSource.cfg.LastSignedPegoutDbFn == nil {
+		return nil, errors.New("LastSignedPegoutDbFn callback not set")
 	}
-	return dataSource.cfg.CoordinatorContractDataDbFn()
+	return dataSource.cfg.LastSignedPegoutDbFn()
 }
 
 func (dataSource *AlertDataSourceTesting) DkgDB() (*coordinator.DKG, error) {

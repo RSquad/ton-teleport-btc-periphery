@@ -5,7 +5,10 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/bitcoinclientcontract"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/teleportcontract"
 )
 
 type AlertManager struct {
@@ -21,6 +24,11 @@ type AlertManager struct {
 func NewAlertManager(
 	dataSource AlertDataSource,
 	alertDispatcher AlertDispatcher,
+
+	// TODO: move to AlertDataSource
+	bitcoinClient *bitcoin.Client,
+	bitcoinClientContract *bitcoinclientcontract.BitcoinClientContract,
+	teleportContract *teleportcontract.TeleportContract,
 ) (*AlertManager, error) {
 	alertManager := AlertManager{
 		alerts:              make(map[string]Alert),
@@ -30,10 +38,21 @@ func NewAlertManager(
 		alertStatesEnforced: make(map[string]*AlertState),
 	}
 
-	// alert_pegout_signers
-	err := alertManager.RegisterAlert(
-		"alert_pegout_signers",
-		NewAlertPegoutSigners(),
+	var err error = nil
+
+	// alert_pegout_fee_not_reset (pegout.fee.not.reset)
+	err = alertManager.RegisterAlert(
+		"alert_pegout_fee_not_reset",
+		NewAlertPegoutFeeNotReset(bitcoinClient, bitcoinClientContract, teleportContract),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	// alert_pegout_commintments (pegout.commitments)
+	err = alertManager.RegisterAlert(
+		"alert_pegout_commintments",
+		NewAlertPegoutCommintments(),
 	)
 	if err != nil {
 		return nil, err
@@ -52,6 +71,15 @@ func NewAlertManager(
 	err = alertManager.RegisterAlert(
 		"alert_pegout_signing_duration",
 		NewAlertPegoutSigningDuration(),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	// alert_pegout_signers (pegout.signers)
+	err = alertManager.RegisterAlert(
+		"alert_pegout_signers",
+		NewAlertPegoutSigners(),
 	)
 	if err != nil {
 		return nil, err

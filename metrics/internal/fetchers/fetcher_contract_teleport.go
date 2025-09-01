@@ -4,46 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"math/big"
 	"sync"
 	"time"
 
-	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/teleportcontract"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
+	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/data_models"
 )
-
-type ContractTeleportUTXO struct {
-	Address       string
-	Amount        *big.Int
-	Index         uint8
-	TapMerkleRoot *chainhash.Hash
-	MintAddress   string
-	Script        string
-}
-
-type ContractTeleportData struct {
-	Id                   uint16
-	TeleportAddress      string
-	MinterAddress        string
-	BitcoinClientAddress string
-	CoordinatorAddress   string
-	InspectorAddress     string
-	ConfiguratorAddress  string
-	TweakedPubkey        string
-	InternalKey          string
-	NextSVB              uint16
-	BaseSVB              uint16
-	PegoutChainCounter   uint64
-	LastPegoutTxID       *chainhash.Hash
-	CsvLock              uint32
-	Limits               teleportcontract.Limits
-	TotalServiceFee      int32
-	Enabled              bool
-	PeginsCount          int32
-	UTXOset              *[]ContractTeleportUTXO
-}
 
 type FetcherContractTeleport struct {
 	chDB             chan PayloadDB
@@ -83,27 +51,6 @@ func (fetcher *FetcherContractTeleport) Work(ctx context.Context, wg *sync.WaitG
 	}
 }
 
-/*
-func (fetcher *FetcherContractTeleport) setAutopegoutFeeMetric(autopegoutFee *big.Int) {
-	if autopegoutFee == nil {
-		autopegoutFeeGauge.Set(-1)
-		return
-	}
-	autopegoutFeeGauge.Set(float64(autopegoutFee.Int64()))
-}
-
-func (fetcher *FetcherContractTeleport) setUtxoDifferentKeysMetric(utxo *[]ContractTeleportUTXO) {
-	var prevKey *chainhash.Hash = (*utxo)[0].TapMerkleRoot
-	for _, utxo := range *utxo {
-		if utxo.TapMerkleRoot != prevKey {
-			utxoKeysDifference.WithLabelValues(prevKey.String(), utxo.TapMerkleRoot.String()).Set(1)
-			continue
-		}
-		utxoKeysDifference.WithLabelValues(prevKey.String(), utxo.TapMerkleRoot.String()).Set(0)
-	}
-}
-*/
-
 func (fetcher *FetcherContractTeleport) Fetch() {
 	storage, err := fetcher.teleportContract.GetStorage(nil)
 	if err != nil {
@@ -111,7 +58,7 @@ func (fetcher *FetcherContractTeleport) Fetch() {
 		return
 	}
 
-	contractTeleportData := ContractTeleportData{
+	contractTeleportData := data_models.ContractTeleportStorageDbRow{
 		Id:                   storage.Id,
 		TeleportAddress:      utils.AddrToRawString(fetcher.teleportContract.Addr),
 		MinterAddress:        utils.AddrToRawString(storage.MinterAddress),
@@ -133,22 +80,6 @@ func (fetcher *FetcherContractTeleport) Fetch() {
 		UTXOset:              ConvertUTXOSet(storage.UTXOset),
 	}
 
-	/*
-		autopegoutFee, err := fetcher.teleportContract.GetAutoPegoutFee(nil)
-		if err != nil {
-			logger.Log.Error().Err(err).
-				Str("component", "FetcherContractTeleport").
-				Msg("failed to get autopegout fee")
-		}
-	*/
-	//var utxoLimit float64 = 252 // TODO: get limit value from teleport
-	//utxoLimitGauge.Set(float64(utxoLimit))
-	//utxoCountGauge.Set(float64(len(*contractTeleportData.UTXOset)))
-	//totalSetrviceFeeGauge.Set(float64(contractTeleportData.TotalServiceFee))
-	//fetcher.setAutopegoutFeeMetric(autopegoutFee)
-
-	//fetcher.setUtxoDifferentKeysMetric(contractTeleportData.UTXOset)
-
 	jsonData, err := json.Marshal(contractTeleportData)
 	if err != nil {
 		logger.Log.Error().Err(err).
@@ -167,11 +98,11 @@ func ConvertDeposits(data map[uint64]teleportcontract.DepositData) int32 {
 	return int32(len(data))
 }
 
-func ConvertUTXOSet(utxoSet map[string]teleportcontract.UTXOData) *[]ContractTeleportUTXO {
-	contractTeleportUTXOData := []ContractTeleportUTXO{}
+func ConvertUTXOSet(utxoSet map[string]teleportcontract.UTXOData) *[]data_models.ContractTeleportUTXO {
+	contractTeleportUTXOData := []data_models.ContractTeleportUTXO{}
 
 	for address, utxo := range utxoSet {
-		cutxo := ContractTeleportUTXO{
+		cutxo := data_models.ContractTeleportUTXO{
 			Address:       address,
 			Amount:        utxo.Amount,
 			Index:         utxo.Index,

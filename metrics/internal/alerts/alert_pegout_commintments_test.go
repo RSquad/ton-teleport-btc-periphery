@@ -2,17 +2,15 @@ package alerts
 
 import (
 	"encoding/hex"
+	"math/big"
 	"testing"
-	"time"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/data_models"
 	"github.com/xssnick/tonutils-go/address"
 )
 
-func TestAlertPegoutSigningDuration(t *testing.T) {
-	signingTimeout := int64(60 * 20) // 20 min
-	beginTs := int64(123456)
+func TestAlertPegoutCommintments(t *testing.T) {
 	pegoutAddress1, _ := address.ParseAddr("EQAPtQRffHrXATHokYMFQgupunwxfTe2Main1FYFUt-8eHn-")
 	pegoutAddress2, _ := address.ParseAddr("Ef8VjV6LGTyiNLzefOm1dpuCMLcoewhqfQubtgbWcPwt2Gwp")
 
@@ -36,77 +34,91 @@ func TestAlertPegoutSigningDuration(t *testing.T) {
 
 	tests := []TestDesc{
 		{
-			Name: "SEVERITY_OK (new unsigned pegout)",
+			Name: "SEVERITY_OK (4 of 10 [40%], Commitment stage)",
 			DataSource: NewAlertDataSourceTesting(AlertDataSourceTestingConfig{
 				FirstUnsignedPegoutDbFn: func() (*coordinator.PegoutRecord, error) {
 					return &coordinator.PegoutRecord{
-						PegoutAddress: pegoutAddress1,
-						ExpiredAt:     time.Unix(0, 0),
+						PegoutAddress:           pegoutAddress1,
+						CommitmentsMaskAccepted: new(big.Int).SetUint64(0b0111100000000),
+						CommitmentsMaskOther:    new(big.Int).SetUint64(0b01110100000000),
+						Signatures:              coordinator.PegoutSignatures{Count: 0},
 					}, nil
 				},
-				CoordinatorContractDataDbFn: func() (*coordinator.Storage, error) {
-					return &coordinator.Storage{
-						SigningTimeout: uint32(signingTimeout),
+				PrevDkgDbFn: func() (*coordinator.DKG, error) {
+					return &coordinator.DKG{
+						MaxSigners: 10,
 					}, nil
 				},
 				PegoutDbFn: func(address *address.Address) (*data_models.PegoutDbRow, error) {
 					return &data_models.PegoutDbRow{
 						BitcoinTxId: bitcoin_tx_id_1,
 					}, nil
-				},
-				NowUnixTsFn: func() int64 {
-					return beginTs
 				},
 			}),
 			Expect: TestResWant{Severity: SEVERITY_OK, Labels: pegoutLabels1, Err: nil},
 		},
 		{
-			Name: "SEVERITY_OK (same unsigned pegout, 1 minute later)",
+			Name: "SEVERITY_OK (10 of 10 [100%])",
 			DataSource: NewAlertDataSourceTesting(AlertDataSourceTestingConfig{
 				FirstUnsignedPegoutDbFn: func() (*coordinator.PegoutRecord, error) {
 					return &coordinator.PegoutRecord{
-						PegoutAddress: pegoutAddress1,
-						ExpiredAt:     time.Unix(beginTs+signingTimeout*1, 0),
+						PegoutAddress:           pegoutAddress1,
+						CommitmentsMaskAccepted: new(big.Int).SetUint64(0b0111101100101),
+						CommitmentsMaskOther:    new(big.Int).SetUint64(0b0111011100111),
+						Signatures:              coordinator.PegoutSignatures{Count: 1},
+					}, nil
+				},
+				PrevDkgDbFn: func() (*coordinator.DKG, error) {
+					return &coordinator.DKG{
+						MaxSigners: 10,
 					}, nil
 				},
 				PegoutDbFn: func(address *address.Address) (*data_models.PegoutDbRow, error) {
 					return &data_models.PegoutDbRow{
 						BitcoinTxId: bitcoin_tx_id_1,
 					}, nil
-				},
-				NowUnixTsFn: func() int64 {
-					return beginTs + 60*1
 				},
 			}),
 			Expect: TestResWant{Severity: SEVERITY_OK, Labels: pegoutLabels1, Err: nil},
 		},
 		{
-			Name: "SEVERITY_OK (same unsigned pegout, 11 minute later)",
+			Name: "SEVERITY_INFO (9 of 10 [90%])",
 			DataSource: NewAlertDataSourceTesting(AlertDataSourceTestingConfig{
 				FirstUnsignedPegoutDbFn: func() (*coordinator.PegoutRecord, error) {
 					return &coordinator.PegoutRecord{
-						PegoutAddress: pegoutAddress1,
-						ExpiredAt:     time.Unix(beginTs+signingTimeout*1, 0),
+						PegoutAddress:           pegoutAddress1,
+						CommitmentsMaskAccepted: new(big.Int).SetUint64(0b0111101100101),
+						CommitmentsMaskOther:    new(big.Int).SetUint64(0b0111011100101),
+						Signatures:              coordinator.PegoutSignatures{Count: 1},
+					}, nil
+				},
+				PrevDkgDbFn: func() (*coordinator.DKG, error) {
+					return &coordinator.DKG{
+						MaxSigners: 10,
 					}, nil
 				},
 				PegoutDbFn: func(address *address.Address) (*data_models.PegoutDbRow, error) {
 					return &data_models.PegoutDbRow{
 						BitcoinTxId: bitcoin_tx_id_1,
 					}, nil
-				},
-				NowUnixTsFn: func() int64 {
-					return beginTs + 60*11
 				},
 			}),
-			Expect: TestResWant{Severity: SEVERITY_OK, Labels: pegoutLabels1, Err: nil},
+			Expect: TestResWant{Severity: SEVERITY_INFO, Labels: pegoutLabels1, Err: nil},
 		},
 		{
-			Name: "SEVERITY_CRITICAL (same unsigned pegout, 20 minute later)",
+			Name: "SEVERITY_WARNING (8 of 10 [80%])",
 			DataSource: NewAlertDataSourceTesting(AlertDataSourceTestingConfig{
 				FirstUnsignedPegoutDbFn: func() (*coordinator.PegoutRecord, error) {
 					return &coordinator.PegoutRecord{
-						PegoutAddress: pegoutAddress1,
-						ExpiredAt:     time.Unix(beginTs+signingTimeout*1, 0),
+						PegoutAddress:           pegoutAddress1,
+						CommitmentsMaskAccepted: new(big.Int).SetUint64(0b0101101100101),
+						CommitmentsMaskOther:    new(big.Int).SetUint64(0b0101011100101),
+						Signatures:              coordinator.PegoutSignatures{Count: 1},
+					}, nil
+				},
+				PrevDkgDbFn: func() (*coordinator.DKG, error) {
+					return &coordinator.DKG{
+						MaxSigners: 10,
 					}, nil
 				},
 				PegoutDbFn: func(address *address.Address) (*data_models.PegoutDbRow, error) {
@@ -114,19 +126,47 @@ func TestAlertPegoutSigningDuration(t *testing.T) {
 						BitcoinTxId: bitcoin_tx_id_1,
 					}, nil
 				},
-				NowUnixTsFn: func() int64 {
-					return beginTs + 60*20
+			}),
+			Expect: TestResWant{Severity: SEVERITY_WARNING, Labels: pegoutLabels1, Err: nil},
+		},
+		{
+			Name: "SEVERITY_CRITICAL (7 of 10 [70%])",
+			DataSource: NewAlertDataSourceTesting(AlertDataSourceTestingConfig{
+				FirstUnsignedPegoutDbFn: func() (*coordinator.PegoutRecord, error) {
+					return &coordinator.PegoutRecord{
+						PegoutAddress:           pegoutAddress1,
+						CommitmentsMaskAccepted: new(big.Int).SetUint64(0b0001101100101),
+						CommitmentsMaskOther:    new(big.Int).SetUint64(0b0001011100101),
+						Signatures:              coordinator.PegoutSignatures{Count: 1},
+					}, nil
+				},
+				PrevDkgDbFn: func() (*coordinator.DKG, error) {
+					return &coordinator.DKG{
+						MaxSigners: 10,
+					}, nil
+				},
+				PegoutDbFn: func(address *address.Address) (*data_models.PegoutDbRow, error) {
+					return &data_models.PegoutDbRow{
+						BitcoinTxId: bitcoin_tx_id_1,
+					}, nil
 				},
 			}),
 			Expect: TestResWant{Severity: SEVERITY_CRITICAL, Labels: pegoutLabels1, Err: nil},
 		},
 		{
-			Name: "SEVERITY_CRITICAL (same unsigned pegout, 2 minute later after restart, 22 minutes total)",
+			Name: "SEVERITY_CRITICAL (6 of 10 [60%])",
 			DataSource: NewAlertDataSourceTesting(AlertDataSourceTestingConfig{
 				FirstUnsignedPegoutDbFn: func() (*coordinator.PegoutRecord, error) {
 					return &coordinator.PegoutRecord{
-						PegoutAddress: pegoutAddress1,
-						ExpiredAt:     time.Unix(beginTs+signingTimeout*2, 0),
+						PegoutAddress:           pegoutAddress1,
+						CommitmentsMaskAccepted: new(big.Int).SetUint64(0b0001101000101),
+						CommitmentsMaskOther:    new(big.Int).SetUint64(0b0001011000101),
+						Signatures:              coordinator.PegoutSignatures{Count: 1},
+					}, nil
+				},
+				PrevDkgDbFn: func() (*coordinator.DKG, error) {
+					return &coordinator.DKG{
+						MaxSigners: 10,
 					}, nil
 				},
 				PegoutDbFn: func(address *address.Address) (*data_models.PegoutDbRow, error) {
@@ -134,20 +174,23 @@ func TestAlertPegoutSigningDuration(t *testing.T) {
 						BitcoinTxId: bitcoin_tx_id_1,
 					}, nil
 				},
-				NowUnixTsFn: func() int64 {
-					return beginTs + 60*22
-				},
 			}),
 			Expect: TestResWant{Severity: SEVERITY_CRITICAL, Labels: pegoutLabels1, Err: nil},
 		},
 		{
-			Name: "SEVERITY_CRITICAL (new unsigned pegout, Its still SEVERITY_CRITICAL, and we dont know how much time it will take to sign the current pegout)",
+			Name: "SEVERITY_OK (4 of 10 [40%], Commitment stage, new pegout)",
 			DataSource: NewAlertDataSourceTesting(AlertDataSourceTestingConfig{
 				FirstUnsignedPegoutDbFn: func() (*coordinator.PegoutRecord, error) {
-					beginTs = beginTs + 60*24 // Update beginTs for new pegout pegoutAddress2
 					return &coordinator.PegoutRecord{
-						PegoutAddress: pegoutAddress2,
-						ExpiredAt:     time.Unix(beginTs+signingTimeout*1, 0),
+						PegoutAddress:           pegoutAddress2,
+						CommitmentsMaskAccepted: new(big.Int).SetUint64(0b0111100000000),
+						CommitmentsMaskOther:    new(big.Int).SetUint64(0b01110100000000),
+						Signatures:              coordinator.PegoutSignatures{Count: 0},
+					}, nil
+				},
+				PrevDkgDbFn: func() (*coordinator.DKG, error) {
+					return &coordinator.DKG{
+						MaxSigners: 10,
 					}, nil
 				},
 				PegoutDbFn: func(address *address.Address) (*data_models.PegoutDbRow, error) {
@@ -155,17 +198,19 @@ func TestAlertPegoutSigningDuration(t *testing.T) {
 						BitcoinTxId: bitcoin_tx_id_2,
 					}, nil
 				},
-				NowUnixTsFn: func() int64 {
-					return beginTs + 60*25
-				},
 			}),
-			Expect: TestResWant{Severity: SEVERITY_CRITICAL, Labels: pegoutLabels2, Err: nil},
+			Expect: TestResWant{Severity: SEVERITY_OK, Labels: pegoutLabels2, Err: nil},
 		},
 		{
-			Name: "SEVERITY_OK, all pegout are signed",
+			Name: "SEVERITY_OK, no pegouts",
 			DataSource: NewAlertDataSourceTesting(AlertDataSourceTestingConfig{
 				FirstUnsignedPegoutDbFn: func() (*coordinator.PegoutRecord, error) {
 					return nil, nil
+				},
+				PrevDkgDbFn: func() (*coordinator.DKG, error) {
+					return &coordinator.DKG{
+						MaxSigners: 10,
+					}, nil
 				},
 				PegoutDbFn: func(address *address.Address) (*data_models.PegoutDbRow, error) {
 					return nil, nil
@@ -175,5 +220,5 @@ func TestAlertPegoutSigningDuration(t *testing.T) {
 		},
 	}
 
-	DoAlertTests(t, tests, NewAlertPegoutSigningDuration())
+	DoAlertTests(t, tests, NewAlertPegoutCommintments())
 }

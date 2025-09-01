@@ -26,6 +26,10 @@ func NewAlertDataSourceLive(db *sql.DB, tonClient *tonclient.TonClient) AlertDat
 	return &dataSource
 }
 
+func (dataSource *AlertDataSourceLive) CoordinatorContractDataDB() (*coordinator.Storage, error) {
+	return dataSource.dataSourceDB.CoordinatorContractStorage()
+}
+
 func (dataSource *AlertDataSourceLive) FirstUnsignedPegoutDB() (*coordinator.PegoutRecord, error) {
 	coordinatorContractStorage, err := dataSource.dataSourceDB.CoordinatorContractStorage()
 	if err != nil {
@@ -39,8 +43,8 @@ func (dataSource *AlertDataSourceLive) FirstUnsignedPegoutDB() (*coordinator.Peg
 	return &coordinatorContractStorage.UnsignedPegouts[0], nil
 }
 
-func (dataSource *AlertDataSourceLive) CoordinatorContractDataDB() (*coordinator.Storage, error) {
-	return dataSource.dataSourceDB.CoordinatorContractStorage()
+func (dataSource *AlertDataSourceLive) LastSignedPegoutDB() (*data_models.PegoutDbRow, error) {
+	return dataSource.dataSourceDB.LastSignedPegoutDbRow()
 }
 
 func (dataSource *AlertDataSourceLive) DkgDB() (*coordinator.DKG, error) {

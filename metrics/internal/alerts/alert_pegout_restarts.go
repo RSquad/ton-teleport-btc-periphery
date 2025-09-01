@@ -43,6 +43,7 @@ func (alert *AlertPegoutRestarts) Check(dataSource AlertDataSource) (Severity, L
 		return SEVERITY_UNKNOWN, labels, err
 	}
 
+	// Update labels
 	if pegoutDbRow.BitcoinTxId != nil {
 		labels["bitcoin_tx_id"] = hex.EncodeToString(pegoutDbRow.BitcoinTxId)
 	}

@@ -3,21 +3,23 @@ package alerts
 import (
 	"encoding/hex"
 	"errors"
+	"math/big"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/mutils"
 )
 
-type AlertPegoutSigners struct {
+type AlertPegoutCommintments struct {
 }
 
-func NewAlertPegoutSigners() Alert {
-	return &AlertPegoutSigners{}
+func NewAlertPegoutCommintments() Alert {
+	return &AlertPegoutCommintments{}
 }
 
-func (alert *AlertPegoutSigners) Check(dataSource AlertDataSource) (Severity, Labels, error) {
+func (alert *AlertPegoutCommintments) Check(dataSource AlertDataSource) (Severity, Labels, error) {
 	labels := Labels{
 		"bitcoin_tx_id": "",
 		"pegout_addr":   "",
+		"threshold":     "", // TODO: add threshold value
 	}
 
 	// Get first unsigned pegout
@@ -58,25 +60,29 @@ func (alert *AlertPegoutSigners) Check(dataSource AlertDataSource) (Severity, La
 		return SEVERITY_OK, labels, nil
 	}
 
-	// Calulate signersPercentage
+	// Calulate commitmentsPercentage
 	maxSigners := prevDkg.MaxSigners
-	signersCount := unsignedPegout.CommitmentsCount()
-	signersPercentage := mutils.MulDivCeil(uint(signersCount), 100, uint(maxSigners))
+	commitmentsMask := new(big.Int).Or(
+		unsignedPegout.CommitmentsMaskAccepted,
+		unsignedPegout.CommitmentsMaskOther,
+	)
+	commitmentsCount := mutils.Popcnt(commitmentsMask)
+	commitmentsPercentage := mutils.MulDivCeil(uint(commitmentsCount), 100, uint(maxSigners))
 
 	// Calulate severity
-	severity := alert.GetSeverity(signersPercentage)
+	severity := alert.GetSeverity(commitmentsPercentage)
 
 	return severity, labels, nil
 }
 
-func (alert *AlertPegoutSigners) GetSeverity(signersPercentage uint) Severity {
+func (alert *AlertPegoutCommintments) GetSeverity(commitmentsPercentage uint) Severity {
 	severity := SEVERITY_OK
 
-	if signersPercentage <= 70 {
+	if commitmentsPercentage <= 70 {
 		severity = SEVERITY_CRITICAL
-	} else if signersPercentage <= 80 {
+	} else if commitmentsPercentage <= 80 {
 		severity = SEVERITY_WARNING
-	} else if signersPercentage <= 90 {
+	} else if commitmentsPercentage <= 90 {
 		severity = SEVERITY_INFO
 	}
 
