@@ -119,6 +119,9 @@ func initialize() (*App, error) {
 		dbConnPool.SetConnMaxIdleTime(-1)
 	}
 
+	// Global runtime config
+	globalRuntimeConfig := config.NewGlobalRuntimeConfig(tonClient)
+
 	// Fetcher service
 	fetcherService, err := fetchers.NewService(
 		coordinatorContract,
@@ -135,7 +138,7 @@ func initialize() (*App, error) {
 
 	// Alert manager
 	alertManager, err := alerts.NewAlertManager(
-		alerts.NewAlertDataSourceLive(dbConnPool, tonClient, bitcoinClient),
+		alerts.NewAlertDataSourceLive(dbConnPool, bitcoinClient, globalRuntimeConfig),
 		alerts.NewAlertDispatcherPrometheus(),
 	)
 	if err != nil {
@@ -143,7 +146,7 @@ func initialize() (*App, error) {
 	}
 
 	// Metrics manager
-	metricsManager := metrics.NewMetricsManager(dbConnPool, tonClient)
+	metricsManager := metrics.NewMetricsManager(dbConnPool, globalRuntimeConfig)
 
 	// Alerts service
 	alertsService := alerts.NewAlertService(

@@ -1,8 +1,10 @@
 package alerts
 
 import (
+	"context"
 	"errors"
 
+	"github.com/btcsuite/btcd/btcjson"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/teleportcontract"
@@ -11,18 +13,21 @@ import (
 )
 
 type (
-	CoordinatorContractStorageDbFn              func() (*coordinator.Storage, error)
-	TeleportContractStorageDbFn                 func() (*teleportcontract.Storage, error)
-	BitcoinClientContractStorageDbFn            func() (*data_models.BitcoinClientContractStorage, error)
-	FirstUnsignedPegoutDbFn                     func() (*coordinator.PegoutRecord, error)
-	LastSignedPegoutDbFn                        func() (*data_models.Pegout, error)
-	PegoutDbFn                                  func(address *address.Address) (*data_models.Pegout, error)
-	DkgDbFn                                     func() (*coordinator.DKG, error)
-	PrevDkgDbFn                                 func() (*coordinator.DKG, error)
-	BtcGetBlockHashByTxID                       func(txID *chainhash.Hash) (*chainhash.Hash, error)
-	BtcGetBlockHeightByHash                     func(hash *chainhash.Hash) (int64, error)
-	BitcoinClientContractLastConfirmedBlockHash func() (*chainhash.Hash, error)
-	NowUnixTsFn                                 func() int64
+	CoordinatorContractStorageDbFn                func() (*coordinator.Storage, error)
+	TeleportContractStorageDbFn                   func() (*teleportcontract.Storage, error)
+	BitcoinClientContractStorageDbFn              func() (*data_models.BitcoinClientContractStorage, error)
+	FirstUnsignedPegoutDbFn                       func() (*coordinator.PegoutRecord, error)
+	LastSignedPegoutDbFn                          func() (*data_models.Pegout, error)
+	LastSignedPegoutsDbFn                         func(limit uint) ([]*data_models.Pegout, error)
+	PegoutDbFn                                    func(address *address.Address) (*data_models.Pegout, error)
+	DkgDbFn                                       func() (*coordinator.DKG, error)
+	PrevDkgDbFn                                   func() (*coordinator.DKG, error)
+	BtcGetBlockHashByTxIdFn                       func(txID *chainhash.Hash) (*chainhash.Hash, error)
+	BtcGetBlockHeightByHashFn                     func(hash *chainhash.Hash) (int64, error)
+	BtcGetMempoolEntryFn                          func(txHash string) (*btcjson.GetMempoolEntryResult, error)
+	BitcoinClientContractLastConfirmedBlockHashFn func() (*chainhash.Hash, error)
+	TonMaxMainValidatorsFn                        func(ctx context.Context) (int, error)
+	NowUnixTsFn                                   func() int64
 )
 
 // Config holds optional function callbacks
@@ -32,12 +37,15 @@ type AlertDataSourceTestingConfig struct {
 	BitcoinClientContractStorageDbFn              BitcoinClientContractStorageDbFn
 	FirstUnsignedPegoutDbFn                       FirstUnsignedPegoutDbFn
 	LastSignedPegoutDbFn                          LastSignedPegoutDbFn
+	LastSignedPegoutsDbFn                         LastSignedPegoutsDbFn
 	PegoutDbFn                                    PegoutDbFn
 	DkgDbFn                                       DkgDbFn
 	PrevDkgDbFn                                   PrevDkgDbFn
-	BtcGetBlockHashByTxIdFn                       BtcGetBlockHashByTxID
-	BtcGetBlockHeightByHashFn                     BtcGetBlockHeightByHash
-	BitcoinClientContractLastConfirmedBlockHashFn BitcoinClientContractLastConfirmedBlockHash
+	BtcGetBlockHashByTxIdFn                       BtcGetBlockHashByTxIdFn
+	BtcGetBlockHeightByHashFn                     BtcGetBlockHeightByHashFn
+	BtcGetMempoolEntryFn                          BtcGetMempoolEntryFn
+	BitcoinClientContractLastConfirmedBlockHashFn BitcoinClientContractLastConfirmedBlockHashFn
+	TonMaxMainValidatorsFn                        TonMaxMainValidatorsFn
 	NowUnixTsFn                                   NowUnixTsFn
 }
 
@@ -84,6 +92,13 @@ func (dataSource *AlertDataSourceTesting) LastSignedPegoutDB() (*data_models.Peg
 	return dataSource.cfg.LastSignedPegoutDbFn()
 }
 
+func (dataSource *AlertDataSourceTesting) LastSignedPegoutsDB(limit uint) ([]*data_models.Pegout, error) {
+	if dataSource.cfg.LastSignedPegoutsDbFn == nil {
+		return nil, errors.New("LastSignedPegoutsDbFn callback not set")
+	}
+	return dataSource.cfg.LastSignedPegoutsDbFn(limit)
+}
+
 func (dataSource *AlertDataSourceTesting) DkgDB() (*coordinator.DKG, error) {
 	if dataSource.cfg.DkgDbFn == nil {
 		return nil, errors.New("DkgDbFn callback not set")
@@ -119,11 +134,25 @@ func (dataSource *AlertDataSourceTesting) BtcGetBlockHeightByHash(hash *chainhas
 	return dataSource.cfg.BtcGetBlockHeightByHashFn(hash)
 }
 
+func (dataSource *AlertDataSourceTesting) BtcGetMempoolEntry(txHash string) (*btcjson.GetMempoolEntryResult, error) {
+	if dataSource.cfg.BtcGetMempoolEntryFn == nil {
+		return nil, errors.New("BtcGetMempoolEntryFn callback not set")
+	}
+	return dataSource.cfg.BtcGetMempoolEntryFn(txHash)
+}
+
 func (dataSource *AlertDataSourceTesting) BitcoinClientContractLastConfirmedBlockHash() (*chainhash.Hash, error) {
 	if dataSource.cfg.BitcoinClientContractLastConfirmedBlockHashFn == nil {
 		return nil, errors.New("BitcoinClientContractLastConfirmedBlockHashFn callback not set")
 	}
 	return dataSource.cfg.BitcoinClientContractLastConfirmedBlockHashFn()
+}
+
+func (dataSource *AlertDataSourceTesting) TonMaxMainValidators(ctx context.Context) (int, error) {
+	if dataSource.cfg.TonMaxMainValidatorsFn == nil {
+		return 0, errors.New("TonMaxMainValidatorsFn callback not set")
+	}
+	return dataSource.cfg.TonMaxMainValidatorsFn(ctx)
 }
 
 func (dataSource *AlertDataSourceTesting) NowUnixTs() int64 {

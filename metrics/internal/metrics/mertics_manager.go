@@ -5,35 +5,27 @@ import (
 	"database/sql"
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
-	"sync"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
+	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/config"
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/data_sources"
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/fetchers"
 )
 
 type MetricsManager struct {
-	db           *sql.DB
-	tonClient    *tonclient.TonClient
-	dataSourceDB *data_sources.DataSourceDB
-
-	mu                      sync.RWMutex
-	tonMaxMainValidators    int
-	coordinatorContractData *coordinator.Storage
+	db                  *sql.DB
+	dataSourceDB        *data_sources.DataSourceDB
+	globalRuntimeConfig *config.GlobalRuntimeConfig
 }
 
 func NewMetricsManager(
 	db *sql.DB,
-	tonClient *tonclient.TonClient,
+	globalRuntimeConfig *config.GlobalRuntimeConfig,
 ) *MetricsManager {
 	return &MetricsManager{
-		db:                      db,
-		tonClient:               tonClient,
-		dataSourceDB:            data_sources.NewDataSourceDB(db),
-		tonMaxMainValidators:    -1,
-		coordinatorContractData: nil,
+		db:                  db,
+		dataSourceDB:        data_sources.NewDataSourceDB(db),
+		globalRuntimeConfig: globalRuntimeConfig,
 	}
 }
 
@@ -474,7 +466,7 @@ func (manager *MetricsManager) DkgStatusJson(ctx context.Context) (string, error
 		}
 
 		if !coordinatorContractData.StandaloneMode {
-			maxValidators, err := manager.TonMaxMainValidators(ctx)
+			maxValidators, err := manager.globalRuntimeConfig.TonMaxMainValidators(ctx)
 			if err != nil {
 				return nil, err
 			}
@@ -527,28 +519,4 @@ func (manager *MetricsManager) DkgStatusJson(ctx context.Context) (string, error
 	}
 
 	return string(jsonData), nil
-}
-
-func (manager *MetricsManager) TonMaxMainValidators(ctx context.Context) (int, error) {
-	manager.mu.Lock()
-	defer manager.mu.Unlock()
-
-	if manager.tonMaxMainValidators < 0 {
-		block, err := manager.tonClient.API.GetMasterchainInfo(ctx)
-		if err != nil {
-			return 0, fmt.Errorf("failed to get block: %v", err)
-		}
-
-		tonConfig, err := manager.tonClient.API.GetBlockchainConfig(ctx, block, 16)
-		if err != nil {
-			return 0, fmt.Errorf("failed to get config: %v", err)
-		}
-
-		tonConfigParam16 := tonConfig.Get(16)
-		s := tonConfigParam16.BeginParse()
-		s.MustLoadUInt(16)
-		manager.tonMaxMainValidators = int(s.MustLoadUInt(16))
-	}
-
-	return manager.tonMaxMainValidators, nil
 }

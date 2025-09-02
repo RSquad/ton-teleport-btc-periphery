@@ -166,6 +166,27 @@ func (dataSource *DataSourceDB) LastSignedPegout() (*data_models.Pegout, error) 
 	return pegout, nil
 }
 
+func (dataSource *DataSourceDB) LastSignedPegoutsJson(limit uint) ([]byte, error) {
+	return dataSource.SelectToObject(
+		"SELECT json_agg(t) FROM (SELECT * FROM public.pegouts WHERE status = 'SIGNED' ORDER BY id DESC LIMIT $1) t",
+		limit,
+	)
+}
+
+func (dataSource *DataSourceDB) LastSignedPegouts(limit uint) ([]*data_models.Pegout, error) {
+	jsonData, err := dataSource.LastSignedPegoutsJson(limit)
+	if err != nil {
+		return nil, err
+	}
+
+	pegouts, err := data_models.DeserializePegoutsDB(jsonData)
+	if err != nil {
+		return nil, err
+	}
+
+	return pegouts, nil
+}
+
 func (dataSource *DataSourceDB) SelectToObject(sql string, args ...interface{}) ([]byte, error) {
 	rows, err := dataSource.db.Query(sql, args...)
 	if err != nil {

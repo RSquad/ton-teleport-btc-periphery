@@ -106,3 +106,13 @@ func DeserializePegoutDB(jsonData []byte) (*Pegout, error) {
 
 	return &pegout, nil
 }
+
+func DeserializePegoutsDB(jsonData []byte) ([]*Pegout, error) {
+	var pegouts []*Pegout
+	err := json.Unmarshal(jsonData, &pegouts)
+	if err != nil {
+		return nil, err
+	}
+
+	return pegouts, nil
+}

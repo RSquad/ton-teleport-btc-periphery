@@ -94,13 +94,13 @@ groups:
           pegout_addr: "{{ $labels.pegout_addr }}"
           threshold: "{{ $labels.threshold }}"
 
-  - name: pegout.mempool
+  - name: pegout.in.mempool
     rules:
-      # 0 - pegout transaction is in mempool or block
-      # 1 - pegout transaction not found in mempool for 10 minutes
-      # 2 - pegout transaction not found in mempool for 40 minutes
+      # 0 (SEVERITY_OK) - pegout transaction is in mempool or block
+      # 2 (SEVERITY_WARNING) - pegout transaction not found in mempool for 10 minutes
+      # 3 (SEVERITY_CRITICAL) - pegout transaction not found in mempool for 40 minutes
       - alert: PegoutInMempoolWarning
-        expr: alert_pegout_in_mempool == 1
+        expr: alert_pegout_in_mempool >= 2
         labels:
           severity: warning
         annotations:
@@ -109,7 +109,7 @@ groups:
           pegout_addr: "{{ $labels.pegout_addr }}"
 
       - alert: PegoutInMempoolCritical
-        expr: alert_pegout_in_mempool == 2
+        expr: alert_pegout_in_mempool >= 3
         labels:
           severity: critical
         annotations:
@@ -132,10 +132,10 @@ groups:
 
   - name: dkg.status
     rules:
-      # 0 - DKG finished or null
-      # 1 - DKG in progress
-      # 2 - DKG part 1 finished
-      # 3 - DKG part 2 finished
+      # 0 (DKGStateFinished) - DKG finished or null
+      # 1 (DKGStateInProgress) - DKG in progress
+      # 2 (DKGStatePart1Finished) - DKG part 1 finished
+      # 3 (DKGStatePart2Finished) - DKG part 2 finished
     - alert: DKGStatusFinished
       expr: dkg_status == 0
       labels:
@@ -150,7 +150,7 @@ groups:
       annotations:
         description: "DKG started"
 
-  - name: contract.balances
+  - name: contract.balance.????
     rules:
       # 0 - contract balance is in range [2 ton - ]
       # 1 - contract balance is in range [0.5 ton - 2 ton]
@@ -186,59 +186,51 @@ groups:
 
   - name: dkg.restarts
     rules:
-      # 0 - no restarts or 1 restart
-      # 1 - more than 2 restarts
-      # 2 - more than 10 restarts
+      # 0 (SEVERITY_OK) - no restarts or 1 restart
+      # 2 (SEVERITY_WARNING) - more than 2 restarts
+      # 3 (SEVERITY_CRITICAL)- more than 10 restarts
       - alert: DKGRestartsWarning
-        expr: alert_dkg_restarts == 1
+        expr: alert_dkg_restarts >= 2
         labels:
           severity: warning
         annotations:
-          description: "The DKG was restarted 2 times"
+          description: "The DKG was restarted 2 times or more"
 
       - alert: DKGRestartsCritical
-        expr: alert_dkg_restarts == 2
+        expr: alert_dkg_restarts >= 3
         labels:
           severity: critical
         annotations:
-          description: "The DKG was restarted 10 times"
+          description: "The DKG was restarted 10 times or more"
 
   - name: dkg.participants
     rules:
-      # 0 - number of participants is in range [80-100%]
-      # 1 - number of participants is in range [55-80%]
-      # 2 - number of participants is less than 55%
+      # 0 (SEVERITY_OK) - number of participants is in range [80-100%]
+      # 2 (SEVERITY_WARNING) - number of participants is in range [55-80%]
+      # 3 (SEVERITY_CRITICAL) - number of participants is less than 55%
       - alert: DKGParticipantsWarning
-        expr: alert_dkg_participants == 1
+        expr: alert_dkg_participants >= 2
         labels:
           severity: warning
         annotations:
           description: "The number of participants is less than 80%"
 
       - alert: DKGParticipantsCritical
-        expr: alert_dkg_participants == 2
+        expr: alert_dkg_participants >= 3
         labels:
           severity: critical
         annotations:
           description: "The number of participants is less than 55%"
 
-  - name: dkg.culprit
+  - name: dkg.culprit.found
     rules:
-      # 0 - culprit not found 
-      # 0xXX01 - culprit found and evicted
-      # 0xXX02 - culprit found and not evicted (voting threshold is not reached)
+      # 0 (SEVERITY_OK) - culprit not found 
+      # 3 (SEVERITY_CRITICAL) - culprit found
       - alert: DkgCulpritEvictedCritical
-        expr: alert_dkg_culprit_found % 0xFF == 1
+        expr: alert_dkg_culprit_found >= 3
         labels:
           severity: critical
         annotations:
-          description: "DKG culprit found and evicted"
-          culprit_id: '{{ printf "0x%x" $value }}'
-      
-      - alert: DkgCulpritNotEvictedCritical
-        expr: alert_dkg_culprit_found % 0xFF == 2
-        labels:
-          severity: critical
-        annotations:
-          description: "DKG culprit found but NOT evicted"        
-          culprit_id:  '{{ printf "0x%x" $value }}'
+          description: "DKG culprit found"
+          culprit_id: "{{ $labels.culprit_id }}"
+          is_evicted: "{{ $labels.is_evicted }}"

@@ -68,8 +68,14 @@ func NewAlertManager(
 		return nil, err
 	}
 
-	// pegout_mempool (pegout.mempool)
-	// TODO: add
+	// alert_pegout_in_mempool (pegout.in.mempool)
+	err = alertManager.RegisterAlert(
+		"alert_pegout_in_mempool",
+		NewAlertPegoutInMempool(),
+	)
+	if err != nil {
+		return nil, err
+	}
 
 	// alert_pegout_signing_duration (pegout.signing.duration)
 	err = alertManager.RegisterAlert(
@@ -81,22 +87,46 @@ func NewAlertManager(
 	}
 
 	// dkg_status (dkg.status)
-	// TODO: add
+	err = alertManager.RegisterAlert(
+		"dkg_status",
+		NewAlertDkgStatus(),
+	)
+	if err != nil {
+		return nil, err
+	}
 
 	// contract_balances (contract.balances)
-	// TODO: add
+	// TODO: move here from fetcher_contract_balances
 
 	// fees_health (fees.health)
 	// TODO: add
 
 	// dkg_restarts (dkg.restarts)
-	// TODO: add
+	err = alertManager.RegisterAlert(
+		"dkg_restarts",
+		NewAlertDkgRestarts(),
+	)
+	if err != nil {
+		return nil, err
+	}
 
 	// dkg_participants (dkg.participants)
-	// TODO: add
+	err = alertManager.RegisterAlert(
+		"dkg_participants",
+		NewAlertDkgParticipants(),
+	)
+	if err != nil {
+		return nil, err
+	}
 
-	// dkg_culprit (dkg.culprit)
-	// TODO: add
+	// dkg_culprit_found (dkg.culprit.found)
+	err = alertManager.RegisterAlert(
+		"dkg_culprit_found",
+		NewAlertDkgCulpritFound(),
+	)
+	if err != nil {
+		return nil, err
+	}
 
 	return &alertManager, nil
 }
