@@ -95,9 +95,6 @@ func NewAlertManager(
 		return nil, err
 	}
 
-	// contract_balances (contract.balances)
-	// TODO: move here from fetcher_contract_balances
-
 	// fees_health (fees.health)
 	// TODO: add
 
@@ -123,6 +120,51 @@ func NewAlertManager(
 	err = alertManager.RegisterAlert(
 		"dkg_culprit_found",
 		NewAlertDkgCulpritFound(),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	// contract_balance_coordinator (contract.balance.coordinator)
+	err = alertManager.RegisterAlert(
+		"contract_balance_coordinator",
+		NewAlertContractBalance("coordinator"),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	// contract_balance_teleport (contract.balance.teleport)
+	err = alertManager.RegisterAlert(
+		"contract_balance_teleport",
+		NewAlertContractBalance("teleport"),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	// contract_balance_bitclient (contract.balance.bitclient)
+	err = alertManager.RegisterAlert(
+		"contract_balance_bitclient",
+		NewAlertContractBalance("bitclient"),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	// contract_balance_minter (contract.balance.minter)
+	err = alertManager.RegisterAlert(
+		"contract_balance_minter",
+		NewAlertContractBalance("minter"),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	// contract_balance_relayer (contract.balance.relayer)
+	err = alertManager.RegisterAlert(
+		"contract_balance_relayer",
+		NewAlertContractBalance("relayer"),
 	)
 	if err != nil {
 		return nil, err

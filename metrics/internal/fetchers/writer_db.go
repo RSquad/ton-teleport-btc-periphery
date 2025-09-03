@@ -42,9 +42,20 @@ func (writer *WriterDB) PrepareDB() error {
 			update_at TIMESTAMPTZ NOT NULL,
     	type_id INT,
     	payload TEXT,
-			payload_hash TEXT GENERATED ALWAYS AS (md5(payload)) STORED,
-			UNIQUE(type_id, payload_hash)
+			payload_hash TEXT GENERATED ALWAYS AS (md5(payload)) STORED
 		);`)
+	if err != nil {
+		return err
+	}
+
+	// Check index `metrics_type_payload_idx_desc`
+	_, err = writer.db.Exec(`CREATE INDEX IF NOT EXISTS metrics_type_payload_idx_desc ON metrics_data (type_id, payload_hash, id DESC);`)
+	if err != nil {
+		return err
+	}
+
+	// Check index `metrics_type_idx_desc`
+	_, err = writer.db.Exec(`CREATE INDEX IF NOT EXISTS metrics_type_idx_desc ON metrics_data (type_id, id DESC);`)
 	if err != nil {
 		return err
 	}
@@ -80,13 +91,13 @@ func (writer *WriterDB) Work(ctx context.Context, wg *sync.WaitGroup) {
 
 func (writer *WriterDB) Write(payload PayloadDB) error {
 	_, err := writer.db.Exec(
-		`INSERT INTO metrics_data (create_at, update_at, type_id, payload) VALUES 
-		(
+		`INSERT INTO metrics_data (create_at, update_at, type_id, payload)
+		SELECT
 			TO_TIMESTAMP($1) AT TIME ZONE 'UTC',
 			TO_TIMESTAMP($1) AT TIME ZONE 'UTC',
 			$2,
 			$3
-		) ON CONFLICT ON CONSTRAINT "metrics_data_type_id_payload_hash_key" DO UPDATE SET update_at = NOW()`,
+		WHERE NOT EXISTS (SELECT id FROM metrics_data WHERE type_id = $2 AND payload_hash = md5($3) ORDER BY id DESC LIMIT 1)`,
 		payload.timestamp.Unix(),
 		payload.typeId,
 		payload.payload,

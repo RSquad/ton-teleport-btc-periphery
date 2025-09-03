@@ -44,7 +44,7 @@ func NewService(
 	fetcherDKG := NewFetcherDKG(writerDbChan, coordinatorContract, int64(cfg.DkgFetchPeriod))
 
 	// Fetcher: Contract balances
-	fetcherContractBalances := NewFetcherContractBalances(tonClient, cfg)
+	fetcherContractBalances := NewFetcherContractBalances(writerDbChan, tonClient, cfg)
 
 	// Fetcher: Contract Bitcoin client
 	fetcherContractBitcoinClient := NewFetcherContractBitcoinClient(writerDbChan, db, bitcoinClient, bitcoinClientContract, int64(cfg.BitcoinClientContractFetchPeriod))

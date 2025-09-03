@@ -21,12 +21,14 @@ type ServicesConfig struct {
 	CoordinatorContractAddr          *address.Address
 	BitcoinClientContractAddr        *address.Address
 	JettonMinterContractAddr         *address.Address
+	RelayerWalletAddr                *address.Address
 	WriterDbChainSize                int
 	DkgFetchPeriod                   int
 	BitcoinClientContractFetchPeriod int
 	BitcoinNetworkFetchPeriod        int
 	TeleportContractFetchPeriod      int
 	CoordinatorContractFetchPeriod   int
+	ContractBalancesFetchPeriod      int
 	AlertsCheckPeriod                int
 }
 
@@ -41,6 +43,7 @@ func NewServicesConfig(config *EnvConfig) (*ServicesConfig, error) {
 	bitcoinNetworkFetchPeriod := 59
 	teleportContractFetchPeriod := 27
 	coordinatorContractFetchPeriod := 12
+	contractBalancesFetchPeriod := 150
 	alertsCheckPeriod := 15
 
 	if len(config.DatabaseMaxConn) > 0 {
@@ -99,6 +102,11 @@ func NewServicesConfig(config *EnvConfig) (*ServicesConfig, error) {
 		return nil, fmt.Errorf("parsing the Jetton Minter Contract address '%s' failed", config.JettonMinterContractAddr)
 	}
 
+	relayerWalletAddr, err := address.ParseAddr(config.RelayerWalletAddr)
+	if err != nil {
+		return nil, fmt.Errorf("parsing the Relayer Wallet address '%s' failed", config.RelayerWalletAddr)
+	}
+
 	if len(config.WriterDbChainSize) > 0 {
 		value, err := ParseInt(config.WriterDbChainSize, "WriterDbChainSize")
 		if err != nil {
@@ -153,6 +161,15 @@ func NewServicesConfig(config *EnvConfig) (*ServicesConfig, error) {
 		coordinatorContractFetchPeriod = value
 	}
 
+	if len(config.ContractBalancesFetchPeriod) > 0 {
+		value, err := ParseInt(config.ContractBalancesFetchPeriod, "ContractBalancesFetchPeriod")
+		if err != nil {
+			return nil, fmt.Errorf("wrong `CONTRACT_BALANCES_FETCH_PERIOD` .env argument value '%s'. %w", config.DatabaseMaxConn, err)
+		}
+
+		contractBalancesFetchPeriod = value
+	}
+
 	if len(config.AlertsCheckPeriod) > 0 {
 		value, err := ParseInt(config.AlertsCheckPeriod, "AlertsCheckPeriod")
 		if err != nil {
@@ -176,12 +193,14 @@ func NewServicesConfig(config *EnvConfig) (*ServicesConfig, error) {
 		CoordinatorContractAddr:          coordinatorContractAddr,
 		BitcoinClientContractAddr:        bitcoinClientContractAddr,
 		JettonMinterContractAddr:         jettonMinterContractAddr,
+		RelayerWalletAddr:                relayerWalletAddr,
 		WriterDbChainSize:                writerDbChainSize,
 		DkgFetchPeriod:                   dkgFetchPeriod,
 		BitcoinClientContractFetchPeriod: bitcoinClientContractFetchPeriod,
 		BitcoinNetworkFetchPeriod:        bitcoinNetworkFetchPeriod,
 		TeleportContractFetchPeriod:      teleportContractFetchPeriod,
 		CoordinatorContractFetchPeriod:   coordinatorContractFetchPeriod,
+		ContractBalancesFetchPeriod:      contractBalancesFetchPeriod,
 		AlertsCheckPeriod:                alertsCheckPeriod,
 	}
 
@@ -196,6 +215,7 @@ TeleportContractAddr: %s
 CoordinatorContractAddr: %s
 BitcoinClientContractAddr: %s
 JettonMinterContractAddr: %s
+RelayerWalletAddr: %s
 DatabaseMaxConn: %d
 DatabaseMaxIdleConn: %d
 HttpPort: %d                        ,
@@ -214,6 +234,7 @@ AlertsCheckPeriod: %d sec.
 		config.CoordinatorContractAddr,
 		config.BitcoinClientContractAddr,
 		config.JettonMinterContractAddr,
+		config.RelayerWalletAddr,
 		config.DatabaseMaxConn,
 		config.DatabaseMaxIdleConn,
 		config.HttpPort,

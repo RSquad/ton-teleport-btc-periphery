@@ -24,4 +24,5 @@ The Metrics is configured using environment variables. You can set these in a `.
 - `BITCOIN_NETWORK_FETCH_PERIOD` - Bitcoin Network fetch period (default 59 seconds)
 - `TELEPORT_CONTRACT_FETCH_PERIOD` - Teleport Contract fetch period (default 27 seconds)
 - `COORDINATOR_CONTRACT_FETCH_PERIOD` - Coordinator Contract fetch period (default 12 seconds)
+- `CONTRACT_BALANCES_FETCH_PERIOD` - Contract balances fetch period (default 150 seconds)
 - `ALERTS_CHECK_PERIOD` - Alerts check period (default 10 seconds)

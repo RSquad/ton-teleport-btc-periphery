@@ -27,6 +27,7 @@ type (
 	BtcGetMempoolEntryFn                          func(txHash string) (*btcjson.GetMempoolEntryResult, error)
 	BitcoinClientContractLastConfirmedBlockHashFn func() (*chainhash.Hash, error)
 	TonMaxMainValidatorsFn                        func(ctx context.Context) (int, error)
+	ActualContractBalancesFn                      func() (*data_models.ContractBalances, error)
 	NowUnixTsFn                                   func() int64
 )
 
@@ -46,6 +47,7 @@ type AlertDataSourceTestingConfig struct {
 	BtcGetMempoolEntryFn                          BtcGetMempoolEntryFn
 	BitcoinClientContractLastConfirmedBlockHashFn BitcoinClientContractLastConfirmedBlockHashFn
 	TonMaxMainValidatorsFn                        TonMaxMainValidatorsFn
+	ActualContractBalancesFn                      ActualContractBalancesFn
 	NowUnixTsFn                                   NowUnixTsFn
 }
 
@@ -153,6 +155,13 @@ func (dataSource *AlertDataSourceTesting) TonMaxMainValidators(ctx context.Conte
 		return 0, errors.New("TonMaxMainValidatorsFn callback not set")
 	}
 	return dataSource.cfg.TonMaxMainValidatorsFn(ctx)
+}
+
+func (dataSource *AlertDataSourceTesting) ActualContractBalances() (*data_models.ContractBalances, error) {
+	if dataSource.cfg.ActualContractBalancesFn == nil {
+		return nil, errors.New("ActualContractBalancesFn callback not set")
+	}
+	return dataSource.cfg.ActualContractBalancesFn()
 }
 
 func (dataSource *AlertDataSourceTesting) NowUnixTs() int64 {

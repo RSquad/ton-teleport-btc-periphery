@@ -103,3 +103,7 @@ func (dataSource *AlertDataSourceLive) BtcGetMempoolEntry(txHash string) (*btcjs
 func (dataSource *AlertDataSourceLive) TonMaxMainValidators(ctx context.Context) (int, error) {
 	return dataSource.globalRuntimeConfig.TonMaxMainValidators(ctx)
 }
+
+func (dataSource *AlertDataSourceLive) ActualContractBalances() (*data_models.ContractBalances, error) {
+	return dataSource.dataSourceDB.ActualContractBalances()
+}

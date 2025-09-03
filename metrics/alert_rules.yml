@@ -150,21 +150,6 @@ groups:
       annotations:
         description: "DKG started"
 
-  - name: contract.balance.????
-    rules:
-      # 0 - contract balance is in range [2 ton - ]
-      # 1 - contract balance is in range [0.5 ton - 2 ton]
-      # 2 - contract balance is in range [0 - 0.5 ton]
-    - alert: LowContractBalance
-      expr: contract_balance{} < 2
-      labels:
-        severity: "{{ if lt $value 0.5 }}critical{{ else }}warning{{ end }}"
-      annotations:
-        description: '{{ $labels.name }} balance is {{ $value | printf "%.9f" }} ton'
-        contract_name: "{{ $labels.name }}"
-        contract_address: "{{ $labels.address }}"
-        balance: '{{ $value | printf "%.9f" }}'
-
   - name: fees.health
     rules:
       # 0 - total_service_fee is enough
@@ -234,3 +219,108 @@ groups:
           description: "DKG culprit found"
           culprit_id: "{{ $labels.culprit_id }}"
           is_evicted: "{{ $labels.is_evicted }}"
+
+  - name: contract.balance.coordinator
+    rules:
+      # 0 (SEVERITY_OK) - contract balance is in range [2 ton - ]
+      # 2 (SEVERITY_WARNING) - contract balance is in range [0.5 ton - 2 ton]
+      # 3 (SEVERITY_CRITICAL) - contract balance is in range [0 - 0.5 ton]
+    - alert: CoordinatorLowContractBalanceWarning
+      expr: contract_balance_coordinator >= 2
+      labels:
+        severity: warning
+      annotations:
+        description: 'Coordinator balance is less than 2 TON'
+        contract_address: "{{ $labels.address }}"
+
+    - alert: CoordinatorLowContractBalanceCritical
+      expr: contract_balance_coordinator >= 3
+      labels:
+        severity: critical
+      annotations:
+        description: 'Coordinator balance is less than 0.5 TON'
+        contract_address: "{{ $labels.address }}"
+
+  - name: contract.balance.teleport
+    rules:
+      # 0 (SEVERITY_OK) - contract balance is in range [2 ton - ]
+      # 2 (SEVERITY_WARNING) - contract balance is in range [0.5 ton - 2 ton]
+      # 3 (SEVERITY_CRITICAL) - contract balance is in range [0 - 0.5 ton]
+    - alert: TeleportLowContractBalanceWarning
+      expr: contract_balance_teleport >= 2
+      labels:
+        severity: warning
+      annotations:
+        description: 'Teleport balance is less than 2 TON'
+        contract_address: "{{ $labels.address }}"
+
+    - alert: TeleportLowContractBalanceCritical
+      expr: contract_balance_teleport >= 3
+      labels:
+        severity: critical
+      annotations:
+        description: 'Teleport balance is less than 0.5 TON'
+        contract_address: "{{ $labels.address }}"
+
+  - name: contract.balance.bitclient
+    rules:
+      # 0 (SEVERITY_OK) - contract balance is in range [2 ton - ]
+      # 2 (SEVERITY_WARNING) - contract balance is in range [0.5 ton - 2 ton]
+      # 3 (SEVERITY_CRITICAL) - contract balance is in range [0 - 0.5 ton]
+    - alert: BitcoinClientLowContractBalanceWarning
+      expr: contract_balance_bitclient >= 2
+      labels:
+        severity: warning
+      annotations:
+        description: 'BitcoinClient balance is less than 2 TON'
+        contract_address: "{{ $labels.address }}"
+
+    - alert: BitcoinClientLowContractBalanceCritical
+      expr: contract_balance_bitclient >= 3
+      labels:
+        severity: critical
+      annotations:
+        description: 'BitcoinClient balance is less than 0.5 TON'
+        contract_address: "{{ $labels.address }}"
+
+  - name: contract.balance.minter
+    rules:
+      # 0 (SEVERITY_OK) - contract balance is in range [2 ton - ]
+      # 2 (SEVERITY_WARNING) - contract balance is in range [0.5 ton - 2 ton]
+      # 3 (SEVERITY_CRITICAL) - contract balance is in range [0 - 0.5 ton]
+    - alert: MinterLowContractBalanceWarning
+      expr: contract_balance_minter >= 2
+      labels:
+        severity: warning
+      annotations:
+        description: 'Minter balance is less than 2 TON'
+        contract_address: "{{ $labels.address }}"
+
+    - alert: MinterLowContractBalanceCritical
+      expr: contract_balance_minter >= 3
+      labels:
+        severity: critical
+      annotations:
+        description: 'Minter balance is less than 0.5 TON'
+        contract_address: "{{ $labels.address }}"
+
+  - name: contract.balance.relayer
+    rules:
+      # 0 (SEVERITY_OK) - contract balance is in range [2 ton - ]
+      # 2 (SEVERITY_WARNING) - contract balance is in range [0.5 ton - 2 ton]
+      # 3 (SEVERITY_CRITICAL) - contract balance is in range [0 - 0.5 ton]
+    - alert: RelayerLowContractBalanceWarning
+      expr: contract_balance_relayer >= 2
+      labels:
+        severity: warning
+      annotations:
+        description: 'Relayer balance is less than 2 TON'
+        contract_address: "{{ $labels.address }}"
+
+    - alert: RelayerLowContractBalanceCritical
+      expr: contract_balance_relayer >= 3
+      labels:
+        severity: critical
+      annotations:
+        description: 'Relayer balance is less than 0.5 TON'
+        contract_address: "{{ $labels.address }}"

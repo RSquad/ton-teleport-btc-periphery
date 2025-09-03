@@ -11,6 +11,7 @@ const (
 	PayloadTypeBitcoinNetwork        PayloadTypeDB = 3
 	PayloadTypeContractTeleport      PayloadTypeDB = 4
 	PayloadTypeContractCoordinator   PayloadTypeDB = 5
+	PayloadTypeContractBalances      PayloadTypeDB = 6
 )
 
 type PayloadDB struct {

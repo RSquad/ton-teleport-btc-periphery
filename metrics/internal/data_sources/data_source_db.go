@@ -187,6 +187,27 @@ func (dataSource *DataSourceDB) LastSignedPegouts(limit uint) ([]*data_models.Pe
 	return pegouts, nil
 }
 
+func (dataSource *DataSourceDB) ActualContractBalancesJson() ([]byte, error) {
+	return dataSource.SelectToObject(
+		"SELECT payload FROM metrics_data WHERE type_id = $1 ORDER BY id DESC LIMIT 1",
+		fetchers.PayloadTypeContractBalances,
+	)
+}
+
+func (dataSource *DataSourceDB) ActualContractBalances() (*data_models.ContractBalances, error) {
+	jsonData, err := dataSource.ActualContractBalancesJson()
+	if err != nil {
+		return nil, err
+	}
+
+	balances, err := data_models.DeserializeContractBalancesDB(jsonData)
+	if err != nil {
+		return nil, err
+	}
+
+	return balances, nil
+}
+
 func (dataSource *DataSourceDB) SelectToObject(sql string, args ...interface{}) ([]byte, error) {
 	rows, err := dataSource.db.Query(sql, args...)
 	if err != nil {

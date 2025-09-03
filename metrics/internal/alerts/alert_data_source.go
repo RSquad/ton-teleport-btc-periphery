@@ -25,6 +25,7 @@ type AlertDataSource interface {
 	BtcGetBlockHeightByHash(hash *chainhash.Hash) (int64, error)
 	BtcGetMempoolEntry(txHash string) (*btcjson.GetMempoolEntryResult, error)
 	TonMaxMainValidators(ctx context.Context) (int, error)
+	ActualContractBalances() (*data_models.ContractBalances, error)
 
 	NowUnixTs() int64
 }

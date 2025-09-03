@@ -9,23 +9,7 @@ import (
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
 )
-
-type ContractCoordinatorData struct {
-	Initiated           bool
-	StandaloneMode      bool
-	Id                  uint32
-	ConfiguratorAddr    string
-	Enabled             bool
-	UnsignedPegouts     []coordinator.PegoutRecord
-	MinClaimsPercent    uint16
-	MinSignersThreshold uint16
-	DkgLifetime         uint32
-	SigningTimeout      uint32
-	NextPegoutIdx       uint64
-	TeleportAddr        string
-}
 
 type FetcherContractCoordinator struct {
 	chDB                chan PayloadDB
@@ -72,22 +56,10 @@ func (fetcher *FetcherContractCoordinator) Fetch() {
 		return
 	}
 
-	contractCoordinatorData := ContractCoordinatorData{
-		Initiated:           storage.Initiated,
-		StandaloneMode:      storage.StandaloneMode,
-		Id:                  storage.Id,
-		ConfiguratorAddr:    utils.AddrToRawString(storage.ConfiguratorAddr),
-		Enabled:             storage.Enabled,
-		UnsignedPegouts:     storage.UnsignedPegouts,
-		MinClaimsPercent:    storage.MinClaimsPercent,
-		MinSignersThreshold: storage.MinSignersThreshold,
-		DkgLifetime:         storage.DkgLifetime,
-		SigningTimeout:      storage.SigningTimeout,
-		NextPegoutIdx:       storage.NextPegoutIdx,
-		TeleportAddr:        utils.AddrToRawString(storage.TeleportAddr),
-	}
+	storage.Dkg = nil
+	storage.PrevDkg = nil
 
-	jsonData, err := json.Marshal(contractCoordinatorData)
+	jsonData, err := json.Marshal(storage)
 	if err != nil {
 		logger.Log.Error().Err(err).
 			Str("component", "FetcherContractCoordinator").
