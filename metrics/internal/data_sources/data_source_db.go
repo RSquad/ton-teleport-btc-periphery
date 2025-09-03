@@ -168,7 +168,7 @@ func (dataSource *DataSourceDB) LastSignedPegout() (*data_models.Pegout, error) 
 
 func (dataSource *DataSourceDB) LastSignedPegoutsJson(limit uint) ([]byte, error) {
 	return dataSource.SelectToObject(
-		"SELECT json_agg(t) FROM (SELECT * FROM public.pegouts WHERE status = 'SIGNED' ORDER BY id DESC LIMIT $1) t",
+		"SELECT COALESCE(json_agg(t), '[]') FROM (SELECT * FROM public.pegouts WHERE status = 'SIGNED' ORDER BY id DESC LIMIT $1) t",
 		limit,
 	)
 }

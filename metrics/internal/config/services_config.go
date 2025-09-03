@@ -226,6 +226,7 @@ BitcoinClientContractFetchPeriod: %d sec.
 BitcoinNetworkFetchPeriod: %d sec.
 TeleportContractFetchPeriod: %d sec.
 CoordinatorContractFetchPeriod: %d sec.
+ContractBalancesFetchPeriod: %d sec.
 AlertsCheckPeriod: %d sec.
 `,
 		config.BitcoinRpcHost,
@@ -245,6 +246,7 @@ AlertsCheckPeriod: %d sec.
 		config.BitcoinNetworkFetchPeriod,
 		config.TeleportContractFetchPeriod,
 		config.CoordinatorContractFetchPeriod,
+		config.ContractBalancesFetchPeriod,
 		config.AlertsCheckPeriod,
 	)
 }

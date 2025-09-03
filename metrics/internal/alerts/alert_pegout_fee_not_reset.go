@@ -32,6 +32,10 @@ func (alert *AlertPegoutFeeNotReset) Check(dataSource AlertDataSource) (Severity
 	lastConfirmedBlockHeight := int64(0)
 	nextSvb := int64(0)
 
+	if pegout.BitcoinBlockHash == nil {
+		return SEVERITY_OK, labels, nil
+	}
+
 	// Get info from bitcoin network
 	{
 		blockHeight, err := dataSource.BtcGetBlockHeightByHash(mutils.BytesToBTCHash(pegout.BitcoinBlockHash))

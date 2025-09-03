@@ -78,6 +78,8 @@ func initialize() (*App, error) {
 		return nil, fmt.Errorf("[App] failed to create jwv4r2 contract: %w", err)
 	}
 
+	log.Printf("[App] Relayer wallet: %s", jwV4R2Contract.Address().StringRaw())
+
 	relayerFactory := relayerfactory.NewRelayerFactory(bitcoinClient, tonClient)
 
 	log.Println("[App] initialized")
