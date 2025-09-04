@@ -22,27 +22,25 @@ func TestDeserializePegouts_Success(t *testing.T) {
       "46": "AQAjD4qzA+NRZBmoOjp0ftul6qYqcwR147bphPYltmE5VLIYCxcOAz18T35KTKHp0+O5RHk6kI+ni5qHIw3Mkf6PZgZ1wFoB",
       "90": "AQAjD4qzA90LtHszx0UfOLPxR1Z9LvFVH5MkVPb/5sig+UelyJdrAh6h19hJkHvRee0qpYlx/rH6Cx0i0VHvq6dUMvq76NSf"
     },
-    "CommitmentsMaskAccepted": "0",
-    "CommitmentsMaskOther": "1237940039285450643643301888",
+    "CommitmentsMaskAccepted": 0,
+    "CommitmentsMaskOther": 1237940039285450643643301888,
     "SigningShares": {},
     "SigningSharesMask": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
     "Signatures": {
-      "Mask": "0",
+      "Mask": 0,
       "Count": 0,
       "Hash": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
     },
-    "ClaimsMask": "0",
+    "ClaimsMask": 0,
     "ClaimsCount": 0,
     "ClaimsCounters": {},
     "MaxSigners": 91,
     "ExpiredAt": "2025-07-16T03:27:21Z",
-    "SigningMask": "2475880078570760549798248447"
+    "SigningMask": 2475880078570760549798248447
   }
 ]`
 
-	arr := MustUnmarshalJSONArray(t, jsonInput)
-
-	got, err := DeserializePegouts(arr, 10)
+	got, err := DeserializePegouts([]byte(jsonInput))
 	if err != nil {
 		t.Fatalf("DeserializePegouts error: %v", err)
 	}
@@ -136,41 +134,4 @@ func TestDeserializePegouts_Success(t *testing.T) {
 	if pegout.SigningMask == nil || pegout.SigningMask.Cmp(wantSigningMask) != 0 {
 		t.Errorf("SigningMask=%v, want %v", pegout.SigningMask, wantSigningMask)
 	}
-}
-
-func TestDeserializePegouts_Limit(t *testing.T) {
-	jsonInput := `
-[
-  {"ID":1},
-  {"ID":2},
-  {"ID":3}
-]`
-	arr := MustUnmarshalJSONArray(t, jsonInput)
-
-	got, err := DeserializePegouts(arr, 2)
-	if err != nil {
-		t.Fatalf("err: %v", err)
-	}
-	if len(got) != 2 || got[0].ID != 1 || got[1].ID != 2 {
-		t.Fatalf("limit not respected: %+v", got)
-	}
-}
-
-func TestDeserializePegouts_Errors(t *testing.T) {
-	t.Run("element not object", func(t *testing.T) {
-		arr := []interface{}{"not an object"}
-		_, err := DeserializePegouts(arr, 1)
-		if err == nil {
-			t.Fatalf("expected error")
-		}
-	})
-
-	t.Run("bad base64", func(t *testing.T) {
-		js := `[{"ID":1, "InternalKey":"@@not-base64@@", "PegoutAddress":"EQAPtQRffHrXATHokYMFQgupunwxfTe2Main1FYFUt-8eHn-"}]`
-		arr := MustUnmarshalJSONArray(t, js)
-		_, err := DeserializePegouts(arr, 1)
-		if err == nil {
-			t.Fatalf("expected base64 error")
-		}
-	})
 }

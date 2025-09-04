@@ -9,6 +9,7 @@ type EnvConfig struct {
 	CoordinatorContractAddr          string `env:"COMMON_TON_CONTRACT_COORDINATOR,required"`
 	BitcoinClientContractAddr        string `env:"COMMON_TON_CONTRACT_BITCLIENT_ADDR,required"`
 	JettonMinterContractAddr         string `env:"COMMON_TON_CONTRACT_MINTER_ADDR,required"`
+	RelayerWalletAddr                string `env:"COMMON_TON_RELAYER_WALLET_ADDR,required"`
 	DatabaseUrl                      string `env:"METRICS_DATABASE_URL,required"`
 	DatabaseMaxConn                  string `env:"METRICS_DATABASE_MAX_CONN"`
 	DatabaseMaxIdleConn              string `env:"METRICS_DATABASE_MAX_IDLE_CONN"`
@@ -20,5 +21,6 @@ type EnvConfig struct {
 	BitcoinNetworkFetchPeriod        string `env:"BITCOIN_NETWORK_FETCH_PERIOD"`
 	TeleportContractFetchPeriod      string `env:"TELEPORT_CONTRACT_FETCH_PERIOD"`
 	CoordinatorContractFetchPeriod   string `env:"COORDINATOR_CONTRACT_FETCH_PERIOD"`
+	ContractBalancesFetchPeriod      string `env:"CONTRACT_BALANCES_FETCH_PERIOD"`
 	AlertsCheckPeriod                string `env:"ALERTS_CHECK_PERIOD"`
 }

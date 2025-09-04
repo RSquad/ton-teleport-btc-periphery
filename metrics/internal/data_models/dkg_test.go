@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/base64"
 	"math/big"
-	"strings"
 	"testing"
 	"time"
 
@@ -12,7 +11,7 @@ import (
 )
 
 func TestDeserializeDkg_Success(t *testing.T) {
-	js := `{
+	jsonInput := `{
 		"State": 0,
 		"VSet": {
 			"0": "x4UOi03GzPdmCyhlvnT9MGINIXctTdR4brnf6yIReuQ=",
@@ -55,9 +54,7 @@ func TestDeserializeDkg_Success(t *testing.T) {
 		"Until": "2025-08-21T15:24:47Z"
 	}`
 
-	m := MustUnmarshalJSONMap(t, js)
-
-	got, err := DeserializeDkg(m)
+	got, err := DeserializeDkg([]byte(jsonInput))
 	if err != nil {
 		t.Fatalf("DeserializeDkg error: %v", err)
 	}
@@ -172,117 +169,4 @@ func TestDeserializeDkg_Success(t *testing.T) {
 	if !got.Until.Equal(wantUntil) {
 		t.Errorf("Until=%v, want %v", got.Until, wantUntil)
 	}
-}
-
-func TestDeserializeDkg_EmptyOK(t *testing.T) {
-	m := map[string]interface{}{}
-
-	got, err := DeserializeDkg(m)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	// zero / nil checks
-	if got.State != coordinator.DKGState(0) {
-		t.Errorf("default State=%d, want 0", got.State)
-	}
-	if len(got.VSet) != 0 {
-		t.Errorf("`VSet`=%v, want nil/empty", got.VSet)
-	}
-	if got.MaxSigners != 0 {
-		t.Errorf("MaxSigners=%d, want 0", got.MaxSigners)
-	}
-	if got.VSetMask != nil {
-		t.Errorf("VSetMask should be nil by default")
-	}
-	if got.SessionKeys != nil {
-		t.Errorf("SessionKeys should be nil by default")
-	}
-	if got.R1 != nil || got.R2 != nil || got.R3 != nil {
-		t.Errorf("R1/R2/R3 should be nil by default")
-	}
-	if got.Claims != nil {
-		t.Errorf("Claims should be nil by default")
-	}
-	if got.CfgHash != nil {
-		t.Errorf("CfgHash should be nil by default")
-	}
-	if !got.Until.IsZero() {
-		t.Errorf("Until should be zero time by default")
-	}
-}
-
-func TestDeserializeDkg_Errors(t *testing.T) {
-	t.Run("State bad type", func(t *testing.T) {
-		m := map[string]interface{}{"State": "oops"}
-		_, err := DeserializeDkg(m)
-		if err == nil || !strings.Contains(err.Error(), "`State` parse error") {
-			t.Fatalf("want State parse error, got: %v", err)
-		}
-	})
-
-	t.Run("VSet wrong type", func(t *testing.T) {
-		m := map[string]interface{}{"VSet": 123}
-		_, err := DeserializeDkg(m)
-		if err == nil || !strings.Contains(err.Error(), "`VSet` parse error") {
-			t.Fatalf("want VSet parse error, got: %v", err)
-		}
-	})
-
-	t.Run("VSetMask wrong type", func(t *testing.T) {
-		m := map[string]interface{}{"VSetMask": "not-a-number"}
-		_, err := DeserializeDkg(m)
-		if err == nil || !strings.Contains(err.Error(), "`VSetMask` parse error") {
-			t.Fatalf("want VSetMask parse error, got: %v", err)
-		}
-	})
-
-	t.Run("SessionKeys PubKeys wrong type", func(t *testing.T) {
-		m := map[string]interface{}{
-			"SessionKeys": map[string]interface{}{
-				"PubKeys": 17,
-			},
-		}
-		_, err := DeserializeDkg(m)
-		if err == nil || !strings.Contains(err.Error(), "`SessionKeys:PubKeys` parse error") {
-			t.Fatalf("want SessionKeys:PubKeys parse error, got: %v", err)
-		}
-	})
-
-	t.Run("R1 nested error (Count wrong type)", func(t *testing.T) {
-		m := map[string]interface{}{
-			"R1": map[string]interface{}{
-				"Mask":  1,
-				"Count": "nope",
-			},
-		}
-		_, err := DeserializeDkg(m)
-		if err == nil || !strings.Contains(err.Error(), "`R1` parse error") {
-			t.Fatalf("want R1 parse error, got: %v", err)
-		}
-	})
-
-	t.Run("CfgHash bad base64", func(t *testing.T) {
-		m := map[string]interface{}{"CfgHash": "!!notb64!!"}
-		_, err := DeserializeDkg(m)
-		if err == nil || !strings.Contains(err.Error(), "`CfgHash` parse error") {
-			t.Fatalf("want CfgHash parse error, got: %v", err)
-		}
-	})
-
-	t.Run("Attempts wrong type", func(t *testing.T) {
-		m := map[string]interface{}{"Attempts": "zero"}
-		_, err := DeserializeDkg(m)
-		if err == nil || !strings.Contains(err.Error(), "`Attempts` parse error") {
-			t.Fatalf("want Attempts parse error, got: %v", err)
-		}
-	})
-
-	t.Run("Until bad format", func(t *testing.T) {
-		m := map[string]interface{}{"Until": "21-08-2025 15:24:47"}
-		_, err := DeserializeDkg(m)
-		if err == nil || !strings.Contains(err.Error(), "`Until` parse error") {
-			t.Fatalf("want Until parse error, got: %v", err)
-		}
-	})
 }

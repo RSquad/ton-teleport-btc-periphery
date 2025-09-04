@@ -2,77 +2,94 @@ package fetchers
 
 import (
 	"context"
-	"encoding/hex"
 	"fmt"
-	"strconv"
 	"sync"
 	"time"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
-	jwv4r2contract "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/jw_v4r2_contract"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/config"
+	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/data_models"
 	"github.com/xssnick/tonutils-go/address"
 )
 
 type FetcherContractBalances struct {
+	chDB          chan PayloadDB
 	tonClient     *tonclient.TonClient
 	contractAddrs map[string]*address.Address
+	period        int64 // Fetch period (in seconds)
 }
 
 func NewFetcherContractBalances(
+	chDB chan PayloadDB,
 	tonClient *tonclient.TonClient,
 	cfg *config.ServicesConfig,
 ) *FetcherContractBalances {
-	/*
-		jwv4r2contract, err := createJWV4R2Contract(tonClient, cfg.RelayerWalletV4Secret)
-		var relayerAddr *address.Address
-		if err != nil {
-			logger.Log.Error().
-				Msg(fmt.Sprintf("FetcherContractBalances: can't create jwv4r2contract, error: %v", err))
-			relayerAddr = &address.Address{}
-		} else {
-			relayerAddr = jwv4r2contract.Address()
-		}
-	*/
 	return &FetcherContractBalances{
+		chDB:      chDB,
 		tonClient: tonClient,
 		contractAddrs: map[string]*address.Address{
-			"teleport":    cfg.TeleportContractAddr,
 			"coordinator": cfg.CoordinatorContractAddr,
+			"teleport":    cfg.TeleportContractAddr,
 			"bitclient":   cfg.BitcoinClientContractAddr,
 			"minter":      cfg.JettonMinterContractAddr,
-			//"relayer":     relayerAddr,
+			"relayer":     cfg.RelayerWalletAddr,
 		},
+		period: int64(cfg.ContractBalancesFetchPeriod),
 	}
 }
 
-func createJWV4R2Contract(tonClient *tonclient.TonClient, jwV4R2Secret string) (*jwv4r2contract.JWV4R2Contract, error) {
-	jwV4R2SecretBytes, err := hex.DecodeString(jwV4R2Secret)
-	if err != nil {
-		return nil, fmt.Errorf("failed to decode jwv4r2 secret: %w", err)
-	}
+func (fetcher *FetcherContractBalances) Work(ctx context.Context, wg *sync.WaitGroup) (err error) {
+	defer wg.Done()
 
-	jwV4R2Contract, err := jwv4r2contract.NewJWV4R2Contract(
-		tonClient.API,
-		jwV4R2SecretBytes,
-		context.Background(),
-	)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create jwv4r2 contract: %w", err)
+	defer logger.Log.Info().Msg("FetcherContractBalances: stopped")
+	logger.DefaultLogStartWork("FetcherContractBalances: starting...")
+
+	ticker := time.NewTicker(time.Duration(fetcher.period) * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			logger.Log.Info().Msg("FetcherContractBalances received shutdown signal...")
+			return
+		case <-ticker.C:
+			fetcher.Fetch()
+		}
 	}
-	return jwV4R2Contract, nil
 }
 
-func (fetcher *FetcherContractBalances) GetBalances() (map[string]float64, error) {
-	balances := make(map[string]float64)
+func (fetcher *FetcherContractBalances) Fetch() {
+	balances, err := fetcher.GetBalances()
+	if err != nil {
+		logger.Log.Error().Err(err).
+			Str("component", "FetcherContractBalances").
+			Msg("failed to GetBalances")
+	}
+
+	jsonData, err := data_models.SerializeContractBalancesDB(balances)
+	if err != nil {
+		logger.Log.Error().Err(err).
+			Str("component", "FetcherContractBalances").
+			Msg("failed to serialize json")
+	}
+
+	fetcher.chDB <- PayloadDB{
+		timestamp: time.Now(),
+		typeId:    PayloadTypeContractBalances,
+		payload:   string(jsonData),
+	}
+}
+
+func (fetcher *FetcherContractBalances) GetBalances() (*data_models.ContractBalances, error) {
+	var balances data_models.ContractBalances
 
 	for name, contractAddr := range fetcher.contractAddrs {
-		balances[name] = -1.0 // Default value
-
-		if contractAddr == nil {
-			continue
+		contractBalance := data_models.ContractBalance{
+			Name:    name,
+			Addr:    contractAddr,
+			Balance: 0,
 		}
 
 		account, err := fetcher.tonClient.FetchAcc(contractAddr, nil)
@@ -88,56 +105,17 @@ func (fetcher *FetcherContractBalances) GetBalances() (map[string]float64, error
 			continue
 		}
 
-		balance, err := fetcher.tonClient.GetBalance(contractAddr)
+		balanceCoins, err := fetcher.tonClient.GetBalance(contractAddr)
 		if err != nil {
 			logger.Log.Error().
 				Msg(fmt.Sprintf("FetcherContractBalances: can`t get balance for contract: %s, error: %v", utils.AddrToRawString(contractAddr), err))
 			continue
 		}
 
-		// TODO: make integral value (not float)
-		balanceFloat, err := strconv.ParseFloat(balance.String(), 64)
-		if err != nil {
-			logger.Log.Error().Msg(fmt.Sprintf("FetcherContractBalances: can`t convert string: %s to float, error: %v", balance.String(), err))
-			continue
-		}
+		contractBalance.Balance = balanceCoins.Nano().Uint64()
 
-		balances[name] = balanceFloat
+		balances.Balances = append(balances.Balances, &contractBalance)
 	}
 
-	return balances, nil
-}
-
-func (fetcher *FetcherContractBalances) Work(ctx context.Context, wg *sync.WaitGroup) (err error) {
-	defer wg.Done()
-
-	defer logger.Log.Info().Msg("FetcherContractBalances: stopped")
-	logger.DefaultLogStartWork("FetcherContractBalances: starting...")
-
-	for {
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		default:
-			// TOOD: write to DB
-
-			/*
-				balances, err := fetcher.GetBalances()
-				if err != nil {
-					return err
-				}
-
-				for name, value := range balances {
-					contractAddr := fetcher.contractAddrs[name]
-
-					if contractAddr != nil {
-						contractBalances.WithLabelValues(utils.AddrToRawString(contractAddr), name).Set(value)
-					}
-				}
-			*/
-
-			// TODO: reimplement with time.NewTicker
-			time.Sleep(10 * time.Second)
-		}
-	}
+	return &balances, nil
 }

@@ -2,21 +2,23 @@ package alerts
 
 import (
 	"encoding/hex"
+	"math/big"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/mutils"
 )
 
-type AlertPegoutSigners struct {
+type AlertPegoutCommintments struct {
 }
 
-func NewAlertPegoutSigners() Alert {
-	return &AlertPegoutSigners{}
+func NewAlertPegoutCommintments() Alert {
+	return &AlertPegoutCommintments{}
 }
 
-func (alert *AlertPegoutSigners) Check(dataSource AlertDataSource) (Severity, Labels, error) {
+func (alert *AlertPegoutCommintments) Check(dataSource AlertDataSource) (Severity, Labels, error) {
 	labels := Labels{
 		"bitcoin_tx_id": "",
 		"pegout_addr":   "",
+		"threshold":     "", // TODO: add threshold value
 	}
 
 	// Get first unsigned pegout
@@ -42,25 +44,34 @@ func (alert *AlertPegoutSigners) Check(dataSource AlertDataSource) (Severity, La
 	}
 	labels["pegout_addr"] = unsignedPegout.PegoutAddress.StringRaw()
 
-	// Calulate signersAllowedPercentage
+	// Wait until the signing stage starts
+	if unsignedPegout.Signatures.Count == 0 {
+		return SEVERITY_OK, labels, nil
+	}
+
+	// Calulate commitmentsPercentage
 	maxSigners := unsignedPegout.MaxSigners
-	signersAllowedCount := mutils.Popcnt(unsignedPegout.SigningMask)
-	signersAllowedPercentage := mutils.MulDivCeil(uint(signersAllowedCount), 100, uint(maxSigners))
+	commitmentsMask := new(big.Int).Or(
+		unsignedPegout.CommitmentsMaskAccepted,
+		unsignedPegout.CommitmentsMaskOther,
+	)
+	commitmentsCount := mutils.Popcnt(commitmentsMask)
+	commitmentsPercentage := mutils.MulDivCeil(uint(commitmentsCount), 100, uint(maxSigners))
 
 	// Calulate severity
-	severity := alert.GetSeverity(signersAllowedPercentage)
+	severity := alert.GetSeverity(commitmentsPercentage)
 
 	return severity, labels, nil
 }
 
-func (alert *AlertPegoutSigners) GetSeverity(signersAllowedPercentage uint) Severity {
+func (alert *AlertPegoutCommintments) GetSeverity(commitmentsPercentage uint) Severity {
 	severity := SEVERITY_OK
 
-	if signersAllowedPercentage <= 70 {
+	if commitmentsPercentage <= 70 {
 		severity = SEVERITY_CRITICAL
-	} else if signersAllowedPercentage <= 80 {
+	} else if commitmentsPercentage <= 80 {
 		severity = SEVERITY_WARNING
-	} else if signersAllowedPercentage <= 90 {
+	} else if commitmentsPercentage <= 90 {
 		severity = SEVERITY_INFO
 	}
 

@@ -36,7 +36,7 @@ func (apiHandler AlertsTestingApiHandler) ServeHTTP(w http.ResponseWriter, r *ht
 
 	switch actionName {
 	case "info":
-		payload, err = apiHandler.alertManager.GetInfoJsonStr()
+		payload, err = apiHandler.alertManager.GetInfoJson()
 	case "enforce_info":
 		payload, err = apiHandler.alertManager.GetEnforceInfoJsonStr()
 	case "enforce_set":

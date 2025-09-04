@@ -46,27 +46,27 @@ func (apiHandler JsonApiHandler) ServeHTTP(w http.ResponseWriter, r *http.Reques
 	} else {
 		switch sourceName {
 		case "mints":
-			payload, err = apiHandler.metricsManager.Mints()
+			payload, err = apiHandler.metricsManager.MintsJson()
 		case "burns":
-			payload, err = apiHandler.metricsManager.Burns()
+			payload, err = apiHandler.metricsManager.BurnsJson()
 		case "reinits":
-			payload, err = apiHandler.metricsManager.Reinits()
+			payload, err = apiHandler.metricsManager.ReinitsJson()
 		case "info":
-			payload, err = apiHandler.metricsManager.Info()
+			payload, err = apiHandler.metricsManager.InfoJson()
 		case "internal_keys":
-			payload, err = apiHandler.metricsManager.InternalKeys()
+			payload, err = apiHandler.metricsManager.InternalKeysJson()
 		case "plot_minted":
-			payload, err = apiHandler.metricsManager.PlotMinted()
+			payload, err = apiHandler.metricsManager.PlotMintedJson()
 		case "plot_burned":
-			payload, err = apiHandler.metricsManager.PlotBurned()
+			payload, err = apiHandler.metricsManager.PlotBurnedJson()
 		case "plot_total_supply":
-			payload, err = apiHandler.metricsManager.PlotTotalSupply()
+			payload, err = apiHandler.metricsManager.PlotTotalSupplyJson()
 		case "plots_summary":
-			payload, err = apiHandler.metricsManager.PlotsSummary()
+			payload, err = apiHandler.metricsManager.PlotsSummaryJson()
 		case "dkg_status":
-			payload, err = apiHandler.metricsManager.DkgStatus(r.Context())
+			payload, err = apiHandler.metricsManager.DkgStatusJson(r.Context())
 		case "alerts":
-			payload, err = apiHandler.alertsManager.GetInfoJsonStr()
+			payload, err = apiHandler.alertsManager.GetInfoJson()
 		default:
 			w.WriteHeader(http.StatusNotFound)
 			w.Write([]byte("Please select one of the next values: mints, burns, reinits, info, internal_keys, plot_minted, plot_burned, plot_total_supply, plots_summary, dkg_status, alerts"))

@@ -1,93 +1,109 @@
 package alerts
 
 import (
+	"context"
 	"database/sql"
-	"errors"
 	"time"
 
+	"github.com/btcsuite/btcd/btcjson"
+	"github.com/btcsuite/btcd/chaincfg/chainhash"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/teleportcontract"
+	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/config"
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/data_models"
+	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/data_sources"
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/metrics"
+	"github.com/xssnick/tonutils-go/address"
 )
 
 type AlertDataSourceLive struct {
-	metricsManager *metrics.MetricsManager
+	metricsManager      *metrics.MetricsManager
+	dataSourceDB        *data_sources.DataSourceDB
+	bitcoinClient       *bitcoin.Client
+	globalRuntimeConfig *config.GlobalRuntimeConfig
 }
 
-func NewAlertDataSourceLive(db *sql.DB, tonClient *tonclient.TonClient) *AlertDataSourceLive {
+func NewAlertDataSourceLive(
+	db *sql.DB,
+	bitcoinClient *bitcoin.Client,
+	globalRuntimeConfig *config.GlobalRuntimeConfig,
+) AlertDataSource {
 	dataSource := AlertDataSourceLive{
-		metricsManager: metrics.NewMetricsManager(db, tonClient),
+		metricsManager:      metrics.NewMetricsManager(db, globalRuntimeConfig),
+		dataSourceDB:        data_sources.NewDataSourceDB(db),
+		bitcoinClient:       bitcoinClient,
+		globalRuntimeConfig: globalRuntimeConfig,
 	}
 
 	return &dataSource
 }
 
-func (dataSource *AlertDataSourceLive) FirstUnsignedPegout() (*coordinator.PegoutRecord, error) {
-	coordinatorContractStateJson, err := dataSource.metricsManager.CoordinatorContractState()
+func (dataSource *AlertDataSourceLive) CoordinatorContractStorageDB() (*coordinator.Storage, error) {
+	return dataSource.dataSourceDB.CoordinatorContractStorage()
+}
+
+func (dataSource *AlertDataSourceLive) TeleportContractStorageDB() (*teleportcontract.Storage, error) {
+	return dataSource.dataSourceDB.TeleportContractStorage()
+}
+
+func (dataSource *AlertDataSourceLive) BitcoinClientContractStorageDB() (*data_models.BitcoinClientContractStorage, error) {
+	return dataSource.dataSourceDB.BitcoinClientContractStorage()
+}
+
+func (dataSource *AlertDataSourceLive) FirstUnsignedPegoutDB() (*coordinator.PegoutRecord, error) {
+	coordinatorContractStorage, err := dataSource.dataSourceDB.CoordinatorContractStorage()
 	if err != nil {
 		return nil, err
 	}
 
-	unsignedPegoutsJson, ok := coordinatorContractStateJson["UnsignedPegouts"].([]interface{})
-	if !ok {
-		return nil, errors.New("UnsignedPegouts has wrong type")
-	}
-
-	if len(unsignedPegoutsJson) == 0 {
+	if len(coordinatorContractStorage.UnsignedPegouts) == 0 {
 		return nil, nil
 	}
 
-	unsignedPegouts, err := data_models.DeserializePegouts(unsignedPegoutsJson, 1)
-	if err != nil {
-		return nil, err
-	}
-
-	return &unsignedPegouts[0], nil
+	return &coordinatorContractStorage.UnsignedPegouts[0], nil
 }
 
-func (dataSource *AlertDataSourceLive) CoordinatorContractData() (*coordinator.Storage, error) {
-	coordinatorContractStateJson, err := dataSource.metricsManager.CoordinatorContractState()
-	if err != nil {
-		return nil, err
-	}
-
-	coordinatorContractState, err := data_models.DeserializeCoordinatorContractState(coordinatorContractStateJson)
-	if err != nil {
-		return nil, err
-	}
-
-	return coordinatorContractState, nil
+func (dataSource *AlertDataSourceLive) LastSignedPegoutDB() (*data_models.Pegout, error) {
+	return dataSource.dataSourceDB.LastSignedPegout()
 }
 
-func (dataSource *AlertDataSourceLive) Dkg() (*coordinator.DKG, error) {
-	prevDkgJson, err := dataSource.metricsManager.Dkg()
-	if err != nil {
-		return nil, err
-	}
-
-	prevDkg, err := data_models.DeserializeDkg(prevDkgJson)
-	if err != nil {
-		return nil, err
-	}
-
-	return prevDkg, nil
+func (dataSource *AlertDataSourceLive) LastSignedPegoutsDB(limit uint) ([]*data_models.Pegout, error) {
+	return dataSource.dataSourceDB.LastSignedPegouts(limit)
 }
 
-func (dataSource *AlertDataSourceLive) PrevDkg() (*coordinator.DKG, error) {
-	prevDkgJson, err := dataSource.metricsManager.PrevDkg()
-	if err != nil {
-		return nil, err
-	}
+func (dataSource *AlertDataSourceLive) DkgDB() (*coordinator.DKG, error) {
+	return dataSource.dataSourceDB.Dkg()
+}
 
-	prevDkg, err := data_models.DeserializeDkg(prevDkgJson)
-	if err != nil {
-		return nil, err
-	}
+func (dataSource *AlertDataSourceLive) PrevDkgDB() (*coordinator.DKG, error) {
+	return dataSource.dataSourceDB.PrevDkg()
+}
 
-	return prevDkg, nil
+func (dataSource *AlertDataSourceLive) PegoutDB(address *address.Address) (*data_models.Pegout, error) {
+	return dataSource.dataSourceDB.Pegout(address)
 }
 
 func (dataSource *AlertDataSourceLive) NowUnixTs() int64 {
 	return time.Now().Unix()
+}
+
+func (dataSource *AlertDataSourceLive) BtcGetBlockHashByTxID(txID *chainhash.Hash) (*chainhash.Hash, error) {
+	return dataSource.bitcoinClient.GetBlockHashByTxID(txID)
+}
+
+func (dataSource *AlertDataSourceLive) BtcGetBlockHeightByHash(hash *chainhash.Hash) (int64, error) {
+	return dataSource.bitcoinClient.GetBlockHeightByHash(hash)
+}
+
+func (dataSource *AlertDataSourceLive) BtcGetMempoolEntry(txHash string) (*btcjson.GetMempoolEntryResult, error) {
+	return dataSource.bitcoinClient.RPCClient.GetMempoolEntry(txHash)
+}
+
+func (dataSource *AlertDataSourceLive) TonMaxMainValidators(ctx context.Context) (int, error) {
+	return dataSource.globalRuntimeConfig.TonMaxMainValidators(ctx)
+}
+
+func (dataSource *AlertDataSourceLive) ActualContractBalances() (*data_models.ContractBalances, error) {
+	return dataSource.dataSourceDB.ActualContractBalances()
 }

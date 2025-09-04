@@ -5,37 +5,31 @@ import (
 	"database/sql"
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
-	"strings"
-	"sync"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
-	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/data_models"
+	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/config"
+	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/data_sources"
+	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/fetchers"
 )
 
 type MetricsManager struct {
-	db        *sql.DB
-	tonClient *tonclient.TonClient
-
-	mu                      sync.RWMutex
-	tonMaxMainValidators    int
-	coordinatorContractData *coordinator.Storage
+	db                  *sql.DB
+	dataSourceDB        *data_sources.DataSourceDB
+	globalRuntimeConfig *config.GlobalRuntimeConfig
 }
 
 func NewMetricsManager(
 	db *sql.DB,
-	tonClient *tonclient.TonClient,
+	globalRuntimeConfig *config.GlobalRuntimeConfig,
 ) *MetricsManager {
 	return &MetricsManager{
-		db:                      db,
-		tonClient:               tonClient,
-		tonMaxMainValidators:    -1,
-		coordinatorContractData: nil,
+		db:                  db,
+		dataSourceDB:        data_sources.NewDataSourceDB(db),
+		globalRuntimeConfig: globalRuntimeConfig,
 	}
 }
 
-func (manager *MetricsManager) Mints() (string, error) {
+func (manager *MetricsManager) MintsJson() (string, error) {
 	const limit = 5000 // Yes, we will select only last 5000 mints
 
 	rows, err := manager.db.Query(
@@ -77,7 +71,7 @@ func (manager *MetricsManager) Mints() (string, error) {
 	return data, nil
 }
 
-func (manager *MetricsManager) Burns() (string, error) {
+func (manager *MetricsManager) BurnsJson() (string, error) {
 	const limit = 5000 // Yes, we will select only last 5000 burns
 
 	rows, err := manager.db.Query(
@@ -121,7 +115,7 @@ func (manager *MetricsManager) Burns() (string, error) {
 	return data, nil
 }
 
-func (manager *MetricsManager) Reinits() (string, error) {
+func (manager *MetricsManager) ReinitsJson() (string, error) {
 	const limit = 5000 // Yes, we will select only last 5000 reinits
 
 	rows, err := manager.db.Query(
@@ -163,7 +157,7 @@ func (manager *MetricsManager) Reinits() (string, error) {
 	return data, nil
 }
 
-func (manager *MetricsManager) InternalKeys() (string, error) {
+func (manager *MetricsManager) InternalKeysJson() (string, error) {
 	const limit = 5000 // Yes, we will select only last 5000 internal keys
 
 	rows, err := manager.db.Query(
@@ -200,31 +194,34 @@ func (manager *MetricsManager) InternalKeys() (string, error) {
 	return data, nil
 }
 
-func (manager *MetricsManager) Info() (string, error) {
+func (manager *MetricsManager) InfoJson() (string, error) {
 	rows, err := manager.db.Query(
 		`SELECT jsonb_build_object(
 				'contractBitcoinClient', (
 						SELECT payload::json
 						FROM metrics_data
-						WHERE type_id = 2
+						WHERE type_id = $1
 						ORDER BY id DESC
 						LIMIT 1
 				),
-				'blockChainInfo', (
+				'bitcoinNetworkInfo', (
 						SELECT payload::json
 						FROM metrics_data
-						WHERE type_id = 3
+						WHERE type_id = $2
 						ORDER BY id DESC
 						LIMIT 1
 				),
 				'contractTeleport', (
 						SELECT payload::json
 						FROM metrics_data
-						WHERE type_id = 4
+						WHERE type_id = $3
 						ORDER BY id DESC
 						LIMIT 1
 				)
 		) AS result;`,
+		fetchers.PayloadTypeContractBitcoinClient,
+		fetchers.PayloadTypeBitcoinNetwork,
+		fetchers.PayloadTypeContractTeleport,
 	)
 	if err != nil {
 		return "", err
@@ -247,7 +244,7 @@ func (manager *MetricsManager) Info() (string, error) {
 	return data, nil
 }
 
-func (manager *MetricsManager) PlotMinted() (string, error) {
+func (manager *MetricsManager) PlotMintedJson() (string, error) {
 	rows, err := manager.db.Query(
 		`SELECT COALESCE(json_agg(result), '[]') AS data FROM (
 			WITH data_by_days AS (
@@ -282,7 +279,7 @@ func (manager *MetricsManager) PlotMinted() (string, error) {
 	return data, nil
 }
 
-func (manager *MetricsManager) PlotBurned() (string, error) {
+func (manager *MetricsManager) PlotBurnedJson() (string, error) {
 	rows, err := manager.db.Query(
 		`SELECT COALESCE(json_agg(result), '[]') AS data FROM (
 			WITH data_by_days AS (
@@ -319,7 +316,7 @@ func (manager *MetricsManager) PlotBurned() (string, error) {
 	return data, nil
 }
 
-func (manager *MetricsManager) PlotTotalSupply() (string, error) {
+func (manager *MetricsManager) PlotTotalSupplyJson() (string, error) {
 	rows, err := manager.db.Query(
 		`SELECT COALESCE(json_agg(result), '[]') AS data FROM (
 			WITH unified_events AS (
@@ -376,7 +373,7 @@ func (manager *MetricsManager) PlotTotalSupply() (string, error) {
 	return data, nil
 }
 
-func (manager *MetricsManager) PlotsSummary() (string, error) {
+func (manager *MetricsManager) PlotsSummaryJson() (string, error) {
 	rows, err := manager.db.Query(
 		`SELECT jsonb_build_object(
 				'mints_count', (
@@ -414,7 +411,7 @@ func (manager *MetricsManager) PlotsSummary() (string, error) {
 	return data, nil
 }
 
-func (manager *MetricsManager) DkgStatus(ctx context.Context) (string, error) {
+func (manager *MetricsManager) DkgStatusJson(ctx context.Context) (string, error) {
 	type OriginalData struct {
 		Dkg     *coordinator.DKG
 		PrevDkg *coordinator.DKG
@@ -437,27 +434,17 @@ func (manager *MetricsManager) DkgStatus(ctx context.Context) (string, error) {
 		Original       OriginalData
 	}
 
-	dkgJson, err := manager.Dkg()
+	dkg, err := manager.dataSourceDB.Dkg()
 	if err != nil {
 		return "", err
 	}
 
-	prevDkgJson, err := manager.PrevDkg()
+	prevDkg, err := manager.dataSourceDB.PrevDkg()
 	if err != nil {
 		return "", err
 	}
 
-	dkg, err := data_models.DeserializeDkg(dkgJson)
-	if err != nil {
-		return "", err
-	}
-
-	prevDkg, err := data_models.DeserializeDkg(prevDkgJson)
-	if err != nil {
-		return "", err
-	}
-
-	coordinatorContractData, err := manager.CoordinatorStorage()
+	coordinatorContractData, err := manager.dataSourceDB.CoordinatorContractStorage()
 	if err != nil {
 		return "", err
 	}
@@ -479,7 +466,7 @@ func (manager *MetricsManager) DkgStatus(ctx context.Context) (string, error) {
 		}
 
 		if !coordinatorContractData.StandaloneMode {
-			maxValidators, err := manager.TonMaxMainValidators(ctx)
+			maxValidators, err := manager.globalRuntimeConfig.TonMaxMainValidators(ctx)
 			if err != nil {
 				return nil, err
 			}
@@ -532,87 +519,4 @@ func (manager *MetricsManager) DkgStatus(ctx context.Context) (string, error) {
 	}
 
 	return string(jsonData), nil
-}
-
-func (manager *MetricsManager) CoordinatorContractState() (map[string]interface{}, error) {
-	return manager.SelectToObject("SELECT payload FROM metrics_data WHERE type_id = 5 ORDER BY id DESC LIMIT 1")
-}
-
-func (manager *MetricsManager) Dkg() (map[string]interface{}, error) {
-	return manager.SelectToObject("SELECT payload FROM metrics_data WHERE type_id = 0 ORDER BY id DESC LIMIT 1")
-}
-
-func (manager *MetricsManager) PrevDkg() (map[string]interface{}, error) {
-	return manager.SelectToObject("SELECT payload FROM metrics_data WHERE type_id = 1 ORDER BY id DESC LIMIT 1")
-}
-
-func (manager *MetricsManager) SelectToObject(sql string) (map[string]interface{}, error) {
-	rows, err := manager.db.Query(sql)
-	if err != nil {
-		return nil, err
-	}
-
-	defer rows.Close()
-
-	var data string
-	if rows.Next() {
-		err = rows.Scan(&data)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	if len(data) == 0 {
-		data = "{}"
-	}
-
-	jsonDec := json.NewDecoder(strings.NewReader(data))
-	jsonDec.UseNumber()
-
-	var m map[string]interface{}
-	if err := jsonDec.Decode(&m); err != nil {
-		return nil, err
-	}
-	return m, nil
-}
-
-func (manager *MetricsManager) TonMaxMainValidators(ctx context.Context) (int, error) {
-	manager.mu.Lock()
-	defer manager.mu.Unlock()
-
-	if manager.tonMaxMainValidators < 0 {
-		block, err := manager.tonClient.API.GetMasterchainInfo(ctx)
-		if err != nil {
-			return 0, fmt.Errorf("failed to get block: %v", err)
-		}
-
-		tonConfig, err := manager.tonClient.API.GetBlockchainConfig(ctx, block, 16)
-		if err != nil {
-			return 0, fmt.Errorf("failed to get config: %v", err)
-		}
-
-		tonConfigParam16 := tonConfig.Get(16)
-		s := tonConfigParam16.BeginParse()
-		s.MustLoadUInt(16)
-		manager.tonMaxMainValidators = int(s.MustLoadUInt(16))
-	}
-
-	return manager.tonMaxMainValidators, nil
-}
-
-func (manager *MetricsManager) CoordinatorStorage() (*coordinator.Storage, error) {
-	manager.mu.Lock()
-	defer manager.mu.Unlock()
-
-	coordinatorContractStateJson, err := manager.CoordinatorContractState()
-	if err != nil {
-		return nil, err
-	}
-
-	coordinatorContractState, err := data_models.DeserializeCoordinatorContractState(coordinatorContractStateJson)
-	if err != nil {
-		return nil, err
-	}
-
-	return coordinatorContractState, nil
 }

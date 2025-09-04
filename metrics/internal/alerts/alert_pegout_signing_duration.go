@@ -6,6 +6,7 @@
 package alerts
 
 import (
+	"encoding/hex"
 	"time"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
@@ -34,7 +35,7 @@ func (alert *AlertPegoutSigningDuration) Check(dataSource AlertDataSource) (Seve
 	}
 
 	// Get first unsigned pegout
-	unsignedPegout, err := dataSource.FirstUnsignedPegout()
+	unsignedPegout, err := dataSource.FirstUnsignedPegoutDB()
 	if err != nil {
 		return SEVERITY_UNKNOWN, labels, err
 	}
@@ -48,7 +49,7 @@ func (alert *AlertPegoutSigningDuration) Check(dataSource AlertDataSource) (Seve
 
 	// Get pegout signingTimeout (from Coordinator)
 	if alert.signingTimeout == 0 {
-		coordinatorData, err := dataSource.CoordinatorContractData()
+		coordinatorData, err := dataSource.CoordinatorContractStorageDB()
 		if err != nil {
 			return SEVERITY_UNKNOWN, labels, err
 		}
@@ -83,21 +84,27 @@ func (alert *AlertPegoutSigningDuration) Check(dataSource AlertDataSource) (Seve
 		}
 
 		alert.beginTimestamp = beginTimestamp
-		labels["bitcoin_tx_id"] = "unknonwn"
-		labels["pegout_addr"] = alert.currentUnsignedPegout.PegoutAddress.StringRaw()
+	} else {
 
-		return alert.severity, labels, nil
+		// Calulate severity
+		duration := time.Duration(dataSource.NowUnixTs()-alert.beginTimestamp) * time.Second
+		currentSeverity := alert.GetSeverity(duration)
+
+		if currentSeverity > alert.severity {
+			alert.severity = currentSeverity
+		}
 	}
 
-	// Calulate severity
-	duration := time.Duration(dataSource.NowUnixTs()-alert.beginTimestamp) * time.Second
-	currentSeverity := alert.GetSeverity(duration)
-
-	if currentSeverity > alert.severity {
-		alert.severity = currentSeverity
+	// Get pegout record from DB
+	pegout, err := dataSource.PegoutDB(alert.currentUnsignedPegout.PegoutAddress)
+	if err != nil {
+		return SEVERITY_UNKNOWN, labels, err
 	}
 
-	labels["bitcoin_tx_id"] = "unknonwn"
+	// Update labels
+	if pegout.BitcoinTxId != nil {
+		labels["bitcoin_tx_id"] = hex.EncodeToString(pegout.BitcoinTxId)
+	}
 	labels["pegout_addr"] = alert.currentUnsignedPegout.PegoutAddress.StringRaw()
 
 	return alert.severity, labels, nil

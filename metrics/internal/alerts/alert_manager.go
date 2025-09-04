@@ -30,8 +30,19 @@ func NewAlertManager(
 		alertStatesEnforced: make(map[string]*AlertState),
 	}
 
-	// alert_pegout_signers
-	err := alertManager.RegisterAlert(
+	var err error = nil
+
+	// alert_pegout_fee_not_reset (pegout.fee.not.reset)
+	err = alertManager.RegisterAlert(
+		"alert_pegout_fee_not_reset",
+		NewAlertPegoutFeeNotReset(),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	// alert_pegout_signers (pegout.signers)
+	err = alertManager.RegisterAlert(
 		"alert_pegout_signers",
 		NewAlertPegoutSigners(),
 	)
@@ -48,10 +59,112 @@ func NewAlertManager(
 		return nil, err
 	}
 
+	// alert_pegout_commintments (pegout.commitments)
+	err = alertManager.RegisterAlert(
+		"alert_pegout_commintments",
+		NewAlertPegoutCommintments(),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	// alert_pegout_in_mempool (pegout.in.mempool)
+	err = alertManager.RegisterAlert(
+		"alert_pegout_in_mempool",
+		NewAlertPegoutInMempool(),
+	)
+	if err != nil {
+		return nil, err
+	}
+
 	// alert_pegout_signing_duration (pegout.signing.duration)
 	err = alertManager.RegisterAlert(
 		"alert_pegout_signing_duration",
 		NewAlertPegoutSigningDuration(),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	// dkg_status (dkg.status)
+	err = alertManager.RegisterAlert(
+		"dkg_status",
+		NewAlertDkgStatus(),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	// fees_health (fees.health)
+	// TODO: add
+
+	// dkg_restarts (dkg.restarts)
+	err = alertManager.RegisterAlert(
+		"dkg_restarts",
+		NewAlertDkgRestarts(),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	// dkg_participants (dkg.participants)
+	err = alertManager.RegisterAlert(
+		"dkg_participants",
+		NewAlertDkgParticipants(),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	// dkg_culprit_found (dkg.culprit.found)
+	err = alertManager.RegisterAlert(
+		"dkg_culprit_found",
+		NewAlertDkgCulpritFound(),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	// contract_balance_coordinator (contract.balance.coordinator)
+	err = alertManager.RegisterAlert(
+		"contract_balance_coordinator",
+		NewAlertContractBalance("coordinator"),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	// contract_balance_teleport (contract.balance.teleport)
+	err = alertManager.RegisterAlert(
+		"contract_balance_teleport",
+		NewAlertContractBalance("teleport"),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	// contract_balance_bitclient (contract.balance.bitclient)
+	err = alertManager.RegisterAlert(
+		"contract_balance_bitclient",
+		NewAlertContractBalance("bitclient"),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	// contract_balance_minter (contract.balance.minter)
+	err = alertManager.RegisterAlert(
+		"contract_balance_minter",
+		NewAlertContractBalance("minter"),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	// contract_balance_relayer (contract.balance.relayer)
+	err = alertManager.RegisterAlert(
+		"contract_balance_relayer",
+		NewAlertContractBalance("relayer"),
 	)
 	if err != nil {
 		return nil, err
@@ -115,7 +228,7 @@ func (manager *AlertManager) LogAlertError(alertName string, err error) {
 		Msg("Alert finished work with error")
 }
 
-func (manager *AlertManager) GetInfoJsonStr() (string, error) {
+func (manager *AlertManager) GetInfoJson() (string, error) {
 	manager.mu.RLock()
 	defer manager.mu.RUnlock()
 

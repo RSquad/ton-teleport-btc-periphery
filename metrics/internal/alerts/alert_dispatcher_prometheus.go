@@ -9,13 +9,15 @@ import (
 )
 
 type AlertDispatcherPrometheus struct {
-	mu     sync.RWMutex
-	gauges map[string]*prometheus.GaugeVec
+	mu         sync.RWMutex
+	gauges     map[string]*prometheus.GaugeVec
+	lastValues map[string]*AlertState
 }
 
 func NewAlertDispatcherPrometheus() *AlertDispatcherPrometheus {
 	return &AlertDispatcherPrometheus{
-		gauges: make(map[string]*prometheus.GaugeVec),
+		gauges:     make(map[string]*prometheus.GaugeVec),
+		lastValues: make(map[string]*AlertState),
 	}
 }
 
@@ -35,7 +37,7 @@ func (d *AlertDispatcherPrometheus) getOrCreateGaugeVec(state *AlertState) *prom
 	}
 
 	labelNames := make([]string, 0)
-	for name, _ := range state.Labels {
+	for name := range state.Labels {
 		labelNames = append(labelNames, name)
 	}
 
@@ -52,5 +54,21 @@ func (d *AlertDispatcherPrometheus) getOrCreateGaugeVec(state *AlertState) *prom
 
 func (d *AlertDispatcherPrometheus) OnAlert(state *AlertState) {
 	gv := d.getOrCreateGaugeVec(state)
+
+	d.mu.Lock()
+	defer d.mu.Unlock()
+
+	// Update vector value
 	gv.With(prometheus.Labels(state.Labels)).Set(float64(state.Severity))
+
+	// Remove the old value if the labels do not match
+	lastValue, exists := d.lastValues[state.Name]
+	if exists {
+		if !IsEqual(lastValue.Labels, state.Labels) {
+			gv.Delete(prometheus.Labels(lastValue.Labels))
+		}
+	}
+
+	// Save last value
+	d.lastValues[state.Name] = state
 }
