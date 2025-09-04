@@ -2,6 +2,7 @@ package data_sources
 
 import (
 	"database/sql"
+	"time"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/teleportcontract"
@@ -125,6 +126,28 @@ func (dataSource *DataSourceDB) PrevDkg() (*coordinator.DKG, error) {
 	return data, nil
 }
 
+func (dataSource *DataSourceDB) DkgBeforeRestartJson(t time.Time) ([]byte, error) {
+	return dataSource.SelectToObject(
+		"SELECT payload FROM metrics_data WHERE type_id = $1 AND EXTRACT(EPOCH FROM (payload->>'Until')::timestamptz) = $2 ORDER BY id DESC LIMIT 1",
+		fetchers.PayloadTypePrevDKG,
+		t.Unix(),
+	)
+}
+
+func (dataSource *DataSourceDB) DkgBeforeRestart(t time.Time) (*coordinator.DKG, error) {
+	jsonData, err := dataSource.DkgBeforeRestartJson(t)
+	if err != nil {
+		return nil, err
+	}
+
+	data, err := data_models.DeserializeDkg(jsonData)
+	if err != nil {
+		return nil, err
+	}
+
+	return data, nil
+}
+
 func (dataSource *DataSourceDB) PegoutJson(address *address.Address) ([]byte, error) {
 	return dataSource.SelectToObject(
 		"SELECT row_to_json(t) FROM (SELECT * FROM public.pegouts WHERE addr=$1) t",
@@ -168,7 +191,7 @@ func (dataSource *DataSourceDB) LastSignedPegout() (*data_models.Pegout, error) 
 
 func (dataSource *DataSourceDB) LastSignedPegoutsJson(limit uint) ([]byte, error) {
 	return dataSource.SelectToObject(
-		"SELECT COALESCE(json_agg(t), '[]') FROM (SELECT * FROM public.pegouts WHERE status = 'SIGNED' ORDER BY id DESC LIMIT $1) t",
+		"SELECT COALESCE(jsonb_agg(t), '[]') FROM (SELECT * FROM public.pegouts WHERE status = 'SIGNED' ORDER BY id DESC LIMIT $1) t",
 		limit,
 	)
 }
@@ -187,25 +210,26 @@ func (dataSource *DataSourceDB) LastSignedPegouts(limit uint) ([]*data_models.Pe
 	return pegouts, nil
 }
 
-func (dataSource *DataSourceDB) ActualContractBalancesJson() ([]byte, error) {
-	return dataSource.SelectToObject(
-		"SELECT payload FROM metrics_data WHERE type_id = $1 ORDER BY id DESC LIMIT 1",
-		fetchers.PayloadTypeContractBalances,
+func (dataSource *DataSourceDB) ActualContractBalance(name string) (int64, error) {
+	rows, err := dataSource.db.Query(
+		"SELECT value FROM metrics_balances WHERE name = $1 ORDER BY id DESC LIMIT 1",
+		name,
 	)
-}
-
-func (dataSource *DataSourceDB) ActualContractBalances() (*data_models.ContractBalances, error) {
-	jsonData, err := dataSource.ActualContractBalancesJson()
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
 
-	balances, err := data_models.DeserializeContractBalancesDB(jsonData)
-	if err != nil {
-		return nil, err
+	defer rows.Close()
+
+	balance := int64(0)
+	if rows.Next() {
+		err = rows.Scan(&balance)
+		if err != nil {
+			return 0, err
+		}
 	}
 
-	return balances, nil
+	return balance, nil
 }
 
 func (dataSource *DataSourceDB) SelectToObject(sql string, args ...interface{}) ([]byte, error) {

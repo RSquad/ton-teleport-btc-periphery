@@ -56,9 +56,8 @@ func (fetcher *FetcherBitcoinNetwork) Fetch() {
 	}
 
 	fetcher.chDB <- PayloadDB{
-		timestamp: time.Now(),
-		typeId:    PayloadTypeBitcoinNetwork,
-		payload:   string(jsonData),
+		typeId:  PayloadTypeBitcoinNetwork,
+		payload: string(jsonData),
 	}
 }
 

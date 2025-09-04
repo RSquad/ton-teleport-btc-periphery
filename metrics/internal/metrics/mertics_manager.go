@@ -33,7 +33,7 @@ func (manager *MetricsManager) MintsJson() (string, error) {
 	const limit = 5000 // Yes, we will select only last 5000 mints
 
 	rows, err := manager.db.Query(
-		`SELECT COALESCE(json_agg(result), '[]') AS data FROM (
+		`SELECT COALESCE(jsonb_agg(result), '[]') AS data FROM (
 			SELECT
 				m.created_at,
 				m.status,
@@ -75,7 +75,7 @@ func (manager *MetricsManager) BurnsJson() (string, error) {
 	const limit = 5000 // Yes, we will select only last 5000 burns
 
 	rows, err := manager.db.Query(
-		`SELECT COALESCE(json_agg(result), '[]') AS data FROM (
+		`SELECT COALESCE(jsonb_agg(result), '[]') AS data FROM (
 			SELECT
 				tt.created_at,
 				TO_CHAR(b.amount::numeric(24,8) / 100000000::numeric(24,8), 'FM999999990.00000000') || ' BTC' AS amount,
@@ -119,7 +119,7 @@ func (manager *MetricsManager) ReinitsJson() (string, error) {
 	const limit = 5000 // Yes, we will select only last 5000 reinits
 
 	rows, err := manager.db.Query(
-		`SELECT COALESCE(json_agg(result), '[]') AS data FROM (
+		`SELECT COALESCE(jsonb_agg(result), '[]') AS data FROM (
 		  SELECT
 		    tt.created_at AS created_at,
 				tt.hash AS ton_tx,
@@ -161,7 +161,7 @@ func (manager *MetricsManager) InternalKeysJson() (string, error) {
 	const limit = 5000 // Yes, we will select only last 5000 internal keys
 
 	rows, err := manager.db.Query(
-		`SELECT COALESCE(json_agg(result), '[]') AS data FROM (
+		`SELECT COALESCE(jsonb_agg(result), '[]') AS data FROM (
 		  SELECT 
 			  ik.completed_at,
 				ik.key AS internal_key,
@@ -198,21 +198,21 @@ func (manager *MetricsManager) InfoJson() (string, error) {
 	rows, err := manager.db.Query(
 		`SELECT jsonb_build_object(
 				'contractBitcoinClient', (
-						SELECT payload::json
+						SELECT payload
 						FROM metrics_data
 						WHERE type_id = $1
 						ORDER BY id DESC
 						LIMIT 1
 				),
 				'bitcoinNetworkInfo', (
-						SELECT payload::json
+						SELECT payload
 						FROM metrics_data
 						WHERE type_id = $2
 						ORDER BY id DESC
 						LIMIT 1
 				),
 				'contractTeleport', (
-						SELECT payload::json
+						SELECT payload
 						FROM metrics_data
 						WHERE type_id = $3
 						ORDER BY id DESC
@@ -246,7 +246,7 @@ func (manager *MetricsManager) InfoJson() (string, error) {
 
 func (manager *MetricsManager) PlotMintedJson() (string, error) {
 	rows, err := manager.db.Query(
-		`SELECT COALESCE(json_agg(result), '[]') AS data FROM (
+		`SELECT COALESCE(jsonb_agg(result), '[]') AS data FROM (
 			WITH data_by_days AS (
 				SELECT
 					DATE_TRUNC('day', created_at)::date AS day,
@@ -281,7 +281,7 @@ func (manager *MetricsManager) PlotMintedJson() (string, error) {
 
 func (manager *MetricsManager) PlotBurnedJson() (string, error) {
 	rows, err := manager.db.Query(
-		`SELECT COALESCE(json_agg(result), '[]') AS data FROM (
+		`SELECT COALESCE(jsonb_agg(result), '[]') AS data FROM (
 			WITH data_by_days AS (
 				SELECT
 					DATE_TRUNC('day', tt.created_at)::date AS day,
@@ -318,7 +318,7 @@ func (manager *MetricsManager) PlotBurnedJson() (string, error) {
 
 func (manager *MetricsManager) PlotTotalSupplyJson() (string, error) {
 	rows, err := manager.db.Query(
-		`SELECT COALESCE(json_agg(result), '[]') AS data FROM (
+		`SELECT COALESCE(jsonb_agg(result), '[]') AS data FROM (
 			WITH unified_events AS (
 				SELECT
 					DATE_TRUNC('day', created_at)::date AS day,
@@ -413,8 +413,9 @@ func (manager *MetricsManager) PlotsSummaryJson() (string, error) {
 
 func (manager *MetricsManager) DkgStatusJson(ctx context.Context) (string, error) {
 	type OriginalData struct {
-		Dkg     *coordinator.DKG
-		PrevDkg *coordinator.DKG
+		Dkg            *coordinator.DKG
+		LastRestartDkg *coordinator.DKG
+		PrevDkg        *coordinator.DKG
 	}
 
 	type DkgInfo struct {
@@ -439,6 +440,11 @@ func (manager *MetricsManager) DkgStatusJson(ctx context.Context) (string, error
 		return "", err
 	}
 
+	lastRestartDkg, err := manager.dataSourceDB.DkgBeforeRestart(dkg.Until)
+	if err != nil {
+		return "", err
+	}
+
 	prevDkg, err := manager.dataSourceDB.PrevDkg()
 	if err != nil {
 		return "", err
@@ -452,6 +458,7 @@ func (manager *MetricsManager) DkgStatusJson(ctx context.Context) (string, error
 	var status DkgStatus
 	status.StandaloneMode = coordinatorContractData.StandaloneMode
 	status.Original.Dkg = dkg
+	status.Original.LastRestartDkg = lastRestartDkg
 	status.Original.PrevDkg = prevDkg
 
 	sumarizeDkgInfo := func(dkg *coordinator.DKG) (*DkgInfo, error) {
@@ -519,4 +526,35 @@ func (manager *MetricsManager) DkgStatusJson(ctx context.Context) (string, error
 	}
 
 	return string(jsonData), nil
+}
+
+func (manager *MetricsManager) ContractBalanceJson(name string) (string, error) {
+	rows, err := manager.db.Query(
+		`SELECT COALESCE(jsonb_agg(result), '[]') AS data FROM (
+			SELECT 
+			  create_at AS ts,
+				TO_CHAR(value::numeric(24,8) / 100000000::numeric(24,8), 'FM999999990.00000000') AS balance
+			FROM metrics_balances WHERE name = $1 ORDER BY id ASC
+	  ) AS result`,
+		name,
+	)
+	if err != nil {
+		return "", err
+	}
+
+	defer rows.Close()
+
+	var data string
+	if rows.Next() {
+		err = rows.Scan(&data)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	if len(data) == 0 {
+		data = "[]"
+	}
+
+	return data, nil
 }

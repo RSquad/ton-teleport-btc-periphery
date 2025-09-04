@@ -47,7 +47,7 @@ func (alert *AlertDkgRestarts) Check(dataSource AlertDataSource) (Severity, Labe
 func (alert *AlertDkgRestarts) GetSeverity(restartsCount int) Severity {
 	severity := SEVERITY_OK
 
-	if restartsCount >= 10 {
+	if restartsCount >= 5 {
 		severity = SEVERITY_CRITICAL
 	} else if restartsCount >= 2 {
 		severity = SEVERITY_WARNING

@@ -12,12 +12,13 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/teleportcontract"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/config"
+	"github.com/xssnick/tonutils-go/address"
 )
 
 type FetcherService struct {
 	writerDB                     *WriterDB
 	fetcherDKG                   *FetcherDKG
-	fetcherContractBalances      *FetcherContractBalances
+	fetcherContractBalances      []*FetcherContractBalance
 	fetcherContractBitcoinClient *FetcherContractBitcoinClient
 	fetcherContractTeleport      *FetcherContractTeleport
 	fetcherContractCoordinator   *FetcherContractCoordinator
@@ -32,6 +33,7 @@ func NewService(
 	tonClient *tonclient.TonClient,
 	cfg *config.ServicesConfig,
 	db *sql.DB,
+	contractAddrs map[string]*address.Address,
 ) (*FetcherService, error) {
 	// Writer DB
 	writerDbChan := make(chan PayloadDB, cfg.WriterDbChainSize)
@@ -44,7 +46,12 @@ func NewService(
 	fetcherDKG := NewFetcherDKG(writerDbChan, coordinatorContract, int64(cfg.DkgFetchPeriod))
 
 	// Fetcher: Contract balances
-	fetcherContractBalances := NewFetcherContractBalances(writerDbChan, tonClient, cfg)
+	fetcherContractBalances := make([]*FetcherContractBalance, 0)
+	for name, addr := range contractAddrs {
+		fetcherContractBalances = append(fetcherContractBalances,
+			NewFetcherContractBalance(db, tonClient, cfg, addr, name),
+		)
+	}
 
 	// Fetcher: Contract Bitcoin client
 	fetcherContractBitcoinClient := NewFetcherContractBitcoinClient(writerDbChan, db, bitcoinClient, bitcoinClientContract, int64(cfg.BitcoinClientContractFetchPeriod))
@@ -90,10 +97,10 @@ func (s *FetcherService) Work(ctx context.Context) {
 	}
 
 	// Fetcher contract balances
-	if s.fetcherContractBalances != nil {
+	for _, f := range s.fetcherContractBalances {
 		wg.Add(1)
 		go func() {
-			s.fetcherContractBalances.Work(ctx, &wg)
+			f.Work(ctx, &wg)
 		}()
 	}
 

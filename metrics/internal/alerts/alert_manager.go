@@ -6,12 +6,14 @@ import (
 	"sync"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
+	"github.com/xssnick/tonutils-go/address"
 )
 
 type AlertManager struct {
 	alerts          map[string]Alert
 	dataSource      AlertDataSource
 	alertDispatcher AlertDispatcher
+	contractAddrs   map[string]*address.Address
 
 	mu                  sync.RWMutex
 	alertStates         map[string]*AlertState
@@ -21,11 +23,13 @@ type AlertManager struct {
 func NewAlertManager(
 	dataSource AlertDataSource,
 	alertDispatcher AlertDispatcher,
+	contractAddrs map[string]*address.Address,
 ) (*AlertManager, error) {
 	alertManager := AlertManager{
 		alerts:              make(map[string]Alert),
 		dataSource:          dataSource,
 		alertDispatcher:     alertDispatcher,
+		contractAddrs:       contractAddrs,
 		alertStates:         make(map[string]*AlertState),
 		alertStatesEnforced: make(map[string]*AlertState),
 	}
@@ -95,8 +99,14 @@ func NewAlertManager(
 		return nil, err
 	}
 
-	// fees_health (fees.health)
-	// TODO: add
+	// alert_total_service_fee (total.service.fee)
+	err = alertManager.RegisterAlert(
+		"alert_total_service_fee",
+		NewAlertTotalServiceFee(),
+	)
+	if err != nil {
+		return nil, err
+	}
 
 	// dkg_restarts (dkg.restarts)
 	err = alertManager.RegisterAlert(
@@ -125,49 +135,15 @@ func NewAlertManager(
 		return nil, err
 	}
 
-	// contract_balance_coordinator (contract.balance.coordinator)
-	err = alertManager.RegisterAlert(
-		"contract_balance_coordinator",
-		NewAlertContractBalance("coordinator"),
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	// contract_balance_teleport (contract.balance.teleport)
-	err = alertManager.RegisterAlert(
-		"contract_balance_teleport",
-		NewAlertContractBalance("teleport"),
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	// contract_balance_bitclient (contract.balance.bitclient)
-	err = alertManager.RegisterAlert(
-		"contract_balance_bitclient",
-		NewAlertContractBalance("bitclient"),
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	// contract_balance_minter (contract.balance.minter)
-	err = alertManager.RegisterAlert(
-		"contract_balance_minter",
-		NewAlertContractBalance("minter"),
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	// contract_balance_relayer (contract.balance.relayer)
-	err = alertManager.RegisterAlert(
-		"contract_balance_relayer",
-		NewAlertContractBalance("relayer"),
-	)
-	if err != nil {
-		return nil, err
+	// contract_balance_*
+	for name, addr := range contractAddrs {
+		err = alertManager.RegisterAlert(
+			"contract_balance_"+name,
+			NewAlertContractBalance(name, addr),
+		)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return &alertManager, nil

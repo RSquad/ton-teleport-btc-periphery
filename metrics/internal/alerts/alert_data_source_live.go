@@ -80,6 +80,10 @@ func (dataSource *AlertDataSourceLive) PrevDkgDB() (*coordinator.DKG, error) {
 	return dataSource.dataSourceDB.PrevDkg()
 }
 
+func (dataSource *AlertDataSourceLive) DkgBeforeRestartDB(t time.Time) (*coordinator.DKG, error) {
+	return dataSource.dataSourceDB.DkgBeforeRestart(t)
+}
+
 func (dataSource *AlertDataSourceLive) PegoutDB(address *address.Address) (*data_models.Pegout, error) {
 	return dataSource.dataSourceDB.Pegout(address)
 }
@@ -104,6 +108,6 @@ func (dataSource *AlertDataSourceLive) TonMaxMainValidators(ctx context.Context)
 	return dataSource.globalRuntimeConfig.TonMaxMainValidators(ctx)
 }
 
-func (dataSource *AlertDataSourceLive) ActualContractBalances() (*data_models.ContractBalances, error) {
-	return dataSource.dataSourceDB.ActualContractBalances()
+func (dataSource *AlertDataSourceLive) ActualContractBalance(name string) (int64, error) {
+	return dataSource.dataSourceDB.ActualContractBalance(name)
 }

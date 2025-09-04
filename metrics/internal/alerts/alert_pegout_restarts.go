@@ -77,7 +77,7 @@ func (alert *AlertPegoutRestarts) Check(dataSource AlertDataSource) (Severity, L
 func (alert *AlertPegoutRestarts) GetSeverity(restartsCount int) Severity {
 	severity := SEVERITY_OK
 
-	if restartsCount >= 10 {
+	if restartsCount >= 5 {
 		severity = SEVERITY_CRITICAL
 	} else if restartsCount >= 1 {
 		severity = SEVERITY_WARNING

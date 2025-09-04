@@ -2,6 +2,7 @@ package alerts
 
 import (
 	"context"
+	"time"
 
 	"github.com/btcsuite/btcd/btcjson"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
@@ -21,11 +22,12 @@ type AlertDataSource interface {
 	PegoutDB(address *address.Address) (*data_models.Pegout, error)
 	DkgDB() (*coordinator.DKG, error)
 	PrevDkgDB() (*coordinator.DKG, error)
+	DkgBeforeRestartDB(t time.Time) (*coordinator.DKG, error)
 	BtcGetBlockHashByTxID(txID *chainhash.Hash) (*chainhash.Hash, error)
 	BtcGetBlockHeightByHash(hash *chainhash.Hash) (int64, error)
 	BtcGetMempoolEntry(txHash string) (*btcjson.GetMempoolEntryResult, error)
 	TonMaxMainValidators(ctx context.Context) (int, error)
-	ActualContractBalances() (*data_models.ContractBalances, error)
+	ActualContractBalance(name string) (int64, error)
 
 	NowUnixTs() int64
 }

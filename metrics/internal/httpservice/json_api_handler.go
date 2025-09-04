@@ -67,6 +67,15 @@ func (apiHandler JsonApiHandler) ServeHTTP(w http.ResponseWriter, r *http.Reques
 			payload, err = apiHandler.metricsManager.DkgStatusJson(r.Context())
 		case "alerts":
 			payload, err = apiHandler.alertsManager.GetInfoJson()
+		case "contract_balances":
+			name := queryParams.Get("name")
+			if name == "" {
+				w.WriteHeader(http.StatusBadRequest)
+				w.Write([]byte("Please set `name` argument"))
+				return
+			}
+
+			payload, err = apiHandler.metricsManager.ContractBalanceJson(name)
 		default:
 			w.WriteHeader(http.StatusNotFound)
 			w.Write([]byte("Please select one of the next values: mints, burns, reinits, info, internal_keys, plot_minted, plot_burned, plot_total_supply, plots_summary, dkg_status, alerts"))

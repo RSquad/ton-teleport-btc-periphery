@@ -67,8 +67,7 @@ func (fetcher *FetcherContractTeleport) Fetch() {
 	}
 
 	fetcher.chDB <- PayloadDB{
-		timestamp: time.Now(),
-		typeId:    PayloadTypeContractTeleport,
-		payload:   string(jsonData),
+		typeId:  PayloadTypeContractTeleport,
+		payload: string(jsonData),
 	}
 }
