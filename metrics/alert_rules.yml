@@ -352,11 +352,13 @@ groups:
         labels:
           severity: warning
         annotations:
-          description: "The CPFP length is more than 10"
+          description: "The CPFP chain length is more than 10"
+          last_pegout_txid: "{{ $labels.last_pegout_txid }}"
 
       - alert: PegoutCPFPLengthCritical
         expr: alert_pegout_cpfp_length >= 3
         labels:
           severity: critical
         annotations:
-          description: "The CPFP length is more than 20"
+          description: "The CPFP chain length is more than 20"
+          last_pegout_txid: "{{ $labels.last_pegout_txid }}"
