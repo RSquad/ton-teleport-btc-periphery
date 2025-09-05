@@ -13,12 +13,11 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/config"
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/data_models"
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/data_sources"
-	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/metrics"
+
 	"github.com/xssnick/tonutils-go/address"
 )
 
 type AlertDataSourceLive struct {
-	metricsManager      *metrics.MetricsManager
 	dataSourceDB        *data_sources.DataSourceDB
 	bitcoinClient       *bitcoin.Client
 	globalRuntimeConfig *config.GlobalRuntimeConfig
@@ -28,9 +27,9 @@ func NewAlertDataSourceLive(
 	db *sql.DB,
 	bitcoinClient *bitcoin.Client,
 	globalRuntimeConfig *config.GlobalRuntimeConfig,
+	contractAddrs map[string]*address.Address,
 ) AlertDataSource {
 	dataSource := AlertDataSourceLive{
-		metricsManager:      metrics.NewMetricsManager(db, globalRuntimeConfig),
 		dataSourceDB:        data_sources.NewDataSourceDB(db),
 		bitcoinClient:       bitcoinClient,
 		globalRuntimeConfig: globalRuntimeConfig,

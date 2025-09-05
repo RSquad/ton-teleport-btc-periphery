@@ -7,25 +7,33 @@ import (
 	"encoding/json"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
+	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/alerts"
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/config"
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/data_sources"
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/fetchers"
+	"github.com/xssnick/tonutils-go/address"
 )
 
 type MetricsManager struct {
 	db                  *sql.DB
 	dataSourceDB        *data_sources.DataSourceDB
 	globalRuntimeConfig *config.GlobalRuntimeConfig
+	contractAddrs       map[string]*address.Address
+	alertManager        *alerts.AlertManager
 }
 
 func NewMetricsManager(
 	db *sql.DB,
 	globalRuntimeConfig *config.GlobalRuntimeConfig,
+	contractAddrs map[string]*address.Address,
+	alertManager *alerts.AlertManager,
 ) *MetricsManager {
 	return &MetricsManager{
 		db:                  db,
 		dataSourceDB:        data_sources.NewDataSourceDB(db),
 		globalRuntimeConfig: globalRuntimeConfig,
+		contractAddrs:       contractAddrs,
+		alertManager:        alertManager,
 	}
 }
 
@@ -561,6 +569,5 @@ func (manager *MetricsManager) ContractBalanceJson(name string) (string, error) 
 
 func (manager *MetricsManager) SystemInfoJson() (string, error) {
 	var systemInfo MetricsSystemInfo
-
-	return systemInfo.SystemInfoJson(manager.dataSourceDB)
+	return systemInfo.SystemInfoJson(manager.dataSourceDB, manager.alertManager, manager.contractAddrs)
 }

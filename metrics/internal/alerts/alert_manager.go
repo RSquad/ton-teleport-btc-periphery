@@ -204,6 +204,18 @@ func (manager *AlertManager) LogAlertError(alertName string, err error) {
 		Msg("Alert finished work with error")
 }
 
+func (manager *AlertManager) GetAlertState(name string) (AlertState, error) {
+	manager.mu.RLock()
+	defer manager.mu.RUnlock()
+
+	alertState, ok := manager.alertStates[name]
+	if !ok {
+		return AlertState{}, fmt.Errorf("Alert not found for name '%s'", name)
+	}
+
+	return alertState.DeepCopy(), nil
+}
+
 func (manager *AlertManager) GetInfoJson() (string, error) {
 	manager.mu.RLock()
 	defer manager.mu.RUnlock()

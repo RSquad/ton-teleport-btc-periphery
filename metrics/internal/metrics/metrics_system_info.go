@@ -5,7 +5,10 @@ import (
 	"time"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
+	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/alerts"
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/data_sources"
+	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/mutils"
+	"github.com/xssnick/tonutils-go/address"
 )
 
 type MetricsSystemInfo struct {
@@ -57,18 +60,23 @@ type PegoutSigningInfo struct {
 type BalancesInfo struct {
 	Coordinator         int64
 	CoordinatorStr      string
+	CoordinatorAddr     *address.Address
 	CoordinatorSeverity int
 	Teleport            int64
 	TeleportStr         string
+	TeleportAddr        *address.Address
 	TeleportSeverity    int
 	Bitclient           int64
 	BitclientStr        string
+	BitclientAddr       *address.Address
 	BitclientSeverity   int
 	Minter              int64
 	MinterStr           string
+	MinterAddr          *address.Address
 	MinterSeverity      int
 	Relayer             int64
 	RelayerStr          string
+	RelayerAddr         *address.Address
 	RelayerSeverity     int
 }
 
@@ -92,8 +100,12 @@ type SystemInfo struct {
 	TeleportInfo      *TeleportInfo
 }
 
-func (systemInfo *MetricsSystemInfo) SystemInfoJson(dataSourceDB *data_sources.DataSourceDB) (string, error) {
-	balancesInfo, err := systemInfo.BalancesInfo(dataSourceDB)
+func (systemInfo *MetricsSystemInfo) SystemInfoJson(
+	dataSourceDB *data_sources.DataSourceDB,
+	alertManager *alerts.AlertManager,
+	contractAddrs map[string]*address.Address,
+) (string, error) {
+	balancesInfo, err := systemInfo.BalancesInfo(dataSourceDB, alertManager, contractAddrs)
 	if err != nil {
 		return "", err
 	}
@@ -114,8 +126,16 @@ func (systemInfo *MetricsSystemInfo) SystemInfoJson(dataSourceDB *data_sources.D
 	return string(jsonData), nil
 }
 
-func (systemInfo *MetricsSystemInfo) BalancesInfo(dataSourceDB *data_sources.DataSourceDB) (*BalancesInfo, error) {
+func (systemInfo *MetricsSystemInfo) BalancesInfo(
+	dataSourceDB *data_sources.DataSourceDB,
+	alertManager *alerts.AlertManager,
+	contractAddrs map[string]*address.Address,
+) (*BalancesInfo, error) {
 	coordinator, err := dataSourceDB.ActualContractBalance("coordinator")
+	if err != nil {
+		return nil, err
+	}
+	coordinatorAlertState, err := alertManager.GetAlertState("contract_balance_coordinator")
 	if err != nil {
 		return nil, err
 	}
@@ -124,8 +144,16 @@ func (systemInfo *MetricsSystemInfo) BalancesInfo(dataSourceDB *data_sources.Dat
 	if err != nil {
 		return nil, err
 	}
+	teleportAlertState, err := alertManager.GetAlertState("contract_balance_teleport")
+	if err != nil {
+		return nil, err
+	}
 
 	bitclient, err := dataSourceDB.ActualContractBalance("bitclient")
+	if err != nil {
+		return nil, err
+	}
+	bitclientAlertState, err := alertManager.GetAlertState("contract_balance_bitclient")
 	if err != nil {
 		return nil, err
 	}
@@ -134,27 +162,40 @@ func (systemInfo *MetricsSystemInfo) BalancesInfo(dataSourceDB *data_sources.Dat
 	if err != nil {
 		return nil, err
 	}
+	minterAlertState, err := alertManager.GetAlertState("contract_balance_minter")
+	if err != nil {
+		return nil, err
+	}
 
 	relayer, err := dataSourceDB.ActualContractBalance("relayer")
+	if err != nil {
+		return nil, err
+	}
+	relayerAlertState, err := alertManager.GetAlertState("contract_balance_relayer")
 	if err != nil {
 		return nil, err
 	}
 
 	return &BalancesInfo{
 		Coordinator:         coordinator,
-		CoordinatorStr:      "",
-		CoordinatorSeverity: 0,
+		CoordinatorStr:      mutils.NanoIntToString(coordinator),
+		CoordinatorSeverity: int(coordinatorAlertState.Severity),
+		CoordinatorAddr:     contractAddrs["coordinator"],
 		Teleport:            teleport,
-		TeleportStr:         "",
-		TeleportSeverity:    0,
+		TeleportStr:         mutils.NanoIntToString(teleport),
+		TeleportAddr:        contractAddrs["teleport"],
+		TeleportSeverity:    int(teleportAlertState.Severity),
 		Bitclient:           bitclient,
-		BitclientStr:        "",
-		BitclientSeverity:   0,
+		BitclientStr:        mutils.NanoIntToString(bitclient),
+		BitclientAddr:       contractAddrs["bitclient"],
+		BitclientSeverity:   int(bitclientAlertState.Severity),
 		Minter:              minter,
-		MinterStr:           "",
-		MinterSeverity:      0,
+		MinterStr:           mutils.NanoIntToString(minter),
+		MinterAddr:          contractAddrs["minter"],
+		MinterSeverity:      int(minterAlertState.Severity),
 		Relayer:             relayer,
-		RelayerStr:          "",
-		RelayerSeverity:     0,
+		RelayerStr:          mutils.NanoIntToString(relayer),
+		RelayerAddr:         contractAddrs["relayer"],
+		RelayerSeverity:     int(relayerAlertState.Severity),
 	}, nil
 }

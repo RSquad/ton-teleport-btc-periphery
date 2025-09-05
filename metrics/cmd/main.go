@@ -148,7 +148,7 @@ func initialize() (*App, error) {
 
 	// Alert manager
 	alertManager, err := alerts.NewAlertManager(
-		alerts.NewAlertDataSourceLive(dbConnPool, bitcoinClient, globalRuntimeConfig),
+		alerts.NewAlertDataSourceLive(dbConnPool, bitcoinClient, globalRuntimeConfig, contractAddrs),
 		alerts.NewAlertDispatcherPrometheus(),
 		contractAddrs,
 	)
@@ -157,7 +157,7 @@ func initialize() (*App, error) {
 	}
 
 	// Metrics manager
-	metricsManager := metrics.NewMetricsManager(dbConnPool, globalRuntimeConfig)
+	metricsManager := metrics.NewMetricsManager(dbConnPool, globalRuntimeConfig, contractAddrs, alertManager)
 
 	// Alerts service
 	alertsService := alerts.NewAlertService(

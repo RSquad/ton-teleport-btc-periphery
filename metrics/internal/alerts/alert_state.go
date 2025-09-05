@@ -27,3 +27,22 @@ func NewAlertState(
 		LastUpdateTs: time.Now(),
 	}
 }
+
+func (state AlertState) DeepCopy() AlertState {
+	var labelsCopy Labels
+	if state.Labels != nil {
+		labelsCopy = make(Labels, len(state.Labels))
+		for k, v := range state.Labels {
+			labelsCopy[k] = v
+		}
+	}
+
+	return AlertState{
+		Name:         state.Name,
+		Severity:     state.Severity,
+		Labels:       labelsCopy,
+		LastErr:      state.LastErr,
+		Enforced:     state.Enforced,
+		LastUpdateTs: state.LastUpdateTs,
+	}
+}
