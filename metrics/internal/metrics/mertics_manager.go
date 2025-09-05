@@ -558,3 +558,9 @@ func (manager *MetricsManager) ContractBalanceJson(name string) (string, error) 
 
 	return data, nil
 }
+
+func (manager *MetricsManager) SystemInfoJson() (string, error) {
+	var systemInfo MetricsSystemInfo
+
+	return systemInfo.SystemInfoJson(manager.dataSourceDB)
+}
