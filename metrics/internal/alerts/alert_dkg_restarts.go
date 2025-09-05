@@ -2,6 +2,8 @@ package alerts
 
 import (
 	"time"
+
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
 )
 
 type AlertDkgRestarts struct {
@@ -24,6 +26,12 @@ func (alert *AlertDkgRestarts) Check(dataSource AlertDataSource) (Severity, Labe
 	}
 
 	if dkg == nil {
+		alert.dkgUntil = time.Unix(0, 0)
+		alert.restartsCounter = 0
+		return SEVERITY_OK, nil, alert.MakeIntValues(), nil
+	}
+
+	if dkg.State == coordinator.DKGStateFinished {
 		alert.dkgUntil = time.Unix(0, 0)
 		alert.restartsCounter = 0
 		return SEVERITY_OK, nil, alert.MakeIntValues(), nil

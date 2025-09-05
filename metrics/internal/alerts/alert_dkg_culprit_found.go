@@ -1,13 +1,12 @@
 package alerts
 
 import (
-	"math/big"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
+	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/mutils"
 )
 
 type AlertDkgCulpritFound struct {
@@ -26,8 +25,8 @@ func NewAlertDkgCulpritFound() Alert {
 
 func (alert *AlertDkgCulpritFound) Check(dataSource AlertDataSource) (Severity, Labels, IntValues, error) {
 	emptyLabels := Labels{
-		"culprit_id": "",
-		"is_evicted": "",
+		"culprit_id":      "",
+		"not_evicted_ids": "",
 	}
 
 	// Get DKG
@@ -65,16 +64,30 @@ func (alert *AlertDkgCulpritFound) Check(dataSource AlertDataSource) (Severity, 
 	}
 	alert.DkgUntil = dkg.Until
 
-	// Culprit Id
-	culpritId := alert.GetCulpritId(dkgBeforeRestart.VSetMask, dkg.VSetMask)
+	// Culprit Id or list of not evicted
+	if dkgBeforeRestart.Claims != nil && len(dkgBeforeRestart.Claims.Counters) > 0 {
+		coordinatorContractData, err := dataSource.CoordinatorContractStorageDB()
+		if err != nil {
+			return SEVERITY_UNKNOWN, nil, nil, err
+		}
 
-	if culpritId >= 0 {
-		alert.Labels["culprit_id"] = strconv.FormatInt(int64(culpritId), 10)
-		alert.Labels["is_evicted"] = "YES"
-		alert.Severity = SEVERITY_CRITICAL
-	} else if dkgBeforeRestart.Claims != nil && len(dkgBeforeRestart.Claims.Counters) > 0 {
-		alert.Labels["culprit_id"] = alert.ExtractNotEvicted(&dkgBeforeRestart.Claims.Counters)
-		alert.Labels["is_evicted"] = "NO"
+		prevDkg, err := dataSource.PrevDkgDB()
+		if err != nil {
+			return SEVERITY_UNKNOWN, nil, nil, err
+		}
+
+		culpritId, listOfNotEvicted := alert.Extract(
+			&dkgBeforeRestart.Claims.Counters,
+			int(coordinatorContractData.MinClaimsPercent),
+			int(prevDkg.MaxSigners),
+		)
+
+		if culpritId >= 0 {
+			alert.Labels["culprit_id"] = strconv.FormatInt(int64(culpritId), 10)
+		} else {
+			alert.Labels["culprit_id"] = ""
+		}
+		alert.Labels["not_evicted_ids"] = strings.Join(listOfNotEvicted, ",")
 		alert.Severity = SEVERITY_CRITICAL
 	} else {
 		alert.Labels = emptyLabels
@@ -84,33 +97,22 @@ func (alert *AlertDkgCulpritFound) Check(dataSource AlertDataSource) (Severity, 
 	return alert.Severity, alert.Labels, nil, nil
 }
 
-func (alert *AlertDkgCulpritFound) GetCulpritId(beforeMask *big.Int, afterMask *big.Int) int {
-	if beforeMask == nil || afterMask == nil {
-		return -1
+func (alert *AlertDkgCulpritFound) Extract(
+	counters *coordinator.DKGClaimcounters,
+	minClaimsPercent int,
+	maxSigners int,
+) (int, []string) {
+	culpritId := -1
+	listOfNotEvicted := make([]string, 0)
+
+	for idx, votesCount := range *counters {
+		percentage := mutils.MulDivCeil(uint(votesCount), 100, uint(maxSigners))
+		if int(percentage) >= minClaimsPercent {
+			culpritId = int(idx)
+		} else {
+			listOfNotEvicted = append(listOfNotEvicted, strconv.Itoa(int(idx)))
+		}
 	}
 
-	var resMask big.Int
-	resMask.AndNot(beforeMask, afterMask)
-
-	if resMask.Cmp(big.NewInt(0)) == 0 {
-		return -1
-	}
-
-	return int(resMask.TrailingZeroBits())
-}
-
-func (alert *AlertDkgCulpritFound) ExtractNotEvicted(counters *coordinator.DKGClaimcounters) string {
-	keys := make([]int, 0, len(*counters))
-	for k := range *counters {
-		keys = append(keys, int(k))
-	}
-
-	sort.Ints(keys)
-
-	strKeys := make([]string, 0, len(keys))
-	for _, k := range keys {
-		strKeys = append(strKeys, strconv.Itoa(k))
-	}
-
-	return strings.Join(strKeys, ",")
+	return culpritId, listOfNotEvicted
 }

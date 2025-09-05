@@ -2,6 +2,7 @@ package alerts
 
 import (
 	"context"
+	"math/big"
 	"testing"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
@@ -12,27 +13,49 @@ func TestAlertDkgParticipants(t *testing.T) {
 		{
 			Name: "SEVERITY_OK (DKG with 100% participants)",
 			DataSource: NewAlertDataSourceTesting(AlertDataSourceTestingConfig{
-				PrevDkgDbFn: func() (*coordinator.DKG, error) {
+				DkgDbFn: func() (*coordinator.DKG, error) {
+					vset := make(coordinator.VSet, 10)
+					for i := range 10 {
+						vset[uint16(i)] = nil
+					}
+
 					return &coordinator.DKG{
-						MaxSigners: 100,
+						VSet:     vset,
+						VSetMask: big.NewInt(0b1111111111),
 					}, nil
 				},
 				TonMaxMainValidatorsFn: func(ctx context.Context) (int, error) {
-					return 100, nil
+					return 10, nil
+				},
+				CoordinatorContractStorageDbFn: func() (*coordinator.Storage, error) {
+					return &coordinator.Storage{
+						StandaloneMode: false,
+					}, nil
 				},
 			}),
 			Expect: TestResWant{Severity: SEVERITY_OK, Labels: nil, Err: nil},
 		},
 		{
-			Name: "SEVERITY_OK (DKG with 90% participants)",
+			Name: "SEVERITY_OK(DKG with 90% participants)",
 			DataSource: NewAlertDataSourceTesting(AlertDataSourceTestingConfig{
-				PrevDkgDbFn: func() (*coordinator.DKG, error) {
+				DkgDbFn: func() (*coordinator.DKG, error) {
+					vset := make(coordinator.VSet, 10)
+					for i := range 10 {
+						vset[uint16(i)] = nil
+					}
+
 					return &coordinator.DKG{
-						MaxSigners: 90,
+						VSet:     vset,
+						VSetMask: big.NewInt(0b0111111111),
 					}, nil
 				},
 				TonMaxMainValidatorsFn: func(ctx context.Context) (int, error) {
-					return 100, nil
+					return 10, nil
+				},
+				CoordinatorContractStorageDbFn: func() (*coordinator.Storage, error) {
+					return &coordinator.Storage{
+						StandaloneMode: false,
+					}, nil
 				},
 			}),
 			Expect: TestResWant{Severity: SEVERITY_OK, Labels: nil, Err: nil},
@@ -40,69 +63,49 @@ func TestAlertDkgParticipants(t *testing.T) {
 		{
 			Name: "SEVERITY_WARNING (DKG with 80% participants)",
 			DataSource: NewAlertDataSourceTesting(AlertDataSourceTestingConfig{
-				PrevDkgDbFn: func() (*coordinator.DKG, error) {
+				DkgDbFn: func() (*coordinator.DKG, error) {
+					vset := make(coordinator.VSet, 10)
+					for i := range 10 {
+						vset[uint16(i)] = nil
+					}
+
 					return &coordinator.DKG{
-						MaxSigners: 80,
+						VSet:     vset,
+						VSetMask: big.NewInt(0b0111111101),
 					}, nil
 				},
 				TonMaxMainValidatorsFn: func(ctx context.Context) (int, error) {
-					return 100, nil
+					return 10, nil
+				},
+				CoordinatorContractStorageDbFn: func() (*coordinator.Storage, error) {
+					return &coordinator.Storage{
+						StandaloneMode: false,
+					}, nil
 				},
 			}),
 			Expect: TestResWant{Severity: SEVERITY_WARNING, Labels: nil, Err: nil},
 		},
 		{
-			Name: "SEVERITY_WARNING (DKG with 70% participants)",
+			Name: "SEVERITY_CRITICAL (DKG with 50% participants)",
 			DataSource: NewAlertDataSourceTesting(AlertDataSourceTestingConfig{
-				PrevDkgDbFn: func() (*coordinator.DKG, error) {
+				DkgDbFn: func() (*coordinator.DKG, error) {
+					vset := make(coordinator.VSet, 10)
+					for i := range 10 {
+						vset[uint16(i)] = nil
+					}
+
 					return &coordinator.DKG{
-						MaxSigners: 70,
+						VSet:     vset,
+						VSetMask: big.NewInt(0b0101010101),
 					}, nil
 				},
 				TonMaxMainValidatorsFn: func(ctx context.Context) (int, error) {
-					return 100, nil
+					return 10, nil
 				},
-			}),
-			Expect: TestResWant{Severity: SEVERITY_WARNING, Labels: nil, Err: nil},
-		},
-		{
-			Name: "SEVERITY_WARNING (DKG with 60% participants)",
-			DataSource: NewAlertDataSourceTesting(AlertDataSourceTestingConfig{
-				PrevDkgDbFn: func() (*coordinator.DKG, error) {
-					return &coordinator.DKG{
-						MaxSigners: 60,
+				CoordinatorContractStorageDbFn: func() (*coordinator.Storage, error) {
+					return &coordinator.Storage{
+						StandaloneMode: false,
 					}, nil
-				},
-				TonMaxMainValidatorsFn: func(ctx context.Context) (int, error) {
-					return 100, nil
-				},
-			}),
-			Expect: TestResWant{Severity: SEVERITY_WARNING, Labels: nil, Err: nil},
-		},
-		{
-			Name: "SEVERITY_CRITICAL (DKG with 55% participants)",
-			DataSource: NewAlertDataSourceTesting(AlertDataSourceTestingConfig{
-				PrevDkgDbFn: func() (*coordinator.DKG, error) {
-					return &coordinator.DKG{
-						MaxSigners: 55,
-					}, nil
-				},
-				TonMaxMainValidatorsFn: func(ctx context.Context) (int, error) {
-					return 100, nil
-				},
-			}),
-			Expect: TestResWant{Severity: SEVERITY_CRITICAL, Labels: nil, Err: nil},
-		},
-		{
-			Name: "SEVERITY_CRITICAL (DKG with 51% participants)",
-			DataSource: NewAlertDataSourceTesting(AlertDataSourceTestingConfig{
-				PrevDkgDbFn: func() (*coordinator.DKG, error) {
-					return &coordinator.DKG{
-						MaxSigners: 51,
-					}, nil
-				},
-				TonMaxMainValidatorsFn: func(ctx context.Context) (int, error) {
-					return 100, nil
 				},
 			}),
 			Expect: TestResWant{Severity: SEVERITY_CRITICAL, Labels: nil, Err: nil},

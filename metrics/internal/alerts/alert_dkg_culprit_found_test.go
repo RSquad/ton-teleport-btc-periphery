@@ -10,8 +10,8 @@ import (
 
 func TestAlertDkgCulpritFound(t *testing.T) {
 	labelsEmpty := Labels{
-		"culprit_id": "",
-		"is_evicted": "",
+		"culprit_id":      "",
+		"not_evicted_ids": "",
 	}
 
 	tests := []TestDesc{
@@ -83,8 +83,18 @@ func TestAlertDkgCulpritFound(t *testing.T) {
 						},
 					}, nil
 				},
+				CoordinatorContractStorageDbFn: func() (*coordinator.Storage, error) {
+					return &coordinator.Storage{
+						MinClaimsPercent: 51,
+					}, nil
+				},
+				PrevDkgDbFn: func() (*coordinator.DKG, error) {
+					return &coordinator.DKG{
+						MaxSigners: 10,
+					}, nil
+				},
 			}),
-			Expect: TestResWant{Severity: SEVERITY_CRITICAL, Labels: Labels{"culprit_id": "1", "is_evicted": "YES"}, Err: nil},
+			Expect: TestResWant{Severity: SEVERITY_CRITICAL, Labels: Labels{"culprit_id": "1", "not_evicted_ids": ""}, Err: nil},
 		},
 		{
 			Name: "SEVERITY_CRITICAL: 2 culprits, no reset",
@@ -103,7 +113,7 @@ func TestAlertDkgCulpritFound(t *testing.T) {
 					}, nil
 				},
 			}),
-			Expect: TestResWant{Severity: SEVERITY_CRITICAL, Labels: Labels{"culprit_id": "1", "is_evicted": "YES"}, Err: nil},
+			Expect: TestResWant{Severity: SEVERITY_CRITICAL, Labels: Labels{"culprit_id": "1", "not_evicted_ids": ""}, Err: nil},
 		},
 		{
 			Name: "SEVERITY_CRITICAL: 2 culprits, reset",
@@ -132,8 +142,18 @@ func TestAlertDkgCulpritFound(t *testing.T) {
 						},
 					}, nil
 				},
+				CoordinatorContractStorageDbFn: func() (*coordinator.Storage, error) {
+					return &coordinator.Storage{
+						MinClaimsPercent: 51,
+					}, nil
+				},
+				PrevDkgDbFn: func() (*coordinator.DKG, error) {
+					return &coordinator.DKG{
+						MaxSigners: 10,
+					}, nil
+				},
 			}),
-			Expect: TestResWant{Severity: SEVERITY_CRITICAL, Labels: Labels{"culprit_id": "3,4", "is_evicted": "NO"}, Err: nil},
+			Expect: TestResWant{Severity: SEVERITY_CRITICAL, Labels: Labels{"culprit_id": "", "not_evicted_ids": "3,4"}, Err: nil},
 		},
 		{
 			Name: "SEVERITY_CRITICAL: 0 culprits, no reset",
@@ -150,7 +170,7 @@ func TestAlertDkgCulpritFound(t *testing.T) {
 					}, nil
 				},
 			}),
-			Expect: TestResWant{Severity: SEVERITY_CRITICAL, Labels: Labels{"culprit_id": "3,4", "is_evicted": "NO"}, Err: nil},
+			Expect: TestResWant{Severity: SEVERITY_CRITICAL, Labels: Labels{"culprit_id": "", "not_evicted_ids": "3,4"}, Err: nil},
 		},
 		{
 			Name: "SEVERITY_OK: No DKG",
