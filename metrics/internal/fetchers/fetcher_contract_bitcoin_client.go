@@ -104,8 +104,7 @@ func (fetcher *FetcherContractBitcoinClient) Fetch() {
 	}
 
 	fetcher.chDB <- PayloadDB{
-		timestamp: time.Now(),
-		typeId:    PayloadTypeContractBitcoinClient,
-		payload:   string(jsonData),
+		typeId:  PayloadTypeContractBitcoinClient,
+		payload: string(jsonData),
 	}
 }

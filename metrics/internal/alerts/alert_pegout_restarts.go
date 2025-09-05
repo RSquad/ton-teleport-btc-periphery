@@ -19,7 +19,7 @@ func NewAlertPegoutRestarts() Alert {
 	}
 }
 
-func (alert *AlertPegoutRestarts) Check(dataSource AlertDataSource) (Severity, Labels, error) {
+func (alert *AlertPegoutRestarts) Check(dataSource AlertDataSource) (Severity, Labels, IntValues, error) {
 	labels := Labels{
 		"bitcoin_tx_id": "",
 		"pegout_addr":   "",
@@ -28,19 +28,19 @@ func (alert *AlertPegoutRestarts) Check(dataSource AlertDataSource) (Severity, L
 	// Get first unsigned pegout
 	unsignedPegout, err := dataSource.FirstUnsignedPegoutDB()
 	if err != nil {
-		return SEVERITY_UNKNOWN, labels, err
+		return SEVERITY_UNKNOWN, labels, alert.MakeIntValues(), err
 	}
 
 	// No unsigned pegouts
 	if unsignedPegout == nil {
 		alert.restartsCounter = 0
-		return SEVERITY_OK, labels, nil
+		return SEVERITY_OK, labels, alert.MakeIntValues(), nil
 	}
 
 	// Get pegout record from DB
 	pegout, err := dataSource.PegoutDB(unsignedPegout.PegoutAddress)
 	if err != nil {
-		return SEVERITY_UNKNOWN, labels, err
+		return SEVERITY_UNKNOWN, labels, alert.MakeIntValues(), err
 	}
 
 	// Update labels
@@ -56,7 +56,7 @@ func (alert *AlertPegoutRestarts) Check(dataSource AlertDataSource) (Severity, L
 		alert.currentUnsignedPegout = unsignedPegout
 		alert.restartsCounter = 0
 
-		return SEVERITY_OK, labels, nil
+		return SEVERITY_OK, labels, alert.MakeIntValues(), nil
 	}
 
 	// Check for restart
@@ -69,19 +69,26 @@ func (alert *AlertPegoutRestarts) Check(dataSource AlertDataSource) (Severity, L
 	}
 
 	// Calulate severity
-	severity := alert.GetSeverity(alert.restartsCounter)
+	severity := alert.GetSeverity()
 
-	return severity, labels, nil
+	return severity, labels, alert.MakeIntValues(), nil
 }
 
-func (alert *AlertPegoutRestarts) GetSeverity(restartsCount int) Severity {
+func (alert *AlertPegoutRestarts) GetSeverity() Severity {
 	severity := SEVERITY_OK
 
-	if restartsCount >= 10 {
+	if alert.restartsCounter >= 5 {
 		severity = SEVERITY_CRITICAL
-	} else if restartsCount >= 1 {
+	} else if alert.restartsCounter >= 1 {
 		severity = SEVERITY_WARNING
 	}
 
 	return severity
+}
+
+func (alert *AlertPegoutRestarts) MakeIntValues() IntValues {
+	intValues := make(IntValues, 1)
+	intValues["restarts"] = int64(alert.restartsCounter)
+
+	return intValues
 }

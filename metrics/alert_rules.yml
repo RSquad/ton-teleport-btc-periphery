@@ -41,7 +41,7 @@ groups:
     rules:
       # 0 (SEVERITY_OK) - no restarts
       # 2 (SEVERITY_WARNING) - 1 restart
-      # 3 (SEVERITY_CRITICAL) - 10 restarts
+      # 3 (SEVERITY_CRITICAL) - 5 restarts
       - alert: PegoutRestartsWarning
         expr: alert_pegout_restarts >= 2
         labels:
@@ -56,7 +56,7 @@ groups:
         labels:
           severity: critical
         annotations:
-          description: "The pegout signing was restarted 10 times"
+          description: "The pegout signing was restarted 5 times"
           pegout_txid: "{{ $labels.bitcoin_tx_id }}"
           pegout_addr: "{{ $labels.pegout_addr }}"
 
@@ -150,20 +150,20 @@ groups:
       annotations:
         description: "DKG started"
 
-  - name: fees.health
+  - name: total.service.fee
     rules:
-      # 0 - total_service_fee is enough
-      # 1 - total_service_fee is less than 1000 satoshi
-      # 2 - total_service_fee is negative
+      # 0 (SEVERITY_OK) - total_service_fee is enough
+      # 2 (SEVERITY_WARNING) - total_service_fee is less than 1000 satoshi
+      # 3 (SEVERITY_CRITICAL) - total_service_fee is negative
       - alert: TotalServiceFeeWarning
-        expr: alert_total_service_fee == 1
+        expr: alert_total_service_fee >= 2
         labels:
           severity: warning
         annotations:
           description: "total service fee is less than 1000 satoshi"
 
       - alert: TotalServiceFeeCritical
-        expr: alert_total_service_fee == 2
+        expr: alert_total_service_fee >= 3
         labels:
           severity: critical
         annotations:
@@ -173,7 +173,7 @@ groups:
     rules:
       # 0 (SEVERITY_OK) - no restarts or 1 restart
       # 2 (SEVERITY_WARNING) - more than 2 restarts
-      # 3 (SEVERITY_CRITICAL)- more than 10 restarts
+      # 3 (SEVERITY_CRITICAL)- more than 5 restarts
       - alert: DKGRestartsWarning
         expr: alert_dkg_restarts >= 2
         labels:
@@ -186,7 +186,7 @@ groups:
         labels:
           severity: critical
         annotations:
-          description: "The DKG was restarted 10 times or more"
+          description: "The DKG was restarted 5 times or more"
 
   - name: dkg.participants
     rules:
@@ -202,6 +202,24 @@ groups:
 
       - alert: DKGParticipantsCritical
         expr: alert_dkg_participants >= 3
+        labels:
+          severity: critical
+        annotations:
+          description: "The number of participants is less than 55%"
+  - name: dkg.evicted
+    rules:
+      # 0 (SEVERITY_OK) - number of evicted oracles is in range [0-5%]
+      # 2 (SEVERITY_WARNING) - number of evicted oracles is in range [5-20%]
+      # 3 (SEVERITY_CRITICAL) - number of evicted oracles is more than 20%
+      - alert: DKGEvictedWarning
+        expr: alert_dkg_evicted >= 2
+        labels:
+          severity: warning
+        annotations:
+          description: "The number of evicted oracles is less than 80%"
+
+      - alert: DKGEvictedCritical
+        expr: alert_dkg_evicted >= 3
         labels:
           severity: critical
         annotations:
@@ -226,7 +244,7 @@ groups:
       # 2 (SEVERITY_WARNING) - contract balance is in range [0.5 ton - 2 ton]
       # 3 (SEVERITY_CRITICAL) - contract balance is in range [0 - 0.5 ton]
     - alert: CoordinatorLowContractBalanceWarning
-      expr: contract_balance_coordinator >= 2
+      expr: alert_contract_balance_coordinator >= 2
       labels:
         severity: warning
       annotations:
@@ -234,7 +252,7 @@ groups:
         contract_address: "{{ $labels.address }}"
 
     - alert: CoordinatorLowContractBalanceCritical
-      expr: contract_balance_coordinator >= 3
+      expr: alert_contract_balance_coordinator >= 3
       labels:
         severity: critical
       annotations:
@@ -247,7 +265,7 @@ groups:
       # 2 (SEVERITY_WARNING) - contract balance is in range [0.5 ton - 2 ton]
       # 3 (SEVERITY_CRITICAL) - contract balance is in range [0 - 0.5 ton]
     - alert: TeleportLowContractBalanceWarning
-      expr: contract_balance_teleport >= 2
+      expr: alert_contract_balance_teleport >= 2
       labels:
         severity: warning
       annotations:
@@ -255,7 +273,7 @@ groups:
         contract_address: "{{ $labels.address }}"
 
     - alert: TeleportLowContractBalanceCritical
-      expr: contract_balance_teleport >= 3
+      expr: alert_contract_balance_teleport >= 3
       labels:
         severity: critical
       annotations:
@@ -268,7 +286,7 @@ groups:
       # 2 (SEVERITY_WARNING) - contract balance is in range [0.5 ton - 2 ton]
       # 3 (SEVERITY_CRITICAL) - contract balance is in range [0 - 0.5 ton]
     - alert: BitcoinClientLowContractBalanceWarning
-      expr: contract_balance_bitclient >= 2
+      expr: alert_contract_balance_bitclient >= 2
       labels:
         severity: warning
       annotations:
@@ -276,7 +294,7 @@ groups:
         contract_address: "{{ $labels.address }}"
 
     - alert: BitcoinClientLowContractBalanceCritical
-      expr: contract_balance_bitclient >= 3
+      expr: alert_contract_balance_bitclient >= 3
       labels:
         severity: critical
       annotations:
@@ -289,7 +307,7 @@ groups:
       # 2 (SEVERITY_WARNING) - contract balance is in range [0.5 ton - 2 ton]
       # 3 (SEVERITY_CRITICAL) - contract balance is in range [0 - 0.5 ton]
     - alert: MinterLowContractBalanceWarning
-      expr: contract_balance_minter >= 2
+      expr: alert_contract_balance_minter >= 2
       labels:
         severity: warning
       annotations:
@@ -297,7 +315,7 @@ groups:
         contract_address: "{{ $labels.address }}"
 
     - alert: MinterLowContractBalanceCritical
-      expr: contract_balance_minter >= 3
+      expr: alert_contract_balance_minter >= 3
       labels:
         severity: critical
       annotations:
@@ -310,7 +328,7 @@ groups:
       # 2 (SEVERITY_WARNING) - contract balance is in range [0.5 ton - 2 ton]
       # 3 (SEVERITY_CRITICAL) - contract balance is in range [0 - 0.5 ton]
     - alert: RelayerLowContractBalanceWarning
-      expr: contract_balance_relayer >= 2
+      expr: alert_contract_balance_relayer >= 2
       labels:
         severity: warning
       annotations:
@@ -318,7 +336,7 @@ groups:
         contract_address: "{{ $labels.address }}"
 
     - alert: RelayerLowContractBalanceCritical
-      expr: contract_balance_relayer >= 3
+      expr: alert_contract_balance_relayer >= 3
       labels:
         severity: critical
       annotations:

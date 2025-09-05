@@ -1,7 +1,5 @@
 package fetchers
 
-import "time"
-
 type PayloadTypeDB int
 
 const (
@@ -11,11 +9,9 @@ const (
 	PayloadTypeBitcoinNetwork        PayloadTypeDB = 3
 	PayloadTypeContractTeleport      PayloadTypeDB = 4
 	PayloadTypeContractCoordinator   PayloadTypeDB = 5
-	PayloadTypeContractBalances      PayloadTypeDB = 6
 )
 
 type PayloadDB struct {
-	timestamp time.Time
-	typeId    PayloadTypeDB
-	payload   string
+	typeId  PayloadTypeDB
+	payload string
 }

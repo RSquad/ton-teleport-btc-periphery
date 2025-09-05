@@ -12,21 +12,21 @@ func NewAlertDkgParticipants() Alert {
 	return &AlertDkgParticipants{}
 }
 
-func (alert *AlertDkgParticipants) Check(dataSource AlertDataSource) (Severity, Labels, error) {
+func (alert *AlertDkgParticipants) Check(dataSource AlertDataSource) (Severity, Labels, IntValues, error) {
 	// Get PrevDKG
 	prevDkg, err := dataSource.PrevDkgDB()
 	if err != nil {
-		return SEVERITY_UNKNOWN, nil, err
+		return SEVERITY_UNKNOWN, nil, nil, err
 	}
 
 	if prevDkg == nil {
-		return SEVERITY_OK, nil, nil
+		return SEVERITY_OK, nil, nil, nil
 	}
 
 	// Calulate participantsPercentage
 	maxParticipants, err := dataSource.TonMaxMainValidators(context.Background())
 	if err != nil {
-		return SEVERITY_UNKNOWN, nil, err
+		return SEVERITY_UNKNOWN, nil, nil, err
 	}
 
 	participantsCount := prevDkg.MaxSigners
@@ -35,7 +35,7 @@ func (alert *AlertDkgParticipants) Check(dataSource AlertDataSource) (Severity, 
 	// Calulate severity
 	severity := alert.GetSeverity(participantsPercentage)
 
-	return severity, nil, nil
+	return severity, nil, nil, nil
 }
 
 func (alert *AlertDkgParticipants) GetSeverity(participantsPercentage uint) Severity {

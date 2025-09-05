@@ -20,6 +20,7 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/fetchers"
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/httpservice"
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/metrics"
+	"github.com/xssnick/tonutils-go/address"
 )
 
 type App struct {
@@ -122,6 +123,14 @@ func initialize() (*App, error) {
 	// Global runtime config
 	globalRuntimeConfig := config.NewGlobalRuntimeConfig(tonClient)
 
+	contractAddrs := map[string]*address.Address{
+		"coordinator": cfg.CoordinatorContractAddr,
+		"teleport":    cfg.TeleportContractAddr,
+		"bitclient":   cfg.BitcoinClientContractAddr,
+		"minter":      cfg.JettonMinterContractAddr,
+		"relayer":     cfg.RelayerWalletAddr,
+	}
+
 	// Fetcher service
 	fetcherService, err := fetchers.NewService(
 		coordinatorContract,
@@ -131,6 +140,7 @@ func initialize() (*App, error) {
 		tonClient,
 		cfg,
 		dbConnPool,
+		contractAddrs,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create fetchers: %w", err)
@@ -138,15 +148,16 @@ func initialize() (*App, error) {
 
 	// Alert manager
 	alertManager, err := alerts.NewAlertManager(
-		alerts.NewAlertDataSourceLive(dbConnPool, bitcoinClient, globalRuntimeConfig),
+		alerts.NewAlertDataSourceLive(dbConnPool, bitcoinClient, globalRuntimeConfig, contractAddrs),
 		alerts.NewAlertDispatcherPrometheus(),
+		contractAddrs,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create alert manager: %w", err)
 	}
 
 	// Metrics manager
-	metricsManager := metrics.NewMetricsManager(dbConnPool, globalRuntimeConfig)
+	metricsManager := metrics.NewMetricsManager(dbConnPool, globalRuntimeConfig, contractAddrs, alertManager)
 
 	// Alerts service
 	alertsService := alerts.NewAlertService(

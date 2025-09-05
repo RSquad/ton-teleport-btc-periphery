@@ -3,6 +3,7 @@ package alerts
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/btcsuite/btcd/btcjson"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
@@ -22,12 +23,13 @@ type (
 	PegoutDbFn                                    func(address *address.Address) (*data_models.Pegout, error)
 	DkgDbFn                                       func() (*coordinator.DKG, error)
 	PrevDkgDbFn                                   func() (*coordinator.DKG, error)
+	DkgBeforeRestartDbFn                          func(t time.Time) (*coordinator.DKG, error)
 	BtcGetBlockHashByTxIdFn                       func(txID *chainhash.Hash) (*chainhash.Hash, error)
 	BtcGetBlockHeightByHashFn                     func(hash *chainhash.Hash) (int64, error)
 	BtcGetMempoolEntryFn                          func(txHash string) (*btcjson.GetMempoolEntryResult, error)
 	BitcoinClientContractLastConfirmedBlockHashFn func() (*chainhash.Hash, error)
 	TonMaxMainValidatorsFn                        func(ctx context.Context) (int, error)
-	ActualContractBalancesFn                      func() (*data_models.ContractBalances, error)
+	ActualContractBalanceFn                       func(name string) (int64, error)
 	NowUnixTsFn                                   func() int64
 )
 
@@ -42,12 +44,13 @@ type AlertDataSourceTestingConfig struct {
 	PegoutDbFn                                    PegoutDbFn
 	DkgDbFn                                       DkgDbFn
 	PrevDkgDbFn                                   PrevDkgDbFn
+	DkgBeforeRestartDbFn                          DkgBeforeRestartDbFn
 	BtcGetBlockHashByTxIdFn                       BtcGetBlockHashByTxIdFn
 	BtcGetBlockHeightByHashFn                     BtcGetBlockHeightByHashFn
 	BtcGetMempoolEntryFn                          BtcGetMempoolEntryFn
 	BitcoinClientContractLastConfirmedBlockHashFn BitcoinClientContractLastConfirmedBlockHashFn
 	TonMaxMainValidatorsFn                        TonMaxMainValidatorsFn
-	ActualContractBalancesFn                      ActualContractBalancesFn
+	ActualContractBalanceFn                       ActualContractBalanceFn
 	NowUnixTsFn                                   NowUnixTsFn
 }
 
@@ -115,6 +118,13 @@ func (dataSource *AlertDataSourceTesting) PrevDkgDB() (*coordinator.DKG, error) 
 	return dataSource.cfg.PrevDkgDbFn()
 }
 
+func (dataSource *AlertDataSourceTesting) DkgBeforeRestartDB(t time.Time) (*coordinator.DKG, error) {
+	if dataSource.cfg.DkgBeforeRestartDbFn == nil {
+		return nil, errors.New("DkgBeforeRestartDbFn callback not set")
+	}
+	return dataSource.cfg.DkgBeforeRestartDbFn(t)
+}
+
 func (dataSource *AlertDataSourceTesting) PegoutDB(address *address.Address) (*data_models.Pegout, error) {
 	if dataSource.cfg.PegoutDbFn == nil {
 		return nil, errors.New("PegoutDbFn callback not set")
@@ -157,11 +167,11 @@ func (dataSource *AlertDataSourceTesting) TonMaxMainValidators(ctx context.Conte
 	return dataSource.cfg.TonMaxMainValidatorsFn(ctx)
 }
 
-func (dataSource *AlertDataSourceTesting) ActualContractBalances() (*data_models.ContractBalances, error) {
-	if dataSource.cfg.ActualContractBalancesFn == nil {
-		return nil, errors.New("ActualContractBalancesFn callback not set")
+func (dataSource *AlertDataSourceTesting) ActualContractBalance(name string) (int64, error) {
+	if dataSource.cfg.ActualContractBalanceFn == nil {
+		return 0, errors.New("ActualContractBalanceFn callback not set")
 	}
-	return dataSource.cfg.ActualContractBalancesFn()
+	return dataSource.cfg.ActualContractBalanceFn(name)
 }
 
 func (dataSource *AlertDataSourceTesting) NowUnixTs() int64 {

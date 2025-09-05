@@ -39,7 +39,7 @@ func (apiHandler JsonApiHandler) ServeHTTP(w http.ResponseWriter, r *http.Reques
 	var payload string
 	var err error = nil
 
-	cachedValue, ok := apiHandler.cache.Get(sourceName)
+	cachedValue, ok := apiHandler.cache.Get(queryParams.Encode())
 
 	if ok {
 		payload = cachedValue
@@ -67,13 +67,24 @@ func (apiHandler JsonApiHandler) ServeHTTP(w http.ResponseWriter, r *http.Reques
 			payload, err = apiHandler.metricsManager.DkgStatusJson(r.Context())
 		case "alerts":
 			payload, err = apiHandler.alertsManager.GetInfoJson()
+		case "system_info":
+			payload, err = apiHandler.metricsManager.SystemInfoJson()
+		case "contract_balances":
+			name := queryParams.Get("name")
+			if name == "" {
+				w.WriteHeader(http.StatusBadRequest)
+				w.Write([]byte("Please set `name` argument"))
+				return
+			}
+
+			payload, err = apiHandler.metricsManager.ContractBalanceJson(name)
 		default:
 			w.WriteHeader(http.StatusNotFound)
-			w.Write([]byte("Please select one of the next values: mints, burns, reinits, info, internal_keys, plot_minted, plot_burned, plot_total_supply, plots_summary, dkg_status, alerts"))
+			w.Write([]byte("Please select one of the next values: mints, burns, reinits, info, internal_keys, plot_minted, plot_burned, plot_total_supply, plots_summary, dkg_status, alerts, system_info, contract_balances"))
 			return
 		}
 
-		apiHandler.cache.Set(sourceName, payload, 30*time.Second)
+		apiHandler.cache.Set(queryParams.Encode(), payload, 30*time.Second)
 	}
 
 	if err != nil {

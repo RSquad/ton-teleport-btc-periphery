@@ -13,12 +13,11 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/config"
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/data_models"
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/data_sources"
-	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/metrics"
+
 	"github.com/xssnick/tonutils-go/address"
 )
 
 type AlertDataSourceLive struct {
-	metricsManager      *metrics.MetricsManager
 	dataSourceDB        *data_sources.DataSourceDB
 	bitcoinClient       *bitcoin.Client
 	globalRuntimeConfig *config.GlobalRuntimeConfig
@@ -28,9 +27,9 @@ func NewAlertDataSourceLive(
 	db *sql.DB,
 	bitcoinClient *bitcoin.Client,
 	globalRuntimeConfig *config.GlobalRuntimeConfig,
+	contractAddrs map[string]*address.Address,
 ) AlertDataSource {
 	dataSource := AlertDataSourceLive{
-		metricsManager:      metrics.NewMetricsManager(db, globalRuntimeConfig),
 		dataSourceDB:        data_sources.NewDataSourceDB(db),
 		bitcoinClient:       bitcoinClient,
 		globalRuntimeConfig: globalRuntimeConfig,
@@ -80,6 +79,10 @@ func (dataSource *AlertDataSourceLive) PrevDkgDB() (*coordinator.DKG, error) {
 	return dataSource.dataSourceDB.PrevDkg()
 }
 
+func (dataSource *AlertDataSourceLive) DkgBeforeRestartDB(t time.Time) (*coordinator.DKG, error) {
+	return dataSource.dataSourceDB.DkgBeforeRestart(t)
+}
+
 func (dataSource *AlertDataSourceLive) PegoutDB(address *address.Address) (*data_models.Pegout, error) {
 	return dataSource.dataSourceDB.Pegout(address)
 }
@@ -104,6 +107,6 @@ func (dataSource *AlertDataSourceLive) TonMaxMainValidators(ctx context.Context)
 	return dataSource.globalRuntimeConfig.TonMaxMainValidators(ctx)
 }
 
-func (dataSource *AlertDataSourceLive) ActualContractBalances() (*data_models.ContractBalances, error) {
-	return dataSource.dataSourceDB.ActualContractBalances()
+func (dataSource *AlertDataSourceLive) ActualContractBalance(name string) (int64, error) {
+	return dataSource.dataSourceDB.ActualContractBalance(name)
 }

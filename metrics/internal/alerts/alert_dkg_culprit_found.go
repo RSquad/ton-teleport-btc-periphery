@@ -2,26 +2,30 @@ package alerts
 
 import (
 	"math/big"
+	"sort"
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
-	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/mutils"
 )
 
 type AlertDkgCulpritFound struct {
-	CurrentMask *big.Int
-	DkgState    coordinator.DKGState
+	DkgUntil time.Time
+	Labels   Labels
+	Severity Severity
 }
 
 func NewAlertDkgCulpritFound() Alert {
 	return &AlertDkgCulpritFound{
-		CurrentMask: big.NewInt(0),
-		DkgState:    coordinator.DKGStateFinished,
+		DkgUntil: time.Unix(0, 0),
+		Labels:   Labels{},
+		Severity: SEVERITY_UNKNOWN,
 	}
 }
 
-func (alert *AlertDkgCulpritFound) Check(dataSource AlertDataSource) (Severity, Labels, error) {
-	labels := Labels{
+func (alert *AlertDkgCulpritFound) Check(dataSource AlertDataSource) (Severity, Labels, IntValues, error) {
+	emptyLabels := Labels{
 		"culprit_id": "",
 		"is_evicted": "",
 	}
@@ -29,58 +33,84 @@ func (alert *AlertDkgCulpritFound) Check(dataSource AlertDataSource) (Severity, 
 	// Get DKG
 	dkg, err := dataSource.DkgDB()
 	if err != nil {
-		return SEVERITY_UNKNOWN, labels, err
+		return SEVERITY_UNKNOWN, emptyLabels, nil, err
 	}
 
-	if dkg == nil || dkg.Claims == nil {
-		alert.CurrentMask = big.NewInt(0)
-		alert.DkgState = coordinator.DKGStateFinished
-		return SEVERITY_OK, labels, nil
+	// No DKG
+	if dkg == nil {
+		alert.DkgUntil = time.Unix(0, 0)
+		alert.Labels = emptyLabels
+		alert.Severity = SEVERITY_OK
+		return alert.Severity, alert.Labels, nil, nil
 	}
 
-	// New DKG state (reset claim stat)
-	if alert.DkgState != dkg.State {
-		alert.DkgState = dkg.State
-		alert.CurrentMask = big.NewInt(0)
+	// First DKG try
+	if alert.DkgUntil.Equal(time.Unix(0, 0)) {
+		alert.DkgUntil = dkg.Until
+		alert.Labels = emptyLabels
+		alert.Severity = SEVERITY_OK
+		return alert.Severity, alert.Labels, nil, nil
 	}
 
-	claimsCount := len(dkg.Claims.Counters)
-	evictedCount := 0
-
-	if claimsCount == 0 {
-		return SEVERITY_OK, labels, nil
+	// Check for restart
+	if alert.DkgUntil.Equal(dkg.Until) {
+		// No restart
+		return alert.Severity, alert.Labels, nil, nil
 	}
 
-	maxSigners := dkg.MaxSigners
-
-	// Get coordinatior contract storage
-	coordinatorStorage, err := dataSource.CoordinatorContractStorageDB()
+	// Get DKG info before restart
+	dkgBeforeRestart, err := dataSource.DkgBeforeRestartDB(alert.DkgUntil)
 	if err != nil {
-		return SEVERITY_UNKNOWN, labels, err
+		return SEVERITY_UNKNOWN, emptyLabels, nil, err
 	}
-	minClaimsPercent := uint(coordinatorStorage.MinClaimsPercent)
-	claimsMask := dkg.Claims.Mask
+	alert.DkgUntil = dkg.Until
 
-	for idx, votesCount := range dkg.Claims.Counters {
-		claimsMask = claimsMask.SetBit(claimsMask, int(idx), 1)
-		votesPercent := mutils.MulDivCeil(uint(votesCount), 100, uint(maxSigners))
-		if votesPercent >= minClaimsPercent {
-			evictedCount++
-		}
-	}
+	// Culprit Id
+	culpritId := alert.GetCulpritId(dkgBeforeRestart.VSetMask, dkg.VSetMask)
 
-	// Update labels
-	var mask big.Int
-	mask.AndNot(claimsMask, alert.CurrentMask)
-	labels["culprit_id"] = strconv.FormatUint(uint64(mask.TrailingZeroBits()), 10)
-
-	if claimsCount != evictedCount {
-		labels["is_evicted"] = "NO"
+	if culpritId >= 0 {
+		alert.Labels["culprit_id"] = strconv.FormatInt(int64(culpritId), 10)
+		alert.Labels["is_evicted"] = "YES"
+		alert.Severity = SEVERITY_CRITICAL
+	} else if dkgBeforeRestart.Claims != nil && len(dkgBeforeRestart.Claims.Counters) > 0 {
+		alert.Labels["culprit_id"] = alert.ExtractNotEvicted(&dkgBeforeRestart.Claims.Counters)
+		alert.Labels["is_evicted"] = "NO"
+		alert.Severity = SEVERITY_CRITICAL
 	} else {
-		labels["is_evicted"] = "YES"
+		alert.Labels = emptyLabels
+		alert.Severity = SEVERITY_OK
 	}
 
-	alert.CurrentMask = dkg.Claims.Mask
+	return alert.Severity, alert.Labels, nil, nil
+}
 
-	return SEVERITY_CRITICAL, labels, nil
+func (alert *AlertDkgCulpritFound) GetCulpritId(beforeMask *big.Int, afterMask *big.Int) int {
+	if beforeMask == nil || afterMask == nil {
+		return -1
+	}
+
+	var resMask big.Int
+	resMask.AndNot(beforeMask, afterMask)
+
+	if resMask.Cmp(big.NewInt(0)) == 0 {
+		return -1
+	}
+
+	return int(resMask.TrailingZeroBits())
+}
+
+func (alert *AlertDkgCulpritFound) ExtractNotEvicted(counters *coordinator.DKGClaimcounters) string {
+	keys := make([]int, 0, len(*counters))
+	for k := range *counters {
+		keys = append(keys, int(k))
+	}
+
+	sort.Ints(keys)
+
+	strKeys := make([]string, 0, len(keys))
+	for _, k := range keys {
+		strKeys = append(strKeys, strconv.Itoa(k))
+	}
+
+	return strings.Join(strKeys, ",")
 }

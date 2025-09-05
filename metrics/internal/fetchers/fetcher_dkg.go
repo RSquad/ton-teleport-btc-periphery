@@ -85,9 +85,8 @@ func (fetcher *FetcherDKG) FetchDKG() {
 	}
 
 	fetcher.chDB <- PayloadDB{
-		timestamp: time.Now(),
-		typeId:    PayloadTypeDKG,
-		payload:   string(jsonData),
+		typeId:  PayloadTypeDKG,
+		payload: string(jsonData),
 	}
 }
 
@@ -127,8 +126,7 @@ func (fetcher *FetcherDKG) FetchPrevDKG() {
 	}
 
 	fetcher.chDB <- PayloadDB{
-		timestamp: time.Now(),
-		typeId:    PayloadTypePrevDKG,
-		payload:   string(jsonData),
+		typeId:  PayloadTypePrevDKG,
+		payload: string(jsonData),
 	}
 }

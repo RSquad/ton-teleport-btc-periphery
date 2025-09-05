@@ -67,8 +67,7 @@ func (fetcher *FetcherContractCoordinator) Fetch() {
 	}
 
 	fetcher.chDB <- PayloadDB{
-		timestamp: time.Now(),
-		typeId:    PayloadTypeContractCoordinator,
-		payload:   string(jsonData),
+		typeId:  PayloadTypeContractCoordinator,
+		payload: string(jsonData),
 	}
 }
