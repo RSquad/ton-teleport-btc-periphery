@@ -42,7 +42,7 @@ func TestAlertPegoutFeeNotReset(t *testing.T) {
 					return &data_models.Pegout{
 						Addr:             pegoutAddress1,
 						BitcoinTxId:      bitcoin_tx_id_1,
-						BitcoinBlockHash: nil,
+						BitcoinBlockHash: []byte("2323233"),
 					}, nil
 				},
 				BtcGetBlockHeightByHashFn: func(hash *chainhash.Hash) (int64, error) {
@@ -85,7 +85,7 @@ func TestAlertPegoutFeeNotReset(t *testing.T) {
 					}, nil
 				},
 			}),
-			Expect: TestResWant{Severity: SEVERITY_OK, Labels: pegoutLabels1, Err: nil},
+			Expect: TestResWant{Severity: SEVERITY_OK, Labels: pegoutLabelsEmpty, Err: nil},
 		},
 		{
 			Name: "SEVERITY_CRITICAL (height delta > 0, nextSvb > 0)",
@@ -94,7 +94,7 @@ func TestAlertPegoutFeeNotReset(t *testing.T) {
 					return &data_models.Pegout{
 						Addr:             pegoutAddress1,
 						BitcoinTxId:      bitcoin_tx_id_1,
-						BitcoinBlockHash: nil,
+						BitcoinBlockHash: []byte("2323"),
 					}, nil
 				},
 				BtcGetBlockHeightByHashFn: func(hash *chainhash.Hash) (int64, error) {

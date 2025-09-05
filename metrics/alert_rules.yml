@@ -206,24 +206,6 @@ groups:
           severity: critical
         annotations:
           description: "The number of participants is less than 55%"
-  - name: dkg.evicted
-    rules:
-      # 0 (SEVERITY_OK) - number of evicted oracles is in range [0-5%]
-      # 2 (SEVERITY_WARNING) - number of evicted oracles is in range [5-20%]
-      # 3 (SEVERITY_CRITICAL) - number of evicted oracles is more than 20%
-      - alert: DKGEvictedWarning
-        expr: alert_dkg_evicted >= 2
-        labels:
-          severity: warning
-        annotations:
-          description: "The number of evicted oracles is less than 80%"
-
-      - alert: DKGEvictedCritical
-        expr: alert_dkg_evicted >= 3
-        labels:
-          severity: critical
-        annotations:
-          description: "The number of participants is less than 55%"
 
   - name: dkg.culprit.found
     rules:
@@ -236,7 +218,7 @@ groups:
         annotations:
           description: "DKG culprit found"
           culprit_id: "{{ $labels.culprit_id }}"
-          is_evicted: "{{ $labels.is_evicted }}"
+          not_evicted_ids: "{{ $labels.not_evicted_ids }}"
 
   - name: contract.balance.coordinator
     rules:

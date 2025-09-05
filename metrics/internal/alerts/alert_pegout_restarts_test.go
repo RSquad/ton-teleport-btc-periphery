@@ -137,7 +137,7 @@ func TestAlertPegoutRestarts(t *testing.T) {
 			Expect: TestResWant{Severity: SEVERITY_WARNING, Labels: pegoutLabels1, Err: nil},
 		},
 		{
-			Name: "SEVERITY_WARNING (5 restarts)",
+			Name: "SEVERITY_CRITICAL (5 restarts)",
 			DataSource: NewAlertDataSourceTesting(AlertDataSourceTestingConfig{
 				FirstUnsignedPegoutDbFn: func() (*coordinator.PegoutRecord, error) {
 					return &coordinator.PegoutRecord{
@@ -151,83 +151,15 @@ func TestAlertPegoutRestarts(t *testing.T) {
 					}, nil
 				},
 			}),
-			Expect: TestResWant{Severity: SEVERITY_WARNING, Labels: pegoutLabels1, Err: nil},
+			Expect: TestResWant{Severity: SEVERITY_CRITICAL, Labels: pegoutLabels1, Err: nil},
 		},
 		{
-			Name: "SEVERITY_WARNING (6 restarts)",
+			Name: "SEVERITY_CRITICAL (6 restarts)",
 			DataSource: NewAlertDataSourceTesting(AlertDataSourceTestingConfig{
 				FirstUnsignedPegoutDbFn: func() (*coordinator.PegoutRecord, error) {
 					return &coordinator.PegoutRecord{
 						PegoutAddress: pegoutAddress1,
 						ExpiredAt:     time.Unix(beginTs+6, 0),
-					}, nil
-				},
-				PegoutDbFn: func(address *address.Address) (*data_models.Pegout, error) {
-					return &data_models.Pegout{
-						BitcoinTxId: bitcoin_tx_id_1,
-					}, nil
-				},
-			}),
-			Expect: TestResWant{Severity: SEVERITY_WARNING, Labels: pegoutLabels1, Err: nil},
-		},
-		{
-			Name: "SEVERITY_WARNING (7 restarts)",
-			DataSource: NewAlertDataSourceTesting(AlertDataSourceTestingConfig{
-				FirstUnsignedPegoutDbFn: func() (*coordinator.PegoutRecord, error) {
-					return &coordinator.PegoutRecord{
-						PegoutAddress: pegoutAddress1,
-						ExpiredAt:     time.Unix(beginTs+7, 0),
-					}, nil
-				},
-				PegoutDbFn: func(address *address.Address) (*data_models.Pegout, error) {
-					return &data_models.Pegout{
-						BitcoinTxId: bitcoin_tx_id_1,
-					}, nil
-				},
-			}),
-			Expect: TestResWant{Severity: SEVERITY_WARNING, Labels: pegoutLabels1, Err: nil},
-		},
-		{
-			Name: "SEVERITY_WARNING (8 restarts)",
-			DataSource: NewAlertDataSourceTesting(AlertDataSourceTestingConfig{
-				FirstUnsignedPegoutDbFn: func() (*coordinator.PegoutRecord, error) {
-					return &coordinator.PegoutRecord{
-						PegoutAddress: pegoutAddress1,
-						ExpiredAt:     time.Unix(beginTs+8, 0),
-					}, nil
-				},
-				PegoutDbFn: func(address *address.Address) (*data_models.Pegout, error) {
-					return &data_models.Pegout{
-						BitcoinTxId: bitcoin_tx_id_1,
-					}, nil
-				},
-			}),
-			Expect: TestResWant{Severity: SEVERITY_WARNING, Labels: pegoutLabels1, Err: nil},
-		},
-		{
-			Name: "SEVERITY_WARNING (9 restarts)",
-			DataSource: NewAlertDataSourceTesting(AlertDataSourceTestingConfig{
-				FirstUnsignedPegoutDbFn: func() (*coordinator.PegoutRecord, error) {
-					return &coordinator.PegoutRecord{
-						PegoutAddress: pegoutAddress1,
-						ExpiredAt:     time.Unix(beginTs+9, 0),
-					}, nil
-				},
-				PegoutDbFn: func(address *address.Address) (*data_models.Pegout, error) {
-					return &data_models.Pegout{
-						BitcoinTxId: bitcoin_tx_id_1,
-					}, nil
-				},
-			}),
-			Expect: TestResWant{Severity: SEVERITY_WARNING, Labels: pegoutLabels1, Err: nil},
-		},
-		{
-			Name: "SEVERITY_CRITICAL (10 restarts)",
-			DataSource: NewAlertDataSourceTesting(AlertDataSourceTestingConfig{
-				FirstUnsignedPegoutDbFn: func() (*coordinator.PegoutRecord, error) {
-					return &coordinator.PegoutRecord{
-						PegoutAddress: pegoutAddress1,
-						ExpiredAt:     time.Unix(beginTs+10, 0),
 					}, nil
 				},
 				PegoutDbFn: func(address *address.Address) (*data_models.Pegout, error) {

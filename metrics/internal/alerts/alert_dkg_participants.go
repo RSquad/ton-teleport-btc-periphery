@@ -13,37 +13,58 @@ func NewAlertDkgParticipants() Alert {
 }
 
 func (alert *AlertDkgParticipants) Check(dataSource AlertDataSource) (Severity, Labels, IntValues, error) {
-	// Get PrevDKG
-	prevDkg, err := dataSource.PrevDkgDB()
+	// Get DKG
+	dkg, err := dataSource.DkgDB()
 	if err != nil {
 		return SEVERITY_UNKNOWN, nil, nil, err
 	}
 
-	if prevDkg == nil {
+	if dkg == nil {
 		return SEVERITY_OK, nil, nil, nil
 	}
 
-	// Calulate participantsPercentage
-	maxParticipants, err := dataSource.TonMaxMainValidators(context.Background())
+	coordinatorContractData, err := dataSource.CoordinatorContractStorageDB()
 	if err != nil {
 		return SEVERITY_UNKNOWN, nil, nil, err
 	}
 
-	participantsCount := prevDkg.MaxSigners
-	participantsPercentage := mutils.MulDivCeil(uint(participantsCount), 100, uint(maxParticipants))
+	vSetSize := len(dkg.VSet)
+	validatorsCountMax := 0
+
+	if !coordinatorContractData.StandaloneMode {
+		maxValidators, err := dataSource.TonMaxMainValidators(context.Background())
+		if err != nil {
+			return SEVERITY_UNKNOWN, nil, nil, err
+		}
+
+		validatorsCountMax = maxValidators
+	} else {
+		validatorsCountMax = vSetSize
+	}
+
+	count := min(vSetSize, validatorsCountMax)
+	evictedCount := 0
+
+	for i := range count {
+		if dkg.VSetMask.Bit(i) == 0 {
+			evictedCount++
+		}
+	}
+
+	percentage := mutils.MulDivCeil(uint(count-evictedCount), 100, uint(count))
 
 	// Calulate severity
-	severity := alert.GetSeverity(participantsPercentage)
+	severity := alert.GetSeverity(percentage)
 
 	return severity, nil, nil, nil
 }
 
-func (alert *AlertDkgParticipants) GetSeverity(participantsPercentage uint) Severity {
+func (alert *AlertDkgParticipants) GetSeverity(percentage uint) Severity {
 	severity := SEVERITY_OK
 
-	if participantsPercentage <= 55 {
+	if percentage <= 55 {
 		severity = SEVERITY_CRITICAL
-	} else if participantsPercentage <= 80 {
+	} else if percentage <= 80 {
 		severity = SEVERITY_WARNING
 	}
 

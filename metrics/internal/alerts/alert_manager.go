@@ -126,15 +126,6 @@ func NewAlertManager(
 		return nil, err
 	}
 
-	// alert_dkg_evicted (dkg.evicted)
-	err = alertManager.RegisterAlert(
-		"alert_dkg_evicted",
-		NewAlertDkgEvicted(),
-	)
-	if err != nil {
-		return nil, err
-	}
-
 	// alert_dkg_culprit_found (dkg.culprit.found)
 	err = alertManager.RegisterAlert(
 		"alert_dkg_culprit_found",

@@ -427,6 +427,7 @@ func (manager *MetricsManager) DkgStatusJson(ctx context.Context) (string, error
 	}
 
 	type DkgInfo struct {
+		State              string
 		VSetSize           int
 		ValidatorsCountMax int
 
@@ -475,6 +476,7 @@ func (manager *MetricsManager) DkgStatusJson(ctx context.Context) (string, error
 	sumarizeDkgInfo := func(dkg *coordinator.DKG) (*DkgInfo, error) {
 		var info DkgInfo
 
+		info.State = dkg.State.String()
 		info.VSetSize = len(dkg.VSet)
 
 		if dkg.R1 != nil {
