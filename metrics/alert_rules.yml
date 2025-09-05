@@ -342,3 +342,23 @@ groups:
       annotations:
         description: 'Relayer balance is less than 0.5 TON'
         contract_address: "{{ $labels.address }}"
+  - name: pegout.cpfp.length
+    rules:
+      # 0 (SEVERITY_OK) - cpfp length is less than 10
+      # 2 (SEVERITY_WARNING) - cpfp length is less than 20
+      # 3 (SEVERITY_CRITICAL) - cpfp length is more than 20
+      - alert: PegoutCPFPLengthWarning
+        expr: alert_pegout_cpfp_length >= 2
+        labels:
+          severity: warning
+        annotations:
+          description: "The CPFP chain length is more than 10"
+          last_pegout_txid: "{{ $labels.last_pegout_txid }}"
+
+      - alert: PegoutCPFPLengthCritical
+        expr: alert_pegout_cpfp_length >= 3
+        labels:
+          severity: critical
+        annotations:
+          description: "The CPFP chain length is more than 20"
+          last_pegout_txid: "{{ $labels.last_pegout_txid }}"
