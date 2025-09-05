@@ -17,7 +17,7 @@ func NewAlertContractBalance(
 	}
 }
 
-func (alert *AlertContractBalance) Check(dataSource AlertDataSource) (Severity, Labels, error) {
+func (alert *AlertContractBalance) Check(dataSource AlertDataSource) (Severity, Labels, IntValues, error) {
 	labels := Labels{
 		"address": "",
 	}
@@ -25,13 +25,13 @@ func (alert *AlertContractBalance) Check(dataSource AlertDataSource) (Severity, 
 	// Get current balance
 	balance, err := dataSource.ActualContractBalance(alert.Name)
 	if err != nil {
-		return SEVERITY_UNKNOWN, labels, err
+		return SEVERITY_UNKNOWN, labels, nil, err
 	}
 
 	severity := alert.GetSeverity(balance)
 	labels["address"] = alert.Addr.StringRaw()
 
-	return severity, labels, nil
+	return severity, labels, nil, nil
 }
 
 func (alert *AlertContractBalance) GetSeverity(balance int64) Severity {

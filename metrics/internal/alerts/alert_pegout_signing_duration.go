@@ -28,7 +28,7 @@ func NewAlertPegoutSigningDuration() Alert {
 	}
 }
 
-func (alert *AlertPegoutSigningDuration) Check(dataSource AlertDataSource) (Severity, Labels, error) {
+func (alert *AlertPegoutSigningDuration) Check(dataSource AlertDataSource) (Severity, Labels, IntValues, error) {
 	labels := Labels{
 		"bitcoin_tx_id": "",
 		"pegout_addr":   "",
@@ -37,21 +37,21 @@ func (alert *AlertPegoutSigningDuration) Check(dataSource AlertDataSource) (Seve
 	// Get first unsigned pegout
 	unsignedPegout, err := dataSource.FirstUnsignedPegoutDB()
 	if err != nil {
-		return SEVERITY_UNKNOWN, labels, err
+		return SEVERITY_UNKNOWN, labels, nil, err
 	}
 
 	// No unsigned pegouts
 	if unsignedPegout == nil {
 		alert.severity = SEVERITY_OK
 		alert.currentUnsignedPegout = nil
-		return SEVERITY_OK, labels, nil
+		return SEVERITY_OK, labels, nil, nil
 	}
 
 	// Get pegout signingTimeout (from Coordinator)
 	if alert.signingTimeout == 0 {
 		coordinatorData, err := dataSource.CoordinatorContractStorageDB()
 		if err != nil {
-			return SEVERITY_UNKNOWN, labels, err
+			return SEVERITY_UNKNOWN, labels, nil, err
 		}
 		alert.signingTimeout = coordinatorData.SigningTimeout
 	}
@@ -80,7 +80,7 @@ func (alert *AlertPegoutSigningDuration) Check(dataSource AlertDataSource) (Seve
 		}
 
 		if beginTimestamp <= 0 {
-			return SEVERITY_UNKNOWN, labels, err
+			return SEVERITY_UNKNOWN, labels, nil, err
 		}
 
 		alert.beginTimestamp = beginTimestamp
@@ -98,7 +98,7 @@ func (alert *AlertPegoutSigningDuration) Check(dataSource AlertDataSource) (Seve
 	// Get pegout record from DB
 	pegout, err := dataSource.PegoutDB(alert.currentUnsignedPegout.PegoutAddress)
 	if err != nil {
-		return SEVERITY_UNKNOWN, labels, err
+		return SEVERITY_UNKNOWN, labels, nil, err
 	}
 
 	// Update labels
@@ -107,7 +107,7 @@ func (alert *AlertPegoutSigningDuration) Check(dataSource AlertDataSource) (Seve
 	}
 	labels["pegout_addr"] = alert.currentUnsignedPegout.PegoutAddress.StringRaw()
 
-	return alert.severity, labels, nil
+	return alert.severity, labels, nil, nil
 }
 
 func (alert *AlertPegoutSigningDuration) GetSeverity(duration time.Duration) Severity {

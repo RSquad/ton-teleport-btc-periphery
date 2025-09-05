@@ -14,7 +14,7 @@ func NewAlertPegoutCommintments() Alert {
 	return &AlertPegoutCommintments{}
 }
 
-func (alert *AlertPegoutCommintments) Check(dataSource AlertDataSource) (Severity, Labels, error) {
+func (alert *AlertPegoutCommintments) Check(dataSource AlertDataSource) (Severity, Labels, IntValues, error) {
 	labels := Labels{
 		"bitcoin_tx_id": "",
 		"pegout_addr":   "",
@@ -24,18 +24,18 @@ func (alert *AlertPegoutCommintments) Check(dataSource AlertDataSource) (Severit
 	// Get first unsigned pegout
 	unsignedPegout, err := dataSource.FirstUnsignedPegoutDB()
 	if err != nil {
-		return SEVERITY_UNKNOWN, labels, err
+		return SEVERITY_UNKNOWN, labels, nil, err
 	}
 
 	// No unsigned pegouts
 	if unsignedPegout == nil {
-		return SEVERITY_OK, labels, nil
+		return SEVERITY_OK, labels, nil, nil
 	}
 
 	// Get pegout record from DB
 	pegout, err := dataSource.PegoutDB(unsignedPegout.PegoutAddress)
 	if err != nil {
-		return SEVERITY_UNKNOWN, labels, err
+		return SEVERITY_UNKNOWN, labels, nil, err
 	}
 
 	// Update labels
@@ -46,7 +46,7 @@ func (alert *AlertPegoutCommintments) Check(dataSource AlertDataSource) (Severit
 
 	// Wait until the signing stage starts
 	if unsignedPegout.Signatures.Count == 0 {
-		return SEVERITY_OK, labels, nil
+		return SEVERITY_OK, labels, nil, nil
 	}
 
 	// Calulate commitmentsPercentage
@@ -61,7 +61,7 @@ func (alert *AlertPegoutCommintments) Check(dataSource AlertDataSource) (Severit
 	// Calulate severity
 	severity := alert.GetSeverity(commitmentsPercentage)
 
-	return severity, labels, nil
+	return severity, labels, nil, nil
 }
 
 func (alert *AlertPegoutCommintments) GetSeverity(commitmentsPercentage uint) Severity {

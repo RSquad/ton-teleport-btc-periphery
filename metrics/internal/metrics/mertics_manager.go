@@ -427,13 +427,16 @@ func (manager *MetricsManager) DkgStatusJson(ctx context.Context) (string, error
 	}
 
 	type DkgInfo struct {
-		VSetSize                int
+		VSetSize           int
+		ValidatorsCountMax int
+
 		ValidatorsCountInDkg    int
 		ValidatorsCountNotInDkg int
-		ValidatorsCountMax      int
-		ValidatorsIdxInDkg      map[int]string
-		ValidatorsIdxNotInDkg   map[int]string
-		ValidatorsIdxEvicted    map[int]string
+		ValidatorsCountEvicted  int
+
+		ValidatorsIdxInDkg    map[int]string
+		ValidatorsIdxNotInDkg map[int]string
+		ValidatorsIdxEvicted  map[int]string
 	}
 
 	type DkgStatus struct {
@@ -512,6 +515,8 @@ func (manager *MetricsManager) DkgStatusJson(ctx context.Context) (string, error
 				info.ValidatorsIdxEvicted[i] = pubkeyBase64
 			}
 		}
+
+		info.ValidatorsCountEvicted = len(info.ValidatorsIdxEvicted)
 
 		return &info, nil
 	}

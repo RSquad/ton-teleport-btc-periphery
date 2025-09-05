@@ -13,7 +13,7 @@ func NewAlertPegoutSigners() Alert {
 	return &AlertPegoutSigners{}
 }
 
-func (alert *AlertPegoutSigners) Check(dataSource AlertDataSource) (Severity, Labels, error) {
+func (alert *AlertPegoutSigners) Check(dataSource AlertDataSource) (Severity, Labels, IntValues, error) {
 	labels := Labels{
 		"bitcoin_tx_id": "",
 		"pegout_addr":   "",
@@ -22,18 +22,18 @@ func (alert *AlertPegoutSigners) Check(dataSource AlertDataSource) (Severity, La
 	// Get first unsigned pegout
 	unsignedPegout, err := dataSource.FirstUnsignedPegoutDB()
 	if err != nil {
-		return SEVERITY_UNKNOWN, labels, err
+		return SEVERITY_UNKNOWN, labels, nil, err
 	}
 
 	// No unsigned pegouts
 	if unsignedPegout == nil {
-		return SEVERITY_OK, labels, nil
+		return SEVERITY_OK, labels, nil, nil
 	}
 
 	// Get pegout record from DB
 	pegout, err := dataSource.PegoutDB(unsignedPegout.PegoutAddress)
 	if err != nil {
-		return SEVERITY_UNKNOWN, labels, err
+		return SEVERITY_UNKNOWN, labels, nil, err
 	}
 
 	// Update labels
@@ -50,7 +50,7 @@ func (alert *AlertPegoutSigners) Check(dataSource AlertDataSource) (Severity, La
 	// Calulate severity
 	severity := alert.GetSeverity(signersAllowedPercentage)
 
-	return severity, labels, nil
+	return severity, labels, nil, nil
 }
 
 func (alert *AlertPegoutSigners) GetSeverity(signersAllowedPercentage uint) Severity {

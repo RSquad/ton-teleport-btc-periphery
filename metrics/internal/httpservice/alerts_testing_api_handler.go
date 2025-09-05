@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/alerts"
@@ -128,5 +129,30 @@ func (apiHandler AlertsTestingApiHandler) ParseState(queryParams *url.Values) (*
 		}
 	}
 
-	return alerts.NewAlertState(nameStr, severity, labels, nil, true), nil
+	// int_values
+	var intValues alerts.IntValues = nil
+	{
+		intValuesStr := queryParams.Get("int_values")
+
+		if intValuesStr != "" {
+			intValues = make(alerts.IntValues)
+			values := strings.Split(intValuesStr, "|")
+
+			for _, v := range values {
+				parts := strings.Split(v, "=")
+				if len(parts) != 2 {
+					return nil, fmt.Errorf("wrong value '%s'", intValuesStr)
+				}
+
+				n, err := strconv.ParseInt(parts[1], 10, 64)
+				if err != nil {
+					return nil, fmt.Errorf("parse error: %w", err)
+				}
+
+				intValues[parts[0]] = n
+			}
+		}
+	}
+
+	return alerts.NewAlertState(nameStr, severity, labels, nil, true, intValues), nil
 }

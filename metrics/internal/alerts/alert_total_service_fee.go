@@ -6,21 +6,21 @@ func NewAlertTotalServiceFee() Alert {
 	return &AlertTotalServiceFee{}
 }
 
-func (alert *AlertTotalServiceFee) Check(dataSource AlertDataSource) (Severity, Labels, error) {
+func (alert *AlertTotalServiceFee) Check(dataSource AlertDataSource) (Severity, Labels, IntValues, error) {
 	// Get last signed pegout
 	teleportContractStorage, err := dataSource.TeleportContractStorageDB()
 	if err != nil {
-		return SEVERITY_UNKNOWN, nil, err
+		return SEVERITY_UNKNOWN, nil, nil, err
 	}
 
 	if teleportContractStorage == nil {
-		return SEVERITY_OK, nil, nil
+		return SEVERITY_OK, nil, nil, nil
 	}
 
 	// Calulate severity
 	severity := alert.GetSeverity(teleportContractStorage.TotalServiceFee)
 
-	return severity, nil, nil
+	return severity, nil, nil, nil
 }
 
 func (alert *AlertTotalServiceFee) GetSeverity(totalServiceFee int32) Severity {

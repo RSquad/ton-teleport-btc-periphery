@@ -12,7 +12,7 @@ func NewAlertPegoutFeeNotReset() Alert {
 	return &AlertPegoutFeeNotReset{}
 }
 
-func (alert *AlertPegoutFeeNotReset) Check(dataSource AlertDataSource) (Severity, Labels, error) {
+func (alert *AlertPegoutFeeNotReset) Check(dataSource AlertDataSource) (Severity, Labels, IntValues, error) {
 	labels := Labels{
 		"bitcoin_tx_id": "",
 		"pegout_addr":   "",
@@ -21,11 +21,11 @@ func (alert *AlertPegoutFeeNotReset) Check(dataSource AlertDataSource) (Severity
 	// Get last signed pegout
 	pegout, err := dataSource.LastSignedPegoutDB()
 	if err != nil {
-		return SEVERITY_UNKNOWN, labels, err
+		return SEVERITY_UNKNOWN, labels, nil, err
 	}
 
 	if pegout == nil {
-		return SEVERITY_OK, labels, nil
+		return SEVERITY_OK, labels, nil, nil
 	}
 
 	pegoutBlockHeight := int64(0)
@@ -33,14 +33,14 @@ func (alert *AlertPegoutFeeNotReset) Check(dataSource AlertDataSource) (Severity
 	nextSvb := int64(0)
 
 	if pegout.BitcoinBlockHash == nil {
-		return SEVERITY_OK, labels, nil
+		return SEVERITY_OK, labels, nil, nil
 	}
 
 	// Get info from bitcoin network
 	{
 		blockHeight, err := dataSource.BtcGetBlockHeightByHash(mutils.BytesToBTCHash(pegout.BitcoinBlockHash))
 		if err != nil {
-			return SEVERITY_UNKNOWN, labels, err
+			return SEVERITY_UNKNOWN, labels, nil, err
 		}
 
 		pegoutBlockHeight = blockHeight
@@ -50,7 +50,7 @@ func (alert *AlertPegoutFeeNotReset) Check(dataSource AlertDataSource) (Severity
 	{
 		bitcoinClientContractStorage, err := dataSource.BitcoinClientContractStorageDB()
 		if err != nil {
-			return SEVERITY_UNKNOWN, labels, err
+			return SEVERITY_UNKNOWN, labels, nil, err
 		}
 
 		lastConfirmedBlockHeight = bitcoinClientContractStorage.LastConfirmedBlockHeight
@@ -60,7 +60,7 @@ func (alert *AlertPegoutFeeNotReset) Check(dataSource AlertDataSource) (Severity
 	{
 		storage, err := dataSource.TeleportContractStorageDB()
 		if err != nil {
-			return SEVERITY_UNKNOWN, labels, err
+			return SEVERITY_UNKNOWN, labels, nil, err
 		}
 
 		nextSvb = int64(storage.NextSVB)
@@ -75,7 +75,7 @@ func (alert *AlertPegoutFeeNotReset) Check(dataSource AlertDataSource) (Severity
 	// Calulate severity
 	severity := alert.GetSeverity(pegoutBlockHeight, lastConfirmedBlockHeight, nextSvb)
 
-	return severity, labels, nil
+	return severity, labels, nil, nil
 }
 
 func (alert *AlertPegoutFeeNotReset) GetSeverity(

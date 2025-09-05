@@ -19,7 +19,7 @@ type TestDesc struct {
 func DoAlertTests(t *testing.T, tests []TestDesc, alert Alert) {
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			severity, labels, err := alert.Check(tt.DataSource)
+			severity, labels, _, err := alert.Check(tt.DataSource)
 
 			// Assert
 			if tt.Expect.Err != nil {

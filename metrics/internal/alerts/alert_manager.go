@@ -108,37 +108,46 @@ func NewAlertManager(
 		return nil, err
 	}
 
-	// dkg_restarts (dkg.restarts)
+	// alert_dkg_restarts (dkg.restarts)
 	err = alertManager.RegisterAlert(
-		"dkg_restarts",
+		"alert_dkg_restarts",
 		NewAlertDkgRestarts(),
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	// dkg_participants (dkg.participants)
+	// alert_dkg_participants (dkg.participants)
 	err = alertManager.RegisterAlert(
-		"dkg_participants",
+		"alert_dkg_participants",
 		NewAlertDkgParticipants(),
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	// dkg_culprit_found (dkg.culprit.found)
+	// alert_dkg_evicted (dkg.evicted)
 	err = alertManager.RegisterAlert(
-		"dkg_culprit_found",
+		"alert_dkg_evicted",
+		NewAlertDkgEvicted(),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	// alert_dkg_culprit_found (dkg.culprit.found)
+	err = alertManager.RegisterAlert(
+		"alert_dkg_culprit_found",
 		NewAlertDkgCulpritFound(),
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	// contract_balance_*
+	// alert_contract_balance_*
 	for name, addr := range contractAddrs {
 		err = alertManager.RegisterAlert(
-			"contract_balance_"+name,
+			"alert_contract_balance_"+name,
 			NewAlertContractBalance(name, addr),
 		)
 		if err != nil {
@@ -172,7 +181,7 @@ func (manager *AlertManager) CheckAll() {
 		}
 
 		if state == nil { // State in not enforced
-			severity, labels, err := alert.Check(manager.dataSource)
+			severity, labels, intValues, err := alert.Check(manager.dataSource)
 
 			state = NewAlertState(
 				alertName,
@@ -180,6 +189,7 @@ func (manager *AlertManager) CheckAll() {
 				labels,
 				err,
 				false,
+				intValues,
 			)
 
 			if err != nil {

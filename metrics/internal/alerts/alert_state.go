@@ -1,6 +1,9 @@
 package alerts
 
-import "time"
+import (
+	"maps"
+	"time"
+)
 
 type AlertState struct {
 	Name         string
@@ -9,6 +12,7 @@ type AlertState struct {
 	LastErr      error
 	Enforced     bool
 	LastUpdateTs time.Time
+	IntValues    IntValues
 }
 
 func NewAlertState(
@@ -17,6 +21,7 @@ func NewAlertState(
 	labels Labels,
 	lastErr error,
 	enforced bool,
+	intValues IntValues,
 ) *AlertState {
 	return &AlertState{
 		Name:         name,
@@ -25,6 +30,7 @@ func NewAlertState(
 		LastErr:      lastErr,
 		Enforced:     enforced,
 		LastUpdateTs: time.Now(),
+		IntValues:    intValues,
 	}
 }
 
@@ -32,9 +38,13 @@ func (state AlertState) DeepCopy() AlertState {
 	var labelsCopy Labels
 	if state.Labels != nil {
 		labelsCopy = make(Labels, len(state.Labels))
-		for k, v := range state.Labels {
-			labelsCopy[k] = v
-		}
+		maps.Copy(labelsCopy, state.Labels)
+	}
+
+	var intValuesCopy IntValues
+	if state.IntValues != nil {
+		intValuesCopy = make(IntValues, len(state.IntValues))
+		maps.Copy(intValuesCopy, state.IntValues)
 	}
 
 	return AlertState{
@@ -44,5 +54,6 @@ func (state AlertState) DeepCopy() AlertState {
 		LastErr:      state.LastErr,
 		Enforced:     state.Enforced,
 		LastUpdateTs: state.LastUpdateTs,
+		IntValues:    intValuesCopy,
 	}
 }

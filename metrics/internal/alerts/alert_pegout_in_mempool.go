@@ -23,7 +23,7 @@ func NewAlertPegoutInMempool() Alert {
 	}
 }
 
-func (alert *AlertPegoutInMempool) Check(dataSource AlertDataSource) (Severity, Labels, error) {
+func (alert *AlertPegoutInMempool) Check(dataSource AlertDataSource) (Severity, Labels, IntValues, error) {
 	labels := Labels{
 		"bitcoin_tx_id": "",
 		"pegout_addr":   "",
@@ -33,11 +33,11 @@ func (alert *AlertPegoutInMempool) Check(dataSource AlertDataSource) (Severity, 
 		// Get last signed pegouts
 		pegouts, err := dataSource.LastSignedPegoutsDB(25)
 		if err != nil {
-			return SEVERITY_UNKNOWN, labels, err
+			return SEVERITY_UNKNOWN, labels, nil, err
 		}
 
 		if len(pegouts) == 0 {
-			return SEVERITY_OK, labels, nil
+			return SEVERITY_OK, labels, nil, nil
 		}
 
 		// Sort by ID asc
@@ -58,7 +58,7 @@ func (alert *AlertPegoutInMempool) Check(dataSource AlertDataSource) (Severity, 
 		}
 
 		if alert.pegoutToCheck == nil {
-			return SEVERITY_OK, labels, nil
+			return SEVERITY_OK, labels, nil, nil
 		}
 	}
 
@@ -101,7 +101,7 @@ func (alert *AlertPegoutInMempool) Check(dataSource AlertDataSource) (Severity, 
 		alert.pegoutToCheck = nil
 	}
 
-	return severity, labels, nil
+	return severity, labels, nil, nil
 }
 
 func (alert *AlertPegoutInMempool) GetSeverity(duration time.Duration) Severity {

@@ -18,7 +18,9 @@ type DkgInfo struct {
 	State                 coordinator.DKGState
 	StateName             string
 	Restarts              int
+	RestartsSeverity      alerts.Severity
 	Culprits              string
+	CulpritsSeverity      alerts.Severity
 	Until                 time.Time
 	ValidatorsMax         int
 	ValidatorsActive      int
@@ -61,23 +63,23 @@ type BalancesInfo struct {
 	Coordinator         int64
 	CoordinatorStr      string
 	CoordinatorAddr     *address.Address
-	CoordinatorSeverity int
+	CoordinatorSeverity alerts.Severity
 	Teleport            int64
 	TeleportStr         string
 	TeleportAddr        *address.Address
-	TeleportSeverity    int
+	TeleportSeverity    alerts.Severity
 	Bitclient           int64
 	BitclientStr        string
 	BitclientAddr       *address.Address
-	BitclientSeverity   int
+	BitclientSeverity   alerts.Severity
 	Minter              int64
 	MinterStr           string
 	MinterAddr          *address.Address
-	MinterSeverity      int
+	MinterSeverity      alerts.Severity
 	Relayer             int64
 	RelayerStr          string
 	RelayerAddr         *address.Address
-	RelayerSeverity     int
+	RelayerSeverity     alerts.Severity
 }
 
 type TeleportInfo struct {
@@ -105,13 +107,18 @@ func (systemInfo *MetricsSystemInfo) SystemInfoJson(
 	alertManager *alerts.AlertManager,
 	contractAddrs map[string]*address.Address,
 ) (string, error) {
+	dkgInfo, err := systemInfo.DkgInfo(dataSourceDB, alertManager, contractAddrs)
+	if err != nil {
+		return "", err
+	}
+
 	balancesInfo, err := systemInfo.BalancesInfo(dataSourceDB, alertManager, contractAddrs)
 	if err != nil {
 		return "", err
 	}
 
 	info := SystemInfo{
-		DkgInfo:           nil,
+		DkgInfo:           dkgInfo,
 		LastPegoutTxInfo:  nil,
 		PegoutSigningInfo: nil,
 		BalancesInfo:      balancesInfo,
@@ -126,6 +133,43 @@ func (systemInfo *MetricsSystemInfo) SystemInfoJson(
 	return string(jsonData), nil
 }
 
+func (systemInfo *MetricsSystemInfo) DkgInfo(
+	dataSourceDB *data_sources.DataSourceDB,
+	alertManager *alerts.AlertManager,
+	contractAddrs map[string]*address.Address,
+) (*DkgInfo, error) {
+	dkg, err := dataSourceDB.Dkg()
+	if err != nil {
+		return nil, err
+	}
+
+	// restarts, restartsSeverity
+	dkgRestartsAlertState, err := alertManager.GetAlertState("alert_dkg_restarts")
+	if err != nil {
+		return nil, err
+	}
+
+	return &DkgInfo{
+		State:            dkg.State,
+		StateName:        dkg.State.String(),
+		Restarts:         int(dkgRestartsAlertState.IntValues["restarts"]),
+		RestartsSeverity: dkgRestartsAlertState.Severity,
+		/*
+			Culprits:              culprits,
+			CulpritsSeverity:      culpritsSeverity,
+			Until:                 until,
+			ValidatorsMax:         validatorsMax,
+			ValidatorsActive:      validatorsActive,
+			ValidatorsActiveIdx:   validatorsActiveIdx,
+			ValidatorsInactive:    validatorsInactive,
+			ValidatorsInactiveIdx: validatorsInactiveIdx,
+			ValidatorsEvicted:     validatorsEvicted,
+			ValidatorsEvictedIdx:  validatorsEvictedIdx,
+			Timeout:               timeout,
+		*/
+	}, nil
+}
+
 func (systemInfo *MetricsSystemInfo) BalancesInfo(
 	dataSourceDB *data_sources.DataSourceDB,
 	alertManager *alerts.AlertManager,
@@ -135,7 +179,7 @@ func (systemInfo *MetricsSystemInfo) BalancesInfo(
 	if err != nil {
 		return nil, err
 	}
-	coordinatorAlertState, err := alertManager.GetAlertState("contract_balance_coordinator")
+	coordinatorAlertState, err := alertManager.GetAlertState("alert_contract_balance_coordinator")
 	if err != nil {
 		return nil, err
 	}
@@ -144,7 +188,7 @@ func (systemInfo *MetricsSystemInfo) BalancesInfo(
 	if err != nil {
 		return nil, err
 	}
-	teleportAlertState, err := alertManager.GetAlertState("contract_balance_teleport")
+	teleportAlertState, err := alertManager.GetAlertState("alert_contract_balance_teleport")
 	if err != nil {
 		return nil, err
 	}
@@ -153,7 +197,7 @@ func (systemInfo *MetricsSystemInfo) BalancesInfo(
 	if err != nil {
 		return nil, err
 	}
-	bitclientAlertState, err := alertManager.GetAlertState("contract_balance_bitclient")
+	bitclientAlertState, err := alertManager.GetAlertState("alert_contract_balance_bitclient")
 	if err != nil {
 		return nil, err
 	}
@@ -162,7 +206,7 @@ func (systemInfo *MetricsSystemInfo) BalancesInfo(
 	if err != nil {
 		return nil, err
 	}
-	minterAlertState, err := alertManager.GetAlertState("contract_balance_minter")
+	minterAlertState, err := alertManager.GetAlertState("alert_contract_balance_minter")
 	if err != nil {
 		return nil, err
 	}
@@ -171,7 +215,7 @@ func (systemInfo *MetricsSystemInfo) BalancesInfo(
 	if err != nil {
 		return nil, err
 	}
-	relayerAlertState, err := alertManager.GetAlertState("contract_balance_relayer")
+	relayerAlertState, err := alertManager.GetAlertState("alert_contract_balance_relayer")
 	if err != nil {
 		return nil, err
 	}
@@ -179,23 +223,23 @@ func (systemInfo *MetricsSystemInfo) BalancesInfo(
 	return &BalancesInfo{
 		Coordinator:         coordinator,
 		CoordinatorStr:      mutils.NanoIntToString(coordinator),
-		CoordinatorSeverity: int(coordinatorAlertState.Severity),
+		CoordinatorSeverity: coordinatorAlertState.Severity,
 		CoordinatorAddr:     contractAddrs["coordinator"],
 		Teleport:            teleport,
 		TeleportStr:         mutils.NanoIntToString(teleport),
 		TeleportAddr:        contractAddrs["teleport"],
-		TeleportSeverity:    int(teleportAlertState.Severity),
+		TeleportSeverity:    teleportAlertState.Severity,
 		Bitclient:           bitclient,
 		BitclientStr:        mutils.NanoIntToString(bitclient),
 		BitclientAddr:       contractAddrs["bitclient"],
-		BitclientSeverity:   int(bitclientAlertState.Severity),
+		BitclientSeverity:   bitclientAlertState.Severity,
 		Minter:              minter,
 		MinterStr:           mutils.NanoIntToString(minter),
 		MinterAddr:          contractAddrs["minter"],
-		MinterSeverity:      int(minterAlertState.Severity),
+		MinterSeverity:      minterAlertState.Severity,
 		Relayer:             relayer,
 		RelayerStr:          mutils.NanoIntToString(relayer),
 		RelayerAddr:         contractAddrs["relayer"],
-		RelayerSeverity:     int(relayerAlertState.Severity),
+		RelayerSeverity:     relayerAlertState.Severity,
 	}, nil
 }

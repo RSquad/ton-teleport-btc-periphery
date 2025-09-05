@@ -206,6 +206,24 @@ groups:
           severity: critical
         annotations:
           description: "The number of participants is less than 55%"
+  - name: dkg.evicted
+    rules:
+      # 0 (SEVERITY_OK) - number of evicted oracles is in range [0-5%]
+      # 2 (SEVERITY_WARNING) - number of evicted oracles is in range [5-20%]
+      # 3 (SEVERITY_CRITICAL) - number of evicted oracles is more than 20%
+      - alert: DKGEvictedWarning
+        expr: alert_dkg_evicted >= 2
+        labels:
+          severity: warning
+        annotations:
+          description: "The number of evicted oracles is less than 80%"
+
+      - alert: DKGEvictedCritical
+        expr: alert_dkg_evicted >= 3
+        labels:
+          severity: critical
+        annotations:
+          description: "The number of participants is less than 55%"
 
   - name: dkg.culprit.found
     rules:
@@ -226,7 +244,7 @@ groups:
       # 2 (SEVERITY_WARNING) - contract balance is in range [0.5 ton - 2 ton]
       # 3 (SEVERITY_CRITICAL) - contract balance is in range [0 - 0.5 ton]
     - alert: CoordinatorLowContractBalanceWarning
-      expr: contract_balance_coordinator >= 2
+      expr: alert_contract_balance_coordinator >= 2
       labels:
         severity: warning
       annotations:
@@ -234,7 +252,7 @@ groups:
         contract_address: "{{ $labels.address }}"
 
     - alert: CoordinatorLowContractBalanceCritical
-      expr: contract_balance_coordinator >= 3
+      expr: alert_contract_balance_coordinator >= 3
       labels:
         severity: critical
       annotations:
@@ -247,7 +265,7 @@ groups:
       # 2 (SEVERITY_WARNING) - contract balance is in range [0.5 ton - 2 ton]
       # 3 (SEVERITY_CRITICAL) - contract balance is in range [0 - 0.5 ton]
     - alert: TeleportLowContractBalanceWarning
-      expr: contract_balance_teleport >= 2
+      expr: alert_contract_balance_teleport >= 2
       labels:
         severity: warning
       annotations:
@@ -255,7 +273,7 @@ groups:
         contract_address: "{{ $labels.address }}"
 
     - alert: TeleportLowContractBalanceCritical
-      expr: contract_balance_teleport >= 3
+      expr: alert_contract_balance_teleport >= 3
       labels:
         severity: critical
       annotations:
@@ -268,7 +286,7 @@ groups:
       # 2 (SEVERITY_WARNING) - contract balance is in range [0.5 ton - 2 ton]
       # 3 (SEVERITY_CRITICAL) - contract balance is in range [0 - 0.5 ton]
     - alert: BitcoinClientLowContractBalanceWarning
-      expr: contract_balance_bitclient >= 2
+      expr: alert_contract_balance_bitclient >= 2
       labels:
         severity: warning
       annotations:
@@ -276,7 +294,7 @@ groups:
         contract_address: "{{ $labels.address }}"
 
     - alert: BitcoinClientLowContractBalanceCritical
-      expr: contract_balance_bitclient >= 3
+      expr: alert_contract_balance_bitclient >= 3
       labels:
         severity: critical
       annotations:
@@ -289,7 +307,7 @@ groups:
       # 2 (SEVERITY_WARNING) - contract balance is in range [0.5 ton - 2 ton]
       # 3 (SEVERITY_CRITICAL) - contract balance is in range [0 - 0.5 ton]
     - alert: MinterLowContractBalanceWarning
-      expr: contract_balance_minter >= 2
+      expr: alert_contract_balance_minter >= 2
       labels:
         severity: warning
       annotations:
@@ -297,7 +315,7 @@ groups:
         contract_address: "{{ $labels.address }}"
 
     - alert: MinterLowContractBalanceCritical
-      expr: contract_balance_minter >= 3
+      expr: alert_contract_balance_minter >= 3
       labels:
         severity: critical
       annotations:
@@ -310,7 +328,7 @@ groups:
       # 2 (SEVERITY_WARNING) - contract balance is in range [0.5 ton - 2 ton]
       # 3 (SEVERITY_CRITICAL) - contract balance is in range [0 - 0.5 ton]
     - alert: RelayerLowContractBalanceWarning
-      expr: contract_balance_relayer >= 2
+      expr: alert_contract_balance_relayer >= 2
       labels:
         severity: warning
       annotations:
@@ -318,7 +336,7 @@ groups:
         contract_address: "{{ $labels.address }}"
 
     - alert: RelayerLowContractBalanceCritical
-      expr: contract_balance_relayer >= 3
+      expr: alert_contract_balance_relayer >= 3
       labels:
         severity: critical
       annotations:
