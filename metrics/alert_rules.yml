@@ -1,0 +1,346 @@
+# This is the rules file.
+groups:
+  - name: pegout.fee.not.reset
+    rules:
+      # 0 (SEVERITY_OK)
+      # 3 (SEVERITY_CRITICAL) - (last_pegout_block_height < confirmed_block_height) & (next_svb > 0)
+      - alert: PegoutFeeNotResetCritical
+        expr: alert_pegout_fee_not_reset >= 3
+        labels:
+          severity: critical
+        annotations:
+          description: "Pegout transaction already has 5 confirmations but the fee has not been reset"
+          pegout_txid: "{{ $labels.bitcoin_tx_id }}"
+          pegout_addr: "{{ $labels.pegout_addr }}"
+
+  - name: pegout.signers
+    rules:
+      # 0 (SEVERITY_OK) - greater or equal to 90% of max signers
+      # 1 (SEVERITY_INFO) - greater or equal to 80% of max signers
+      # 2 (SEVERITY_WARNING) - less than 80% of max signers
+      # 3 (SEVERITY_CRITICAL) - less than 70% of max signers
+      - alert: PegoutSignersWarning
+        expr: alert_pegout_signers >= 2
+        labels:
+          severity: warning
+        annotations:
+          description: "Number of validators allowed to sign pegout is less than 80%"
+          pegout_txid: "{{ $labels.bitcoin_tx_id }}"
+          pegout_addr: "{{ $labels.pegout_addr }}"
+
+      - alert: PegoutSignersCritical
+        expr: alert_pegout_signers >= 3
+        labels:
+          severity: critical
+        annotations:
+          description: "Number of validators allowed to sign pegout is less than 70%"
+          pegout_txid: "{{ $labels.bitcoin_tx_id }}"
+          pegout_addr: "{{ $labels.pegout_addr }}"
+  
+  - name: pegout.restarts
+    rules:
+      # 0 (SEVERITY_OK) - no restarts
+      # 2 (SEVERITY_WARNING) - 1 restart
+      # 3 (SEVERITY_CRITICAL) - 5 restarts
+      - alert: PegoutRestartsWarning
+        expr: alert_pegout_restarts >= 2
+        labels:
+          severity: warning
+        annotations:
+          description: "The pegout signing was restarted 1 time"
+          pegout_txid: "{{ $labels.bitcoin_tx_id }}"
+          pegout_addr: "{{ $labels.pegout_addr }}"
+
+      - alert: PegoutRestartsCritical
+        expr: alert_pegout_restarts >= 3
+        labels:
+          severity: critical
+        annotations:
+          description: "The pegout signing was restarted 5 times"
+          pegout_txid: "{{ $labels.bitcoin_tx_id }}"
+          pegout_addr: "{{ $labels.pegout_addr }}"
+
+  - name: pegout.commitments
+    rules:
+      # 0 (SEVERITY_OK) - commitments count is in range 90%-100%
+      # 1 (SEVERITY_INFO) - commitments count is in range 80%-90%
+      # 2 (SEVERITY_WARNING) - commitments count is in range (threshold%)-80%
+      # 3 (SEVERITY_CRITICAL) - commitments count is less than threshold
+      - alert: PegoutCommitmentsInfo
+        expr: alert_pegout_commitments_count >= 1
+        labels:
+          severity: info
+        annotations:
+          description: "The number of pegout commitments is less than 90%"
+          pegout_txid: "{{ $labels.bitcoin_tx_id }}"
+          pegout_addr: "{{ $labels.pegout_addr }}"
+
+      - alert: PegoutCommitmentsWarning
+        expr: alert_pegout_commitments_count >= 2
+        labels:
+          severity: warning
+        annotations:
+          description: "The number of pegout commitments is less than 80%"
+          pegout_txid: "{{ $labels.bitcoin_tx_id }}"
+          pegout_addr: "{{ $labels.pegout_addr }}"
+
+      - alert: PegoutCommitmentsCritical
+        expr: alert_pegout_commitments_count >= 3
+        labels:
+          severity: critical
+        annotations:
+          description: "The number of pegout commitments is less than threshold"
+          pegout_txid: "{{ $labels.bitcoin_tx_id }}"
+          pegout_addr: "{{ $labels.pegout_addr }}"
+          threshold: "{{ $labels.threshold }}"
+
+  - name: pegout.in.mempool
+    rules:
+      # 0 (SEVERITY_OK) - pegout transaction is in mempool or block
+      # 2 (SEVERITY_WARNING) - pegout transaction not found in mempool for 10 minutes
+      # 3 (SEVERITY_CRITICAL) - pegout transaction not found in mempool for 40 minutes
+      - alert: PegoutInMempoolWarning
+        expr: alert_pegout_in_mempool >= 2
+        labels:
+          severity: warning
+        annotations:
+          description: "pegout transaction not found in mempool for 10 minutes"
+          pegout_txid: "{{ $labels.bitcoin_tx_id }}"
+          pegout_addr: "{{ $labels.pegout_addr }}"
+
+      - alert: PegoutInMempoolCritical
+        expr: alert_pegout_in_mempool >= 3
+        labels:
+          severity: critical
+        annotations:
+          description: "pegout transaction not found in mempool for 40 minutes"
+          pegout_txid: "{{ $labels.bitcoin_tx_id }}"
+          pegout_addr: "{{ $labels.pegout_addr }}"
+
+  - name: pegout.signing.duration
+    rules:
+      # 0 (SEVERITY_OK) - pegout is signed or signing is in progress for less than 20 minutes
+      # 3 (SEVERITY_CRITICAL) - pegout is unsigned for 20 minutes or more
+      - alert: PegoutSigningCritical
+        expr: alert_pegout_signing_duration >= 3
+        labels:
+          severity: critical
+        annotations:
+          description: "pegout transaction was not signed within 20 minutes"
+          pegout_txid: "{{ $labels.bitcoin_tx_id }}"
+          pegout_addr: "{{ $labels.pegout_addr }}"
+
+  - name: dkg.status
+    rules:
+      # 0 (DKGStateFinished) - DKG finished or null
+      # 1 (DKGStateInProgress) - DKG in progress
+      # 2 (DKGStatePart1Finished) - DKG part 1 finished
+      # 3 (DKGStatePart2Finished) - DKG part 2 finished
+    - alert: DKGStatusFinished
+      expr: dkg_status == 0
+      labels:
+        severity: info
+      annotations:
+        description: "DKG finished"
+
+    - alert: DKGStatusInProgress
+      expr: dkg_status == 1
+      labels:
+        severity: info
+      annotations:
+        description: "DKG started"
+
+  - name: total.service.fee
+    rules:
+      # 0 (SEVERITY_OK) - total_service_fee is enough
+      # 2 (SEVERITY_WARNING) - total_service_fee is less than 1000 satoshi
+      # 3 (SEVERITY_CRITICAL) - total_service_fee is negative
+      - alert: TotalServiceFeeWarning
+        expr: alert_total_service_fee >= 2
+        labels:
+          severity: warning
+        annotations:
+          description: "total service fee is less than 1000 satoshi"
+
+      - alert: TotalServiceFeeCritical
+        expr: alert_total_service_fee >= 3
+        labels:
+          severity: critical
+        annotations:
+          description: "total service fee is negative"
+
+  - name: dkg.restarts
+    rules:
+      # 0 (SEVERITY_OK) - no restarts or 1 restart
+      # 2 (SEVERITY_WARNING) - more than 2 restarts
+      # 3 (SEVERITY_CRITICAL)- more than 5 restarts
+      - alert: DKGRestartsWarning
+        expr: alert_dkg_restarts >= 2
+        labels:
+          severity: warning
+        annotations:
+          description: "The DKG was restarted 2 times or more"
+
+      - alert: DKGRestartsCritical
+        expr: alert_dkg_restarts >= 3
+        labels:
+          severity: critical
+        annotations:
+          description: "The DKG was restarted 5 times or more"
+
+  - name: dkg.participants
+    rules:
+      # 0 (SEVERITY_OK) - number of participants is in range [80-100%]
+      # 2 (SEVERITY_WARNING) - number of participants is in range [55-80%]
+      # 3 (SEVERITY_CRITICAL) - number of participants is less than 55%
+      - alert: DKGParticipantsWarning
+        expr: alert_dkg_participants >= 2
+        labels:
+          severity: warning
+        annotations:
+          description: "The number of participants is less than 80%"
+
+      - alert: DKGParticipantsCritical
+        expr: alert_dkg_participants >= 3
+        labels:
+          severity: critical
+        annotations:
+          description: "The number of participants is less than 55%"
+
+  - name: dkg.culprit.found
+    rules:
+      # 0 (SEVERITY_OK) - culprit not found 
+      # 3 (SEVERITY_CRITICAL) - culprit found
+      - alert: DkgCulpritEvictedCritical
+        expr: alert_dkg_culprit_found >= 3
+        labels:
+          severity: critical
+        annotations:
+          description: "DKG culprit found"
+          culprit_id: "{{ $labels.culprit_id }}"
+          not_evicted_ids: "{{ $labels.not_evicted_ids }}"
+
+  - name: contract.balance.coordinator
+    rules:
+      # 0 (SEVERITY_OK) - contract balance is in range [2 ton - ]
+      # 2 (SEVERITY_WARNING) - contract balance is in range [0.5 ton - 2 ton]
+      # 3 (SEVERITY_CRITICAL) - contract balance is in range [0 - 0.5 ton]
+    - alert: CoordinatorLowContractBalanceWarning
+      expr: alert_contract_balance_coordinator >= 2
+      labels:
+        severity: warning
+      annotations:
+        description: 'Coordinator balance is less than 2 TON'
+        contract_address: "{{ $labels.address }}"
+
+    - alert: CoordinatorLowContractBalanceCritical
+      expr: alert_contract_balance_coordinator >= 3
+      labels:
+        severity: critical
+      annotations:
+        description: 'Coordinator balance is less than 0.5 TON'
+        contract_address: "{{ $labels.address }}"
+
+  - name: contract.balance.teleport
+    rules:
+      # 0 (SEVERITY_OK) - contract balance is in range [2 ton - ]
+      # 2 (SEVERITY_WARNING) - contract balance is in range [0.5 ton - 2 ton]
+      # 3 (SEVERITY_CRITICAL) - contract balance is in range [0 - 0.5 ton]
+    - alert: TeleportLowContractBalanceWarning
+      expr: alert_contract_balance_teleport >= 2
+      labels:
+        severity: warning
+      annotations:
+        description: 'Teleport balance is less than 2 TON'
+        contract_address: "{{ $labels.address }}"
+
+    - alert: TeleportLowContractBalanceCritical
+      expr: alert_contract_balance_teleport >= 3
+      labels:
+        severity: critical
+      annotations:
+        description: 'Teleport balance is less than 0.5 TON'
+        contract_address: "{{ $labels.address }}"
+
+  - name: contract.balance.bitclient
+    rules:
+      # 0 (SEVERITY_OK) - contract balance is in range [2 ton - ]
+      # 2 (SEVERITY_WARNING) - contract balance is in range [0.5 ton - 2 ton]
+      # 3 (SEVERITY_CRITICAL) - contract balance is in range [0 - 0.5 ton]
+    - alert: BitcoinClientLowContractBalanceWarning
+      expr: alert_contract_balance_bitclient >= 2
+      labels:
+        severity: warning
+      annotations:
+        description: 'BitcoinClient balance is less than 2 TON'
+        contract_address: "{{ $labels.address }}"
+
+    - alert: BitcoinClientLowContractBalanceCritical
+      expr: alert_contract_balance_bitclient >= 3
+      labels:
+        severity: critical
+      annotations:
+        description: 'BitcoinClient balance is less than 0.5 TON'
+        contract_address: "{{ $labels.address }}"
+
+  - name: contract.balance.minter
+    rules:
+      # 0 (SEVERITY_OK) - contract balance is in range [2 ton - ]
+      # 2 (SEVERITY_WARNING) - contract balance is in range [0.5 ton - 2 ton]
+      # 3 (SEVERITY_CRITICAL) - contract balance is in range [0 - 0.5 ton]
+    - alert: MinterLowContractBalanceWarning
+      expr: alert_contract_balance_minter >= 2
+      labels:
+        severity: warning
+      annotations:
+        description: 'Minter balance is less than 2 TON'
+        contract_address: "{{ $labels.address }}"
+
+    - alert: MinterLowContractBalanceCritical
+      expr: alert_contract_balance_minter >= 3
+      labels:
+        severity: critical
+      annotations:
+        description: 'Minter balance is less than 0.5 TON'
+        contract_address: "{{ $labels.address }}"
+
+  - name: contract.balance.relayer
+    rules:
+      # 0 (SEVERITY_OK) - contract balance is in range [2 ton - ]
+      # 2 (SEVERITY_WARNING) - contract balance is in range [0.5 ton - 2 ton]
+      # 3 (SEVERITY_CRITICAL) - contract balance is in range [0 - 0.5 ton]
+    - alert: RelayerLowContractBalanceWarning
+      expr: alert_contract_balance_relayer >= 2
+      labels:
+        severity: warning
+      annotations:
+        description: 'Relayer balance is less than 2 TON'
+        contract_address: "{{ $labels.address }}"
+
+    - alert: RelayerLowContractBalanceCritical
+      expr: alert_contract_balance_relayer >= 3
+      labels:
+        severity: critical
+      annotations:
+        description: 'Relayer balance is less than 0.5 TON'
+        contract_address: "{{ $labels.address }}"
+  - name: pegout.cpfp.length
+    rules:
+      # 0 (SEVERITY_OK) - cpfp length is less than 10
+      # 2 (SEVERITY_WARNING) - cpfp length is less than 20
+      # 3 (SEVERITY_CRITICAL) - cpfp length is more than 20
+      - alert: PegoutCPFPLengthWarning
+        expr: alert_pegout_cpfp_length >= 2
+        labels:
+          severity: warning
+        annotations:
+          description: "The CPFP chain length is more than 10"
+          last_pegout_txid: "{{ $labels.last_pegout_txid }}"
+
+      - alert: PegoutCPFPLengthCritical
+        expr: alert_pegout_cpfp_length >= 3
+        labels:
+          severity: critical
+        annotations:
+          description: "The CPFP chain length is more than 20"
+          last_pegout_txid: "{{ $labels.last_pegout_txid }}"

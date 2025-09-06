@@ -18,7 +18,6 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated/migrate"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/events"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/httpservice"
-	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/metrics"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/mintservice"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/pegoutmanager"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
@@ -35,12 +34,10 @@ type App struct {
 	TonClient             *tonclient.TonClient
 	BitcoinClient         *bitcoin.Client
 	EventService          *events.EventService
-	TeleportContract      *teleportcontract.TeleportContract
 	CoordinatorContract   coordinator.Coordinator
 	BitcoinClientContract *bitcoinclientcontract.BitcoinClientContract
 	PegoutManager         *pegoutmanager.PegoutManager
 	MintService           *mintservice.MintService
-	MetricsService        *metrics.MetricsService
 	HttpService           *httpservice.HttpService
 }
 
@@ -66,92 +63,68 @@ func initialize() (*App, error) {
 		Str("component", "main").
 		Msg("initializing")
 
-	indexerConfig, err := utils.LoadCfg[config.IndexerConfig]()
+	envConfig, err := utils.LoadCfg[config.EnvConfig]()
 	if err != nil {
 		return nil, err
 	}
 
 	// Read .env config
-	cfg, err := config.NewServicesConfig(&indexerConfig)
+	cfg, err := config.NewServicesConfig(&envConfig)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse .env config: %w", err)
 	}
 
-	logger.Log.Debug().Msg(config.CfgToString(&indexerConfig))
+	logger.Log.Debug().Msg(config.CfgToString(cfg))
 
 	// Bitcoin client
 	bitcoinClient, err := bitcoin.NewClient(
-		cfg.ExternalServices.BitcoinRpcHost,
-		cfg.ExternalServices.BitcoinRpcUser,
-		cfg.ExternalServices.BitcoinRpcPass,
+		cfg.BitcoinRpcHost,
+		cfg.BitcoinRpcUser,
+		cfg.BitcoinRpcPass,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create bitcoin client: %w", err)
 	}
 
 	// TON client
-	tonClient, err := tonclient.New(cfg.ExternalServices.TonConfigUrl)
+	tonClient, err := tonclient.New(cfg.TonConfigUrl)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create ton client: %w", err)
 	}
 
-	// Teleport contract
-	var teleportContract *teleportcontract.TeleportContract = nil
-	if cfg.ExternalServices.TeleportContractAddr != nil {
-		teleportContract = teleportcontract.New(
-			cfg.ExternalServices.TeleportContractAddr,
-			tonClient,
-			nil,
-			context.Background(),
-		)
-	}
-
 	// Coordinator contract
-	var coordinatorContract coordinator.Coordinator = nil
-	if cfg.ExternalServices.CoordinatorContractAddr != nil {
-		coordinatorContract = coordinator.New(
-			cfg.ExternalServices.CoordinatorContractAddr,
-			tonClient,
-			nil,
-			context.Background(),
-			30,
-		)
+	coordinatorContract := coordinator.New(
+		cfg.CoordinatorContractAddr,
+		tonClient,
+		nil,
+		context.Background(),
+		30,
+	)
+
+	coordinatorContractStorage, err := coordinatorContract.GetStorage(nil)
+	if err != nil {
+		return nil, fmt.Errorf("FetcherContractCoordinator: failed to retrieve storage cell, error: %v", err)
 	}
 
-	// Bitcoin client contract
-	var bitcoinClientContract *bitcoinclientcontract.BitcoinClientContract = nil
-	if cfg.ExternalServices.BitcoinClientContractAddr != nil {
-		bitcoinClientContract = bitcoinclientcontract.NewBitcoinClientContract(
-			cfg.ExternalServices.BitcoinClientContractAddr,
-			tonClient,
-			nil,
-			context.Background(),
-		)
-	}
+	// Teleport contract
+	teleportContract := teleportcontract.New(
+		coordinatorContractStorage.TeleportAddr,
+		tonClient,
+		nil,
+		context.Background(),
+	)
 
 	// Open DB connection
-	var dbConnPoolMetrics *sql.DB = nil
 	var dbConnPoolGraphql *sql.DB = nil
 	{
-		dbConnPoolMetrics, err = sql.Open("postgres", cfg.ExternalServices.DatabaseUrl)
+		dbConnPoolGraphql, err = sql.Open("postgres", cfg.DatabaseUrl)
 		if err != nil {
 			return nil, err
 		}
-
-		dbConnPoolGraphql, err = sql.Open("postgres", cfg.ExternalServices.DatabaseUrl)
-		if err != nil {
-			return nil, err
-		}
-
-		// Setup DB pooling (metrics)
-		dbConnPoolMetrics.SetMaxOpenConns(cfg.ExternalServices.DatabaseMaxConn)
-		dbConnPoolMetrics.SetMaxIdleConns(cfg.ExternalServices.DatabaseMaxIdleConn)
-		dbConnPoolMetrics.SetConnMaxLifetime(-1)
-		dbConnPoolMetrics.SetConnMaxIdleTime(-1)
 
 		// Setup DB pooling (graphql)
-		dbConnPoolGraphql.SetMaxOpenConns(cfg.ExternalServices.DatabaseMaxConn)
-		dbConnPoolGraphql.SetMaxIdleConns(cfg.ExternalServices.DatabaseMaxIdleConn)
+		dbConnPoolGraphql.SetMaxOpenConns(cfg.DatabaseMaxConn)
+		dbConnPoolGraphql.SetMaxIdleConns(cfg.DatabaseMaxIdleConn)
 		dbConnPoolGraphql.SetConnMaxLifetime(1 * time.Minute)
 		dbConnPoolGraphql.SetConnMaxIdleTime(1 * time.Minute)
 	}
@@ -169,86 +142,40 @@ func initialize() (*App, error) {
 	}
 
 	// Mint service
-	var mintService *mintservice.MintService = nil
-	if cfg.RunServices.RunMintService {
-		if teleportContract == nil {
-			return nil, fmt.Errorf("failed to start MintService: TeleportContract is null. Please set the COMMON_TON_CONTRACT_TELEPORT_ADDR value in the .env")
-		}
-
-		mintService = mintservice.New(
-			repo,
-			bitcoinClient,
-			tonClient,
-			teleportContract,
-		)
-	}
+	mintService := mintservice.New(
+		repo,
+		bitcoinClient,
+		tonClient,
+		teleportContract,
+	)
 
 	// Pegout manager
-	var pegoutManager *pegoutmanager.PegoutManager = nil
-	if cfg.RunServices.RunPegoutManager {
-		if teleportContract == nil {
-			return nil, fmt.Errorf("failed to start PegoutManager: TeleportContract is null. Please set the COMMON_TON_CONTRACT_TELEPORT_ADDR value in the .env")
-		}
-
-		pegoutManager, err = pegoutmanager.New(
-			context.Background(),
-			repo,
-			bitcoinClient,
-			tonClient,
-			teleportContract,
-		)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create pegout manager: %w", err)
-		}
+	pegoutManager, err := pegoutmanager.New(
+		context.Background(),
+		repo,
+		bitcoinClient,
+		tonClient,
+		teleportContract,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create pegout manager: %w", err)
 	}
 
 	// Event service
-	var eventService *events.EventService = nil
-	if cfg.RunServices.RunEventService {
-		if teleportContract == nil {
-			return nil, fmt.Errorf("failed to start EventService: TeleportContract is null. Please set the COMMON_TON_CONTRACT_TELEPORT_ADDR value in the .env")
-		}
-
-		if coordinatorContract == nil {
-			return nil, fmt.Errorf("failed to start EventService: CoordinatorContract is null. Please set the COMMON_TON_CONTRACT_COORDINATOR value in the .env")
-		}
-
-		eventService = events.NewEventService(
-			tonClient,
-			repo,
-			teleportContract,
-			coordinatorContract,
-		)
-	}
-
-	// Metrics service
-	var metricsService *metrics.MetricsService = nil
-	if cfg.RunServices.RunMetricsService {
-		metricsService, err = metrics.NewService(
-			coordinatorContract,
-			bitcoinClientContract,
-			teleportContract,
-			bitcoinClient,
-			tonClient,
-			cfg,
-			dbConnPoolMetrics,
-		)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create matrics manager: %w", err)
-		}
-	}
+	eventService := events.NewEventService(
+		tonClient,
+		repo,
+		teleportContract,
+		coordinatorContract,
+	)
 
 	// HTTP service
-	var httpService *httpservice.HttpService = nil
-	if cfg.RunServices.RunHttpService {
-		httpService = httpservice.New(
-			repo,
-			bitcoinClient,
-			tonClient,
-			teleportContract,
-			dbConnPoolMetrics,
-		)
-	}
+	httpService := httpservice.New(
+		repo,
+		bitcoinClient,
+		tonClient,
+		teleportContract,
+	)
 
 	logger.Log.Info().
 		Str("component", "main").
@@ -258,12 +185,10 @@ func initialize() (*App, error) {
 		Repo:                repo,
 		TonClient:           tonClient,
 		BitcoinClient:       bitcoinClient,
-		TeleportContract:    teleportContract,
 		CoordinatorContract: coordinatorContract,
 		PegoutManager:       pegoutManager,
 		MintService:         mintService,
 		EventService:        eventService,
-		MetricsService:      metricsService,
 		HttpService:         httpService,
 	}, nil
 }
@@ -294,14 +219,6 @@ func run(app *App) error {
 		go func() {
 			defer wg.Done()
 			app.MintService.Work(context.Background())
-		}()
-	}
-
-	if app.MetricsService != nil {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			app.MetricsService.Work(context.Background())
 		}()
 	}
 
