@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/xssnick/tonutils-go/address"
 )
@@ -17,13 +16,32 @@ const (
 	PEGOUT_SIGNING
 )
 
+type PegoutTonAddr address.Address
+
 type Pegout struct {
 	Id               uint64
-	Addr             *address.Address
+	Addr             *PegoutTonAddr
 	Status           PegoutStatus
 	BitcoinTxRaw     []byte
 	BitcoinTxId      []byte
 	BitcoinBlockHash []byte
+}
+
+func (s *PegoutTonAddr) UnmarshalJSON(data []byte) error {
+	if len(data) < 2 || data[0] != '"' || data[len(data)-1] != '"' {
+		return fmt.Errorf("invalid data")
+	}
+
+	data = data[1 : len(data)-1]
+	strData := string(data)
+	addr, err := address.ParseRawAddr(strData)
+	if err != nil {
+		return err
+	}
+
+	*s = *(*PegoutTonAddr)(addr)
+
+	return nil
 }
 
 const (
@@ -62,8 +80,7 @@ func (s *PegoutStatus) UnmarshalText(text []byte) error {
 	if s == nil {
 		return errors.New("nil receiver")
 	}
-	key := strings.ToLower(string(text))
-	if v, ok := fromString[key]; ok {
+	if v, ok := fromString[string(text)]; ok {
 		*s = v
 		return nil
 	}
