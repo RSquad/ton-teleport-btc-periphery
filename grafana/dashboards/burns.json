@@ -278,7 +278,7 @@
                     "root_selector": "",
                     "source": "url",
                     "type": "json",
-                    "url": "http://indexer/api/metrics?source=burns",
+                    "url": "http://metrics/metrics/api?source=burns",
                     "url_options": {
                         "data": "",
                         "method": "GET"

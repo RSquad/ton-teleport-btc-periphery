@@ -1,0 +1,31 @@
+FROM golang:1.23.1 AS builder
+
+WORKDIR /app
+
+COPY go.work go.work.sum ./
+
+RUN go work edit -dropuse ./relayer
+RUN go work edit -dropuse ./frost
+RUN go work edit -dropuse ./oracle
+RUN go work edit -dropuse ./indexer
+
+COPY metrics/go.mod metrics/go.sum ./metrics/
+COPY lib/go.mod lib/go.sum ./lib/
+
+RUN go mod download
+
+COPY metrics/ ./metrics/
+COPY lib/ ./lib/
+
+RUN go build -o ./bin ./metrics/cmd/main.go
+
+FROM debian:bookworm-slim
+
+RUN apt-get update && apt-get install -y ca-certificates && update-ca-certificates
+
+WORKDIR /app
+COPY --from=builder /app/bin /app/
+
+EXPOSE 3000
+
+CMD ["./bin"]

@@ -251,7 +251,7 @@
                     "root_selector": "",
                     "source": "url",
                     "type": "json",
-                    "url": "http://indexer/api/metrics?source=mints",
+                    "url": "http://metrics/metrics/api?source=mints",
                     "url_options": {
                         "data": "",
                         "method": "GET"

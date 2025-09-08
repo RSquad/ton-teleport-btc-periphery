@@ -4,6 +4,7 @@ use (
 	./frost
 	./indexer
 	./lib
+	./metrics
 	./oracle
 	./relayer
 )
