@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/mutils"
+	"github.com/xssnick/tonutils-go/address"
 )
 
 type AlertPegoutFeeNotReset struct{}
@@ -70,7 +71,7 @@ func (alert *AlertPegoutFeeNotReset) Check(dataSource AlertDataSource) (Severity
 	if pegout.BitcoinTxId != nil {
 		labels["bitcoin_tx_id"] = hex.EncodeToString(pegout.BitcoinTxId)
 	}
-	labels["pegout_addr"] = pegout.Addr.StringRaw()
+	labels["pegout_addr"] = (*address.Address)(pegout.Addr).StringRaw()
 
 	// Calulate severity
 	severity := alert.GetSeverity(pegoutBlockHeight, lastConfirmedBlockHeight, nextSvb)

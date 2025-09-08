@@ -40,7 +40,7 @@ func TestAlertPegoutFeeNotReset(t *testing.T) {
 			DataSource: NewAlertDataSourceTesting(AlertDataSourceTestingConfig{
 				LastSignedPegoutDbFn: func() (*data_models.Pegout, error) {
 					return &data_models.Pegout{
-						Addr:             pegoutAddress1,
+						Addr:             (*data_models.PegoutTonAddr)(pegoutAddress1),
 						BitcoinTxId:      bitcoin_tx_id_1,
 						BitcoinBlockHash: []byte("2323233"),
 					}, nil
@@ -66,7 +66,7 @@ func TestAlertPegoutFeeNotReset(t *testing.T) {
 			DataSource: NewAlertDataSourceTesting(AlertDataSourceTestingConfig{
 				LastSignedPegoutDbFn: func() (*data_models.Pegout, error) {
 					return &data_models.Pegout{
-						Addr:             pegoutAddress1,
+						Addr:             (*data_models.PegoutTonAddr)(pegoutAddress1),
 						BitcoinTxId:      bitcoin_tx_id_1,
 						BitcoinBlockHash: nil,
 					}, nil
@@ -92,7 +92,7 @@ func TestAlertPegoutFeeNotReset(t *testing.T) {
 			DataSource: NewAlertDataSourceTesting(AlertDataSourceTestingConfig{
 				LastSignedPegoutDbFn: func() (*data_models.Pegout, error) {
 					return &data_models.Pegout{
-						Addr:             pegoutAddress1,
+						Addr:             (*data_models.PegoutTonAddr)(pegoutAddress1),
 						BitcoinTxId:      bitcoin_tx_id_1,
 						BitcoinBlockHash: []byte("2323"),
 					}, nil
