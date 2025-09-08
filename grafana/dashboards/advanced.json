@@ -429,7 +429,7 @@
                             "type": "string"
                         },
                         {
-                            "selector": "contractTeleport.TeleportAddress",
+                            "selector": "teleportAddress",
                             "text": "Teleport",
                             "type": "string"
                         },
