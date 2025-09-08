@@ -7,6 +7,7 @@ import (
 
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/data_models"
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/mutils"
+	"github.com/xssnick/tonutils-go/address"
 )
 
 type AlertPegoutInMempool struct {
@@ -88,7 +89,7 @@ func (alert *AlertPegoutInMempool) Check(dataSource AlertDataSource) (Severity, 
 	if alert.pegoutToCheck.BitcoinTxId != nil {
 		labels["bitcoin_tx_id"] = hex.EncodeToString(alert.pegoutToCheck.BitcoinTxId)
 	}
-	labels["pegout_addr"] = alert.pegoutToCheck.Addr.StringRaw()
+	labels["pegout_addr"] = (*address.Address)(alert.pegoutToCheck.Addr).StringRaw()
 
 	// Calulate severity
 	severity := SEVERITY_OK

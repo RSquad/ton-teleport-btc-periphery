@@ -33,12 +33,12 @@ func TestAlertPegoutInMempool(t *testing.T) {
 	pegouts := []*data_models.Pegout{
 		{
 			Id:          1,
-			Addr:        pegoutAddress1,
+			Addr:        (*data_models.PegoutTonAddr)(pegoutAddress1),
 			BitcoinTxId: bitcoin_tx_id_1,
 		},
 		{
 			Id:          2,
-			Addr:        pegoutAddress2,
+			Addr:        (*data_models.PegoutTonAddr)(pegoutAddress2),
 			BitcoinTxId: bitcoin_tx_id_2,
 		},
 	}

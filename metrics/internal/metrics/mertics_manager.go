@@ -225,11 +225,15 @@ func (manager *MetricsManager) InfoJson() (string, error) {
 						WHERE type_id = $3
 						ORDER BY id DESC
 						LIMIT 1
+				),
+				'teleportAddress', (
+						SELECT $4
 				)
 		) AS result;`,
 		fetchers.PayloadTypeContractBitcoinClient,
 		fetchers.PayloadTypeBitcoinNetwork,
 		fetchers.PayloadTypeContractTeleport,
+		manager.contractAddrs["teleport"].String(),
 	)
 	if err != nil {
 		return "", err
