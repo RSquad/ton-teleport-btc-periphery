@@ -5,12 +5,16 @@ import (
 	"database/sql"
 	"encoding/base64"
 	"encoding/json"
+	"math/big"
 
+	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/teleportcontract"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/alerts"
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/config"
+	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/data_models"
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/data_sources"
-	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/fetchers"
 	"github.com/xssnick/tonutils-go/address"
 )
 
@@ -203,57 +207,115 @@ func (manager *MetricsManager) InternalKeysJson() (string, error) {
 }
 
 func (manager *MetricsManager) InfoJson() (string, error) {
-	rows, err := manager.db.Query(
-		`SELECT jsonb_build_object(
-				'contractBitcoinClient', (
-						SELECT payload
-						FROM metrics_data
-						WHERE type_id = $1
-						ORDER BY id DESC
-						LIMIT 1
-				),
-				'bitcoinNetworkInfo', (
-						SELECT payload
-						FROM metrics_data
-						WHERE type_id = $2
-						ORDER BY id DESC
-						LIMIT 1
-				),
-				'contractTeleport', (
-						SELECT payload
-						FROM metrics_data
-						WHERE type_id = $3
-						ORDER BY id DESC
-						LIMIT 1
-				),
-				'teleportAddress', (
-						SELECT $4
-				)
-		) AS result;`,
-		fetchers.PayloadTypeContractBitcoinClient,
-		fetchers.PayloadTypeBitcoinNetwork,
-		fetchers.PayloadTypeContractTeleport,
-		manager.contractAddrs["teleport"].String(),
-	)
+	type ContractTeleportUTXO struct {
+		Address       string
+		Amount        *big.Int
+		Index         uint8
+		TapMerkleRoot *chainhash.Hash
+		MintAddress   string
+		Script        string
+	}
+
+	type ContractTeleportDataInfo struct {
+		Id                   uint16
+		TeleportAddress      string
+		MinterAddress        string
+		BitcoinClientAddress string
+		CoordinatorAddress   string
+		InspectorAddress     string
+		ConfiguratorAddress  string
+		TweakedPubkey        string
+		InternalKey          string
+		NextSVB              uint16
+		BaseSVB              uint16
+		PegoutChainCounter   uint64
+		LastPegoutTxID       *chainhash.Hash
+		CsvLock              uint32
+		Limits               teleportcontract.Limits
+		TotalServiceFee      int32
+		Enabled              bool
+		PeginsCount          int32
+		UTXOset              *[]ContractTeleportUTXO
+	}
+
+	convertDepositsFn := func(data map[uint64]teleportcontract.DepositData) int32 {
+		return int32(len(data))
+	}
+
+	convertUTXOSetFn := func(utxoSet map[string]teleportcontract.UTXOData) *[]ContractTeleportUTXO {
+		contractTeleportUTXOData := []ContractTeleportUTXO{}
+
+		for address, utxo := range utxoSet {
+			cutxo := ContractTeleportUTXO{
+				Address:       address,
+				Amount:        utxo.Amount,
+				Index:         utxo.Index,
+				TapMerkleRoot: utxo.TapMerkleRoot,
+				MintAddress:   utils.AddrToRawString(utxo.MintAddress),
+				Script:        utxo.Script,
+			}
+
+			contractTeleportUTXOData = append(contractTeleportUTXOData, cutxo)
+		}
+
+		return &contractTeleportUTXOData
+	}
+
+	contractTeleportStorage, err := manager.dataSourceDB.TeleportContractStorage()
 	if err != nil {
 		return "", err
 	}
 
-	defer rows.Close()
-
-	var data string
-	if rows.Next() {
-		err = rows.Scan(&data)
-		if err != nil {
-			return "", err
-		}
+	contractTeleportDataInfo := ContractTeleportDataInfo{
+		Id:                   contractTeleportStorage.Id,
+		TeleportAddress:      utils.AddrToRawString(manager.contractAddrs["teleport"]),
+		MinterAddress:        utils.AddrToRawString(contractTeleportStorage.MinterAddress),
+		BitcoinClientAddress: utils.AddrToRawString(contractTeleportStorage.BitcoinClientAddress),
+		CoordinatorAddress:   utils.AddrToRawString(contractTeleportStorage.CoordinatorAddress),
+		InspectorAddress:     utils.AddrToRawString(contractTeleportStorage.InspectorAddress),
+		ConfiguratorAddress:  utils.AddrToRawString(contractTeleportStorage.ConfiguratorAddress),
+		TweakedPubkey:        contractTeleportStorage.TweakedPubkey,
+		InternalKey:          contractTeleportStorage.InternalKey,
+		NextSVB:              contractTeleportStorage.NextSVB,
+		BaseSVB:              contractTeleportStorage.BaseSVB,
+		PegoutChainCounter:   contractTeleportStorage.PegoutChainCounter,
+		LastPegoutTxID:       contractTeleportStorage.LastPegoutTxID,
+		CsvLock:              contractTeleportStorage.CsvLock,
+		Limits:               contractTeleportStorage.Limits,
+		TotalServiceFee:      contractTeleportStorage.TotalServiceFee,
+		Enabled:              contractTeleportStorage.Enabled,
+		PeginsCount:          convertDepositsFn(contractTeleportStorage.Deposits),
+		UTXOset:              convertUTXOSetFn(contractTeleportStorage.UTXOset),
 	}
 
-	if len(data) == 0 {
-		data = "{}"
+	contractBitcoinClient, err := manager.dataSourceDB.BitcoinClientContractStorage()
+	if err != nil {
+		return "", err
 	}
 
-	return data, nil
+	bitcoinNetworkInfo, err := manager.dataSourceDB.BitcoinNetworkInfoStorage()
+	if err != nil {
+		return "", err
+	}
+
+	type Result struct {
+		ContractBitcoinClient *data_models.BitcoinClientContractStorage
+		BitcoinNetworkInfo    *data_models.BitcoinNetworkInfo
+		ContractTeleport      *ContractTeleportDataInfo
+	}
+
+	result := Result{
+		ContractBitcoinClient: contractBitcoinClient,
+		BitcoinNetworkInfo:    bitcoinNetworkInfo,
+		ContractTeleport:      &contractTeleportDataInfo,
+	}
+
+	jsonData, err := json.Marshal(result)
+	if err != nil {
+		return "", err
+	}
+
+	return string(jsonData), nil
 }
 
 func (manager *MetricsManager) PlotMintedJson() (string, error) {
