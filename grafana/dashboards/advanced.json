@@ -18,7 +18,7 @@
     "editable": true,
     "fiscalYearStartMonth": 0,
     "graphTooltip": 0,
-    "id": 1,
+    "id": 12,
     "links": [],
     "panels": [
         {
@@ -42,7 +42,7 @@
                         "steps": [
                             {
                                 "color": "green",
-                                "value": null
+                                "value": 0
                             }
                         ]
                     }
@@ -102,22 +102,22 @@
                     }
                 ]
             },
-            "pluginVersion": "11.5.2",
+            "pluginVersion": "12.1.0",
             "targets": [
                 {
                     "columns": [
                         {
-                            "selector": "contractTeleport.InternalKey",
+                            "selector": "ContractTeleport.InternalKey",
                             "text": "Current Internal Key",
                             "type": "string"
                         },
                         {
-                            "selector": "contractTeleport.TweakedPubkey",
+                            "selector": "ContractTeleport.TweakedPubkey",
                             "text": "Tweaked Key",
                             "type": "string"
                         },
                         {
-                            "selector": "contractTeleport.CsvLock",
+                            "selector": "ContractTeleport.CsvLock",
                             "text": "Sequence Locktime",
                             "type": "string"
                         }
@@ -166,7 +166,8 @@
                             "Tweaked Key": 1
                         },
                         "renameByName": {
-                            "NewField": ""
+                            "NewField": "",
+                            "Tweaked Key": ""
                         }
                     }
                 },
@@ -198,7 +199,7 @@
                         "steps": [
                             {
                                 "color": "green",
-                                "value": null
+                                "value": 0
                             }
                         ]
                     }
@@ -270,17 +271,17 @@
                 },
                 "showHeader": false
             },
-            "pluginVersion": "11.5.2",
+            "pluginVersion": "12.1.0",
             "targets": [
                 {
                     "columns": [
                         {
-                            "selector": "contractTeleport.PegoutChainCounter",
+                            "selector": "ContractTeleport.PegoutChainCounter",
                             "text": "Unconfirmed Pegout Count",
                             "type": "string"
                         },
                         {
-                            "selector": "contractTeleport.LastPegoutTxID",
+                            "selector": "ContractTeleport.LastPegoutTxID",
                             "text": "Last Pegout Tx ID",
                             "type": "string"
                         }
@@ -355,7 +356,7 @@
                         "steps": [
                             {
                                 "color": "green",
-                                "value": null
+                                "value": 0
                             }
                         ]
                     }
@@ -419,27 +420,27 @@
                 },
                 "showHeader": false
             },
-            "pluginVersion": "11.5.2",
+            "pluginVersion": "12.1.0",
             "targets": [
                 {
                     "columns": [
                         {
-                            "selector": "contractTeleport.MinterAddress",
+                            "selector": "ContractTeleport.MinterAddress",
                             "text": "tgBTC",
                             "type": "string"
                         },
                         {
-                            "selector": "teleportAddress",
+                            "selector": "ContractTeleport.TeleportAddress",
                             "text": "Teleport",
                             "type": "string"
                         },
                         {
-                            "selector": "contractTeleport.CoordinatorAddress",
+                            "selector": "ContractTeleport.CoordinatorAddress",
                             "text": "Coordinator",
                             "type": "string"
                         },
                         {
-                            "selector": "contractTeleport.BitcoinClientAddress",
+                            "selector": "ContractTeleport.BitcoinClientAddress",
                             "text": "Bitcoin Client",
                             "type": "string"
                         }
@@ -518,7 +519,7 @@
                         "steps": [
                             {
                                 "color": "green",
-                                "value": null
+                                "value": 0
                             }
                         ]
                     }
@@ -572,12 +573,12 @@
                 },
                 "showHeader": false
             },
-            "pluginVersion": "11.5.2",
+            "pluginVersion": "12.1.0",
             "targets": [
                 {
                     "columns": [
                         {
-                            "selector": "contractTeleport.PeginsCount",
+                            "selector": "ContractTeleport.PeginsCount",
                             "text": "Processing Pegins Count",
                             "type": "string"
                         }
@@ -648,7 +649,7 @@
                         "steps": [
                             {
                                 "color": "green",
-                                "value": null
+                                "value": 0
                             }
                         ]
                     },
@@ -707,7 +708,7 @@
                 },
                 "showHeader": false
             },
-            "pluginVersion": "11.5.2",
+            "pluginVersion": "12.1.0",
             "targets": [
                 {
                     "columns": [
@@ -733,7 +734,7 @@
                     "global_query_id": "",
                     "parser": "backend",
                     "refId": "A",
-                    "root_selector": "contractTeleport",
+                    "root_selector": "ContractTeleport",
                     "source": "url",
                     "type": "json",
                     "url": "http://metrics/metrics/api?source=info",
@@ -814,7 +815,7 @@
                         "steps": [
                             {
                                 "color": "green",
-                                "value": null
+                                "value": 0
                             }
                         ]
                     },
@@ -857,7 +858,7 @@
                 },
                 "showHeader": false
             },
-            "pluginVersion": "11.5.2",
+            "pluginVersion": "12.1.0",
             "targets": [
                 {
                     "columns": [],
@@ -867,7 +868,7 @@
                     "global_query_id": "",
                     "parser": "backend",
                     "refId": "A",
-                    "root_selector": "contractTeleport.Limits",
+                    "root_selector": "ContractTeleport.Limits",
                     "source": "url",
                     "type": "json",
                     "url": "http://metrics/metrics/api?source=info",
@@ -965,7 +966,7 @@
                         "steps": [
                             {
                                 "color": "green",
-                                "value": null
+                                "value": 0
                             }
                         ]
                     }
@@ -1030,27 +1031,27 @@
                 "frameIndex": 0,
                 "showHeader": false
             },
-            "pluginVersion": "11.5.2",
+            "pluginVersion": "12.1.0",
             "targets": [
                 {
                     "columns": [
                         {
-                            "selector": "bitcoinNetworkInfo.Chain",
+                            "selector": "BitcoinNetworkInfo.Chain",
                             "text": "Chain",
                             "type": "string"
                         },
                         {
-                            "selector": "bitcoinNetworkInfo.Blocks",
+                            "selector": "BitcoinNetworkInfo.Blocks",
                             "text": "Chain Height",
                             "type": "string"
                         },
                         {
-                            "selector": "bitcoinNetworkInfo.BestBlockHash",
+                            "selector": "BitcoinNetworkInfo.BestBlockHash",
                             "text": "Best Block Hash",
                             "type": "string"
                         },
                         {
-                            "selector": "bitcoinNetworkInfo.MedianTime",
+                            "selector": "BitcoinNetworkInfo.MedianTime",
                             "text": "Median Time",
                             "type": "timestamp_epoch_s"
                         },
@@ -1123,7 +1124,7 @@
                         "steps": [
                             {
                                 "color": "green",
-                                "value": null
+                                "value": 0
                             }
                         ]
                     }
@@ -1187,22 +1188,22 @@
                 },
                 "showHeader": false
             },
-            "pluginVersion": "11.5.2",
+            "pluginVersion": "12.1.0",
             "targets": [
                 {
                     "columns": [
                         {
-                            "selector": "contractBitcoinClient.ConfirmationsNeeded",
+                            "selector": "ContractBitcoinClient.ConfirmationsNeeded",
                             "text": "Confirmations Needed",
                             "type": "string"
                         },
                         {
-                            "selector": "contractBitcoinClient.LastConfirmedBlockHash",
+                            "selector": "ContractBitcoinClient.LastConfirmedBlockHash",
                             "text": "Last Confirmed Block Hash",
                             "type": "string"
                         },
                         {
-                            "selector": "contractBitcoinClient.LastConfirmedBlockHeight",
+                            "selector": "ContractBitcoinClient.LastConfirmedBlockHeight",
                             "text": "Last Confirmed Block Height",
                             "type": "string"
                         },
@@ -1255,13 +1256,13 @@
                         "renameByName": {
                             "0": "Candidates Tree",
                             "1": "  ",
+                            "BestBlockHash": "Chain Best Block Hash",
+                            "Blocks": "Height",
                             "CandidateBlockHashes": "",
+                            "Chain": "Chain",
                             "ConfirmationsNeeded": "Confirmations Needed",
                             "LastConfirmedBlockHash": "Last Confirmed Block Hash",
                             "LastConfirmedBlockHeight": "Last Confirmed Block Height",
-                            "BestBlockHash": "Chain Best Block Hash",
-                            "Blocks": "Height",
-                            "Chain": "Chain",
                             "MedianTime": "Median Time"
                         }
                     }
@@ -1319,7 +1320,7 @@
                         "steps": [
                             {
                                 "color": "green",
-                                "value": null
+                                "value": 0
                             }
                         ]
                     }
@@ -1345,7 +1346,7 @@
                 },
                 "showHeader": false
             },
-            "pluginVersion": "11.5.2",
+            "pluginVersion": "12.1.0",
             "targets": [
                 {
                     "columns": [],
@@ -1355,7 +1356,7 @@
                     "global_query_id": "",
                     "parser": "backend",
                     "refId": "A",
-                    "root_selector": "contractBitcoinClient",
+                    "root_selector": "ContractBitcoinClient",
                     "source": "url",
                     "type": "json",
                     "url": "http://metrics/metrics/api?source=info",
@@ -1457,7 +1458,7 @@
                         "steps": [
                             {
                                 "color": "green",
-                                "value": null
+                                "value": 0
                             }
                         ]
                     }
@@ -1555,7 +1556,7 @@
                 },
                 "showHeader": true
             },
-            "pluginVersion": "11.5.2",
+            "pluginVersion": "12.1.0",
             "targets": [
                 {
                     "columns": [],
@@ -1566,7 +1567,7 @@
                     "global_query_id": "",
                     "parser": "backend",
                     "refId": "A",
-                    "root_selector": "contractTeleport.UTXOset",
+                    "root_selector": "ContractTeleport.UTXOset",
                     "source": "url",
                     "type": "json",
                     "uql": "parse-json\n  project UTXOset=\"contractTeleport.UTXOset\"\n          -- mv-expand UTXO=UTXOset\n          -- project\n          --   Address=UTXO.Address,\n          --   Amount=UTXO.Amount,\n          --   Index=UTXO.Index,\n          --   Script=UTXO.Script,\n          --   MintAddress=UTXO.MintAddress,\n          --   TapMerkleRoot=UTXO.TapMerkleRoot\n          -- order by Amount desc",
@@ -1640,7 +1641,7 @@
     ],
     "preload": false,
     "refresh": "1m",
-    "schemaVersion": 40,
+    "schemaVersion": 41,
     "tags": [],
     "templating": {
         "list": []
@@ -1653,6 +1654,5 @@
     "timezone": "browser",
     "title": "Advanced",
     "uid": "ad5935b6-fc66-4fbf-b71e-58fe9c068a95",
-    "version": 1,
-    "weekStart": ""
+    "version": 6
 }
