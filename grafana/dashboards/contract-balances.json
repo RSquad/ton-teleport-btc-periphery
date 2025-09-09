@@ -312,12 +312,12 @@
     ]
   },
   "time": {
-    "from": "2025-09-04T19:40:30.508Z",
-    "to": "2025-09-09T15:27:49.934Z"
+    "from": "now-1h",
+    "to": "now"
   },
   "timepicker": {},
   "timezone": "browser",
   "title": "Contract Balances",
   "uid": "ceg7mjhvro3r4f",
-  "version": 5
+  "version": 6
 }
