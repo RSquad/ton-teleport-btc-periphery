@@ -84,6 +84,27 @@ func (dataSource *DataSourceDB) BitcoinClientContractStorage() (*data_models.Bit
 	return data, nil
 }
 
+func (dataSource *DataSourceDB) BitcoinNetworkInfoJson() ([]byte, error) {
+	return dataSource.SelectToObject(
+		"SELECT payload FROM metrics_data WHERE type_id = $1 ORDER BY id DESC LIMIT 1",
+		fetchers.PayloadTypeBitcoinNetwork,
+	)
+}
+
+func (dataSource *DataSourceDB) BitcoinNetworkInfoStorage() (*data_models.BitcoinNetworkInfo, error) {
+	jsonData, err := dataSource.BitcoinNetworkInfoJson()
+	if err != nil {
+		return nil, err
+	}
+
+	data, err := data_models.DeserializeBitcoinNetworkInfoDB(jsonData)
+	if err != nil {
+		return nil, err
+	}
+
+	return data, nil
+}
+
 func (dataSource *DataSourceDB) DkgJson() ([]byte, error) {
 	return dataSource.SelectToObject(
 		"SELECT payload FROM metrics_data WHERE type_id = $1 ORDER BY id DESC LIMIT 1",
