@@ -69,6 +69,8 @@ func (fetcher *FetcherContractBalance) Fetch() {
 		logger.Log.Error().Err(err).
 			Str("component", "FetcherContractBalances").
 			Msg("failed to GetBalances")
+
+		return
 	}
 
 	err = fetcher.WriteDB(balance)
@@ -76,6 +78,8 @@ func (fetcher *FetcherContractBalance) Fetch() {
 		logger.Log.Error().Err(err).
 			Str("component", "FetcherContractBalances").
 			Msg("failed to WriteDB")
+
+		return
 	}
 }
 

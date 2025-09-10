@@ -52,6 +52,10 @@ func (alert *AlertPegoutInMempool) Check(dataSource AlertDataSource) (Severity, 
 				continue
 			}
 
+			if len(pegout.BitcoinTxId) == 0 {
+				continue
+			}
+
 			alert.pegoutToCheck = pegout
 			alert.lastCheckedPegoutId = pegout.Id
 			alert.beginTimestamp = dataSource.NowUnixTs()
@@ -86,9 +90,7 @@ func (alert *AlertPegoutInMempool) Check(dataSource AlertDataSource) (Severity, 
 	}
 
 	// Update labels
-	if alert.pegoutToCheck.BitcoinTxId != nil {
-		labels["bitcoin_tx_id"] = hex.EncodeToString(alert.pegoutToCheck.BitcoinTxId)
-	}
+	labels["bitcoin_tx_id"] = hex.EncodeToString(alert.pegoutToCheck.BitcoinTxId)
 	labels["pegout_addr"] = (*address.Address)(alert.pegoutToCheck.Addr).StringRaw()
 
 	// Calulate severity
