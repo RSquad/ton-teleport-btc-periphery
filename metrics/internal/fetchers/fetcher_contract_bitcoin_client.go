@@ -101,6 +101,8 @@ func (fetcher *FetcherContractBitcoinClient) Fetch() {
 		logger.Log.Error().Err(err).
 			Str("component", "FetcherContractBitcoinClient").
 			Msg("failed to serialize ContractBitcoinClientData->json")
+
+		return
 	}
 
 	fetcher.chDB <- PayloadDB{
