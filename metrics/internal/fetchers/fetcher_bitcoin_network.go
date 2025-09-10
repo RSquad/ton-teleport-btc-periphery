@@ -53,6 +53,8 @@ func (fetcher *FetcherBitcoinNetwork) Fetch() {
 		logger.Log.Error().Err(err).
 			Str("component", "FetcherBitcoinNetwork").
 			Msg("failed to serialize BlockChainInfo->json")
+
+		return
 	}
 
 	fetcher.chDB <- PayloadDB{

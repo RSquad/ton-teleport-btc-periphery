@@ -614,7 +614,7 @@ func (manager *MetricsManager) ContractBalanceJson(name string) (string, error) 
 		`SELECT COALESCE(jsonb_agg(result), '[]') AS data FROM (
 			SELECT 
 			  create_at AS ts,
-				TO_CHAR(value::numeric(24,8) / 100000000::numeric(24,8), 'FM999999990.00000000') AS balance
+				TO_CHAR(value::numeric(24,8) / 1000000000::numeric(24,8), 'FM999999990.00000000') AS balance
 			FROM metrics_balances WHERE name = $1 ORDER BY id ASC
 	  ) AS result`,
 		name,
