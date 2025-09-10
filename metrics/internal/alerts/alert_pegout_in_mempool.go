@@ -85,21 +85,31 @@ func (alert *AlertPegoutInMempool) Check(dataSource AlertDataSource) (Severity, 
 		}
 	}
 
-	// Update labels
-	if alert.pegoutToCheck.BitcoinTxId != nil {
-		labels["bitcoin_tx_id"] = hex.EncodeToString(alert.pegoutToCheck.BitcoinTxId)
-	}
-	labels["pegout_addr"] = (*address.Address)(alert.pegoutToCheck.Addr).StringRaw()
-
 	// Calulate severity
-	severity := SEVERITY_OK
+	severity := SEVERITY_UNKNOWN
 
-	if !isInMempoolOrBlock {
-		duration := time.Duration(dataSource.NowUnixTs()-alert.beginTimestamp) * time.Second
-		severity = alert.GetSeverity(duration)
+	if len(alert.pegoutToCheck.BitcoinTxId) == 0 {
+		pegout, err := dataSource.PegoutDB((*address.Address)(alert.pegoutToCheck.Addr))
+		if err != nil {
+			return SEVERITY_UNKNOWN, labels, nil, err
+		}
+
+		alert.pegoutToCheck = pegout
 	} else {
-		// isInMempoolOrBlock == true
-		alert.pegoutToCheck = nil
+		severity = SEVERITY_OK
+		// Update labels
+		if alert.pegoutToCheck.BitcoinTxId != nil {
+			labels["bitcoin_tx_id"] = hex.EncodeToString(alert.pegoutToCheck.BitcoinTxId)
+		}
+		labels["pegout_addr"] = (*address.Address)(alert.pegoutToCheck.Addr).StringRaw()
+
+		if !isInMempoolOrBlock {
+			duration := time.Duration(dataSource.NowUnixTs()-alert.beginTimestamp) * time.Second
+			severity = alert.GetSeverity(duration)
+		} else {
+			// isInMempoolOrBlock == true
+			alert.pegoutToCheck = nil
+		}
 	}
 
 	return severity, labels, nil, nil
