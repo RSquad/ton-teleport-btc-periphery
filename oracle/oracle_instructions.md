@@ -141,7 +141,16 @@ After upgrading the Oracle application, the following verification steps must be
 
 1. **Verify Oracle is started and functioning correctly.** Check the logs (refer to the .env file for log location) and ensure there are no errors. If errors are detected, please consult with the development team.
 
-2. **Confirm Oracle participation in DKG generation.** Your validator must be included in the list of TON masterchain validators. If you have just started, you must wait for the next election and subsequent DKG generation (which occurs after the election).
+2. **Verify environment variables.** Ensure the following variables have the correct values:
+
+    ```bash
+    COMMON_TON_CONTRACT_COORDINATOR=Ef_q19o4m94xfF-yhYB85Qe6rTHDX-VTSzxBh4XpAfZMaOvk
+    ORACLE_STANDALONE_MODE=false
+    ```
+
+    The variable `COMMON_TON_CONFIG` must contain a path or URL to the TON mainnet global configuration JSON file.
+
+3. **Confirm Oracle participation in DKG generation.** Your validator must be included in the list of TON masterchain validators. If you have just started, you must wait for the next election and subsequent DKG generation (which occurs after the election).
 
 A public API is available for monitoring DKG status:
 
@@ -154,7 +163,7 @@ The API returns JSON data. Focus on the `DkgInfo` section:
 - **ValidatorsCountMax** - Maximum count of validators in DKG
 - **ValidatorsCountInDkg** - Count of validators participating in DKG (while DKG is not FINISHED, this represents validators who have sent round1 packages)
 - **ValidatorsCountNotInDkg** - Count of validators NOT participating in DKG (while DKG is not FINISHED, this represents validators who have not sent round1 packages. In FINISHED state, this list is always empty)
-- **ValidatorsCountEvicted** - Count of validators evicted from the current DKG. The most common cause is validators not sending round1/round2 packages during DKG timeout.
+- **ValidatorsCountEvicted** - Count of validators evicted from the current DKG. The most common cause is validators not sending round1/round2 packages within the DKG timeout period.
 - **ValidatorsIdxInDkg** - List of validators participating in DKG. Each element contains: index in VSet and ADNL address
 - **ValidatorsIdxNotInDkg** - List of validators NOT participating in DKG
 - **ValidatorsIdxEvicted** - List of validators evicted from the current DKG
@@ -176,7 +185,7 @@ LOG_FILE=/var/log/oracle.txt
 ...
 ```
 
-Then restart the Oracle using `sudo systemctl restart btc_teleport` if Oracle was installed through MyTonCtrl. Review the logs for detailed information.
+Then restart the Oracle using `sudo systemctl restart btc_teleport` if the Oracle was installed through MyTonCtrl. Review the logs for detailed information.
 
 ## Security Considerations
 
