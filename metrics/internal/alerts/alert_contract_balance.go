@@ -17,10 +17,14 @@ func NewAlertContractBalance(
 	}
 }
 
-func (alert *AlertContractBalance) Check(dataSource AlertDataSource) (Severity, Labels, IntValues, error) {
-	labels := Labels{
+func (alert *AlertContractBalance) NewLabels() Labels {
+	return Labels{
 		"address": "",
 	}
+}
+
+func (alert *AlertContractBalance) Check(dataSource AlertDataSource) (Severity, Labels, IntValues, error) {
+	labels := alert.NewLabels()
 
 	// Get current balance
 	balance, err := dataSource.ActualContractBalance(alert.Name)

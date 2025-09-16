@@ -12,20 +12,26 @@ func NewAlertDkgParticipants() Alert {
 	return &AlertDkgParticipants{}
 }
 
+func (alert *AlertDkgParticipants) NewLabels() Labels {
+	return Labels{}
+}
+
 func (alert *AlertDkgParticipants) Check(dataSource AlertDataSource) (Severity, Labels, IntValues, error) {
+	labels := alert.NewLabels()
+
 	// Get DKG
 	dkg, err := dataSource.DkgDB()
 	if err != nil {
-		return SEVERITY_UNKNOWN, nil, nil, err
+		return SEVERITY_UNKNOWN, labels, nil, err
 	}
 
 	if dkg == nil {
-		return SEVERITY_OK, nil, nil, nil
+		return SEVERITY_OK, labels, nil, nil
 	}
 
 	coordinatorContractData, err := dataSource.CoordinatorContractStorageDB()
 	if err != nil {
-		return SEVERITY_UNKNOWN, nil, nil, err
+		return SEVERITY_UNKNOWN, labels, nil, err
 	}
 
 	vSetSize := len(dkg.VSet)
@@ -34,7 +40,7 @@ func (alert *AlertDkgParticipants) Check(dataSource AlertDataSource) (Severity, 
 	if !coordinatorContractData.StandaloneMode {
 		maxValidators, err := dataSource.TonMaxMainValidators(context.Background())
 		if err != nil {
-			return SEVERITY_UNKNOWN, nil, nil, err
+			return SEVERITY_UNKNOWN, labels, nil, err
 		}
 
 		validatorsCountMax = maxValidators
@@ -56,7 +62,7 @@ func (alert *AlertDkgParticipants) Check(dataSource AlertDataSource) (Severity, 
 	// Calulate severity
 	severity := alert.GetSeverity(percentage)
 
-	return severity, nil, nil, nil
+	return severity, labels, nil, nil
 }
 
 func (alert *AlertDkgParticipants) GetSeverity(percentage uint) Severity {

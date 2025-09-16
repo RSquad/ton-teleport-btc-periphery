@@ -46,7 +46,11 @@ func (apiHandler AlertsTestingApiHandler) ServeHTTP(w http.ResponseWriter, r *ht
 			break
 		}
 
-		apiHandler.alertManager.EnforceState(state)
+		err = apiHandler.alertManager.EnforceState(state)
+		if err != nil {
+			break
+		}
+
 		jsonData, err := json.Marshal(state)
 		if err != nil {
 			break
@@ -59,7 +63,10 @@ func (apiHandler AlertsTestingApiHandler) ServeHTTP(w http.ResponseWriter, r *ht
 			break
 		}
 
-		apiHandler.alertManager.ResetEnforceState(state.Name)
+		err = apiHandler.alertManager.ResetEnforceState(state.Name)
+		if err != nil {
+			break
+		}
 
 		jsonData, err := json.Marshal(state)
 		if err != nil {

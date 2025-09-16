@@ -23,22 +23,26 @@ func NewAlertDkgCulpritFound() Alert {
 	}
 }
 
-func (alert *AlertDkgCulpritFound) Check(dataSource AlertDataSource) (Severity, Labels, IntValues, error) {
-	emptyLabels := Labels{
+func (alert *AlertDkgCulpritFound) NewLabels() Labels {
+	return Labels{
 		"culprit_id":      "",
 		"not_evicted_ids": "",
 	}
+}
+
+func (alert *AlertDkgCulpritFound) Check(dataSource AlertDataSource) (Severity, Labels, IntValues, error) {
+	labels := alert.NewLabels()
 
 	// Get DKG
 	dkg, err := dataSource.DkgDB()
 	if err != nil {
-		return SEVERITY_UNKNOWN, emptyLabels, nil, err
+		return SEVERITY_UNKNOWN, labels, nil, err
 	}
 
 	// No DKG
 	if dkg == nil {
 		alert.DkgUntil = time.Unix(0, 0)
-		alert.Labels = emptyLabels
+		alert.Labels = labels
 		alert.Severity = SEVERITY_OK
 		return alert.Severity, alert.Labels, nil, nil
 	}
@@ -46,7 +50,7 @@ func (alert *AlertDkgCulpritFound) Check(dataSource AlertDataSource) (Severity, 
 	// First DKG try
 	if alert.DkgUntil.Equal(time.Unix(0, 0)) {
 		alert.DkgUntil = dkg.Until
-		alert.Labels = emptyLabels
+		alert.Labels = labels
 		alert.Severity = SEVERITY_OK
 		return alert.Severity, alert.Labels, nil, nil
 	}
@@ -60,7 +64,7 @@ func (alert *AlertDkgCulpritFound) Check(dataSource AlertDataSource) (Severity, 
 	// Get DKG info before restart
 	dkgBeforeRestart, err := dataSource.DkgBeforeRestartDB(alert.DkgUntil)
 	if err != nil {
-		return SEVERITY_UNKNOWN, emptyLabels, nil, err
+		return SEVERITY_UNKNOWN, labels, nil, err
 	}
 	alert.DkgUntil = dkg.Until
 
@@ -68,12 +72,12 @@ func (alert *AlertDkgCulpritFound) Check(dataSource AlertDataSource) (Severity, 
 	if dkgBeforeRestart.Claims != nil && len(dkgBeforeRestart.Claims.Counters) > 0 {
 		coordinatorContractData, err := dataSource.CoordinatorContractStorageDB()
 		if err != nil {
-			return SEVERITY_UNKNOWN, nil, nil, err
+			return SEVERITY_UNKNOWN, labels, nil, err
 		}
 
 		prevDkg, err := dataSource.PrevDkgDB()
 		if err != nil {
-			return SEVERITY_UNKNOWN, nil, nil, err
+			return SEVERITY_UNKNOWN, labels, nil, err
 		}
 
 		culpritId, listOfNotEvicted := alert.Extract(
@@ -90,7 +94,7 @@ func (alert *AlertDkgCulpritFound) Check(dataSource AlertDataSource) (Severity, 
 		alert.Labels["not_evicted_ids"] = strings.Join(listOfNotEvicted, ",")
 		alert.Severity = SEVERITY_CRITICAL
 	} else {
-		alert.Labels = emptyLabels
+		alert.Labels = labels
 		alert.Severity = SEVERITY_OK
 	}
 

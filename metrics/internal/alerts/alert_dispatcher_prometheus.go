@@ -87,7 +87,10 @@ func (d *AlertDispatcherPrometheus) OnAlert(state *AlertState) {
 
 	// Update vector value
 	if len(state.Labels) > 0 {
-		gv.With(prometheus.Labels(state.Labels)).Set(float64(state.Severity))
+		gv.GetMetricWith(prometheus.Labels(state.Labels))
+
+		// TODO: implement
+		//.Set(float64(state.Severity))
 	} else {
 		gv.WithLabelValues().Set(float64(state.Severity))
 	}
