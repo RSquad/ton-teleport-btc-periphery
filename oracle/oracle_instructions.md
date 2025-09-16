@@ -15,10 +15,12 @@ The Oracle is a critical part of the TTBTC system that must run on the same mach
 ### Automatic Installation
 
 The Oracle is automatically installed when:
+
 - Installing a new TON Validator instance with MyTonCtrl
 - Upgrading an existing validator with validator mode enabled
 
 During the upgrade process, MyTonCtrl will:
+
 1. Download Oracle sources from the [official repository](https://github.com/RSquad/ton-teleport-btc-periphery/tree/master)
 2. Compile the Oracle (written in Go and Rust)
 3. Start the Oracle service
@@ -44,7 +46,7 @@ The oracle uses environment variables loaded from /usr/src/ton-teleport-btc-peri
 
 ### Common Variables
 
-- `COMMON_TON_CONFIG` - The URL or local path to the TON configuration JSON file. By default, the mainnet configuration will be used (https://ton.org/global-config.json).
+- `COMMON_TON_CONFIG` - The URL or local path to the TON configuration JSON file. By default, the mainnet configuration will be used ([https://ton.org/global-config.json](https://ton.org/global-config.json)).
 - `COMMON_TON_CONTRACT_COORDINATOR` - Address of the Coordinator contract on TON
 
 ### Oracle-specific Variables
@@ -84,9 +86,11 @@ The oracle uses environment variables loaded from /usr/src/ton-teleport-btc-peri
 ### Status Monitoring
 
 After installation, check the Oracle status in MyTonCtrl:
+
 - The status will display: `Version BTC Teleport: <commit-hash> (branch)`
 
 Example:
+
 ```txt
 Version BTC Teleport: bcde501 (master)
 ```
@@ -126,14 +130,51 @@ You can vote for multiple proposals simultaneously by providing multiple offer h
 ### Automatic Re-voting
 
 MyTonCtrl implements automatic re-voting functionality:
+
 - If a proposal doesn't pass on the first attempt, MyTonCtrl will automatically re-vote in subsequent rounds
 - This continues until the proposal is accepted
 - Only applies to proposals you have already voted for
 
+## Oracle Post-Upgrade Verification Checklist
+
+After upgrading the Oracle application, the following verification steps must be completed by validators hosting the Oracle application:
+
+1. **Verify Oracle is started and functioning correctly.** Check the logs (refer to the .env file for log location) and ensure there are no errors. If errors are detected, please consult with the development team.
+
+2. **Verify environment variables.** Ensure the following variables have the correct values:
+
+    ```bash
+    COMMON_TON_CONTRACT_COORDINATOR=Ef_q19o4m94xfF-yhYB85Qe6rTHDX-VTSzxBh4XpAfZMaOvk
+    ORACLE_STANDALONE_MODE=false
+    ```
+
+    The variable `COMMON_TON_CONFIG` must contain a path or URL to the TON mainnet global configuration JSON file.
+
+3. **Confirm Oracle participation in DKG generation.** Your validator must be included in the list of TON masterchain validators. If you have just started, you must wait for the next election and subsequent DKG generation (which occurs after the election).
+
+A public API is available for monitoring DKG status:
+
+**For mainnet:** [https://teleport.tg/metrics/api?source=dkg_status](https://teleport.tg/metrics/api?source=dkg_status)
+
+The API returns JSON data. Focus on the `DkgInfo` section:
+
+- **State** - Current DKG state: `FINISHED`, `IN_PROGRESS`, `PART1_FINISHED`, `PART2_FINISHED`
+- **VSetSize** - TON VSet size
+- **ValidatorsCountMax** - Maximum count of validators in DKG
+- **ValidatorsCountInDkg** - Count of validators participating in DKG (while DKG is not FINISHED, this represents validators who have sent round1 packages)
+- **ValidatorsCountNotInDkg** - Count of validators NOT participating in DKG (while DKG is not FINISHED, this represents validators who have not sent round1 packages. In FINISHED state, this list is always empty)
+- **ValidatorsCountEvicted** - Count of validators evicted from the current DKG. The most common cause is validators not sending round1/round2 packages within the DKG timeout period.
+- **ValidatorsIdxInDkg** - List of validators participating in DKG. Each element contains: index in VSet and ADNL address
+- **ValidatorsIdxNotInDkg** - List of validators NOT participating in DKG
+- **ValidatorsIdxEvicted** - List of validators evicted from the current DKG
+
+**Verification requirement:** Wait for **State = FINISHED** and confirm that your validators are included in the **ValidatorsIdxInDkg** list.
+
 ## Troubleshooting
 
-First of all check that logs are on and in debug mode:
-1. Open .env file `/usr/src/ton-teleport-btc-periphery/out/.env`
+First, ensure that logging is enabled and set to debug mode:
+
+1. Open the .env file at `/usr/src/ton-teleport-btc-periphery/out/.env`
 2. Adjust `LOG_LEVEL` to `DEBUG` for detailed troubleshooting
 3. Set `LOG_FILE` to `/var/log/oracle.txt`
 
@@ -144,7 +185,7 @@ LOG_FILE=/var/log/oracle.txt
 ...
 ```
 
-Then restart Oracle with MyTonCtrl. See logs for details.
+Then restart the Oracle using `sudo systemctl restart btc_teleport` if the Oracle was installed through MyTonCtrl. Review the logs for detailed information.
 
 ## Security Considerations
 
