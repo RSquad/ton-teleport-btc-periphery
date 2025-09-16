@@ -162,7 +162,7 @@
                     "root_selector": "DkgInfo",
                     "source": "url",
                     "type": "json",
-                    "url": "http://host.docker.internal:3000/metrics/api?source=system_info",
+                    "url": "http://metrics/metrics/api?source=system_info",
                     "url_options": {
                         "data": "",
                         "method": "GET"
@@ -428,7 +428,7 @@
                     "root_selector": "DkgInfo",
                     "source": "url",
                     "type": "json",
-                    "url": "http://host.docker.internal:3000/metrics/api?source=system_info",
+                    "url": "http://metrics/metrics/api?source=system_info",
                     "url_options": {
                         "data": "",
                         "method": "GET"
@@ -578,7 +578,7 @@
                     "root_selector": "BalancesInfo",
                     "source": "url",
                     "type": "json",
-                    "url": "http://host.docker.internal:3000/metrics/api?source=system_info",
+                    "url": "http://metrics/metrics/api?source=system_info",
                     "url_options": {
                         "data": "",
                         "method": "GET"
