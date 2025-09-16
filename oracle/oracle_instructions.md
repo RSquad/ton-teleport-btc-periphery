@@ -130,6 +130,32 @@ MyTonCtrl implements automatic re-voting functionality:
 - This continues until the proposal is accepted
 - Only applies to proposals you have already voted for
 
+## Oracle Check-list After Upgrade
+
+After upgrade we need to check next (for users who hosts Oracle application):
+
+1. **Oracle is started and working.** For this we need to see logs (see .env file for log location) and verify that no errors or warnings. In case of errors or warnings please consult with the developer team.
+
+2. **Oracle is take part in DKG generation.** For this you validator must be in TOP 100 list of TON masterchain validators. If you just started then you must wait for next TOP 100 election and DKG generation (after election).
+
+There are public API with DKG status:
+
+**For mainnet:** https://teleport.tg/metrics/api?source=dkg_status
+
+It returns json, we need `DkgInfo` part:
+
+- **State** - current DKG state: `FINISHED`, `IN_PROGRESS`, `PART1_FINISHED`, `PART2_FINISHED`
+- **VSetSize** - TON VSet size
+- **ValidatorsCountMax** - max count of validators in TOP
+- **ValidatorsCountInDkg** - count of validators who take part in DKG (while DKG not FINISHED then this is list of validators who send round1 packages)
+- **ValidatorsCountNotInDkg** - count of validators who NOT take part in DKG (while DKG not FINISHED then this is list of validators who dont send round1 packages. In FINISHED state this list is always empty).
+- **ValidatorsCountEvicted** - count of validators who was evicted from current DKG. Most common cause is validator does not send round1 packages and DKG was restarted by timeout.
+- **ValidatorsIdxInDkg** - list of validators who take part in DKG. Each element: index in VSet and ADNL address.
+- **ValidatorsIdxNotInDkg** - list of validators who NOT take part in DKG
+- **ValidatorsIdxEvicted** - list of validators who was evicted from current DKG.
+
+So we need to wait for **State = FINISHED** and verify that our validators in **ValidatorsIdxInDkg** list.
+
 ## Troubleshooting
 
 First of all check that logs are on and in debug mode:
