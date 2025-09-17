@@ -41,7 +41,8 @@ func (apiHandler AlertsTestingApiHandler) ServeHTTP(w http.ResponseWriter, r *ht
 	case "enforce_info":
 		payload, err = apiHandler.alertManager.GetEnforceInfoJsonStr()
 	case "enforce_set":
-		state, err := apiHandler.ParseState(&queryParams)
+		var state *alerts.AlertState = nil
+		state, err = apiHandler.ParseState(&queryParams)
 		if err != nil {
 			break
 		}
@@ -51,14 +52,16 @@ func (apiHandler AlertsTestingApiHandler) ServeHTTP(w http.ResponseWriter, r *ht
 			break
 		}
 
-		jsonData, err := json.Marshal(state)
+		var jsonData []byte = nil
+		jsonData, err = json.Marshal(state)
 		if err != nil {
 			break
 		}
 
 		payload = string(jsonData)
 	case "enforce_reset":
-		state, err := apiHandler.ParseState(&queryParams)
+		var state *alerts.AlertState = nil
+		state, err = apiHandler.ParseState(&queryParams)
 		if err != nil {
 			break
 		}
@@ -68,7 +71,8 @@ func (apiHandler AlertsTestingApiHandler) ServeHTTP(w http.ResponseWriter, r *ht
 			break
 		}
 
-		jsonData, err := json.Marshal(state)
+		var jsonData []byte = nil
+		jsonData, err = json.Marshal(state)
 		if err != nil {
 			break
 		}

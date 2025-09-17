@@ -1,6 +1,7 @@
 package alerts
 
 import (
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -116,6 +117,10 @@ func (alert *AlertDkgCulpritFound) Extract(
 		} else {
 			listOfNotEvicted = append(listOfNotEvicted, strconv.Itoa(int(idx)))
 		}
+	}
+
+	if len(listOfNotEvicted) > 0 {
+		sort.Strings(listOfNotEvicted)
 	}
 
 	return culpritId, listOfNotEvicted

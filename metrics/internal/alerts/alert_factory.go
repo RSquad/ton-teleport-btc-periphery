@@ -1,6 +1,10 @@
 package alerts
 
-import "github.com/xssnick/tonutils-go/address"
+import (
+	"fmt"
+
+	"github.com/xssnick/tonutils-go/address"
+)
 
 type AlertFactoryFn func() Alert
 
@@ -67,13 +71,23 @@ func NewAlertFactory(contractAddrs map[string]*address.Address) *AlertFactory {
 	}
 
 	// alert_contract_balance_*
-	for name, addr := range contractAddrs {
-		factories["alert_contract_balance_"+name] = func() Alert {
-			return NewAlertContractBalance("alert_contract_balance_"+name, addr)
+	for balanceName, addr := range contractAddrs {
+		factories["alert_contract_balance_"+balanceName] = func() Alert {
+			return NewAlertContractBalance("alert_contract_balance_"+balanceName, balanceName, addr)
 		}
 	}
 
 	return &AlertFactory{
 		Factories: factories,
 	}
+}
+
+func (alertFactory *AlertFactory) NewAlertInstance(name string) (Alert, error) {
+	factory, ok := alertFactory.Factories[name]
+
+	if !ok {
+		return nil, fmt.Errorf("alert not found: '%s'", name)
+	}
+
+	return factory(), nil
 }

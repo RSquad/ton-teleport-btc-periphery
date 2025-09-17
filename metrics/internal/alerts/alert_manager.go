@@ -6,10 +6,12 @@ import (
 	"sync"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
+	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/mutils"
 	"github.com/xssnick/tonutils-go/address"
 )
 
 type AlertManager struct {
+	alertsFactory   *AlertFactory
 	alerts          map[string]Alert
 	dataSource      AlertDataSource
 	alertDispatcher AlertDispatcher
@@ -25,7 +27,10 @@ func NewAlertManager(
 	alertDispatcher AlertDispatcher,
 	contractAddrs map[string]*address.Address,
 ) (*AlertManager, error) {
+	alertFactory := NewAlertFactory(contractAddrs)
+
 	alertManager := AlertManager{
+		alertsFactory:       alertFactory,
 		alerts:              make(map[string]Alert),
 		dataSource:          dataSource,
 		alertDispatcher:     alertDispatcher,
@@ -33,8 +38,6 @@ func NewAlertManager(
 		alertStates:         make(map[string]*AlertState),
 		alertStatesEnforced: make(map[string]*AlertState),
 	}
-
-	alertFactory := NewAlertFactory(contractAddrs)
 
 	for name, factory := range alertFactory.Factories {
 		alertManager.RegisterAlert(name, factory())
@@ -146,15 +149,51 @@ func (manager *AlertManager) EnforceState(state *AlertState) error {
 	manager.mu.Lock()
 	defer manager.mu.Unlock()
 
+	// Verify name
+	_, ok := manager.alerts[state.Name]
+	if !ok {
+		return fmt.Errorf("alert not found: '%s'", state.Name)
+	}
+
+	// Verify labels
+	alert, err := manager.alertsFactory.NewAlertInstance(state.Name)
+	if !ok {
+		return err
+	}
+
+	expectedLabels := alert.NewLabels()
+	expectedLabelsKeys := mutils.ExtractMapKeys(expectedLabels)
+	expectedLabelsStr := mutils.JoinToStr(expectedLabelsKeys)
+	stateLabelsKeys := mutils.ExtractMapKeys(state.Labels)
+	stateLabelsStr := mutils.JoinToStr(stateLabelsKeys)
+
+	if len(expectedLabelsKeys) != len(state.Labels) {
+		return fmt.Errorf("expected labels '%s', but got '%s'", expectedLabelsStr, stateLabelsStr)
+	}
+
+	for name := range expectedLabels {
+		_, ok := state.Labels[name]
+		if !ok {
+			return fmt.Errorf("expected labels '%s', but got '%s'", expectedLabelsStr, stateLabelsStr)
+		}
+	}
+
+	// Update enforced state
 	manager.alertStatesEnforced[state.Name] = state
+
+	return nil
 }
 
 func (manager *AlertManager) ResetEnforceState(name string) error {
 	manager.mu.Lock()
 	defer manager.mu.Unlock()
 
-	manager.alertStatesEnforced. ? 
-	if 
+	_, ok := manager.alertStatesEnforced[name]
+	if !ok {
+		return fmt.Errorf("enforced alert not found: '%s'", name)
+	}
 
 	delete(manager.alertStatesEnforced, name)
+
+	return nil
 }

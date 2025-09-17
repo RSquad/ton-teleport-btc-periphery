@@ -3,17 +3,20 @@ package alerts
 import "github.com/xssnick/tonutils-go/address"
 
 type AlertContractBalance struct {
-	Name string
-	Addr *address.Address
+	Name        string
+	BalanceName string
+	Addr        *address.Address
 }
 
 func NewAlertContractBalance(
 	name string,
+	balanceName string,
 	addr *address.Address,
 ) Alert {
 	return &AlertContractBalance{
-		Name: name,
-		Addr: addr,
+		Name:        name,
+		BalanceName: balanceName,
+		Addr:        addr,
 	}
 }
 
@@ -27,7 +30,7 @@ func (alert *AlertContractBalance) Check(dataSource AlertDataSource) (Severity, 
 	labels := alert.NewLabels()
 
 	// Get current balance
-	balance, err := dataSource.ActualContractBalance(alert.Name)
+	balance, err := dataSource.ActualContractBalance(alert.BalanceName)
 	if err != nil {
 		return SEVERITY_UNKNOWN, labels, nil, err
 	}
