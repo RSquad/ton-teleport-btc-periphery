@@ -55,9 +55,9 @@ func (d *AlertDispatcherPrometheus) getOrCreateGaugeVec(state *AlertState) *prom
 	return gv
 }
 
-func (d *AlertDispatcherPrometheus) OnAlert(state *AlertState) {
+func (d *AlertDispatcherPrometheus) OnAlert(state *AlertState) error {
 	if state == nil {
-		return
+		return nil
 	}
 
 	gv := d.getOrCreateGaugeVec(state)
@@ -86,15 +86,15 @@ func (d *AlertDispatcherPrometheus) OnAlert(state *AlertState) {
 	}
 
 	// Update vector value
-	if len(state.Labels) > 0 {
-		gv.GetMetricWith(prometheus.Labels(state.Labels))
-
-		// TODO: implement
-		//.Set(float64(state.Severity))
-	} else {
-		gv.WithLabelValues().Set(float64(state.Severity))
+	gauge, err := gv.GetMetricWith(prometheus.Labels(state.Labels))
+	if err != nil {
+		return err
 	}
+
+	gauge.Set(float64(state.Severity))
 
 	// Save last value
 	d.lastValues[state.Name] = state
+
+	return nil
 }

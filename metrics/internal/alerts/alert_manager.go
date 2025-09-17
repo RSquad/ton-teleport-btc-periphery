@@ -90,7 +90,10 @@ func (manager *AlertManager) CheckAll() {
 		manager.UpdateState(state)
 
 		if state.Severity >= SEVERITY_OK {
-			manager.alertDispatcher.OnAlert(state)
+			err := manager.alertDispatcher.OnAlert(state)
+			if err != nil {
+				manager.LogAlertError(alertName, err)
+			}
 		}
 	}
 }
