@@ -30,8 +30,8 @@ func NewAlertFactory(contractAddrs map[string]*address.Address) *AlertFactory {
 		return NewAlertPegoutRestarts()
 	}
 
-	// alert_pegout_commintments (pegout.commitments)
-	factories["alert_pegout_commintments"] = func() Alert {
+	// alert_pegout_commitments_count (pegout.commitments)
+	factories["alert_pegout_commitments_count"] = func() Alert {
 		return NewAlertPegoutCommintments()
 	}
 

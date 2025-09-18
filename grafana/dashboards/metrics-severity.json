@@ -781,7 +781,7 @@
                     "global_query_id": "",
                     "parser": "backend",
                     "refId": "A",
-                    "root_selector": "alert_pegout_commintments.Severity",
+                    "root_selector": "alert_pegout_commitments_count.Severity",
                     "source": "url",
                     "type": "json",
                     "url": "http://metrics/metrics/api?source=alerts",
