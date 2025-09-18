@@ -43,7 +43,7 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "semi-dark-green",
+                                "color": "dark-green",
                                 "value": null
                             }
                         ]
@@ -113,7 +113,7 @@
                                     "mode": "absolute",
                                     "steps": [
                                         {
-                                            "color": "orange",
+                                            "color": "dark-green",
                                             "value": null
                                         }
                                     ]
@@ -129,7 +129,7 @@
             },
             "gridPos": {
                 "h": 4,
-                "w": 11,
+                "w": 14,
                 "x": 0,
                 "y": 0
             },
@@ -162,7 +162,7 @@
                     "root_selector": "DkgInfo",
                     "source": "url",
                     "type": "json",
-                    "url": "http://metrics/metrics/api?source=system_info",
+                    "url": "http://host.docker.internal:3000/metrics/api?source=system_info",
                     "url_options": {
                         "data": "",
                         "method": "GET"
@@ -289,7 +289,7 @@
                                             "value": 75
                                         },
                                         {
-                                            "color": "semi-dark-green",
+                                            "color": "dark-green",
                                             "value": 100
                                         }
                                     ]
@@ -334,7 +334,7 @@
                                             "value": 60
                                         },
                                         {
-                                            "color": "semi-dark-green",
+                                            "color": "dark-green",
                                             "value": 70
                                         }
                                     ]
@@ -367,7 +367,7 @@
                                     "mode": "percentage",
                                     "steps": [
                                         {
-                                            "color": "green",
+                                            "color": "dark-green",
                                             "value": null
                                         },
                                         {
@@ -390,12 +390,57 @@
                                 "value": 150
                             }
                         ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "ValidatorsEvicted"
+                        },
+                        "properties": [
+                            {
+                                "id": "custom.width",
+                                "value": 150
+                            },
+                            {
+                                "id": "custom.cellOptions",
+                                "value": {
+                                    "applyToRow": false,
+                                    "mode": "basic",
+                                    "type": "color-background",
+                                    "wrapText": false
+                                }
+                            },
+                            {
+                                "id": "thresholds",
+                                "value": {
+                                    "mode": "absolute",
+                                    "steps": [
+                                        {
+                                            "color": "dark-green",
+                                            "value": null
+                                        },
+                                        {
+                                            "color": "semi-dark-yellow",
+                                            "value": 30
+                                        },
+                                        {
+                                            "color": "semi-dark-orange",
+                                            "value": 40
+                                        },
+                                        {
+                                            "color": "dark-red",
+                                            "value": 50
+                                        }
+                                    ]
+                                }
+                            }
+                        ]
                     }
                 ]
             },
             "gridPos": {
                 "h": 3,
-                "w": 11,
+                "w": 14,
                 "x": 0,
                 "y": 4
             },
@@ -428,7 +473,7 @@
                     "root_selector": "DkgInfo",
                     "source": "url",
                     "type": "json",
-                    "url": "http://metrics/metrics/api?source=system_info",
+                    "url": "http://host.docker.internal:3000/metrics/api?source=system_info",
                     "url_options": {
                         "data": "",
                         "method": "GET"
@@ -450,7 +495,7 @@
                             "Timeout": false,
                             "Until": true,
                             "ValidatorsActiveIdx": true,
-                            "ValidatorsEvicted": true,
+                            "ValidatorsEvicted": false,
                             "ValidatorsEvictedIdx": true,
                             "ValidatorsInactiveIdx": true
                         },
@@ -465,14 +510,324 @@
                             "Timeout": 7,
                             "Until": 14,
                             "ValidatorsActive": 1,
-                            "ValidatorsActiveIdx": 2,
+                            "ValidatorsActiveIdx": 4,
                             "ValidatorsEvicted": 3,
-                            "ValidatorsEvictedIdx": 4,
-                            "ValidatorsInactive": 5,
+                            "ValidatorsEvictedIdx": 5,
+                            "ValidatorsInactive": 2,
                             "ValidatorsInactiveIdx": 6,
                             "ValidatorsMax": 0
                         },
                         "renameByName": {}
+                    }
+                }
+            ],
+            "transparent": true,
+            "type": "table"
+        },
+        {
+            "datasource": {
+                "type": "yesoreyeram-infinity-datasource",
+                "uid": "yesoreyeraminfinitydatasource"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "custom": {
+                        "align": "center",
+                        "cellOptions": {
+                            "type": "color-text"
+                        },
+                        "inspect": false
+                    },
+                    "mappings": [],
+                    "noValue": "No Active Validators",
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "dark-green",
+                                "value": null
+                            }
+                        ]
+                    }
+                },
+                "overrides": [
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "ValidatorsActiveIdx"
+                        },
+                        "properties": [
+                            {
+                                "id": "noValue",
+                                "value": "-"
+                            }
+                        ]
+                    }
+                ]
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 4,
+                "x": 0,
+                "y": 7
+            },
+            "id": 4,
+            "options": {
+                "cellHeight": "sm",
+                "footer": {
+                    "countRows": false,
+                    "fields": "",
+                    "reducer": [
+                        "sum"
+                    ],
+                    "show": false
+                },
+                "showHeader": true
+            },
+            "pluginVersion": "11.5.2",
+            "targets": [
+                {
+                    "columns": [],
+                    "datasource": {
+                        "type": "yesoreyeram-infinity-datasource",
+                        "uid": "yesoreyeraminfinitydatasource"
+                    },
+                    "filters": [],
+                    "format": "table",
+                    "global_query_id": "",
+                    "parser": "backend",
+                    "refId": "A",
+                    "root_selector": "DkgInfo.ValidatorsActiveIdx",
+                    "source": "url",
+                    "type": "json",
+                    "url": "http://host.docker.internal:3000/metrics/api?source=system_info",
+                    "url_options": {
+                        "data": "",
+                        "method": "GET"
+                    }
+                }
+            ],
+            "title": "",
+            "transformations": [
+                {
+                    "disabled": true,
+                    "id": "transpose",
+                    "options": {
+                        "restFieldsName": ""
+                    }
+                },
+                {
+                    "id": "organize",
+                    "options": {
+                        "excludeByName": {
+                            "Field": true
+                        },
+                        "includeByName": {},
+                        "indexByName": {},
+                        "renameByName": {
+                            "1": "Active Validators Idx",
+                            "A": "Active Validators Idx"
+                        }
+                    }
+                }
+            ],
+            "transparent": true,
+            "type": "table"
+        },
+        {
+            "datasource": {
+                "type": "yesoreyeram-infinity-datasource",
+                "uid": "yesoreyeraminfinitydatasource"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "custom": {
+                        "align": "center",
+                        "cellOptions": {
+                            "type": "color-text"
+                        },
+                        "inspect": false
+                    },
+                    "mappings": [],
+                    "noValue": "No Inactive Validators",
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "dark-yellow",
+                                "value": null
+                            }
+                        ]
+                    }
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 4,
+                "x": 5,
+                "y": 7
+            },
+            "id": 5,
+            "options": {
+                "cellHeight": "sm",
+                "footer": {
+                    "countRows": false,
+                    "fields": "",
+                    "reducer": [
+                        "sum"
+                    ],
+                    "show": false
+                },
+                "showHeader": true
+            },
+            "pluginVersion": "11.5.2",
+            "targets": [
+                {
+                    "columns": [],
+                    "datasource": {
+                        "type": "yesoreyeram-infinity-datasource",
+                        "uid": "yesoreyeraminfinitydatasource"
+                    },
+                    "filters": [],
+                    "format": "table",
+                    "global_query_id": "",
+                    "parser": "backend",
+                    "refId": "A",
+                    "root_selector": "DkgInfo.ValidatorsInactiveIdx",
+                    "source": "url",
+                    "type": "json",
+                    "url": "http://host.docker.internal:3000/metrics/api?source=system_info",
+                    "url_options": {
+                        "data": "",
+                        "method": "GET"
+                    }
+                }
+            ],
+            "title": "",
+            "transformations": [
+                {
+                    "disabled": true,
+                    "id": "transpose",
+                    "options": {}
+                },
+                {
+                    "id": "organize",
+                    "options": {
+                        "excludeByName": {
+                            "Field": true
+                        },
+                        "includeByName": {},
+                        "indexByName": {},
+                        "renameByName": {
+                            "1": "Inactive Validators Idx",
+                            "A": "Inactive Validators Idx"
+                        }
+                    }
+                }
+            ],
+            "transparent": true,
+            "type": "table"
+        },
+        {
+            "datasource": {
+                "type": "yesoreyeram-infinity-datasource",
+                "uid": "yesoreyeraminfinitydatasource"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "custom": {
+                        "align": "center",
+                        "cellOptions": {
+                            "type": "color-text"
+                        },
+                        "inspect": false
+                    },
+                    "mappings": [],
+                    "noValue": "No Evicted Validators",
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "dark-red",
+                                "value": null
+                            }
+                        ]
+                    }
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 4,
+                "x": 10,
+                "y": 7
+            },
+            "id": 6,
+            "options": {
+                "cellHeight": "sm",
+                "footer": {
+                    "countRows": false,
+                    "fields": "",
+                    "reducer": [
+                        "sum"
+                    ],
+                    "show": false
+                },
+                "showHeader": true
+            },
+            "pluginVersion": "11.5.2",
+            "targets": [
+                {
+                    "columns": [],
+                    "datasource": {
+                        "type": "yesoreyeram-infinity-datasource",
+                        "uid": "yesoreyeraminfinitydatasource"
+                    },
+                    "filters": [],
+                    "format": "table",
+                    "global_query_id": "",
+                    "parser": "backend",
+                    "refId": "A",
+                    "root_selector": "DkgInfo.ValidatorsEvictedIdx",
+                    "source": "url",
+                    "type": "json",
+                    "url": "http://host.docker.internal:3000/metrics/api?source=system_info",
+                    "url_options": {
+                        "data": "",
+                        "method": "GET"
+                    }
+                }
+            ],
+            "title": "",
+            "transformations": [
+                {
+                    "disabled": true,
+                    "id": "transpose",
+                    "options": {}
+                },
+                {
+                    "id": "organize",
+                    "options": {
+                        "excludeByName": {
+                            "Field": true
+                        },
+                        "includeByName": {},
+                        "indexByName": {},
+                        "renameByName": {
+                            "1": "Evicted Validators Idx",
+                            "A": "Evicted Validators Idx",
+                            "Field": ""
+                        }
                     }
                 }
             ],
@@ -505,8 +860,12 @@
                                 "value": null
                             },
                             {
-                                "color": "semi-dark-green",
-                                "value": 10
+                                "color": "semi-dark-yellow",
+                                "value": 2
+                            },
+                            {
+                                "color": "dark-green",
+                                "value": 5
                             }
                         ]
                     }
@@ -545,9 +904,9 @@
             },
             "gridPos": {
                 "h": 8,
-                "w": 11,
+                "w": 14,
                 "x": 0,
-                "y": 7
+                "y": 15
             },
             "id": 1,
             "options": {
@@ -578,7 +937,7 @@
                     "root_selector": "BalancesInfo",
                     "source": "url",
                     "type": "json",
-                    "url": "http://metrics/metrics/api?source=system_info",
+                    "url": "http://host.docker.internal:3000/metrics/api?source=system_info",
                     "url_options": {
                         "data": "",
                         "method": "GET"
@@ -632,7 +991,7 @@
                             "TeleportStr": 8
                         },
                         "renameByName": {
-                            "BitclientStr": "Bitclient"
+                            "BitclientStr": ""
                         }
                     }
                 },
@@ -643,6 +1002,22 @@
                             {
                                 "destinationType": "number",
                                 "targetField": "BitclientStr"
+                            },
+                            {
+                                "destinationType": "number",
+                                "targetField": "CoordinatorStr"
+                            },
+                            {
+                                "destinationType": "number",
+                                "targetField": "MinterStr"
+                            },
+                            {
+                                "destinationType": "number",
+                                "targetField": "RelayerStr"
+                            },
+                            {
+                                "destinationType": "number",
+                                "targetField": "TeleportStr"
                             }
                         ],
                         "fields": {}
@@ -651,18 +1026,6 @@
                 {
                     "id": "transpose",
                     "options": {}
-                },
-                {
-                    "id": "convertFieldType",
-                    "options": {
-                        "conversions": [
-                            {
-                                "destinationType": "time",
-                                "targetField": "Until"
-                            }
-                        ],
-                        "fields": {}
-                    }
                 },
                 {
                     "id": "organize",
@@ -696,6 +1059,6 @@
     "timezone": "browser",
     "title": "System Info",
     "uid": "eexx65sccvg8wd",
-    "version": 1,
+    "version": 7,
     "weekStart": ""
 }
