@@ -43,5 +43,5 @@ func TestAlertContractBalance(t *testing.T) {
 		},
 	}
 
-	DoAlertTests(t, tests, NewAlertContractBalance("test", contractAddress))
+	DoAlertTests(t, tests, NewAlertContractBalance("test", "test_balance", contractAddress))
 }

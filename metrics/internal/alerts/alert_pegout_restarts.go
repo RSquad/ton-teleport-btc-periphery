@@ -19,11 +19,15 @@ func NewAlertPegoutRestarts() Alert {
 	}
 }
 
-func (alert *AlertPegoutRestarts) Check(dataSource AlertDataSource) (Severity, Labels, IntValues, error) {
-	labels := Labels{
+func (alert *AlertPegoutRestarts) NewLabels() Labels {
+	return Labels{
 		"bitcoin_tx_id": "",
 		"pegout_addr":   "",
 	}
+}
+
+func (alert *AlertPegoutRestarts) Check(dataSource AlertDataSource) (Severity, Labels, IntValues, error) {
+	labels := alert.NewLabels()
 
 	// Get first unsigned pegout
 	unsignedPegout, err := dataSource.FirstUnsignedPegoutDB()

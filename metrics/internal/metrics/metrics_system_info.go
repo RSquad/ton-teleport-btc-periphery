@@ -19,7 +19,7 @@ type DkgInfo struct {
 	StateName             string
 	Restarts              int
 	RestartsSeverity      alerts.Severity
-	Culprits              string
+	CulpritsIdx           []int
 	CulpritsSeverity      alerts.Severity
 	Until                 time.Time
 	ValidatorsMax         int
@@ -44,7 +44,7 @@ type LastPegoutTxInfo struct {
 type PegoutSigningInfo struct {
 	Id                           int
 	Restarts                     int
-	Culprits                     string
+	CulpritsIdx                  []int
 	Until                        time.Time
 	Signers                      int
 	QueueLength                  int
@@ -155,7 +155,7 @@ func (systemInfo *MetricsSystemInfo) DkgInfo(
 		Restarts:         int(dkgRestartsAlertState.IntValues["restarts"]),
 		RestartsSeverity: dkgRestartsAlertState.Severity,
 		/*
-			Culprits:              culprits,
+			CulpritsIdx:           culprits,
 			CulpritsSeverity:      culpritsSeverity,
 			Until:                 until,
 			ValidatorsMax:         validatorsMax,
