@@ -18,23 +18,29 @@ func NewAlertDkgRestarts() Alert {
 	}
 }
 
+func (alert *AlertDkgRestarts) NewLabels() Labels {
+	return Labels{}
+}
+
 func (alert *AlertDkgRestarts) Check(dataSource AlertDataSource) (Severity, Labels, IntValues, error) {
+	labels := alert.NewLabels()
+
 	// Get DKG
 	dkg, err := dataSource.DkgDB()
 	if err != nil {
-		return SEVERITY_UNKNOWN, nil, alert.MakeIntValues(), err
+		return SEVERITY_UNKNOWN, labels, alert.MakeIntValues(), err
 	}
 
 	if dkg == nil {
 		alert.dkgUntil = time.Unix(0, 0)
 		alert.restartsCounter = 0
-		return SEVERITY_OK, nil, alert.MakeIntValues(), nil
+		return SEVERITY_OK, labels, alert.MakeIntValues(), nil
 	}
 
 	if dkg.State == coordinator.DKGStateFinished {
 		alert.dkgUntil = time.Unix(0, 0)
 		alert.restartsCounter = 0
-		return SEVERITY_OK, nil, alert.MakeIntValues(), nil
+		return SEVERITY_OK, labels, alert.MakeIntValues(), nil
 	}
 
 	// Check for restart
@@ -49,7 +55,7 @@ func (alert *AlertDkgRestarts) Check(dataSource AlertDataSource) (Severity, Labe
 	// Calulate severity
 	severity := alert.GetSeverity()
 
-	return severity, nil, alert.MakeIntValues(), nil
+	return severity, labels, alert.MakeIntValues(), nil
 }
 
 func (alert *AlertDkgRestarts) GetSeverity() Severity {

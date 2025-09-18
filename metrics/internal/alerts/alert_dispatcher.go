@@ -1,5 +1,5 @@
 package alerts
 
 type AlertDispatcher interface {
-	OnAlert(state *AlertState)
+	OnAlert(state *AlertState) error
 }

@@ -6,10 +6,12 @@ import (
 	"sync"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
+	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/mutils"
 	"github.com/xssnick/tonutils-go/address"
 )
 
 type AlertManager struct {
+	alertsFactory   *AlertFactory
 	alerts          map[string]Alert
 	dataSource      AlertDataSource
 	alertDispatcher AlertDispatcher
@@ -25,7 +27,10 @@ func NewAlertManager(
 	alertDispatcher AlertDispatcher,
 	contractAddrs map[string]*address.Address,
 ) (*AlertManager, error) {
+	alertFactory := NewAlertFactory(contractAddrs)
+
 	alertManager := AlertManager{
+		alertsFactory:       alertFactory,
 		alerts:              make(map[string]Alert),
 		dataSource:          dataSource,
 		alertDispatcher:     alertDispatcher,
@@ -34,116 +39,8 @@ func NewAlertManager(
 		alertStatesEnforced: make(map[string]*AlertState),
 	}
 
-	var err error = nil
-
-	// alert_pegout_fee_not_reset (pegout.fee.not.reset)
-	err = alertManager.RegisterAlert(
-		"alert_pegout_fee_not_reset",
-		NewAlertPegoutFeeNotReset(),
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	// alert_pegout_signers (pegout.signers)
-	err = alertManager.RegisterAlert(
-		"alert_pegout_signers",
-		NewAlertPegoutSigners(),
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	// alert_pegout_restarts (pegout.restarts)
-	err = alertManager.RegisterAlert(
-		"alert_pegout_restarts",
-		NewAlertPegoutRestarts(),
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	// alert_pegout_commintments (pegout.commitments)
-	err = alertManager.RegisterAlert(
-		"alert_pegout_commintments",
-		NewAlertPegoutCommintments(),
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	// alert_pegout_in_mempool (pegout.in.mempool)
-	err = alertManager.RegisterAlert(
-		"alert_pegout_in_mempool",
-		NewAlertPegoutInMempool(),
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	// alert_pegout_signing_duration (pegout.signing.duration)
-	err = alertManager.RegisterAlert(
-		"alert_pegout_signing_duration",
-		NewAlertPegoutSigningDuration(),
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	// dkg_status (dkg.status)
-	err = alertManager.RegisterAlert(
-		"dkg_status",
-		NewAlertDkgStatus(),
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	// alert_total_service_fee (total.service.fee)
-	err = alertManager.RegisterAlert(
-		"alert_total_service_fee",
-		NewAlertTotalServiceFee(),
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	// alert_dkg_restarts (dkg.restarts)
-	err = alertManager.RegisterAlert(
-		"alert_dkg_restarts",
-		NewAlertDkgRestarts(),
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	// alert_dkg_participants (dkg.participants)
-	err = alertManager.RegisterAlert(
-		"alert_dkg_participants",
-		NewAlertDkgParticipants(),
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	// alert_dkg_culprit_found (dkg.culprit.found)
-	err = alertManager.RegisterAlert(
-		"alert_dkg_culprit_found",
-		NewAlertDkgCulpritFound(),
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	// alert_contract_balance_*
-	for name, addr := range contractAddrs {
-		err = alertManager.RegisterAlert(
-			"alert_contract_balance_"+name,
-			NewAlertContractBalance(name, addr),
-		)
-		if err != nil {
-			return nil, err
-		}
+	for name, factory := range alertFactory.Factories {
+		alertManager.RegisterAlert(name, factory())
 	}
 
 	return &alertManager, nil
@@ -193,7 +90,10 @@ func (manager *AlertManager) CheckAll() {
 		manager.UpdateState(state)
 
 		if state.Severity >= SEVERITY_OK {
-			manager.alertDispatcher.OnAlert(state)
+			err := manager.alertDispatcher.OnAlert(state)
+			if err != nil {
+				manager.LogAlertError(alertName, err)
+			}
 		}
 	}
 }
@@ -248,16 +148,55 @@ func (manager *AlertManager) UpdateState(state *AlertState) {
 	manager.alertStates[state.Name] = state
 }
 
-func (manager *AlertManager) EnforceState(state *AlertState) {
+func (manager *AlertManager) EnforceState(state *AlertState) error {
 	manager.mu.Lock()
 	defer manager.mu.Unlock()
 
+	// Verify name
+	_, ok := manager.alerts[state.Name]
+	if !ok {
+		return fmt.Errorf("alert not found: '%s'", state.Name)
+	}
+
+	// Verify labels
+	alert, err := manager.alertsFactory.NewAlertInstance(state.Name)
+	if !ok {
+		return err
+	}
+
+	expectedLabels := alert.NewLabels()
+	expectedLabelsKeys := mutils.ExtractMapKeys(expectedLabels)
+	expectedLabelsStr := mutils.JoinToStr(expectedLabelsKeys)
+	stateLabelsKeys := mutils.ExtractMapKeys(state.Labels)
+	stateLabelsStr := mutils.JoinToStr(stateLabelsKeys)
+
+	if len(expectedLabelsKeys) != len(state.Labels) {
+		return fmt.Errorf("expected labels '%s', but got '%s'", expectedLabelsStr, stateLabelsStr)
+	}
+
+	for name := range expectedLabels {
+		_, ok := state.Labels[name]
+		if !ok {
+			return fmt.Errorf("expected labels '%s', but got '%s'", expectedLabelsStr, stateLabelsStr)
+		}
+	}
+
+	// Update enforced state
 	manager.alertStatesEnforced[state.Name] = state
+
+	return nil
 }
 
-func (manager *AlertManager) ResetEnforceState(name string) {
+func (manager *AlertManager) ResetEnforceState(name string) error {
 	manager.mu.Lock()
 	defer manager.mu.Unlock()
 
+	_, ok := manager.alertStatesEnforced[name]
+	if !ok {
+		return fmt.Errorf("enforced alert not found: '%s'", name)
+	}
+
 	delete(manager.alertStatesEnforced, name)
+
+	return nil
 }
