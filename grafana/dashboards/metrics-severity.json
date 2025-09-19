@@ -18,7 +18,7 @@
     "editable": true,
     "fiscalYearStartMonth": 0,
     "graphTooltip": 0,
-    "id": 2,
+    "id": 21,
     "links": [],
     "panels": [
         {
@@ -66,19 +66,19 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green",
-                                "value": null
+                                "color": "transparent",
+                                "value": 0
                             },
                             {
-                                "color": "yellow",
+                                "color": "dark-yellow",
                                 "value": 1
                             },
                             {
-                                "color": "orange",
+                                "color": "dark-orange",
                                 "value": 2
                             },
                             {
-                                "color": "red",
+                                "color": "dark-red",
                                 "value": 3
                             }
                         ]
@@ -98,8 +98,9 @@
                             {
                                 "id": "custom.cellOptions",
                                 "value": {
-                                    "type": "color-text",
-                                    "wrapText": false
+                                    "applyToRow": true,
+                                    "mode": "basic",
+                                    "type": "color-background"
                                 }
                             }
                         ]
@@ -119,7 +120,7 @@
                 ]
             },
             "gridPos": {
-                "h": 21,
+                "h": 19,
                 "w": 24,
                 "x": 0,
                 "y": 0
@@ -137,7 +138,7 @@
                 },
                 "showHeader": true
             },
-            "pluginVersion": "11.5.2",
+            "pluginVersion": "12.1.0",
             "targets": [
                 {
                     "columns": [],
@@ -292,7 +293,7 @@
     ],
     "preload": false,
     "refresh": "1m",
-    "schemaVersion": 40,
+    "schemaVersion": 41,
     "tags": [],
     "templating": {
         "list": []
@@ -305,6 +306,5 @@
     "timezone": "browser",
     "title": "Metrics Severity",
     "uid": "cexq6rguh4ydcd",
-    "version": 1,
-    "weekStart": ""
+    "version": 3
 }
