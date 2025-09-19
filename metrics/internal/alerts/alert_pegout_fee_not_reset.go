@@ -13,11 +13,15 @@ func NewAlertPegoutFeeNotReset() Alert {
 	return &AlertPegoutFeeNotReset{}
 }
 
-func (alert *AlertPegoutFeeNotReset) Check(dataSource AlertDataSource) (Severity, Labels, IntValues, error) {
-	labels := Labels{
+func (alert *AlertPegoutFeeNotReset) NewLabels() Labels {
+	return Labels{
 		"bitcoin_tx_id": "",
 		"pegout_addr":   "",
 	}
+}
+
+func (alert *AlertPegoutFeeNotReset) Check(dataSource AlertDataSource) (Severity, Labels, IntValues, error) {
+	labels := alert.NewLabels()
 
 	// Get last signed pegout
 	pegout, err := dataSource.LastSignedPegoutDB()

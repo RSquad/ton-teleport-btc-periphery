@@ -24,11 +24,15 @@ func NewAlertPegoutInMempool() Alert {
 	}
 }
 
-func (alert *AlertPegoutInMempool) Check(dataSource AlertDataSource) (Severity, Labels, IntValues, error) {
-	labels := Labels{
+func (alert *AlertPegoutInMempool) NewLabels() Labels {
+	return Labels{
 		"bitcoin_tx_id": "",
 		"pegout_addr":   "",
 	}
+}
+
+func (alert *AlertPegoutInMempool) Check(dataSource AlertDataSource) (Severity, Labels, IntValues, error) {
+	labels := alert.NewLabels()
 
 	if alert.pegoutToCheck == nil {
 		// Get last signed pegouts
