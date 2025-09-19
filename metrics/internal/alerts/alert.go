@@ -16,6 +16,7 @@ const (
 
 type Alert interface {
 	Check(dataSource AlertDataSource) (Severity, Labels, IntValues, error)
+	NewLabels() Labels
 }
 
 func StrToSeverity(s string) (Severity, error) {

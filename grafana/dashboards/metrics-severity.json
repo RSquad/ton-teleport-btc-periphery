@@ -18,20 +18,50 @@
     "editable": true,
     "fiscalYearStartMonth": 0,
     "graphTooltip": 0,
-    "id": 16,
+    "id": 2,
     "links": [],
     "panels": [
         {
             "datasource": {
                 "type": "yesoreyeram-infinity-datasource",
-                "uid": "dem2k81ld0veoe"
+                "uid": "yesoreyeraminfinitydatasource"
             },
             "fieldConfig": {
                 "defaults": {
                     "color": {
                         "mode": "thresholds"
                     },
-                    "mappings": [],
+                    "custom": {
+                        "align": "left",
+                        "cellOptions": {
+                            "type": "auto"
+                        },
+                        "filterable": false,
+                        "inspect": false
+                    },
+                    "mappings": [
+                        {
+                            "options": {
+                                "0": {
+                                    "index": 0,
+                                    "text": "OK"
+                                },
+                                "1": {
+                                    "index": 1,
+                                    "text": "INF"
+                                },
+                                "2": {
+                                    "index": 2,
+                                    "text": "WRN"
+                                },
+                                "3": {
+                                    "index": 3,
+                                    "text": "CRIT"
+                                }
+                            },
+                            "type": "value"
+                        }
+                    ],
                     "thresholds": {
                         "mode": "absolute",
                         "steps": [
@@ -54,31 +84,58 @@
                         ]
                     }
                 },
-                "overrides": []
+                "overrides": [
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Severity"
+                        },
+                        "properties": [
+                            {
+                                "id": "custom.width",
+                                "value": 150
+                            },
+                            {
+                                "id": "custom.cellOptions",
+                                "value": {
+                                    "type": "color-text",
+                                    "wrapText": false
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Alert Name"
+                        },
+                        "properties": [
+                            {
+                                "id": "custom.width",
+                                "value": 300
+                            }
+                        ]
+                    }
+                ]
             },
             "gridPos": {
-                "h": 4,
-                "w": 3,
+                "h": 21,
+                "w": 24,
                 "x": 0,
                 "y": 0
             },
             "id": 1,
             "options": {
-                "colorMode": "value",
-                "graphMode": "area",
-                "justifyMode": "auto",
-                "orientation": "auto",
-                "percentChangeColorMode": "standard",
-                "reduceOptions": {
-                    "calcs": [
-                        "lastNotNull"
-                    ],
+                "cellHeight": "md",
+                "footer": {
+                    "countRows": false,
                     "fields": "",
-                    "values": false
+                    "reducer": [
+                        "sum"
+                    ],
+                    "show": false
                 },
-                "showPercentChange": false,
-                "textMode": "auto",
-                "wideLayout": true
+                "showHeader": true
             },
             "pluginVersion": "11.5.2",
             "targets": [
@@ -86,272 +143,14 @@
                     "columns": [],
                     "datasource": {
                         "type": "yesoreyeram-infinity-datasource",
-                        "uid": "dem2k81ld0veoe"
-                    },
-                    "filters": [],
-                    "format": "as-is",
-                    "global_query_id": "",
-                    "parser": "backend",
-                    "refId": "A",
-                    "root_selector": "alert_contract_balance_bitclient.Severity",
-                    "source": "url",
-                    "type": "json",
-                    "url": "http://metrics/metrics/api?source=alerts",
-                    "url_options": {
-                        "data": "",
-                        "method": "GET"
-                    }
-                }
-            ],
-            "title": "Bitclient Balance",
-            "transparent": true,
-            "type": "stat"
-        },
-        {
-            "datasource": {
-                "type": "yesoreyeram-infinity-datasource",
-                "uid": "dem2k81ld0veoe"
-            },
-            "fieldConfig": {
-                "defaults": {
-                    "color": {
-                        "mode": "thresholds"
-                    },
-                    "mappings": [],
-                    "thresholds": {
-                        "mode": "absolute",
-                        "steps": [
-                            {
-                                "color": "green",
-                                "value": null
-                            },
-                            {
-                                "color": "yellow",
-                                "value": 1
-                            },
-                            {
-                                "color": "orange",
-                                "value": 2
-                            },
-                            {
-                                "color": "red",
-                                "value": 3
-                            }
-                        ]
-                    }
-                },
-                "overrides": []
-            },
-            "gridPos": {
-                "h": 4,
-                "w": 3,
-                "x": 3,
-                "y": 0
-            },
-            "id": 2,
-            "options": {
-                "colorMode": "value",
-                "graphMode": "area",
-                "justifyMode": "auto",
-                "orientation": "auto",
-                "percentChangeColorMode": "standard",
-                "reduceOptions": {
-                    "calcs": [
-                        "lastNotNull"
-                    ],
-                    "fields": "",
-                    "values": false
-                },
-                "showPercentChange": false,
-                "textMode": "auto",
-                "wideLayout": true
-            },
-            "pluginVersion": "11.5.2",
-            "targets": [
-                {
-                    "columns": [],
-                    "datasource": {
-                        "type": "yesoreyeram-infinity-datasource",
-                        "uid": "dem2k81ld0veoe"
-                    },
-                    "filters": [],
-                    "format": "as-is",
-                    "global_query_id": "",
-                    "parser": "backend",
-                    "refId": "A",
-                    "root_selector": "alert_contract_balance_coordinator.Severity",
-                    "source": "url",
-                    "type": "json",
-                    "url": "http://metrics/metrics/api?source=alerts",
-                    "url_options": {
-                        "data": "",
-                        "method": "GET"
-                    }
-                }
-            ],
-            "title": "Coordinator Balance",
-            "transparent": true,
-            "type": "stat"
-        },
-        {
-            "datasource": {
-                "type": "yesoreyeram-infinity-datasource",
-                "uid": "dem2k81ld0veoe"
-            },
-            "fieldConfig": {
-                "defaults": {
-                    "color": {
-                        "mode": "thresholds"
-                    },
-                    "mappings": [],
-                    "thresholds": {
-                        "mode": "absolute",
-                        "steps": [
-                            {
-                                "color": "green",
-                                "value": null
-                            },
-                            {
-                                "color": "yellow",
-                                "value": 1
-                            },
-                            {
-                                "color": "orange",
-                                "value": 2
-                            },
-                            {
-                                "color": "red",
-                                "value": 3
-                            }
-                        ]
-                    }
-                },
-                "overrides": []
-            },
-            "gridPos": {
-                "h": 4,
-                "w": 3,
-                "x": 6,
-                "y": 0
-            },
-            "id": 3,
-            "options": {
-                "colorMode": "value",
-                "graphMode": "area",
-                "justifyMode": "auto",
-                "orientation": "auto",
-                "percentChangeColorMode": "standard",
-                "reduceOptions": {
-                    "calcs": [
-                        "lastNotNull"
-                    ],
-                    "fields": "",
-                    "values": false
-                },
-                "showPercentChange": false,
-                "textMode": "auto",
-                "wideLayout": true
-            },
-            "pluginVersion": "11.5.2",
-            "targets": [
-                {
-                    "columns": [],
-                    "datasource": {
-                        "type": "yesoreyeram-infinity-datasource",
-                        "uid": "dem2k81ld0veoe"
-                    },
-                    "filters": [],
-                    "format": "as-is",
-                    "global_query_id": "",
-                    "parser": "backend",
-                    "refId": "A",
-                    "root_selector": "alert_contract_balance_minter.Severity",
-                    "source": "url",
-                    "type": "json",
-                    "url": "http://metrics/metrics/api?source=alerts",
-                    "url_options": {
-                        "data": "",
-                        "method": "GET"
-                    }
-                }
-            ],
-            "title": "Minter Balance",
-            "transparent": true,
-            "type": "stat"
-        },
-        {
-            "datasource": {
-                "type": "yesoreyeram-infinity-datasource",
-                "uid": "dem2k81ld0veoe"
-            },
-            "fieldConfig": {
-                "defaults": {
-                    "color": {
-                        "mode": "thresholds"
-                    },
-                    "mappings": [],
-                    "thresholds": {
-                        "mode": "absolute",
-                        "steps": [
-                            {
-                                "color": "green",
-                                "value": null
-                            },
-                            {
-                                "color": "yellow",
-                                "value": 1
-                            },
-                            {
-                                "color": "orange",
-                                "value": 2
-                            },
-                            {
-                                "color": "red",
-                                "value": 3
-                            }
-                        ]
-                    }
-                },
-                "overrides": []
-            },
-            "gridPos": {
-                "h": 4,
-                "w": 3,
-                "x": 9,
-                "y": 0
-            },
-            "id": 4,
-            "options": {
-                "colorMode": "value",
-                "graphMode": "area",
-                "justifyMode": "auto",
-                "orientation": "auto",
-                "percentChangeColorMode": "standard",
-                "reduceOptions": {
-                    "calcs": [
-                        "lastNotNull"
-                    ],
-                    "fields": "",
-                    "values": false
-                },
-                "showPercentChange": false,
-                "textMode": "auto",
-                "wideLayout": true
-            },
-            "pluginVersion": "11.5.2",
-            "targets": [
-                {
-                    "columns": [],
-                    "datasource": {
-                        "type": "yesoreyeram-infinity-datasource",
-                        "uid": "dem2k81ld0veoe"
+                        "uid": "yesoreyeraminfinitydatasource"
                     },
                     "filters": [],
                     "format": "table",
                     "global_query_id": "",
                     "parser": "backend",
                     "refId": "A",
-                    "root_selector": "alert_contract_balance_relayer.Severity",
+                    "root_selector": "",
                     "source": "url",
                     "type": "json",
                     "url": "http://metrics/metrics/api?source=alerts",
@@ -361,1045 +160,138 @@
                     }
                 }
             ],
-            "title": "Relayer Balance",
-            "transparent": true,
-            "type": "stat"
-        },
-        {
-            "datasource": {
-                "type": "yesoreyeram-infinity-datasource",
-                "uid": "dem2k81ld0veoe"
-            },
-            "fieldConfig": {
-                "defaults": {
-                    "color": {
-                        "mode": "thresholds"
-                    },
-                    "mappings": [],
-                    "thresholds": {
-                        "mode": "absolute",
-                        "steps": [
-                            {
-                                "color": "green",
-                                "value": null
-                            },
-                            {
-                                "color": "yellow",
-                                "value": 1
-                            },
-                            {
-                                "color": "orange",
-                                "value": 2
-                            },
-                            {
-                                "color": "red",
-                                "value": 3
-                            }
-                        ]
-                    }
-                },
-                "overrides": []
-            },
-            "gridPos": {
-                "h": 4,
-                "w": 3,
-                "x": 12,
-                "y": 0
-            },
-            "id": 5,
-            "options": {
-                "colorMode": "value",
-                "graphMode": "area",
-                "justifyMode": "auto",
-                "orientation": "auto",
-                "percentChangeColorMode": "standard",
-                "reduceOptions": {
-                    "calcs": [
-                        "lastNotNull"
-                    ],
-                    "fields": "",
-                    "values": false
-                },
-                "showPercentChange": false,
-                "textMode": "auto",
-                "wideLayout": true
-            },
-            "pluginVersion": "11.5.2",
-            "targets": [
+            "title": "",
+            "transformations": [
                 {
-                    "columns": [],
-                    "datasource": {
-                        "type": "yesoreyeram-infinity-datasource",
-                        "uid": "dem2k81ld0veoe"
-                    },
-                    "filters": [],
-                    "format": "as-is",
-                    "global_query_id": "",
-                    "parser": "backend",
-                    "refId": "A",
-                    "root_selector": "alert_contract_balance_teleport.Severity",
-                    "source": "url",
-                    "type": "json",
-                    "url": "http://metrics/metrics/api?source=alerts",
-                    "url_options": {
-                        "data": "",
-                        "method": "GET"
-                    }
-                }
-            ],
-            "title": "Teleport Balance",
-            "transparent": true,
-            "type": "stat"
-        },
-        {
-            "datasource": {
-                "type": "yesoreyeram-infinity-datasource",
-                "uid": "dem2k81ld0veoe"
-            },
-            "fieldConfig": {
-                "defaults": {
-                    "color": {
-                        "mode": "thresholds"
-                    },
-                    "mappings": [],
-                    "thresholds": {
-                        "mode": "absolute",
-                        "steps": [
-                            {
-                                "color": "green",
-                                "value": null
+                    "id": "calculateField",
+                    "options": {
+                        "binary": {
+                            "left": {
+                                "matcher": {
+                                    "id": "byType",
+                                    "options": "number"
+                                }
                             },
-                            {
-                                "color": "yellow",
-                                "value": 1
-                            },
-                            {
-                                "color": "orange",
-                                "value": 2
-                            },
-                            {
-                                "color": "red",
-                                "value": 3
+                            "right": {
+                                "fixed": ""
                             }
-                        ]
+                        },
+                        "mode": "reduceRow",
+                        "reduce": {
+                            "reducer": "first"
+                        },
+                        "replaceFields": false,
+                        "unary": {
+                            "fieldName": "dkg_status",
+                            "operator": "ln"
+                        }
                     }
                 },
-                "overrides": []
-            },
-            "gridPos": {
-                "h": 4,
-                "w": 3,
-                "x": 15,
-                "y": 0
-            },
-            "id": 6,
-            "options": {
-                "colorMode": "value",
-                "graphMode": "area",
-                "justifyMode": "auto",
-                "orientation": "auto",
-                "percentChangeColorMode": "standard",
-                "reduceOptions": {
-                    "calcs": [
-                        "lastNotNull"
-                    ],
-                    "fields": "",
-                    "values": false
-                },
-                "showPercentChange": false,
-                "textMode": "auto",
-                "wideLayout": true
-            },
-            "pluginVersion": "11.5.2",
-            "targets": [
                 {
-                    "columns": [],
-                    "datasource": {
-                        "type": "yesoreyeram-infinity-datasource",
-                        "uid": "dem2k81ld0veoe"
-                    },
-                    "filters": [],
-                    "format": "as-is",
-                    "global_query_id": "",
-                    "parser": "backend",
-                    "refId": "A",
-                    "root_selector": "alert_dkg_culprit_found.Severity",
-                    "source": "url",
-                    "type": "json",
-                    "url": "http://metrics/metrics/api?source=alerts",
-                    "url_options": {
-                        "data": "",
-                        "method": "GET"
+                    "id": "organize",
+                    "options": {
+                        "excludeByName": {
+                            "1": false,
+                            "First": false
+                        },
+                        "includeByName": {},
+                        "indexByName": {
+                            "First": 0,
+                            "alert_contract_balance_bitclient": 1,
+                            "alert_contract_balance_coordinator": 2,
+                            "alert_contract_balance_minter": 3,
+                            "alert_contract_balance_relayer": 4,
+                            "alert_contract_balance_teleport": 5,
+                            "alert_dkg_culprit_found": 6,
+                            "alert_dkg_participants": 7,
+                            "alert_dkg_restarts": 8,
+                            "alert_pegout_commintments": 9,
+                            "alert_pegout_fee_not_reset": 10,
+                            "alert_pegout_in_mempool": 11,
+                            "alert_pegout_restarts": 12,
+                            "alert_pegout_signers": 13,
+                            "alert_pegout_signing_duration": 14,
+                            "alert_total_service_fee": 15,
+                            "dkg_status": 16
+                        },
+                        "renameByName": {
+                            "alert_contract_balance_bitclient": ""
+                        }
                     }
-                }
-            ],
-            "title": "Dkg Culprit Found",
-            "transparent": true,
-            "type": "stat"
-        },
-        {
-            "datasource": {
-                "type": "yesoreyeram-infinity-datasource",
-                "uid": "dem2k81ld0veoe"
-            },
-            "fieldConfig": {
-                "defaults": {
-                    "color": {
-                        "mode": "thresholds"
-                    },
-                    "mappings": [],
-                    "thresholds": {
-                        "mode": "absolute",
-                        "steps": [
+                },
+                {
+                    "id": "transpose",
+                    "options": {
+                        "firstFieldName": "Alert Name"
+                    }
+                },
+                {
+                    "id": "filterByValue",
+                    "options": {
+                        "filters": [
                             {
-                                "color": "green",
-                                "value": null
-                            },
-                            {
-                                "color": "yellow",
-                                "value": 1
-                            },
-                            {
-                                "color": "orange",
-                                "value": 2
-                            },
-                            {
-                                "color": "red",
-                                "value": 3
+                                "config": {
+                                    "id": "equal",
+                                    "options": {
+                                        "value": "undefined"
+                                    }
+                                },
+                                "fieldName": "1"
                             }
-                        ]
+                        ],
+                        "match": "any",
+                        "type": "exclude"
                     }
                 },
-                "overrides": []
-            },
-            "gridPos": {
-                "h": 4,
-                "w": 3,
-                "x": 18,
-                "y": 0
-            },
-            "id": 7,
-            "options": {
-                "colorMode": "value",
-                "graphMode": "area",
-                "justifyMode": "auto",
-                "orientation": "auto",
-                "percentChangeColorMode": "standard",
-                "reduceOptions": {
-                    "calcs": [
-                        "lastNotNull"
-                    ],
-                    "fields": "",
-                    "values": false
-                },
-                "showPercentChange": false,
-                "textMode": "auto",
-                "wideLayout": true
-            },
-            "pluginVersion": "11.5.2",
-            "targets": [
                 {
-                    "columns": [],
-                    "datasource": {
-                        "type": "yesoreyeram-infinity-datasource",
-                        "uid": "dem2k81ld0veoe"
-                    },
-                    "filters": [],
-                    "format": "as-is",
-                    "global_query_id": "",
-                    "parser": "backend",
-                    "refId": "A",
-                    "root_selector": "alert_dkg_participants.Severity",
-                    "source": "url",
-                    "type": "json",
-                    "url": "http://metrics/metrics/api?source=alerts",
-                    "url_options": {
-                        "data": "",
-                        "method": "GET"
-                    }
-                }
-            ],
-            "title": "DKG Participants",
-            "transparent": true,
-            "type": "stat"
-        },
-        {
-            "datasource": {
-                "type": "yesoreyeram-infinity-datasource",
-                "uid": "dem2k81ld0veoe"
-            },
-            "fieldConfig": {
-                "defaults": {
-                    "color": {
-                        "mode": "thresholds"
-                    },
-                    "mappings": [],
-                    "thresholds": {
-                        "mode": "absolute",
-                        "steps": [
+                    "id": "extractFields",
+                    "options": {
+                        "delimiter": ",",
+                        "format": "json",
+                        "jsonPaths": [
                             {
-                                "color": "green",
-                                "value": null
+                                "path": "Severity"
                             },
                             {
-                                "color": "yellow",
-                                "value": 1
-                            },
-                            {
-                                "color": "orange",
-                                "value": 2
-                            },
-                            {
-                                "color": "red",
-                                "value": 3
+                                "path": "LastUpdateTs"
                             }
-                        ]
+                        ],
+                        "source": "1"
                     }
                 },
-                "overrides": []
-            },
-            "gridPos": {
-                "h": 4,
-                "w": 3,
-                "x": 21,
-                "y": 0
-            },
-            "id": 8,
-            "options": {
-                "colorMode": "value",
-                "graphMode": "area",
-                "justifyMode": "auto",
-                "orientation": "auto",
-                "percentChangeColorMode": "standard",
-                "reduceOptions": {
-                    "calcs": [
-                        "lastNotNull"
-                    ],
-                    "fields": "",
-                    "values": false
-                },
-                "showPercentChange": false,
-                "textMode": "auto",
-                "wideLayout": true
-            },
-            "pluginVersion": "11.5.2",
-            "targets": [
                 {
-                    "columns": [],
-                    "datasource": {
-                        "type": "yesoreyeram-infinity-datasource",
-                        "uid": "dem2k81ld0veoe"
-                    },
-                    "filters": [],
-                    "format": "as-is",
-                    "global_query_id": "",
-                    "parser": "backend",
-                    "refId": "A",
-                    "root_selector": "alert_dkg_restarts.Severity",
-                    "source": "url",
-                    "type": "json",
-                    "url": "http://metrics/metrics/api?source=alerts",
-                    "url_options": {
-                        "data": "",
-                        "method": "GET"
+                    "id": "organize",
+                    "options": {
+                        "excludeByName": {
+                            "1": true
+                        },
+                        "includeByName": {},
+                        "indexByName": {},
+                        "renameByName": {
+                            "LastUpdateTs": "Last Update"
+                        }
                     }
-                }
-            ],
-            "title": "DKG Restarts",
-            "transparent": true,
-            "type": "stat"
-        },
-        {
-            "datasource": {
-                "type": "yesoreyeram-infinity-datasource",
-                "uid": "dem2k81ld0veoe"
-            },
-            "fieldConfig": {
-                "defaults": {
-                    "color": {
-                        "mode": "thresholds"
-                    },
-                    "mappings": [],
-                    "thresholds": {
-                        "mode": "absolute",
-                        "steps": [
+                },
+                {
+                    "id": "convertFieldType",
+                    "options": {
+                        "conversions": [
                             {
-                                "color": "green",
-                                "value": null
-                            },
-                            {
-                                "color": "yellow",
-                                "value": 1
-                            },
-                            {
-                                "color": "orange",
-                                "value": 2
-                            },
-                            {
-                                "color": "red",
-                                "value": 3
+                                "dateFormat": "",
+                                "destinationType": "time",
+                                "targetField": "LastUpdateTs"
                             }
-                        ]
-                    }
-                },
-                "overrides": []
-            },
-            "gridPos": {
-                "h": 4,
-                "w": 3,
-                "x": 0,
-                "y": 4
-            },
-            "id": 9,
-            "options": {
-                "colorMode": "value",
-                "graphMode": "area",
-                "justifyMode": "auto",
-                "orientation": "auto",
-                "percentChangeColorMode": "standard",
-                "reduceOptions": {
-                    "calcs": [
-                        "lastNotNull"
-                    ],
-                    "fields": "",
-                    "values": false
-                },
-                "showPercentChange": false,
-                "textMode": "auto",
-                "wideLayout": true
-            },
-            "pluginVersion": "11.5.2",
-            "targets": [
-                {
-                    "columns": [],
-                    "datasource": {
-                        "type": "yesoreyeram-infinity-datasource",
-                        "uid": "dem2k81ld0veoe"
-                    },
-                    "filters": [],
-                    "format": "table",
-                    "global_query_id": "",
-                    "parser": "backend",
-                    "refId": "A",
-                    "root_selector": "alert_pegout_commintments.Severity",
-                    "source": "url",
-                    "type": "json",
-                    "url": "http://metrics/metrics/api?source=alerts",
-                    "url_options": {
-                        "data": "",
-                        "method": "GET"
+                        ],
+                        "fields": {}
                     }
                 }
             ],
-            "title": "Pegout Commitments",
             "transparent": true,
-            "type": "stat"
-        },
-        {
-            "datasource": {
-                "type": "yesoreyeram-infinity-datasource",
-                "uid": "dem2k81ld0veoe"
-            },
-            "fieldConfig": {
-                "defaults": {
-                    "color": {
-                        "mode": "thresholds"
-                    },
-                    "mappings": [],
-                    "thresholds": {
-                        "mode": "absolute",
-                        "steps": [
-                            {
-                                "color": "green",
-                                "value": null
-                            },
-                            {
-                                "color": "yellow",
-                                "value": 1
-                            },
-                            {
-                                "color": "orange",
-                                "value": 2
-                            },
-                            {
-                                "color": "red",
-                                "value": 3
-                            }
-                        ]
-                    }
-                },
-                "overrides": []
-            },
-            "gridPos": {
-                "h": 4,
-                "w": 3,
-                "x": 3,
-                "y": 4
-            },
-            "id": 10,
-            "options": {
-                "colorMode": "value",
-                "graphMode": "area",
-                "justifyMode": "auto",
-                "orientation": "auto",
-                "percentChangeColorMode": "standard",
-                "reduceOptions": {
-                    "calcs": [
-                        "lastNotNull"
-                    ],
-                    "fields": "",
-                    "values": false
-                },
-                "showPercentChange": false,
-                "textMode": "auto",
-                "wideLayout": true
-            },
-            "pluginVersion": "11.5.2",
-            "targets": [
-                {
-                    "columns": [],
-                    "datasource": {
-                        "type": "yesoreyeram-infinity-datasource",
-                        "uid": "dem2k81ld0veoe"
-                    },
-                    "filters": [],
-                    "format": "table",
-                    "global_query_id": "",
-                    "parser": "backend",
-                    "refId": "A",
-                    "root_selector": "alert_pegout_fee_not_reset.Severity",
-                    "source": "url",
-                    "type": "json",
-                    "url": "http://metrics/metrics/api?source=alerts",
-                    "url_options": {
-                        "data": "",
-                        "method": "GET"
-                    }
-                }
-            ],
-            "title": "Pegout Fee Not Reset",
-            "transparent": true,
-            "type": "stat"
-        },
-        {
-            "datasource": {
-                "type": "yesoreyeram-infinity-datasource",
-                "uid": "dem2k81ld0veoe"
-            },
-            "fieldConfig": {
-                "defaults": {
-                    "color": {
-                        "mode": "thresholds"
-                    },
-                    "mappings": [],
-                    "thresholds": {
-                        "mode": "absolute",
-                        "steps": [
-                            {
-                                "color": "green",
-                                "value": null
-                            },
-                            {
-                                "color": "yellow",
-                                "value": 1
-                            },
-                            {
-                                "color": "orange",
-                                "value": 2
-                            },
-                            {
-                                "color": "red",
-                                "value": 3
-                            }
-                        ]
-                    }
-                },
-                "overrides": []
-            },
-            "gridPos": {
-                "h": 4,
-                "w": 3,
-                "x": 6,
-                "y": 4
-            },
-            "id": 11,
-            "options": {
-                "colorMode": "value",
-                "graphMode": "area",
-                "justifyMode": "auto",
-                "orientation": "auto",
-                "percentChangeColorMode": "standard",
-                "reduceOptions": {
-                    "calcs": [
-                        "lastNotNull"
-                    ],
-                    "fields": "",
-                    "values": false
-                },
-                "showPercentChange": false,
-                "textMode": "auto",
-                "wideLayout": true
-            },
-            "pluginVersion": "11.5.2",
-            "targets": [
-                {
-                    "columns": [],
-                    "datasource": {
-                        "type": "yesoreyeram-infinity-datasource",
-                        "uid": "dem2k81ld0veoe"
-                    },
-                    "filters": [],
-                    "format": "table",
-                    "global_query_id": "",
-                    "parser": "backend",
-                    "refId": "A",
-                    "root_selector": "alert_pegout_in_mempool.Severity",
-                    "source": "url",
-                    "type": "json",
-                    "url": "http://metrics/metrics/api?source=alerts",
-                    "url_options": {
-                        "data": "",
-                        "method": "GET"
-                    }
-                }
-            ],
-            "title": "Pegout In Mempool",
-            "transparent": true,
-            "type": "stat"
-        },
-        {
-            "datasource": {
-                "type": "yesoreyeram-infinity-datasource",
-                "uid": "dem2k81ld0veoe"
-            },
-            "fieldConfig": {
-                "defaults": {
-                    "color": {
-                        "mode": "thresholds"
-                    },
-                    "mappings": [],
-                    "thresholds": {
-                        "mode": "absolute",
-                        "steps": [
-                            {
-                                "color": "green",
-                                "value": null
-                            },
-                            {
-                                "color": "yellow",
-                                "value": 1
-                            },
-                            {
-                                "color": "orange",
-                                "value": 2
-                            },
-                            {
-                                "color": "red",
-                                "value": 3
-                            }
-                        ]
-                    }
-                },
-                "overrides": []
-            },
-            "gridPos": {
-                "h": 4,
-                "w": 3,
-                "x": 9,
-                "y": 4
-            },
-            "id": 12,
-            "options": {
-                "colorMode": "value",
-                "graphMode": "area",
-                "justifyMode": "auto",
-                "orientation": "auto",
-                "percentChangeColorMode": "standard",
-                "reduceOptions": {
-                    "calcs": [
-                        "lastNotNull"
-                    ],
-                    "fields": "",
-                    "values": false
-                },
-                "showPercentChange": false,
-                "textMode": "auto",
-                "wideLayout": true
-            },
-            "pluginVersion": "11.5.2",
-            "targets": [
-                {
-                    "columns": [],
-                    "datasource": {
-                        "type": "yesoreyeram-infinity-datasource",
-                        "uid": "dem2k81ld0veoe"
-                    },
-                    "filters": [],
-                    "format": "table",
-                    "global_query_id": "",
-                    "parser": "backend",
-                    "refId": "A",
-                    "root_selector": "alert_pegout_restarts.Severity",
-                    "source": "url",
-                    "type": "json",
-                    "url": "http://metrics/metrics/api?source=alerts",
-                    "url_options": {
-                        "data": "",
-                        "method": "GET"
-                    }
-                }
-            ],
-            "title": "Pegout Restarts",
-            "transparent": true,
-            "type": "stat"
-        },
-        {
-            "datasource": {
-                "type": "yesoreyeram-infinity-datasource",
-                "uid": "dem2k81ld0veoe"
-            },
-            "fieldConfig": {
-                "defaults": {
-                    "color": {
-                        "mode": "thresholds"
-                    },
-                    "mappings": [],
-                    "thresholds": {
-                        "mode": "absolute",
-                        "steps": [
-                            {
-                                "color": "green",
-                                "value": null
-                            },
-                            {
-                                "color": "yellow",
-                                "value": 1
-                            },
-                            {
-                                "color": "orange",
-                                "value": 2
-                            },
-                            {
-                                "color": "red",
-                                "value": 3
-                            }
-                        ]
-                    }
-                },
-                "overrides": []
-            },
-            "gridPos": {
-                "h": 4,
-                "w": 3,
-                "x": 12,
-                "y": 4
-            },
-            "id": 13,
-            "options": {
-                "colorMode": "value",
-                "graphMode": "area",
-                "justifyMode": "auto",
-                "orientation": "auto",
-                "percentChangeColorMode": "standard",
-                "reduceOptions": {
-                    "calcs": [
-                        "lastNotNull"
-                    ],
-                    "fields": "",
-                    "values": false
-                },
-                "showPercentChange": false,
-                "textMode": "auto",
-                "wideLayout": true
-            },
-            "pluginVersion": "11.5.2",
-            "targets": [
-                {
-                    "columns": [],
-                    "datasource": {
-                        "type": "yesoreyeram-infinity-datasource",
-                        "uid": "dem2k81ld0veoe"
-                    },
-                    "filters": [],
-                    "format": "table",
-                    "global_query_id": "",
-                    "parser": "backend",
-                    "refId": "A",
-                    "root_selector": "alert_pegout_signers.Severity",
-                    "source": "url",
-                    "type": "json",
-                    "url": "http://metrics/metrics/api?source=alerts",
-                    "url_options": {
-                        "data": "",
-                        "method": "GET"
-                    }
-                }
-            ],
-            "title": "Pegout Signers",
-            "transparent": true,
-            "type": "stat"
-        },
-        {
-            "datasource": {
-                "type": "yesoreyeram-infinity-datasource",
-                "uid": "dem2k81ld0veoe"
-            },
-            "fieldConfig": {
-                "defaults": {
-                    "color": {
-                        "mode": "thresholds"
-                    },
-                    "mappings": [],
-                    "thresholds": {
-                        "mode": "absolute",
-                        "steps": [
-                            {
-                                "color": "green",
-                                "value": null
-                            },
-                            {
-                                "color": "yellow",
-                                "value": 1
-                            },
-                            {
-                                "color": "orange",
-                                "value": 2
-                            },
-                            {
-                                "color": "red",
-                                "value": 3
-                            }
-                        ]
-                    }
-                },
-                "overrides": []
-            },
-            "gridPos": {
-                "h": 4,
-                "w": 3,
-                "x": 15,
-                "y": 4
-            },
-            "id": 14,
-            "options": {
-                "colorMode": "value",
-                "graphMode": "area",
-                "justifyMode": "auto",
-                "orientation": "auto",
-                "percentChangeColorMode": "standard",
-                "reduceOptions": {
-                    "calcs": [
-                        "lastNotNull"
-                    ],
-                    "fields": "",
-                    "values": false
-                },
-                "showPercentChange": false,
-                "textMode": "auto",
-                "wideLayout": true
-            },
-            "pluginVersion": "11.5.2",
-            "targets": [
-                {
-                    "columns": [],
-                    "datasource": {
-                        "type": "yesoreyeram-infinity-datasource",
-                        "uid": "dem2k81ld0veoe"
-                    },
-                    "filters": [],
-                    "format": "table",
-                    "global_query_id": "",
-                    "parser": "backend",
-                    "refId": "A",
-                    "root_selector": "alert_pegout_signing_duration.Severity",
-                    "source": "url",
-                    "type": "json",
-                    "url": "http://metrics/metrics/api?source=alerts",
-                    "url_options": {
-                        "data": "",
-                        "method": "GET"
-                    }
-                }
-            ],
-            "title": "Pegout Signing Duration",
-            "transparent": true,
-            "type": "stat"
-        },
-        {
-            "datasource": {
-                "type": "yesoreyeram-infinity-datasource",
-                "uid": "dem2k81ld0veoe"
-            },
-            "fieldConfig": {
-                "defaults": {
-                    "color": {
-                        "mode": "thresholds"
-                    },
-                    "mappings": [],
-                    "thresholds": {
-                        "mode": "absolute",
-                        "steps": [
-                            {
-                                "color": "green",
-                                "value": null
-                            },
-                            {
-                                "color": "yellow",
-                                "value": 1
-                            },
-                            {
-                                "color": "orange",
-                                "value": 2
-                            },
-                            {
-                                "color": "red",
-                                "value": 3
-                            }
-                        ]
-                    }
-                },
-                "overrides": []
-            },
-            "gridPos": {
-                "h": 4,
-                "w": 3,
-                "x": 18,
-                "y": 4
-            },
-            "id": 15,
-            "options": {
-                "colorMode": "value",
-                "graphMode": "area",
-                "justifyMode": "auto",
-                "orientation": "auto",
-                "percentChangeColorMode": "standard",
-                "reduceOptions": {
-                    "calcs": [
-                        "lastNotNull"
-                    ],
-                    "fields": "",
-                    "values": false
-                },
-                "showPercentChange": false,
-                "textMode": "auto",
-                "wideLayout": true
-            },
-            "pluginVersion": "11.5.2",
-            "targets": [
-                {
-                    "columns": [],
-                    "datasource": {
-                        "type": "yesoreyeram-infinity-datasource",
-                        "uid": "dem2k81ld0veoe"
-                    },
-                    "filters": [],
-                    "format": "table",
-                    "global_query_id": "",
-                    "parser": "backend",
-                    "refId": "A",
-                    "root_selector": "alert_total_service_fee.Severity",
-                    "source": "url",
-                    "type": "json",
-                    "url": "http://metrics/metrics/api?source=alerts",
-                    "url_options": {
-                        "data": "",
-                        "method": "GET"
-                    }
-                }
-            ],
-            "title": "Total Service Fee",
-            "transparent": true,
-            "type": "stat"
-        },
-        {
-            "datasource": {
-                "type": "yesoreyeram-infinity-datasource",
-                "uid": "dem2k81ld0veoe"
-            },
-            "fieldConfig": {
-                "defaults": {
-                    "color": {
-                        "mode": "thresholds"
-                    },
-                    "mappings": [],
-                    "thresholds": {
-                        "mode": "absolute",
-                        "steps": [
-                            {
-                                "color": "green",
-                                "value": null
-                            },
-                            {
-                                "color": "yellow",
-                                "value": 1
-                            },
-                            {
-                                "color": "orange",
-                                "value": 2
-                            },
-                            {
-                                "color": "red",
-                                "value": 3
-                            }
-                        ]
-                    }
-                },
-                "overrides": []
-            },
-            "gridPos": {
-                "h": 4,
-                "w": 3,
-                "x": 21,
-                "y": 4
-            },
-            "id": 16,
-            "options": {
-                "colorMode": "value",
-                "graphMode": "area",
-                "justifyMode": "auto",
-                "orientation": "auto",
-                "percentChangeColorMode": "standard",
-                "reduceOptions": {
-                    "calcs": [
-                        "lastNotNull"
-                    ],
-                    "fields": "",
-                    "values": false
-                },
-                "showPercentChange": false,
-                "textMode": "auto",
-                "wideLayout": true
-            },
-            "pluginVersion": "11.5.2",
-            "targets": [
-                {
-                    "columns": [],
-                    "datasource": {
-                        "type": "yesoreyeram-infinity-datasource",
-                        "uid": "dem2k81ld0veoe"
-                    },
-                    "filters": [],
-                    "format": "table",
-                    "global_query_id": "",
-                    "parser": "backend",
-                    "refId": "A",
-                    "root_selector": "dkg_status.Severity",
-                    "source": "url",
-                    "type": "json",
-                    "url": "http://metrics/metrics/api?source=alerts",
-                    "url_options": {
-                        "data": "",
-                        "method": "GET"
-                    }
-                }
-            ],
-            "title": "DKG Status",
-            "transparent": true,
-            "type": "stat"
+            "type": "table"
         }
     ],
     "preload": false,
-    "refresh": "",
+    "refresh": "1m",
     "schemaVersion": 40,
     "tags": [],
     "templating": {
@@ -1413,6 +305,6 @@
     "timezone": "browser",
     "title": "Metrics Severity",
     "uid": "cexq6rguh4ydcd",
-    "version": 5,
+    "version": 1,
     "weekStart": ""
 }

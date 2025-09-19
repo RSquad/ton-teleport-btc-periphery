@@ -2,6 +2,7 @@ package data_sources
 
 import (
 	"database/sql"
+	"fmt"
 	"time"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
@@ -22,7 +23,7 @@ func NewDataSourceDB(db *sql.DB) *DataSourceDB {
 }
 
 func (dataSource *DataSourceDB) CoordinatorContractStorageJson() ([]byte, error) {
-	return dataSource.SelectToObject(
+	return dataSource.SelectAsJsonObj(
 		"SELECT payload FROM metrics_data WHERE type_id = $1 ORDER BY id DESC LIMIT 1",
 		fetchers.PayloadTypeContractCoordinator,
 	)
@@ -43,7 +44,7 @@ func (dataSource *DataSourceDB) CoordinatorContractStorage() (*coordinator.Stora
 }
 
 func (dataSource *DataSourceDB) TeleportContractStorageJson() ([]byte, error) {
-	return dataSource.SelectToObject(
+	return dataSource.SelectAsJsonObj(
 		"SELECT payload FROM metrics_data WHERE type_id = $1 ORDER BY id DESC LIMIT 1",
 		fetchers.PayloadTypeContractTeleport,
 	)
@@ -64,7 +65,7 @@ func (dataSource *DataSourceDB) TeleportContractStorage() (*teleportcontract.Sto
 }
 
 func (dataSource *DataSourceDB) BitcoinClientContractStorageJson() ([]byte, error) {
-	return dataSource.SelectToObject(
+	return dataSource.SelectAsJsonObj(
 		"SELECT payload FROM metrics_data WHERE type_id = $1 ORDER BY id DESC LIMIT 1",
 		fetchers.PayloadTypeContractBitcoinClient,
 	)
@@ -85,7 +86,7 @@ func (dataSource *DataSourceDB) BitcoinClientContractStorage() (*data_models.Bit
 }
 
 func (dataSource *DataSourceDB) BitcoinNetworkInfoJson() ([]byte, error) {
-	return dataSource.SelectToObject(
+	return dataSource.SelectAsJsonObj(
 		"SELECT payload FROM metrics_data WHERE type_id = $1 ORDER BY id DESC LIMIT 1",
 		fetchers.PayloadTypeBitcoinNetwork,
 	)
@@ -106,7 +107,7 @@ func (dataSource *DataSourceDB) BitcoinNetworkInfoStorage() (*data_models.Bitcoi
 }
 
 func (dataSource *DataSourceDB) DkgJson() ([]byte, error) {
-	return dataSource.SelectToObject(
+	return dataSource.SelectAsJsonObj(
 		"SELECT payload FROM metrics_data WHERE type_id = $1 ORDER BY id DESC LIMIT 1",
 		fetchers.PayloadTypeDKG,
 	)
@@ -127,7 +128,7 @@ func (dataSource *DataSourceDB) Dkg() (*coordinator.DKG, error) {
 }
 
 func (dataSource *DataSourceDB) PrevDkgJson() ([]byte, error) {
-	return dataSource.SelectToObject(
+	return dataSource.SelectAsJsonObj(
 		"SELECT payload FROM metrics_data WHERE type_id = $1 ORDER BY id DESC LIMIT 1",
 		fetchers.PayloadTypePrevDKG,
 	)
@@ -148,7 +149,7 @@ func (dataSource *DataSourceDB) PrevDkg() (*coordinator.DKG, error) {
 }
 
 func (dataSource *DataSourceDB) DkgBeforeRestartJson(t time.Time) ([]byte, error) {
-	return dataSource.SelectToObject(
+	return dataSource.SelectAsJsonObj(
 		"SELECT payload FROM metrics_data WHERE type_id = $1 AND EXTRACT(EPOCH FROM (payload->>'Until')::timestamptz) = $2 ORDER BY id DESC LIMIT 1",
 		fetchers.PayloadTypePrevDKG,
 		t.Unix(),
@@ -170,7 +171,7 @@ func (dataSource *DataSourceDB) DkgBeforeRestart(t time.Time) (*coordinator.DKG,
 }
 
 func (dataSource *DataSourceDB) PegoutJson(address *address.Address) ([]byte, error) {
-	return dataSource.SelectToObject(
+	return dataSource.SelectAsJsonObj(
 		"SELECT row_to_json(t) FROM (SELECT * FROM public.pegouts WHERE addr=$1) t",
 		address.StringRaw(),
 	)
@@ -191,7 +192,7 @@ func (dataSource *DataSourceDB) Pegout(address *address.Address) (*data_models.P
 }
 
 func (dataSource *DataSourceDB) LastSignedPegoutJson() ([]byte, error) {
-	return dataSource.SelectToObject(
+	return dataSource.SelectAsJsonObj(
 		"SELECT row_to_json(t) FROM (SELECT * FROM public.pegouts WHERE status = 'SIGNED' ORDER BY id DESC LIMIT 1) t",
 	)
 }
@@ -211,7 +212,7 @@ func (dataSource *DataSourceDB) LastSignedPegout() (*data_models.Pegout, error) 
 }
 
 func (dataSource *DataSourceDB) LastSignedPegoutsJson(limit uint) ([]byte, error) {
-	return dataSource.SelectToObject(
+	return dataSource.SelectAsJsonObj(
 		"SELECT COALESCE(jsonb_agg(t), '[]') FROM (SELECT * FROM public.pegouts WHERE status = 'SIGNED' ORDER BY id DESC LIMIT $1) t",
 		limit,
 	)
@@ -248,12 +249,14 @@ func (dataSource *DataSourceDB) ActualContractBalance(name string) (int64, error
 		if err != nil {
 			return 0, err
 		}
+	} else {
+		return -1, fmt.Errorf("balance not found: '%s'", name)
 	}
 
 	return balance, nil
 }
 
-func (dataSource *DataSourceDB) SelectToObject(sql string, args ...interface{}) ([]byte, error) {
+func (dataSource *DataSourceDB) SelectAsJsonObj(sql string, args ...interface{}) ([]byte, error) {
 	rows, err := dataSource.db.Query(sql, args...)
 	if err != nil {
 		return nil, err

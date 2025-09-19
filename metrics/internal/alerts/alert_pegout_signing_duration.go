@@ -28,11 +28,15 @@ func NewAlertPegoutSigningDuration() Alert {
 	}
 }
 
-func (alert *AlertPegoutSigningDuration) Check(dataSource AlertDataSource) (Severity, Labels, IntValues, error) {
-	labels := Labels{
+func (alert *AlertPegoutSigningDuration) NewLabels() Labels {
+	return Labels{
 		"bitcoin_tx_id": "",
 		"pegout_addr":   "",
 	}
+}
+
+func (alert *AlertPegoutSigningDuration) Check(dataSource AlertDataSource) (Severity, Labels, IntValues, error) {
+	labels := alert.NewLabels()
 
 	// Get first unsigned pegout
 	unsignedPegout, err := dataSource.FirstUnsignedPegoutDB()

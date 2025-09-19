@@ -2,6 +2,7 @@ package mutils
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 )
@@ -24,4 +25,24 @@ func NanoIntToString(n int64) string {
 		frac = -frac
 	}
 	return fmt.Sprintf("%d.%09d", whole, frac)
+}
+
+func ExtractMapKeys[K comparable, V any](m map[K]V) []K {
+	keys := make([]K, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	return keys
+}
+
+func JoinToStr[K ~string](keys []K) string {
+	if len(keys) == 0 {
+		return ""
+	}
+
+	strs := make([]string, len(keys))
+	for i, k := range keys {
+		strs[i] = string(k)
+	}
+	return strings.Join(strs, ",")
 }
