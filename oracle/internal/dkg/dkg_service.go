@@ -7,7 +7,7 @@ import (
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/watchdog"
 	helpers "github.com/rsquad/ton-teleport-btc-periphery/oracle/internal"
 	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/keystore"
 	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/validator"
@@ -18,7 +18,6 @@ type Service struct {
 	validator           *validator.Validator
 	fetchPeriod         int64 // Fetch period (in seconds)
 	sendStartDKGPeriod  int64 // sendStartDKG period (in seconds)
-	watchdog            *utils.Watchdog
 }
 
 func NewService(
@@ -26,14 +25,12 @@ func NewService(
 	validator *validator.Validator,
 	fetchPeriod int64,
 	sendStartDKGPeriod int64,
-	watchdog *utils.Watchdog,
 ) *Service {
 	return &Service{
 		coordinatorContract: coordinatorContract,
 		validator:           validator,
 		fetchPeriod:         fetchPeriod,
 		sendStartDKGPeriod:  sendStartDKGPeriod,
-		watchdog:            watchdog,
 	}
 }
 
@@ -43,8 +40,8 @@ func (s *Service) Work(ctx context.Context, wg *sync.WaitGroup, keystore keystor
 	logger.DefaultLogStartWork("DKGService: starting...")
 
 	outChan := make(chan *coordinator.DKG)
-	fetcher := NewFetcher(s.coordinatorContract, outChan, s.fetchPeriod, s.watchdog)
-	executor := NewExecutor(outChan, s.coordinatorContract, keystore, s.validator, s.watchdog)
+	fetcher := NewFetcher(s.coordinatorContract, outChan, s.fetchPeriod)
+	executor := NewExecutor(outChan, s.coordinatorContract, keystore, s.validator)
 
 	wg.Add(1)
 	go fetcher.Work(ctx, wg)
@@ -61,8 +58,8 @@ func (s *Service) Work(ctx context.Context, wg *sync.WaitGroup, keystore keystor
 		defer ticker.Stop()
 
 		// Setup watchdog
-		s.watchdog.Watch("DKGService")
-		defer s.watchdog.Unwatch("DKGService")
+		watchdog.Global().Watch("DKGService", time.Duration(s.sendStartDKGPeriod*2)*time.Second)
+		defer watchdog.Global().Unwatch("DKGService")
 
 		for {
 			select {
@@ -88,7 +85,7 @@ func (s *Service) Work(ctx context.Context, wg *sync.WaitGroup, keystore keystor
 					}
 				}
 
-				s.watchdog.Heartbeat("DKGService")
+				watchdog.Global().Heartbeat("DKGService")
 			}
 		}
 	}()

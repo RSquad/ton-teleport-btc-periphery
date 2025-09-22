@@ -9,27 +9,24 @@ import (
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/watchdog"
 )
 
 type FetcherContractCoordinator struct {
 	chDB                chan PayloadDB
 	coordinatorContract coordinator.Coordinator
 	period              int64 // Fetch period (in seconds)
-	watchdog            *utils.Watchdog
 }
 
 func NewFetcherContractCoordinator(
 	chDB chan PayloadDB,
 	coordinatorContract coordinator.Coordinator,
 	period int64,
-	watchdog *utils.Watchdog,
 ) *FetcherContractCoordinator {
 	return &FetcherContractCoordinator{
 		chDB:                chDB,
 		coordinatorContract: coordinatorContract,
 		period:              period,
-		watchdog:            watchdog,
 	}
 }
 
@@ -43,8 +40,8 @@ func (fetcher *FetcherContractCoordinator) Work(ctx context.Context, wg *sync.Wa
 	defer ticker.Stop()
 
 	// Setup watchdog
-	fetcher.watchdog.Watch("FetcherContractCoordinator")
-	defer fetcher.watchdog.Unwatch("FetcherContractCoordinator")
+	watchdog.Global().Watch("FetcherContractCoordinator", time.Duration(fetcher.period*2)*time.Second)
+	defer watchdog.Global().Unwatch("FetcherContractCoordinator")
 
 	for {
 		select {
@@ -53,7 +50,7 @@ func (fetcher *FetcherContractCoordinator) Work(ctx context.Context, wg *sync.Wa
 			return
 		case <-ticker.C:
 			fetcher.Fetch()
-			fetcher.watchdog.Heartbeat("FetcherContractCoordinator")
+			watchdog.Global().Heartbeat("FetcherContractCoordinator")
 		}
 	}
 }

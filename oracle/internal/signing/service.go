@@ -14,7 +14,7 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/pegoutcontract"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/watchdog"
 	helpers "github.com/rsquad/ton-teleport-btc-periphery/oracle/internal"
 	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/keystore"
 	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/validator"
@@ -40,7 +40,6 @@ type SignService struct {
 	executeSignPeriod int64 // `period` in seconds to call the ExecuteSign() function
 	dkgUntil          time.Time
 	sessionSigner     *validator.SessionSigner
-	watchdog          *utils.Watchdog
 }
 
 func NewService(
@@ -48,7 +47,6 @@ func NewService(
 	coordinator coordinator.Coordinator,
 	tonclient *tonclient.TonClient,
 	executeSignPeriod int64,
-	watchdog *utils.Watchdog,
 ) *SignService {
 	return &SignService{
 		keyStore:          keyStore,
@@ -57,7 +55,6 @@ func NewService(
 		executeSignPeriod: executeSignPeriod,
 		dkgUntil:          time.Unix(0, 0),
 		sessionSigner:     nil,
-		watchdog:          watchdog,
 	}
 }
 
@@ -71,8 +68,8 @@ func (s *SignService) Work(ctx context.Context, wg *sync.WaitGroup) {
 	defer ticker.Stop()
 
 	// Setup watchdog
-	s.watchdog.Watch("SignService")
-	defer s.watchdog.Unwatch("SignService")
+	watchdog.Global().Watch("SignService", 300*time.Second)
+	defer watchdog.Global().Unwatch("SignService")
 
 	for {
 		select {
@@ -85,7 +82,7 @@ func (s *SignService) Work(ctx context.Context, wg *sync.WaitGroup) {
 				return
 			}
 			s.ExecuteSign(ctx)
-			s.watchdog.Heartbeat("SignService")
+			watchdog.Global().Heartbeat("SignService")
 		}
 	}
 }

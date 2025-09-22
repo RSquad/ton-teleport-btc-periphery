@@ -11,7 +11,7 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/signer"
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/watchdog"
 	helpers "github.com/rsquad/ton-teleport-btc-periphery/oracle/internal"
 	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/keystore"
 	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/validator"
@@ -84,7 +84,6 @@ type Executor struct {
 	validator           *validator.Validator
 	sessionSigner       signer.Signer
 	validatorIdx        uint16
-	watchdog            *utils.Watchdog
 }
 
 func NewExecutor(
@@ -92,7 +91,6 @@ func NewExecutor(
 	coordinatorContract coordinator.Coordinator,
 	keystore keystore.Keystore,
 	validator *validator.Validator,
-	watchdog *utils.Watchdog,
 ) *Executor {
 	return &Executor{
 		inChan:              inChan,
@@ -103,7 +101,6 @@ func NewExecutor(
 		validator:           validator,
 		sessionSigner:       nil,
 		validatorIdx:        255,
-		watchdog:            watchdog,
 	}
 }
 
@@ -113,8 +110,8 @@ func (e *Executor) Work(ctx context.Context, wg *sync.WaitGroup) {
 	logger.DefaultLogStartWork("DKG Executor")
 
 	// Setup watchdog
-	e.watchdog.Watch("DKGExecutor")
-	defer e.watchdog.Unwatch("DKGExecutor")
+	watchdog.Global().Watch("DKGExecutor", 300*time.Second)
+	defer watchdog.Global().Unwatch("DKGExecutor")
 
 	for {
 		select {
@@ -127,7 +124,7 @@ func (e *Executor) Work(ctx context.Context, wg *sync.WaitGroup) {
 				return
 			}
 			e.Execute(dkg)
-			e.watchdog.Heartbeat("DKGExecutor")
+			watchdog.Global().Heartbeat("DKGExecutor")
 		}
 	}
 }

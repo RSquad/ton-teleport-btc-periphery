@@ -11,7 +11,6 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/teleportcontract"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/config"
 	"github.com/xssnick/tonutils-go/address"
 )
@@ -24,7 +23,6 @@ type FetcherService struct {
 	fetcherContractTeleport      *FetcherContractTeleport
 	fetcherContractCoordinator   *FetcherContractCoordinator
 	fetcherBitcoinNetwork        *FetcherBitcoinNetwork
-	watchdog                     *utils.Watchdog
 }
 
 func NewService(
@@ -36,7 +34,6 @@ func NewService(
 	cfg *config.ServicesConfig,
 	db *sql.DB,
 	contractAddrs map[string]*address.Address,
-	watchdog *utils.Watchdog,
 ) (*FetcherService, error) {
 	// Writer DB
 	writerDbChan := make(chan PayloadDB, cfg.WriterDbChainSize)
@@ -46,28 +43,28 @@ func NewService(
 	}
 
 	// Fetcher: Contract DKG
-	fetcherDKG := NewFetcherDKG(writerDbChan, coordinatorContract, int64(cfg.DkgFetchPeriod), watchdog)
+	fetcherDKG := NewFetcherDKG(writerDbChan, coordinatorContract, int64(cfg.DkgFetchPeriod))
 
 	// Fetcher: Contract balances
 	fetcherContractBalances := make([]*FetcherContractBalance, 0)
 	for name, addr := range contractAddrs {
 		fetcherContractBalances = append(fetcherContractBalances,
-			NewFetcherContractBalance(db, tonClient, cfg, addr, name, watchdog),
+			NewFetcherContractBalance(db, tonClient, cfg, addr, name),
 		)
 	}
 
 	// Fetcher: Contract Bitcoin client
 	fetcherContractBitcoinClient := NewFetcherContractBitcoinClient(
-		writerDbChan, db, bitcoinClient, bitcoinClientContract, int64(cfg.BitcoinClientContractFetchPeriod), watchdog)
+		writerDbChan, db, bitcoinClient, bitcoinClientContract, int64(cfg.BitcoinClientContractFetchPeriod))
 
 	// Fetcher: ContractTeleport
-	fetcherContractTeleport := NewFetcherContractTeleport(writerDbChan, teleportContract, int64(cfg.TeleportContractFetchPeriod), watchdog)
+	fetcherContractTeleport := NewFetcherContractTeleport(writerDbChan, teleportContract, int64(cfg.TeleportContractFetchPeriod))
 
 	// Fetcher: ContractCoordinator
-	fetcherContractCoordinator := NewFetcherContractCoordinator(writerDbChan, coordinatorContract, int64(cfg.CoordinatorContractFetchPeriod), watchdog)
+	fetcherContractCoordinator := NewFetcherContractCoordinator(writerDbChan, coordinatorContract, int64(cfg.CoordinatorContractFetchPeriod))
 
 	// Fetcher: BitcoinNetwork
-	fetcherBitcoinNetwork := NewFetcherBitcoinNetwork(writerDbChan, db, bitcoinClient, int64(cfg.BitcoinNetworkFetchPeriod), watchdog)
+	fetcherBitcoinNetwork := NewFetcherBitcoinNetwork(writerDbChan, db, bitcoinClient, int64(cfg.BitcoinNetworkFetchPeriod))
 
 	return &FetcherService{
 		writerDB:                     writerDB,
@@ -77,7 +74,6 @@ func NewService(
 		fetcherContractTeleport:      fetcherContractTeleport,
 		fetcherContractCoordinator:   fetcherContractCoordinator,
 		fetcherBitcoinNetwork:        fetcherBitcoinNetwork,
-		watchdog:                     watchdog,
 	}, nil
 }
 

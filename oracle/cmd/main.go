@@ -13,6 +13,7 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/watchdog"
 	helpers "github.com/rsquad/ton-teleport-btc-periphery/oracle/internal"
 	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/cfg"
 	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/dkg"
@@ -50,16 +51,16 @@ func startAndWaitForStop() error {
 		Msg("Initializing")
 
 	// Watchdog
-	watchdog, err := utils.NewWatchdog(
-		80*time.Second,
+	err = watchdog.InitGlobal(
+		10*time.Second,
+		60*time.Second,
 		func(id string, overdue time.Duration) {
-			logger.Log.Error().Msgf("WATCHDOG: %s missed heartbeat (overdue by %s)", id, overdue)
+			logger.Log.Error().Str("component", "WATCHDOG").Msgf("'%s' missed heartbeat (overdue by %s)", id, overdue)
 		},
 	)
 	if err != nil {
 		return fmt.Errorf("failed to create watchdog: %w", err)
 	}
-	logger.Log.Info().Msg("WATCHDOG: created")
 
 	// Keystore
 	logger.Log.Info().Msgf("Create a new Keystore at path `%s`", cfg.KeystorePath)
@@ -101,7 +102,7 @@ func startAndWaitForStop() error {
 	wg := sync.WaitGroup{}
 
 	// Start watchdog
-	watchdog.Start(ctx)
+	watchdog.Global().Start(ctx)
 
 	// Coordinator contract
 	logger.Log.Info().Msgf("Create a new Coordinator contract wrapper with address `%s`", cfg.CoordinatorContractAddr)
@@ -115,7 +116,6 @@ func startAndWaitForStop() error {
 		validator,
 		fetchPeriod,
 		sendStartDKGPeriod,
-		watchdog,
 	)
 
 	// FROST sign service
@@ -125,7 +125,6 @@ func startAndWaitForStop() error {
 		coordinator.New(coordinatorContractAddr, tonClient, nil, ctx, apiCallTimeout),
 		tonClient,
 		executeSignPeriod,
-		watchdog,
 	)
 
 	wg.Add(1)
@@ -134,19 +133,16 @@ func startAndWaitForStop() error {
 	wg.Add(1)
 	go signService.Work(ctx, &wg)
 
-	waitForStop(sigChan, cancelFn, &wg, watchdog)
+	waitForStop(sigChan, cancelFn, &wg)
 
 	return nil
 }
 
-func waitForStop(sigChan <-chan os.Signal, cancelFn context.CancelFunc, wg *sync.WaitGroup, watchdog *utils.Watchdog) {
+func waitForStop(sigChan <-chan os.Signal, cancelFn context.CancelFunc, wg *sync.WaitGroup) {
 	// Wait for OS signal
 	sig := <-sigChan
 	logger.Log.Info().Str("signal", sig.String()).Msg("Received signal")
 	logger.Log.Info().Msg("Initiating graceful shutdown...")
-
-	// Stop watchdog
-	watchdog.Stop()
 
 	// Cancel the context to notify all goroutines to terminate
 	cancelFn()

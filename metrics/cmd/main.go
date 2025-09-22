@@ -5,7 +5,10 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"os"
+	"os/signal"
 	"sync"
+	"syscall"
 	"time"
 
 	_ "github.com/lib/pq"
@@ -16,6 +19,7 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/teleportcontract"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/watchdog"
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/alerts"
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/config"
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/fetchers"
@@ -28,7 +32,10 @@ type App struct {
 	HttpService    *httpservice.HttpService
 	FetcherService *fetchers.FetcherService
 	AlertService   *alerts.AlertService
-	Watchdog       *utils.Watchdog
+	Ctx            context.Context
+	CancelFn       context.CancelFunc
+	Wg             *sync.WaitGroup
+	SigChan        <-chan os.Signal
 }
 
 func main() {
@@ -45,7 +52,15 @@ func main() {
 }
 
 func initialize() (*App, error) {
+	// Setup OS signal handlers (SIGINT, SIGTERM)
+	logger.Log.Info().Msg("Setup OS signal handler")
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+	ctx, cancelFn := context.WithCancel(context.Background())
+	wg := sync.WaitGroup{}
+
 	if err := logger.Init("", logger.DebugLevel, 0, 0, 0); err != nil {
+		cancelFn()
 		return nil, fmt.Errorf("failed to initialize logger: %w", err)
 	}
 
@@ -55,28 +70,31 @@ func initialize() (*App, error) {
 
 	envConfig, err := utils.LoadCfg[config.EnvConfig]()
 	if err != nil {
+		cancelFn()
 		return nil, err
 	}
 
 	// Read .env config
 	cfg, err := config.NewServicesConfig(&envConfig)
 	if err != nil {
+		cancelFn()
 		return nil, fmt.Errorf("failed to parse .env config: %w", err)
 	}
 
 	logger.Log.Debug().Msg(config.CfgToString(cfg))
 
 	// Watchdog
-	watchdog, err := utils.NewWatchdog(
-		80*time.Second,
+	err = watchdog.InitGlobal(
+		10*time.Second,
+		60*time.Second,
 		func(id string, overdue time.Duration) {
-			logger.Log.Error().Msgf("WATCHDOG: %s missed heartbeat (overdue by %s)", id, overdue)
+			logger.Log.Error().Str("component", "WATCHDOG").Msgf("'%s' missed heartbeat (overdue by %s)", id, overdue)
 		},
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create watchdog: %w", err)
+		cancelFn()
+		return nil, fmt.Errorf("failed to initialize watchdog: %w", err)
 	}
-	logger.Log.Info().Msg("WATCHDOG: created")
 
 	// Bitcoin client
 	bitcoinClient, err := bitcoin.NewClient(
@@ -85,12 +103,14 @@ func initialize() (*App, error) {
 		envConfig.BitcoinRpcPass,
 	)
 	if err != nil {
+		cancelFn()
 		return nil, fmt.Errorf("failed to create bitcoin client: %w", err)
 	}
 
 	// TON client
 	tonClient, err := tonclient.New(envConfig.TonConfigUrl)
 	if err != nil {
+		cancelFn()
 		return nil, fmt.Errorf("failed to create ton client: %w", err)
 	}
 
@@ -99,7 +119,7 @@ func initialize() (*App, error) {
 		cfg.TeleportContractAddr,
 		tonClient,
 		nil,
-		context.Background(),
+		ctx,
 	)
 
 	// Coordinator contract
@@ -107,7 +127,7 @@ func initialize() (*App, error) {
 		cfg.CoordinatorContractAddr,
 		tonClient,
 		nil,
-		context.Background(),
+		ctx,
 		30, // TODO: move to config
 	)
 
@@ -116,7 +136,7 @@ func initialize() (*App, error) {
 		cfg.BitcoinClientContractAddr,
 		tonClient,
 		nil,
-		context.Background(),
+		ctx,
 	)
 
 	// Open DB connection
@@ -124,6 +144,7 @@ func initialize() (*App, error) {
 	{
 		dbConnPool, err = sql.Open("postgres", cfg.DatabaseUrl)
 		if err != nil {
+			cancelFn()
 			return nil, err
 		}
 
@@ -155,9 +176,9 @@ func initialize() (*App, error) {
 		cfg,
 		dbConnPool,
 		contractAddrs,
-		watchdog,
 	)
 	if err != nil {
+		cancelFn()
 		return nil, fmt.Errorf("failed to create fetchers: %w", err)
 	}
 
@@ -166,9 +187,9 @@ func initialize() (*App, error) {
 		alerts.NewAlertDataSourceLive(dbConnPool, bitcoinClient, globalRuntimeConfig, contractAddrs),
 		alerts.NewAlertDispatcherPrometheus(),
 		contractAddrs,
-		watchdog,
 	)
 	if err != nil {
+		cancelFn()
 		return nil, fmt.Errorf("failed to create alert manager: %w", err)
 	}
 
@@ -179,7 +200,6 @@ func initialize() (*App, error) {
 	alertsService := alerts.NewAlertService(
 		alertManager,
 		cfg,
-		watchdog,
 	)
 
 	// HTTP service
@@ -197,41 +217,66 @@ func initialize() (*App, error) {
 		FetcherService: fetcherService,
 		HttpService:    httpService,
 		AlertService:   alertsService,
-		Watchdog:       watchdog,
+		Ctx:            ctx,
+		CancelFn:       cancelFn,
+		Wg:             &wg,
+		SigChan:        sigChan,
 	}, nil
 }
 
-func run(app *App) error {
-	var wg sync.WaitGroup
+func waitForStop(app *App) {
+	// Wait for OS signal
+	sig := <-app.SigChan
+	logger.Log.Info().Str("signal", sig.String()).Msg("Received signal")
+	logger.Log.Info().Msg("Initiating graceful shutdown...")
 
+	// Cancel the context to notify all goroutines to terminate
+	app.CancelFn()
+
+	// Set a timeout for graceful shutdown
+	shutdownChan := make(chan struct{})
+	go func() {
+		app.Wg.Wait()
+		close(shutdownChan)
+	}()
+
+	// Wait for graceful shutdown with timeout (5 sec)
+	select {
+	case <-shutdownChan:
+		logger.Log.Info().Msg("All goroutines shut down successfully")
+	case <-time.After(5 * time.Second):
+		logger.Log.Error().Msg("Shutdown timed out, forcing exit")
+	}
+
+	logger.Log.Info().Msg("Application stopped")
+}
+
+func run(app *App) error {
 	// Watchdog
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	app.Watchdog.Start(ctx)
-	defer app.Watchdog.Stop()
+	watchdog.Global().Start(app.Ctx)
 
 	// FetcherService
-	wg.Add(1)
+	app.Wg.Add(1)
 	go func() {
-		defer wg.Done()
-		app.FetcherService.Work(context.Background())
+		defer app.Wg.Done()
+		app.FetcherService.Work(app.Ctx)
 	}()
 
 	// HttpService
-	wg.Add(1)
+	app.Wg.Add(1)
 	go func() {
-		defer wg.Done()
-		app.HttpService.Work(context.Background())
+		defer app.Wg.Done()
+		app.HttpService.Work(app.Ctx)
 	}()
 
 	// AlertService
-	wg.Add(1)
+	app.Wg.Add(1)
 	go func() {
-		defer wg.Done()
-		app.AlertService.Work(context.Background())
+		defer app.Wg.Done()
+		app.AlertService.Work(app.Ctx)
 	}()
 
-	wg.Wait()
+	waitForStop(app)
 
 	log.Println("shutdown complete")
 	return nil

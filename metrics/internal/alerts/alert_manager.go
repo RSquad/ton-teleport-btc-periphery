@@ -4,9 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/watchdog"
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/mutils"
 	"github.com/xssnick/tonutils-go/address"
 )
@@ -17,7 +18,6 @@ type AlertManager struct {
 	dataSource      AlertDataSource
 	alertDispatcher AlertDispatcher
 	contractAddrs   map[string]*address.Address
-	watchdog        *utils.Watchdog
 
 	mu                  sync.RWMutex
 	alertStates         map[string]*AlertState
@@ -28,12 +28,11 @@ func NewAlertManager(
 	dataSource AlertDataSource,
 	alertDispatcher AlertDispatcher,
 	contractAddrs map[string]*address.Address,
-	watchdog *utils.Watchdog,
 ) (*AlertManager, error) {
 	alertFactory := NewAlertFactory(contractAddrs)
 
 	// Setup watchdog
-	watchdog.Watch("AlertManager")
+	watchdog.Global().Watch("AlertManager", time.Duration(300)*time.Second)
 
 	alertManager := AlertManager{
 		alertsFactory:       alertFactory,
@@ -41,7 +40,6 @@ func NewAlertManager(
 		dataSource:          dataSource,
 		alertDispatcher:     alertDispatcher,
 		contractAddrs:       contractAddrs,
-		watchdog:            watchdog,
 		alertStates:         make(map[string]*AlertState),
 		alertStatesEnforced: make(map[string]*AlertState),
 	}
@@ -104,7 +102,7 @@ func (manager *AlertManager) CheckAll() {
 		}
 	}
 
-	manager.watchdog.Heartbeat("AlertManager")
+	watchdog.Global().Heartbeat("AlertManager")
 }
 
 func (manager *AlertManager) LogAlertError(alertName string, err error) {

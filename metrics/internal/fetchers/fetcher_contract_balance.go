@@ -10,6 +10,7 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/watchdog"
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/config"
 	"github.com/xssnick/tonutils-go/address"
 )
@@ -20,7 +21,6 @@ type FetcherContractBalance struct {
 	addr      *address.Address
 	name      string
 	period    int64 // Fetch period (in seconds)
-	watchdog  *utils.Watchdog
 }
 
 func NewFetcherContractBalance(
@@ -29,7 +29,6 @@ func NewFetcherContractBalance(
 	cfg *config.ServicesConfig,
 	addr *address.Address,
 	name string,
-	watchdog *utils.Watchdog,
 ) *FetcherContractBalance {
 	return &FetcherContractBalance{
 		db:        db,
@@ -37,7 +36,6 @@ func NewFetcherContractBalance(
 		addr:      addr,
 		name:      name,
 		period:    int64(cfg.ContractBalancesFetchPeriod),
-		watchdog:  watchdog,
 	}
 }
 
@@ -56,8 +54,8 @@ func (fetcher *FetcherContractBalance) Work(ctx context.Context, wg *sync.WaitGr
 	defer ticker.Stop()
 
 	// Setup watchdog
-	fetcher.watchdog.Watch("FetcherContractBalance" + fetcher.name)
-	defer fetcher.watchdog.Unwatch("FetcherContractBalance" + fetcher.name)
+	watchdog.Global().Watch("FetcherContractBalance"+fetcher.name, time.Duration(fetcher.period*2)*time.Second)
+	defer watchdog.Global().Unwatch("FetcherContractBalance" + fetcher.name)
 
 	for {
 		select {
@@ -66,7 +64,7 @@ func (fetcher *FetcherContractBalance) Work(ctx context.Context, wg *sync.WaitGr
 			return
 		case <-ticker.C:
 			fetcher.Fetch()
-			fetcher.watchdog.Heartbeat("FetcherContractBalance" + fetcher.name)
+			watchdog.Global().Heartbeat("FetcherContractBalance" + fetcher.name)
 		}
 	}
 }

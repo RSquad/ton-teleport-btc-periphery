@@ -1,0 +1,70 @@
+{{ define "telegram.text" }}
+{{ $first := index .Alerts 0 }}
+{{ $severity := $first.Labels.severity }}
+{{ if eq .Status "firing" -}}
+{{ if eq $severity "warning" -}}
+⚠️ <b>FIRING</b>
+{{ else if eq $severity "critical" -}}
+🔴 <b>FIRING</b>
+{{ else -}}
+ℹ️ <b>INFO</b>
+{{ end -}}
+{{ else if eq .Status "resolved" -}}
+✅ <b>RESOLVED</b>
+{{ end -}}
+<b>{{ .CommonLabels.alertname }}</b>
+{{ range .Alerts -}}
+-----
+{{ if .Labels.name -}}
+<b>🎯Affected: </b>{{ .Labels.name }}
+{{ end -}}
+{{ if eq $.Status "firing" -}}
+<b>Date: </b>{{ .StartsAt.Format "Mon 02 Jan 15:04:05 MST 2006" }}
+{{ else if eq $.Status "resolved" -}}
+<b>Date: </b>{{ .EndsAt.Format "Mon 02 Jan 15:04:05 MST 2006" }}
+{{ end -}}
+{{ if .Annotations.summary -}}
+<b>Summary: </b>{{ .Annotations.summary }}
+{{ end -}}
+<b>Description: </b>{{ .Annotations.description }}
+{{ if or .Labels.balance .Labels.addr .Labels.instance .Labels.threshold -}}
+<b>Details:</b>
+{{ if .Annotations.contract_block -}}
+- <b>Contract block: </b>{{ .Annotations.contract_block }}
+{{ end -}}
+{{ if .Annotations.network_block -}}
+- <b>Network block: </b>{{ .Annotations.network_block }}
+{{ end -}}
+{{ if .Annotations.balance -}}
+- <b>Balance: </b>{{ .Annotations.balance }}
+{{ end -}}
+{{ if .Annotations.threshold -}}
+- <b>Threshold: </b>{{ .Annotations.threshold }}
+{{ end -}}
+{{ if .Annotations.namespace -}}
+- <b>Namespace: </b>{{ reReplaceAll ":.*" "" .Annotations.namespace }}
+{{ end -}}
+{{ if .Labels.name -}}
+- <b>Name: </b>{{ .Labels.name }}
+{{ end -}}
+{{ if .Annotations.contract_address -}}
+- <a href="https://testnet.tonviewer.com/{{ .Annotations.contract_address }}">{{ .Annotations.contract_address }}</a>
+{{ end -}}
+{{ if .Annotations.culprit_id -}}
+- <b>Culprit ID: </b>{{ .Annotations.culprit_id }}
+{{ end -}}
+{{ if .Annotations.not_evicted_ids -}}
+- <b>Not evicted IDs: </b>{{ .Annotations.not_evicted_ids }}
+{{ end -}}
+{{ if .Annotations.pegout_txid -}}
+- <a href="https://mempool.space/signet/tx/{{ .Annotations.pegout_txid }}">Bitcoin TX</a>
+{{ end -}}
+{{ if .Annotations.pegout_addr -}}
+- <a href="https://testnet.tonviewer.com/{{ .Annotations.pegout_addr }}">{{ .Annotations.pegout_addr }}</a>
+{{ end -}}
+{{ if .Annotations.last_pegout_txid -}}
+- <a href="https://mempool.space/signet/tx/{{ .Annotations.last_pegout_txid }}">{{ .Annotations.last_pegout_txid }}</a>
+{{ end -}}
+{{ end -}}
+{{ end -}}
+{{ end -}}
