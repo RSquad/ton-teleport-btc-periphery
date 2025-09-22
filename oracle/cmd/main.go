@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/signal"
 	"sync"
@@ -48,6 +49,18 @@ func startAndWaitForStop() error {
 		Str("component", "main").
 		Msg("Initializing")
 
+	// Watchdog
+	watchdog, err := utils.NewWatchdog(
+		80*time.Second,
+		func(id string, overdue time.Duration) {
+			logger.Log.Error().Msgf("WATCHDOG: %s missed heartbeat (overdue by %s)", id, overdue)
+		},
+	)
+	if err != nil {
+		return fmt.Errorf("failed to create watchdog: %w", err)
+	}
+	logger.Log.Info().Msg("WATCHDOG: created")
+
 	// Keystore
 	logger.Log.Info().Msgf("Create a new Keystore at path `%s`", cfg.KeystorePath)
 	keystore, err := keystore.New(cfg.KeystorePath)
@@ -87,6 +100,9 @@ func startAndWaitForStop() error {
 	ctx, cancelFn := context.WithCancel(context.Background())
 	wg := sync.WaitGroup{}
 
+	// Start watchdog
+	watchdog.Start(ctx)
+
 	// Coordinator contract
 	logger.Log.Info().Msgf("Create a new Coordinator contract wrapper with address `%s`", cfg.CoordinatorContractAddr)
 	apiCallTimeout := helpers.ParseIntWithDefaultVal(cfg.ApiCallTimeout, 30, "API call timeout")
@@ -99,6 +115,7 @@ func startAndWaitForStop() error {
 		validator,
 		fetchPeriod,
 		sendStartDKGPeriod,
+		watchdog,
 	)
 
 	// FROST sign service
@@ -108,6 +125,7 @@ func startAndWaitForStop() error {
 		coordinator.New(coordinatorContractAddr, tonClient, nil, ctx, apiCallTimeout),
 		tonClient,
 		executeSignPeriod,
+		watchdog,
 	)
 
 	wg.Add(1)
@@ -116,16 +134,19 @@ func startAndWaitForStop() error {
 	wg.Add(1)
 	go signService.Work(ctx, &wg)
 
-	waitForStop(sigChan, cancelFn, &wg)
+	waitForStop(sigChan, cancelFn, &wg, watchdog)
 
 	return nil
 }
 
-func waitForStop(sigChan <-chan os.Signal, cancelFn context.CancelFunc, wg *sync.WaitGroup) {
+func waitForStop(sigChan <-chan os.Signal, cancelFn context.CancelFunc, wg *sync.WaitGroup, watchdog *utils.Watchdog) {
 	// Wait for OS signal
 	sig := <-sigChan
 	logger.Log.Info().Str("signal", sig.String()).Msg("Received signal")
 	logger.Log.Info().Msg("Initiating graceful shutdown...")
+
+	// Stop watchdog
+	watchdog.Stop()
 
 	// Cancel the context to notify all goroutines to terminate
 	cancelFn()

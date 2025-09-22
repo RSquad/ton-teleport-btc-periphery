@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"sync"
+	"time"
 
 	_ "github.com/lib/pq"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
@@ -27,6 +28,7 @@ type App struct {
 	HttpService    *httpservice.HttpService
 	FetcherService *fetchers.FetcherService
 	AlertService   *alerts.AlertService
+	Watchdog       *utils.Watchdog
 }
 
 func main() {
@@ -63,6 +65,18 @@ func initialize() (*App, error) {
 	}
 
 	logger.Log.Debug().Msg(config.CfgToString(cfg))
+
+	// Watchdog
+	watchdog, err := utils.NewWatchdog(
+		80*time.Second,
+		func(id string, overdue time.Duration) {
+			logger.Log.Error().Msgf("WATCHDOG: %s missed heartbeat (overdue by %s)", id, overdue)
+		},
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create watchdog: %w", err)
+	}
+	logger.Log.Info().Msg("WATCHDOG: created")
 
 	// Bitcoin client
 	bitcoinClient, err := bitcoin.NewClient(
@@ -141,6 +155,7 @@ func initialize() (*App, error) {
 		cfg,
 		dbConnPool,
 		contractAddrs,
+		watchdog,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create fetchers: %w", err)
@@ -151,6 +166,7 @@ func initialize() (*App, error) {
 		alerts.NewAlertDataSourceLive(dbConnPool, bitcoinClient, globalRuntimeConfig, contractAddrs),
 		alerts.NewAlertDispatcherPrometheus(),
 		contractAddrs,
+		watchdog,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create alert manager: %w", err)
@@ -163,6 +179,7 @@ func initialize() (*App, error) {
 	alertsService := alerts.NewAlertService(
 		alertManager,
 		cfg,
+		watchdog,
 	)
 
 	// HTTP service
@@ -180,11 +197,18 @@ func initialize() (*App, error) {
 		FetcherService: fetcherService,
 		HttpService:    httpService,
 		AlertService:   alertsService,
+		Watchdog:       watchdog,
 	}, nil
 }
 
 func run(app *App) error {
 	var wg sync.WaitGroup
+
+	// Watchdog
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	app.Watchdog.Start(ctx)
+	defer app.Watchdog.Stop()
 
 	// FetcherService
 	wg.Add(1)

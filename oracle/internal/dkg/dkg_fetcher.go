@@ -7,23 +7,27 @@ import (
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
 )
 
 type Fetcher struct {
 	coordinatorContract coordinator.Coordinator
 	outChan             chan *coordinator.DKG
 	period              int64 // Fetch period (in seconds)
+	watchdog            *utils.Watchdog
 }
 
 func NewFetcher(
 	coordinatorContract coordinator.Coordinator,
 	outChan chan *coordinator.DKG,
 	period int64,
+	watchdog *utils.Watchdog,
 ) *Fetcher {
 	return &Fetcher{
 		coordinatorContract: coordinatorContract,
 		outChan:             outChan,
 		period:              period,
+		watchdog:            watchdog,
 	}
 }
 
@@ -34,6 +38,10 @@ func (f *Fetcher) Work(ctx context.Context, wg *sync.WaitGroup) {
 
 	ticker := time.NewTicker(time.Duration(f.period) * time.Second)
 	defer ticker.Stop()
+
+	// Setup watchdog
+	f.watchdog.Watch("DKGFetcher")
+	defer f.watchdog.Unwatch("DKGFetcher")
 
 	for {
 		select {
@@ -53,6 +61,8 @@ func (f *Fetcher) Work(ctx context.Context, wg *sync.WaitGroup) {
 					logger.Log.Debug().Msg("DKG Fetcher: Contract returns dkg==null")
 				}
 			}
+
+			f.watchdog.Heartbeat("DKGFetcher")
 		}
 	}
 }

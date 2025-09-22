@@ -9,6 +9,7 @@ import (
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/data_models"
 )
 
@@ -17,6 +18,7 @@ type FetcherBitcoinNetwork struct {
 	db            *sql.DB
 	bitcoinClient *bitcoin.Client
 	period        int64 // Fetch period (in seconds)
+	watchdog      *utils.Watchdog
 }
 
 func NewFetcherBitcoinNetwork(
@@ -24,12 +26,39 @@ func NewFetcherBitcoinNetwork(
 	db *sql.DB,
 	bitcoinClient *bitcoin.Client,
 	period int64,
+	watchdog *utils.Watchdog,
 ) *FetcherBitcoinNetwork {
 	return &FetcherBitcoinNetwork{
 		chDB:          chDB,
 		db:            db,
 		bitcoinClient: bitcoinClient,
 		period:        period,
+		watchdog:      watchdog,
+	}
+}
+
+func (fetcher *FetcherBitcoinNetwork) Work(ctx context.Context, wg *sync.WaitGroup) {
+	defer wg.Done()
+
+	defer logger.Log.Info().Msg("FetcherBitcoinNetwork: stopped")
+	logger.DefaultLogStartWork("FetcherBitcoinNetwork: starting...")
+
+	ticker := time.NewTicker(time.Duration(fetcher.period) * time.Second)
+	defer ticker.Stop()
+
+	// Setup watchdog
+	fetcher.watchdog.Watch("FetcherBitcoinNetwork")
+	defer fetcher.watchdog.Unwatch("FetcherBitcoinNetwork")
+
+	for {
+		select {
+		case <-ctx.Done():
+			logger.Log.Info().Msg("FetcherBitcoinNetwork received shutdown signal...")
+			return
+		case <-ticker.C:
+			fetcher.Fetch()
+			fetcher.watchdog.Heartbeat("FetcherBitcoinNetwork")
+		}
 	}
 }
 
@@ -60,25 +89,5 @@ func (fetcher *FetcherBitcoinNetwork) Fetch() {
 	fetcher.chDB <- PayloadDB{
 		typeId:  PayloadTypeBitcoinNetwork,
 		payload: string(jsonData),
-	}
-}
-
-func (fetcher *FetcherBitcoinNetwork) Work(ctx context.Context, wg *sync.WaitGroup) {
-	defer wg.Done()
-
-	defer logger.Log.Info().Msg("FetcherBitcoinNetwork: stopped")
-	logger.DefaultLogStartWork("FetcherBitcoinNetwork: starting...")
-
-	ticker := time.NewTicker(time.Duration(fetcher.period) * time.Second)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ctx.Done():
-			logger.Log.Info().Msg("FetcherBitcoinNetwork received shutdown signal...")
-			return
-		case <-ticker.C:
-			fetcher.Fetch()
-		}
 	}
 }

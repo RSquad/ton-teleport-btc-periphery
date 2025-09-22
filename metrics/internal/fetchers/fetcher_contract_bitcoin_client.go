@@ -10,6 +10,7 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/bitcoinclientcontract"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/data_models"
 )
 
@@ -19,6 +20,7 @@ type FetcherContractBitcoinClient struct {
 	bitcoinClient         *bitcoin.Client
 	bitcoinClientContract *bitcoinclientcontract.BitcoinClientContract
 	period                int64 // Fetch period (in seconds)
+	watchdog              *utils.Watchdog
 }
 
 func NewFetcherContractBitcoinClient(
@@ -27,6 +29,7 @@ func NewFetcherContractBitcoinClient(
 	bitcoinClient *bitcoin.Client,
 	bitcoinClientContract *bitcoinclientcontract.BitcoinClientContract,
 	period int64,
+	watchdog *utils.Watchdog,
 ) *FetcherContractBitcoinClient {
 	return &FetcherContractBitcoinClient{
 		chDB:                  chDB,
@@ -34,6 +37,7 @@ func NewFetcherContractBitcoinClient(
 		bitcoinClient:         bitcoinClient,
 		bitcoinClientContract: bitcoinClientContract,
 		period:                period,
+		watchdog:              watchdog,
 	}
 }
 
@@ -46,6 +50,10 @@ func (fetcher *FetcherContractBitcoinClient) Work(ctx context.Context, wg *sync.
 	ticker := time.NewTicker(time.Duration(fetcher.period) * time.Second)
 	defer ticker.Stop()
 
+	// Setup watchdog
+	fetcher.watchdog.Watch("FetcherContractBitcoinClient")
+	defer fetcher.watchdog.Unwatch("FetcherContractBitcoinClient")
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -53,6 +61,7 @@ func (fetcher *FetcherContractBitcoinClient) Work(ctx context.Context, wg *sync.
 			return
 		case <-ticker.C:
 			fetcher.Fetch()
+			fetcher.watchdog.Heartbeat("FetcherContractBitcoinClient")
 		}
 	}
 }

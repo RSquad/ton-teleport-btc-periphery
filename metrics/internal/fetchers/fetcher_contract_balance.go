@@ -20,6 +20,7 @@ type FetcherContractBalance struct {
 	addr      *address.Address
 	name      string
 	period    int64 // Fetch period (in seconds)
+	watchdog  *utils.Watchdog
 }
 
 func NewFetcherContractBalance(
@@ -28,6 +29,7 @@ func NewFetcherContractBalance(
 	cfg *config.ServicesConfig,
 	addr *address.Address,
 	name string,
+	watchdog *utils.Watchdog,
 ) *FetcherContractBalance {
 	return &FetcherContractBalance{
 		db:        db,
@@ -35,6 +37,7 @@ func NewFetcherContractBalance(
 		addr:      addr,
 		name:      name,
 		period:    int64(cfg.ContractBalancesFetchPeriod),
+		watchdog:  watchdog,
 	}
 }
 
@@ -52,13 +55,18 @@ func (fetcher *FetcherContractBalance) Work(ctx context.Context, wg *sync.WaitGr
 	ticker := time.NewTicker(time.Duration(fetcher.period) * time.Second)
 	defer ticker.Stop()
 
+	// Setup watchdog
+	fetcher.watchdog.Watch("FetcherContractBalance" + fetcher.name)
+	defer fetcher.watchdog.Unwatch("FetcherContractBalance" + fetcher.name)
+
 	for {
 		select {
 		case <-ctx.Done():
-			logger.Log.Info().Msg("FetcherContractBalances received shutdown signal...")
+			logger.Log.Info().Msg("FetcherContractBalance received shutdown signal...")
 			return
 		case <-ticker.C:
 			fetcher.Fetch()
+			fetcher.watchdog.Heartbeat("FetcherContractBalance" + fetcher.name)
 		}
 	}
 }
