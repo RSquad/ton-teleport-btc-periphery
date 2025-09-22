@@ -304,7 +304,7 @@
     },
     "timepicker": {},
     "timezone": "browser",
-    "title": "Metrics Severity",
+    "title": "Alerts",
     "uid": "cexq6rguh4ydcd",
-    "version": 3
+    "version": 4
 }
