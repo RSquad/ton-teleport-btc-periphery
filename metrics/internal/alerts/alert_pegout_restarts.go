@@ -55,7 +55,8 @@ func (alert *AlertPegoutRestarts) Check(dataSource AlertDataSource) (Severity, L
 
 	// Check if pegout is new: current is null or new PegoutAddress
 	if (alert.currentUnsignedPegout == nil) ||
-		(!alert.currentUnsignedPegout.PegoutAddress.Equals(unsignedPegout.PegoutAddress)) {
+		(!alert.currentUnsignedPegout.PegoutAddress.Equals(unsignedPegout.PegoutAddress)) ||
+		(alert.currentUnsignedPegout.ExpiredAt.Equal(time.Unix(0, 0))) {
 		// Save new unsigned pegout
 		alert.currentUnsignedPegout = unsignedPegout
 		alert.restartsCounter = 0

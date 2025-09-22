@@ -3,13 +3,18 @@ package alerts
 import (
 	"context"
 
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/mutils"
 )
 
-type AlertDkgParticipants struct{}
+type AlertDkgParticipants struct {
+	severity Severity
+}
 
 func NewAlertDkgParticipants() Alert {
-	return &AlertDkgParticipants{}
+	return &AlertDkgParticipants{
+		severity: SEVERITY_UNKNOWN,
+	}
 }
 
 func (alert *AlertDkgParticipants) NewLabels() Labels {
@@ -26,7 +31,11 @@ func (alert *AlertDkgParticipants) Check(dataSource AlertDataSource) (Severity, 
 	}
 
 	if dkg == nil {
-		return SEVERITY_OK, labels, nil, nil
+		return alert.severity, labels, nil, nil
+	}
+
+	if dkg.State != coordinator.DKGStateFinished {
+		return alert.severity, labels, nil, nil
 	}
 
 	coordinatorContractData, err := dataSource.CoordinatorContractStorageDB()
@@ -60,9 +69,9 @@ func (alert *AlertDkgParticipants) Check(dataSource AlertDataSource) (Severity, 
 	percentage := mutils.MulDivCeil(uint(count-evictedCount), 100, uint(count))
 
 	// Calulate severity
-	severity := alert.GetSeverity(percentage)
+	alert.severity = alert.GetSeverity(percentage)
 
-	return severity, labels, nil, nil
+	return alert.severity, labels, nil, nil
 }
 
 func (alert *AlertDkgParticipants) GetSeverity(percentage uint) Severity {
