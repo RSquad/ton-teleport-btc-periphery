@@ -10,7 +10,7 @@ func (alert *AlertTotalServiceFee) NewLabels() Labels {
 	return Labels{}
 }
 
-func (alert *AlertTotalServiceFee) Check(dataSource AlertDataSource) (Severity, Labels, IntValues, error) {
+func (alert *AlertTotalServiceFee) Check(dataSource AlertDataSource) (Severity, Labels, Values, error) {
 	labels := alert.NewLabels()
 
 	// Get last signed pegout

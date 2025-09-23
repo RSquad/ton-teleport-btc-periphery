@@ -22,7 +22,7 @@ func (alert *AlertPegoutCommintments) NewLabels() Labels {
 	}
 }
 
-func (alert *AlertPegoutCommintments) Check(dataSource AlertDataSource) (Severity, Labels, IntValues, error) {
+func (alert *AlertPegoutCommintments) Check(dataSource AlertDataSource) (Severity, Labels, Values, error) {
 	labels := alert.NewLabels()
 
 	// Get first unsigned pegout

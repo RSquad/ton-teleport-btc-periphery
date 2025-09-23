@@ -21,7 +21,7 @@ func (alert *AlertDkgParticipants) NewLabels() Labels {
 	return Labels{}
 }
 
-func (alert *AlertDkgParticipants) Check(dataSource AlertDataSource) (Severity, Labels, IntValues, error) {
+func (alert *AlertDkgParticipants) Check(dataSource AlertDataSource) (Severity, Labels, Values, error) {
 	labels := alert.NewLabels()
 
 	// Get DKG
