@@ -53,13 +53,18 @@ type SysDkgInfo struct {
 	Timeout               int
 }
 
+type BtcTxStatus int
+
+const (
+	BTC_TX_NOT_PUBLISHED BtcTxStatus = iota
+	BTC_TX_IN_MEMPOOL    BtcTxStatus = 1
+	BTC_TX_IN_BLOCK      BtcTxStatus = 2
+)
+
 type SysLastPegoutTxInfo struct {
-	IsInternalKeyCorrect    bool
-	IsInternalKeyCorrectStr string
-	IsSigned                bool
-	IsSignedStr             string
-	BitcoinMempool          int
-	CPFP                    int
+	BtcTxStatus        BtcTxStatus
+	BitcoinMempoolTime int
+	CPFP               int
 }
 
 type SysPegoutSigningInfo struct {
@@ -78,6 +83,8 @@ type SysPegoutSigningInfo struct {
 	SignersCommitmentInactiveIdx []int
 	SignersEvicted               int
 	SignersEvictedIdx            []int
+	IsInternalKeyCorrect         bool
+	IsInternalKeyCorrectStr      string
 }
 
 type SysBalancesInfo struct {

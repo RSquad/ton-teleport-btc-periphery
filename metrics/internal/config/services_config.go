@@ -218,8 +218,8 @@ JettonMinterContractAddr: %s
 RelayerWalletAddr: %s
 DatabaseMaxConn: %d
 DatabaseMaxIdleConn: %d
-HttpPort: %d                        ,
-AlertsTestApiEnable: %t,
+HttpPort: %d
+AlertsTestApiEnable: %t
 WriterDbChainSize: %d
 DkgFetchPeriod: %d sec.
 BitcoinClientContractFetchPeriod: %d sec.

@@ -157,7 +157,13 @@ func initialize() (*App, error) {
 	}
 
 	// Metrics manager
-	metricsManager := metrics.NewMetricsManager(dbConnPool, globalRuntimeConfig, contractAddrs, alertManager)
+	metricsManager := metrics.NewMetricsManager(
+		dbConnPool,
+		globalRuntimeConfig,
+		contractAddrs,
+		alertManager,
+		bitcoinClient,
+	)
 
 	// Alerts service
 	alertsService := alerts.NewAlertService(
