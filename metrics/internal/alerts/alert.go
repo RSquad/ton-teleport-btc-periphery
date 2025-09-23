@@ -4,7 +4,7 @@ import "fmt"
 
 type Severity int
 type Labels map[string]string
-type IntValues map[string]int64
+type Values map[string]any
 
 const (
 	SEVERITY_UNKNOWN  Severity = -1
@@ -15,7 +15,7 @@ const (
 )
 
 type Alert interface {
-	Check(dataSource AlertDataSource) (Severity, Labels, IntValues, error)
+	Check(dataSource AlertDataSource) (Severity, Labels, Values, error)
 	NewLabels() Labels
 }
 

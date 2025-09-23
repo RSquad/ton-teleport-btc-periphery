@@ -20,7 +20,7 @@ func (alert *AlertPegoutFeeNotReset) NewLabels() Labels {
 	}
 }
 
-func (alert *AlertPegoutFeeNotReset) Check(dataSource AlertDataSource) (Severity, Labels, IntValues, error) {
+func (alert *AlertPegoutFeeNotReset) Check(dataSource AlertDataSource) (Severity, Labels, Values, error) {
 	labels := alert.NewLabels()
 
 	// Get last signed pegout

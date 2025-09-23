@@ -11,16 +11,18 @@ import (
 )
 
 type AlertDkgCulpritFound struct {
-	DkgUntil time.Time
-	Labels   Labels
-	Severity Severity
+	DkgUntil   time.Time
+	Labels     Labels
+	Severity   Severity
+	CulpritIds map[int]struct{}
 }
 
 func NewAlertDkgCulpritFound() Alert {
 	return &AlertDkgCulpritFound{
-		DkgUntil: time.Unix(0, 0),
-		Labels:   Labels{},
-		Severity: SEVERITY_UNKNOWN,
+		DkgUntil:   time.Unix(0, 0),
+		Labels:     Labels{},
+		Severity:   SEVERITY_UNKNOWN,
+		CulpritIds: make(map[int]struct{}, 0),
 	}
 }
 
@@ -31,13 +33,13 @@ func (alert *AlertDkgCulpritFound) NewLabels() Labels {
 	}
 }
 
-func (alert *AlertDkgCulpritFound) Check(dataSource AlertDataSource) (Severity, Labels, IntValues, error) {
+func (alert *AlertDkgCulpritFound) Check(dataSource AlertDataSource) (Severity, Labels, Values, error) {
 	labels := alert.NewLabels()
 
 	// Get DKG
 	dkg, err := dataSource.DkgDB()
 	if err != nil {
-		return SEVERITY_UNKNOWN, labels, nil, err
+		return SEVERITY_UNKNOWN, labels, alert.MakeValues(), err
 	}
 
 	// No DKG
@@ -45,7 +47,8 @@ func (alert *AlertDkgCulpritFound) Check(dataSource AlertDataSource) (Severity, 
 		alert.DkgUntil = time.Unix(0, 0)
 		alert.Labels = labels
 		alert.Severity = SEVERITY_OK
-		return alert.Severity, alert.Labels, nil, nil
+		alert.CulpritIds = make(map[int]struct{}, 0)
+		return alert.Severity, alert.Labels, alert.MakeValues(), nil
 	}
 
 	// First DKG try
@@ -53,19 +56,20 @@ func (alert *AlertDkgCulpritFound) Check(dataSource AlertDataSource) (Severity, 
 		alert.DkgUntil = dkg.Until
 		alert.Labels = labels
 		alert.Severity = SEVERITY_OK
-		return alert.Severity, alert.Labels, nil, nil
+		alert.CulpritIds = make(map[int]struct{}, 0)
+		return alert.Severity, alert.Labels, alert.MakeValues(), nil
 	}
 
 	// Check for restart
 	if alert.DkgUntil.Equal(dkg.Until) {
 		// No restart
-		return alert.Severity, alert.Labels, nil, nil
+		return alert.Severity, alert.Labels, alert.MakeValues(), nil
 	}
 
 	// Get DKG info before restart
 	dkgBeforeRestart, err := dataSource.DkgBeforeRestartDB(alert.DkgUntil)
 	if err != nil {
-		return SEVERITY_UNKNOWN, labels, nil, err
+		return SEVERITY_UNKNOWN, labels, alert.MakeValues(), err
 	}
 	alert.DkgUntil = dkg.Until
 
@@ -73,12 +77,12 @@ func (alert *AlertDkgCulpritFound) Check(dataSource AlertDataSource) (Severity, 
 	if dkgBeforeRestart.Claims != nil && len(dkgBeforeRestart.Claims.Counters) > 0 {
 		coordinatorContractData, err := dataSource.CoordinatorContractStorageDB()
 		if err != nil {
-			return SEVERITY_UNKNOWN, labels, nil, err
+			return SEVERITY_UNKNOWN, labels, alert.MakeValues(), err
 		}
 
 		prevDkg, err := dataSource.PrevDkgDB()
 		if err != nil {
-			return SEVERITY_UNKNOWN, labels, nil, err
+			return SEVERITY_UNKNOWN, labels, alert.MakeValues(), err
 		}
 
 		culpritId, listOfNotEvicted := alert.Extract(
@@ -88,10 +92,12 @@ func (alert *AlertDkgCulpritFound) Check(dataSource AlertDataSource) (Severity, 
 		)
 
 		if culpritId >= 0 {
-			alert.Labels["culprit_id"] = strconv.FormatInt(int64(culpritId), 10)
-		} else {
-			alert.Labels["culprit_id"] = ""
+			alert.CulpritIds[culpritId] = struct{}{}
 		}
+
+		culpritIdsStr := mutils.ExtractMapKeysConv(alert.CulpritIds, strconv.Itoa)
+
+		alert.Labels["culprit_id"] = strings.Join(culpritIdsStr, ",")
 		alert.Labels["not_evicted_ids"] = strings.Join(listOfNotEvicted, ",")
 		alert.Severity = SEVERITY_CRITICAL
 	} else {
@@ -99,7 +105,7 @@ func (alert *AlertDkgCulpritFound) Check(dataSource AlertDataSource) (Severity, 
 		alert.Severity = SEVERITY_OK
 	}
 
-	return alert.Severity, alert.Labels, nil, nil
+	return alert.Severity, alert.Labels, alert.MakeValues(), nil
 }
 
 func (alert *AlertDkgCulpritFound) Extract(
@@ -124,4 +130,13 @@ func (alert *AlertDkgCulpritFound) Extract(
 	}
 
 	return culpritId, listOfNotEvicted
+}
+
+func (alert *AlertDkgCulpritFound) MakeValues() Values {
+	values := make(Values, 1)
+
+	culpritIds := mutils.ExtractMapKeys(alert.CulpritIds)
+	values["culprit_id"] = culpritIds
+
+	return values
 }

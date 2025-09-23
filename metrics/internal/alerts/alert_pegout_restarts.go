@@ -26,25 +26,25 @@ func (alert *AlertPegoutRestarts) NewLabels() Labels {
 	}
 }
 
-func (alert *AlertPegoutRestarts) Check(dataSource AlertDataSource) (Severity, Labels, IntValues, error) {
+func (alert *AlertPegoutRestarts) Check(dataSource AlertDataSource) (Severity, Labels, Values, error) {
 	labels := alert.NewLabels()
 
 	// Get first unsigned pegout
 	unsignedPegout, err := dataSource.FirstUnsignedPegoutDB()
 	if err != nil {
-		return SEVERITY_UNKNOWN, labels, alert.MakeIntValues(), err
+		return SEVERITY_UNKNOWN, labels, alert.MakeValues(), err
 	}
 
 	// No unsigned pegouts
 	if unsignedPegout == nil {
 		alert.restartsCounter = 0
-		return SEVERITY_OK, labels, alert.MakeIntValues(), nil
+		return SEVERITY_OK, labels, alert.MakeValues(), nil
 	}
 
 	// Get pegout record from DB
 	pegout, err := dataSource.PegoutDB(unsignedPegout.PegoutAddress)
 	if err != nil {
-		return SEVERITY_UNKNOWN, labels, alert.MakeIntValues(), err
+		return SEVERITY_UNKNOWN, labels, alert.MakeValues(), err
 	}
 
 	// Update labels
@@ -55,12 +55,13 @@ func (alert *AlertPegoutRestarts) Check(dataSource AlertDataSource) (Severity, L
 
 	// Check if pegout is new: current is null or new PegoutAddress
 	if (alert.currentUnsignedPegout == nil) ||
-		(!alert.currentUnsignedPegout.PegoutAddress.Equals(unsignedPegout.PegoutAddress)) {
+		(!alert.currentUnsignedPegout.PegoutAddress.Equals(unsignedPegout.PegoutAddress)) ||
+		(alert.currentUnsignedPegout.ExpiredAt.Equal(time.Unix(0, 0))) {
 		// Save new unsigned pegout
 		alert.currentUnsignedPegout = unsignedPegout
 		alert.restartsCounter = 0
 
-		return SEVERITY_OK, labels, alert.MakeIntValues(), nil
+		return SEVERITY_OK, labels, alert.MakeValues(), nil
 	}
 
 	// Check for restart
@@ -75,7 +76,7 @@ func (alert *AlertPegoutRestarts) Check(dataSource AlertDataSource) (Severity, L
 	// Calulate severity
 	severity := alert.GetSeverity()
 
-	return severity, labels, alert.MakeIntValues(), nil
+	return severity, labels, alert.MakeValues(), nil
 }
 
 func (alert *AlertPegoutRestarts) GetSeverity() Severity {
@@ -90,8 +91,8 @@ func (alert *AlertPegoutRestarts) GetSeverity() Severity {
 	return severity
 }
 
-func (alert *AlertPegoutRestarts) MakeIntValues() IntValues {
-	intValues := make(IntValues, 1)
+func (alert *AlertPegoutRestarts) MakeValues() Values {
+	intValues := make(Values, 1)
 	intValues["restarts"] = int64(alert.restartsCounter)
 
 	return intValues

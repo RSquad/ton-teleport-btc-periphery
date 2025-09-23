@@ -69,7 +69,7 @@ func (manager *AlertManager) CheckAll() {
 		}
 
 		if state == nil { // State in not enforced
-			severity, labels, intValues, err := alert.Check(manager.dataSource)
+			severity, labels, values, err := alert.Check(manager.dataSource)
 
 			state = NewAlertState(
 				alertName,
@@ -77,7 +77,7 @@ func (manager *AlertManager) CheckAll() {
 				labels,
 				err,
 				false,
-				intValues,
+				values,
 			)
 
 			if err != nil {

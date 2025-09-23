@@ -35,6 +35,14 @@ func ExtractMapKeys[K comparable, V any](m map[K]V) []K {
 	return keys
 }
 
+func ExtractMapKeysConv[K comparable, Val any, Out any](m map[K]Val, conv func(K) Out) []Out {
+	out := make([]Out, 0, len(m))
+	for k := range m {
+		out = append(out, conv(k))
+	}
+	return out
+}
+
 func JoinToStr[K ~string](keys []K) string {
 	if len(keys) == 0 {
 		return ""
