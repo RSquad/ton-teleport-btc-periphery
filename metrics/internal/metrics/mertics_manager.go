@@ -7,6 +7,7 @@ import (
 	"math/big"
 
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/teleportcontract"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/alerts"
@@ -22,6 +23,7 @@ type MetricsManager struct {
 	globalRuntimeConfig *config.GlobalRuntimeConfig
 	contractAddrs       map[string]*address.Address
 	alertManager        *alerts.AlertManager
+	bitcoinClient       *bitcoin.Client
 }
 
 func NewMetricsManager(
@@ -29,6 +31,7 @@ func NewMetricsManager(
 	globalRuntimeConfig *config.GlobalRuntimeConfig,
 	contractAddrs map[string]*address.Address,
 	alertManager *alerts.AlertManager,
+	bitcoinClient *bitcoin.Client,
 ) *MetricsManager {
 	return &MetricsManager{
 		db:                  db,
@@ -36,6 +39,7 @@ func NewMetricsManager(
 		globalRuntimeConfig: globalRuntimeConfig,
 		contractAddrs:       contractAddrs,
 		alertManager:        alertManager,
+		bitcoinClient:       bitcoinClient,
 	}
 }
 
@@ -535,5 +539,7 @@ func (manager *MetricsManager) SystemInfoJson() (string, error) {
 		manager.dataSourceDB,
 		manager.alertManager,
 		manager.contractAddrs,
-		manager.globalRuntimeConfig)
+		manager.globalRuntimeConfig,
+		manager.bitcoinClient,
+	)
 }

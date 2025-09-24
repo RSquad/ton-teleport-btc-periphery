@@ -4,7 +4,9 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"time"
 
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/alerts"
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/config"
@@ -21,8 +23,19 @@ func (systemInfo *MetricsSystemInfo) SystemInfoJson(
 	alertManager *alerts.AlertManager,
 	contractAddrs map[string]*address.Address,
 	globalRuntimeConfig *config.GlobalRuntimeConfig,
+	bitcoinClient *bitcoin.Client,
 ) (string, error) {
 	sysDkgInfo, err := systemInfo.SysDkgInfo(dataSourceDB, alertManager, contractAddrs, globalRuntimeConfig)
+	if err != nil {
+		return "", err
+	}
+
+	sysLastPegoutTxInfo, err := systemInfo.SysLastPegoutTxInfo(dataSourceDB, bitcoinClient)
+	if err != nil {
+		return "", err
+	}
+
+	sysPegoutSigningInfo, err := systemInfo.PegoutSigningInfo(dataSourceDB)
 	if err != nil {
 		return "", err
 	}
@@ -32,12 +45,17 @@ func (systemInfo *MetricsSystemInfo) SystemInfoJson(
 		return "", err
 	}
 
+	sysTeleportInfo, err := systemInfo.TeleportInfo(dataSourceDB)
+	if err != nil {
+		return "", err
+	}
+
 	info := SystemInfo{
 		DkgInfo:           sysDkgInfo,
-		LastPegoutTxInfo:  nil,
-		PegoutSigningInfo: nil,
+		LastPegoutTxInfo:  sysLastPegoutTxInfo,
+		PegoutSigningInfo: sysPegoutSigningInfo,
 		BalancesInfo:      sysBalancesInfo,
-		TeleportInfo:      nil,
+		TeleportInfo:      sysTeleportInfo,
 	}
 
 	jsonData, err := json.Marshal(info)
@@ -95,6 +113,80 @@ func (systemInfo *MetricsSystemInfo) SysDkgInfo(
 		ValidatorsEvictedIdx:  mutils.ExtractMapKeys(dkgStatus.DkgInfo.ValidatorsIdxEvicted),
 
 		Timeout: 0, // TODO: implement
+	}, nil
+}
+
+func (systemInfo *MetricsSystemInfo) SysLastPegoutTxInfo(
+	dataSourceDB *data_sources.DataSourceDB,
+	bitcoinClient *bitcoin.Client,
+) (*SysLastPegoutTxInfo, error) {
+	lastSignedPegout, err := dataSourceDB.LastSignedPegout()
+	if err != nil {
+		return nil, err
+	}
+
+	// BtcTxStatus
+	btcTxStatus := BTC_TX_NOT_PUBLISHED
+	btcTxTimestamp := int64(0)
+	{
+		{
+			btcMempoolEntry, err := bitcoinClient.RPCClient.GetMempoolEntry(mutils.BytesToBTCHash(lastSignedPegout.BitcoinTxId).String())
+			if err == nil {
+				if btcMempoolEntry != nil {
+					btcTxTimestamp = btcMempoolEntry.Time
+					btcTxStatus = BTC_TX_IN_MEMPOOL
+				}
+			}
+		}
+
+		// Check block
+		if btcTxStatus == BTC_TX_NOT_PUBLISHED {
+			btcBlockHash, err := bitcoinClient.GetBlockHashByTxID(mutils.BytesToBTCHash(lastSignedPegout.BitcoinTxId))
+			if err == nil {
+				if btcBlockHash != nil {
+					btcTxStatus = BTC_TX_IN_BLOCK
+				}
+			}
+		}
+	}
+
+	// BitcoinMempoolTime
+	bitcoinMempoolTime := int64(0)
+	if btcTxStatus == BTC_TX_IN_MEMPOOL {
+		bitcoinMempoolTime = int64(time.Duration(time.Now().Unix()-btcTxTimestamp) * time.Second)
+	}
+
+	return &SysLastPegoutTxInfo{
+		BtcTxStatus:        btcTxStatus,
+		BitcoinMempoolTime: int(bitcoinMempoolTime),
+		CPFP:               -1, // TODO: implement CPFP
+	}, nil
+}
+
+func (systemInfo *MetricsSystemInfo) PegoutSigningInfo(
+	dataSourceDB *data_sources.DataSourceDB,
+) (*SysPegoutSigningInfo, error) {
+
+	// TODO: implement
+
+	return &SysPegoutSigningInfo{
+		Id:                           123,
+		Restarts:                     0,
+		CulpritsIdx:                  make([]int, 0),
+		Until:                        time.Now(),
+		Signers:                      89,
+		QueueLength:                  3,
+		IsSigned:                     true,
+		IsSignedStr:                  "Yes",
+		SignersMax:                   100,
+		SignersCommitmentActive:      89,
+		SignersCommitmentActiveIdx:   make([]int, 89),
+		SignersCommitmentInactive:    19,
+		SignersCommitmentInactiveIdx: make([]int, 19),
+		SignersEvicted:               0,
+		SignersEvictedIdx:            make([]int, 0),
+		IsInternalKeyCorrect:         true,
+		IsInternalKeyCorrectStr:      "Internal Key Is Correct",
 	}, nil
 }
 
@@ -169,6 +261,25 @@ func (systemInfo *MetricsSystemInfo) BalancesInfo(
 		RelayerStr:          mutils.NanoIntToString(relayer),
 		RelayerAddr:         contractAddrs["relayer"],
 		RelayerSeverity:     relayerAlertState.Severity,
+	}, nil
+}
+
+func (systemInfo *MetricsSystemInfo) TeleportInfo(
+	dataSourceDB *data_sources.DataSourceDB,
+) (*SysTeleportInfo, error) {
+
+	// TODO: implement
+
+	return &SysTeleportInfo{
+		UTXO:                       0,
+		IsSameInputInternalKey:     true,
+		IsSameInputInternalKeyStr:  "The same input internal key",
+		TimeSinceLastAutopegout:    300,
+		TimeSinceLastAutopegoutStr: "5 min",
+		ServiceFee:                 -140,
+		LastConfirmed:              0,
+		LastBtc_LastTon:            3,
+		LastTon_PegoutBlock:        45,
 	}, nil
 }
 

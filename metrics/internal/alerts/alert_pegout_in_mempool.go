@@ -104,7 +104,6 @@ func (alert *AlertPegoutInMempool) Check(dataSource AlertDataSource) (Severity, 
 		duration := time.Duration(dataSource.NowUnixTs()-alert.beginTimestamp) * time.Second
 		severity = alert.GetSeverity(duration)
 	} else {
-		// isInMempoolOrBlock == true
 		alert.pegoutToCheck = nil
 	}
 
