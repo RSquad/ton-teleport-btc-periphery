@@ -191,6 +191,30 @@ func (dataSource *DataSourceDB) Pegout(address *address.Address) (*data_models.P
 	return pegout, nil
 }
 
+func (dataSource *DataSourceDB) LastConfirmedPegoutJson() ([]byte, error) {
+	return dataSource.selectAsJsonObj(
+		"SELECT row_to_json(t) FROM (SELECT * FROM public.pegouts WHERE status = 'CONFIRMED' ORDER BY id DESC LIMIT 1) t",
+	)
+}
+
+func (dataSource *DataSourceDB) LastConfirmedPegout() (*data_models.Pegout, error) {
+	jsonData, err := dataSource.LastConfirmedPegoutJson()
+	if err != nil {
+		return nil, err
+	}
+
+	if jsonData == nil {
+		return nil, nil
+	}
+
+	pegout, err := data_models.DeserializePegoutDB(jsonData)
+	if err != nil {
+		return nil, err
+	}
+
+	return pegout, nil
+}
+
 func (dataSource *DataSourceDB) LastSignedPegoutJson() ([]byte, error) {
 	return dataSource.selectAsJsonObj(
 		"SELECT row_to_json(t) FROM (SELECT * FROM public.pegouts WHERE status = 'SIGNED' ORDER BY id DESC LIMIT 1) t",

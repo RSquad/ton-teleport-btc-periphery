@@ -1,20 +1,25 @@
 package mutils
 
 import (
+	"bytes"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 )
 
 func BytesToBTCHash(b []byte) *chainhash.Hash {
-	if len(b) > chainhash.HashSize {
-		b = b[:chainhash.HashSize]
+	bb := bytes.Clone(b)
+
+	if len(bb) > chainhash.HashSize {
+		bb = bb[:chainhash.HashSize]
 	}
 
 	var h chainhash.Hash
 
-	copy(h[:], b)
+	slices.Reverse(bb)
+	copy(h[:], bb)
 	return &h
 }
 

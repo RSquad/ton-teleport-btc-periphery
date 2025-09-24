@@ -84,11 +84,12 @@ func (apiHandler JsonApiHandler) ServeHTTP(w http.ResponseWriter, r *http.Reques
 			return
 		}
 
-		if len(payload) == 0 {
-			payload = "{}"
+		if err == nil {
+			if len(payload) == 0 {
+				payload = "{}"
+			}
+			apiHandler.cache.Set(queryParams.Encode(), payload, 30*time.Second)
 		}
-
-		apiHandler.cache.Set(queryParams.Encode(), payload, 30*time.Second)
 	}
 
 	if err != nil {
