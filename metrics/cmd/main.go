@@ -88,7 +88,7 @@ func initialize() (*App, error) {
 		10*time.Second,
 		60*time.Second,
 		func(id string, overdue time.Duration) {
-			logger.Log.Error().Str("component", "WATCHDOG").Msgf("'%s' missed heartbeat (overdue by %s)", id, overdue)
+			logger.Log.Error().Str("component", "WATCHDOG").Msgf("'%s' is not responding! Last seen %s seconds ago", id, overdue)
 		},
 	)
 	if err != nil {

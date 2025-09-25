@@ -10,7 +10,7 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 )
 
-type WatchdogOverdueCallback func(id string, overdue time.Duration)
+type OverdueCallback func(id string, overdue time.Duration)
 
 type Element struct {
 	lastHeartbeat time.Time
@@ -18,10 +18,10 @@ type Element struct {
 	period        time.Duration
 }
 
-type Watchdog struct {
+type Manager struct {
 	scanPeriod      time.Duration
 	firePeriod      time.Duration
-	overdueCallback WatchdogOverdueCallback
+	overdueCallback OverdueCallback
 
 	mu            sync.Mutex
 	lastHeartbeat map[string]Element
@@ -31,8 +31,8 @@ type Watchdog struct {
 func NewWatchdog(
 	scanPeriod time.Duration,
 	firePeriod time.Duration,
-	overdueCallback WatchdogOverdueCallback,
-) (*Watchdog, error) {
+	overdueCallback OverdueCallback,
+) (*Manager, error) {
 	if scanPeriod <= 0 {
 		return nil, errors.New("watchdog scanPeriod must be > 0")
 	}
@@ -45,7 +45,7 @@ func NewWatchdog(
 		return nil, errors.New("watchdog overdue callback is null")
 	}
 
-	return &Watchdog{
+	return &Manager{
 		scanPeriod:      scanPeriod,
 		firePeriod:      firePeriod,
 		overdueCallback: overdueCallback,
@@ -53,12 +53,12 @@ func NewWatchdog(
 	}, nil
 }
 
-var globalInstance *Watchdog = nil
+var globalInstance *Manager = nil
 
 func InitGlobal(
 	scanPeriod time.Duration,
 	firePeriod time.Duration,
-	overdueCallback WatchdogOverdueCallback,
+	overdueCallback OverdueCallback,
 ) error {
 	var err error
 	globalInstance, err = NewWatchdog(scanPeriod, firePeriod, overdueCallback)
@@ -73,18 +73,18 @@ func InitGlobal(
 	return nil
 }
 
-func Global() *Watchdog {
+func Global() *Manager {
 	return globalInstance
 }
 
-func (w *Watchdog) Start(ctx context.Context) {
+func (w *Manager) Start(ctx context.Context) {
 	w.wg.Add(1)
 	go func() {
 		defer w.wg.Done()
 
 		logger.Log.Info().Str("component", "WATCHDOG").Msg("Started")
 
-		t := time.NewTicker(w.scanPeriod / 2)
+		t := time.NewTicker(w.scanPeriod)
 		defer t.Stop()
 
 		for {
@@ -98,7 +98,7 @@ func (w *Watchdog) Start(ctx context.Context) {
 	}()
 }
 
-func (w *Watchdog) Watch(id string, period time.Duration) {
+func (w *Manager) Watch(id string, period time.Duration) {
 	logger.Log.Debug().Str("component", "WATCHDOG").Msgf("Watch '%s'", id)
 
 	now := time.Now()
@@ -114,7 +114,7 @@ func (w *Watchdog) Watch(id string, period time.Duration) {
 	w.mu.Unlock()
 }
 
-func (w *Watchdog) Unwatch(id string) {
+func (w *Manager) Unwatch(id string) {
 	logger.Log.Debug().Str("component", "WATCHDOG").Msgf("Unwatch '%s'", id)
 
 	w.mu.Lock()
@@ -122,7 +122,7 @@ func (w *Watchdog) Unwatch(id string) {
 	w.mu.Unlock()
 }
 
-func (w *Watchdog) Heartbeat(id string) {
+func (w *Manager) Heartbeat(id string) {
 	logger.Log.Debug().Str("component", "WATCHDOG").Msgf("Heartbeat '%s'", id)
 
 	now := time.Now()
@@ -134,7 +134,7 @@ func (w *Watchdog) Heartbeat(id string) {
 	w.mu.Unlock()
 }
 
-func (w *Watchdog) scan() {
+func (w *Manager) scan() {
 	now := time.Now()
 	var overdueIDs []string
 	var overdues []time.Duration
@@ -144,13 +144,12 @@ func (w *Watchdog) scan() {
 		defer w.mu.Unlock()
 
 		for id, last := range w.lastHeartbeat {
-
 			// Check overdue
-			if d := now.Sub(last.lastHeartbeat); d > last.period {
+			if dt := time.Since(last.lastHeartbeat); dt > last.period {
 				// Check firePeriod
 				if fd := now.Sub(last.lastFire); fd > w.firePeriod {
 					overdueIDs = append(overdueIDs, id)
-					overdues = append(overdues, d)
+					overdues = append(overdues, dt)
 				}
 			}
 		}
