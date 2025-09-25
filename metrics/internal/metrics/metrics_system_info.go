@@ -125,10 +125,20 @@ func (systemInfo *MetricsSystemInfo) SysLastPegoutTxInfo(
 		return nil, err
 	}
 
+	if lastSignedPegout == nil {
+		lastSignedPegout, err = dataSourceDB.LastConfirmedPegout()
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	// BtcTxStatus
 	btcTxStatus := BTC_TX_NOT_PUBLISHED
-	btcTxTimestamp := int64(0)
-	{
+	bitcoinMempoolTime := int64(0)
+
+	if lastSignedPegout != nil {
+		btcTxTimestamp := int64(0)
+
 		{
 			btcMempoolEntry, err := bitcoinClient.RPCClient.GetMempoolEntry(mutils.BytesToBTCHash(lastSignedPegout.BitcoinTxId).String())
 			if err == nil {
@@ -148,12 +158,11 @@ func (systemInfo *MetricsSystemInfo) SysLastPegoutTxInfo(
 				}
 			}
 		}
-	}
 
-	// BitcoinMempoolTime
-	bitcoinMempoolTime := int64(0)
-	if btcTxStatus == BTC_TX_IN_MEMPOOL {
-		bitcoinMempoolTime = int64(time.Duration(time.Now().Unix()-btcTxTimestamp) * time.Second)
+		// BitcoinMempoolTime
+		if (btcTxStatus == BTC_TX_NOT_PUBLISHED) || (btcTxStatus == BTC_TX_IN_MEMPOOL) {
+			bitcoinMempoolTime = int64(time.Duration(time.Now().Unix()-btcTxTimestamp) * time.Second)
+		}
 	}
 
 	return &SysLastPegoutTxInfo{

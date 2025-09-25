@@ -30,6 +30,9 @@ func (alert *AlertPegoutFeeNotReset) Check(dataSource AlertDataSource) (Severity
 	}
 
 	if pegout == nil {
+
+		// TODO: add LastConfirmedPegout...
+
 		return SEVERITY_OK, labels, nil, nil
 	}
 
