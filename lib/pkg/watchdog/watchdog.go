@@ -23,9 +23,9 @@ type Manager struct {
 	firePeriod      time.Duration
 	overdueCallback OverdueCallback
 
-	mu            sync.Mutex
-	lastHeartbeat map[string]Element
-	wg            sync.WaitGroup
+	mu       sync.Mutex
+	elements map[string]Element
+	wg       sync.WaitGroup
 }
 
 func NewWatchdog(
@@ -49,7 +49,7 @@ func NewWatchdog(
 		scanPeriod:      scanPeriod,
 		firePeriod:      firePeriod,
 		overdueCallback: overdueCallback,
-		lastHeartbeat:   make(map[string]Element),
+		elements:        make(map[string]Element),
 	}, nil
 }
 
@@ -110,7 +110,7 @@ func (w *Manager) Watch(id string, period time.Duration) {
 	}
 
 	w.mu.Lock()
-	w.lastHeartbeat[id] = element
+	w.elements[id] = element
 	w.mu.Unlock()
 }
 
@@ -118,7 +118,7 @@ func (w *Manager) Unwatch(id string) {
 	logger.Log.Debug().Str("component", "WATCHDOG").Msgf("Unwatch '%s'", id)
 
 	w.mu.Lock()
-	delete(w.lastHeartbeat, id)
+	delete(w.elements, id)
 	w.mu.Unlock()
 }
 
@@ -127,9 +127,9 @@ func (w *Manager) Heartbeat(id string) {
 
 	now := time.Now()
 	w.mu.Lock()
-	if e, ok := w.lastHeartbeat[id]; ok {
+	if e, ok := w.elements[id]; ok {
 		e.lastHeartbeat = now
-		w.lastHeartbeat[id] = e
+		w.elements[id] = e
 	}
 	w.mu.Unlock()
 }
@@ -143,7 +143,7 @@ func (w *Manager) scan() {
 		w.mu.Lock()
 		defer w.mu.Unlock()
 
-		for id, last := range w.lastHeartbeat {
+		for id, last := range w.elements {
 			// Check overdue
 			if dt := time.Since(last.lastHeartbeat); dt > last.period {
 				// Check firePeriod
@@ -160,8 +160,8 @@ func (w *Manager) scan() {
 		od := overdues[i]
 		w.overdueCallback(id, od)
 
-		e := w.lastHeartbeat[id]
+		e := w.elements[id]
 		e.lastFire = now
-		w.lastHeartbeat[id] = e
+		w.elements[id] = e
 	}
 }
