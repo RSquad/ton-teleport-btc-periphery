@@ -24,9 +24,17 @@ import (
 )
 
 func startAndWaitForStop() error {
+	// Setup OS signal handlers (SIGINT, SIGTERM)
+	logger.Log.Info().Msg("Setup OS signal handler")
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+	ctx, cancelFn := context.WithCancel(context.Background())
+	wg := sync.WaitGroup{}
+
 	// Load config
 	cfg, err := utils.LoadCfg[cfg.Cfg]()
 	if err != nil {
+		cancelFn()
 		return err
 	}
 
@@ -38,10 +46,12 @@ func startAndWaitForStop() error {
 
 		logLevel, err := logger.ParseLevel(cfg.LogLevel, logger.InfoLevel)
 		if err != nil {
+			cancelFn()
 			return err
 		}
 
 		if err := logger.Init(cfg.LogFile, logLevel, int(logMaxSize), int(logMaxBackups), int(logMaxBackupAge)); err != nil {
+			cancelFn()
 			return err
 		}
 	}
@@ -51,14 +61,17 @@ func startAndWaitForStop() error {
 		Msg("Initializing")
 
 	// Watchdog
-	err = watchdog.InitGlobal(
+	err = watchdog.InitGlobalAndStart(
 		10*time.Second,
+		60*time.Second,
 		60*time.Second,
 		func(id string, overdue time.Duration) {
 			logger.Log.Error().Str("component", "WATCHDOG").Msgf("'%s' is not responding! Last seen %s seconds ago", id, overdue)
 		},
+		ctx,
 	)
 	if err != nil {
+		cancelFn()
 		return fmt.Errorf("failed to create watchdog: %w", err)
 	}
 
@@ -66,6 +79,7 @@ func startAndWaitForStop() error {
 	logger.Log.Info().Msgf("Create a new Keystore at path `%s`", cfg.KeystorePath)
 	keystore, err := keystore.New(cfg.KeystorePath)
 	if err != nil {
+		cancelFn()
 		return err
 	}
 
@@ -76,6 +90,7 @@ func startAndWaitForStop() error {
 		logger.Log.Error().Msgf("failed to create TON client from config `%s`. Defaul mainnet config will be used", cfg.TonConfigPathOrURL)
 		tonClient, err = tonclient.New("https://ton.org/global-config.json")
 		if err != nil {
+			cancelFn()
 			return err
 		}
 	}
@@ -84,6 +99,7 @@ func startAndWaitForStop() error {
 	logger.Log.Info().Msg("Create a new Validator")
 	validator, err := validator.NewValidator(&cfg)
 	if err != nil {
+		cancelFn()
 		return err
 	}
 
@@ -91,18 +107,9 @@ func startAndWaitForStop() error {
 	logger.Log.Info().Msgf("Parse the Coordinator address `%s`", cfg.CoordinatorContractAddr)
 	coordinatorContractAddr, err := address.ParseAddr(cfg.CoordinatorContractAddr)
 	if err != nil {
+		cancelFn()
 		return err
 	}
-
-	// Setup OS signal handlers (SIGINT, SIGTERM)
-	logger.Log.Info().Msg("Setup OS signal handler")
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
-	ctx, cancelFn := context.WithCancel(context.Background())
-	wg := sync.WaitGroup{}
-
-	// Start watchdog
-	watchdog.Global().Start(ctx)
 
 	// Coordinator contract
 	logger.Log.Info().Msgf("Create a new Coordinator contract wrapper with address `%s`", cfg.CoordinatorContractAddr)

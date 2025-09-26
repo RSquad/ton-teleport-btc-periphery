@@ -84,12 +84,14 @@ func initialize() (*App, error) {
 	logger.Log.Debug().Msg(config.CfgToString(cfg))
 
 	// Watchdog
-	err = watchdog.InitGlobal(
+	err = watchdog.InitGlobalAndStart(
 		10*time.Second,
+		60*time.Second,
 		60*time.Second,
 		func(id string, overdue time.Duration) {
 			logger.Log.Error().Str("component", "WATCHDOG").Msgf("'%s' is not responding! Last seen %s seconds ago", id, overdue)
 		},
+		ctx,
 	)
 	if err != nil {
 		cancelFn()
@@ -252,9 +254,6 @@ func waitForStop(app *App) {
 }
 
 func run(app *App) error {
-	// Watchdog
-	watchdog.Global().Start(app.Ctx)
-
 	// FetcherService
 	app.Wg.Add(1)
 	go func() {
