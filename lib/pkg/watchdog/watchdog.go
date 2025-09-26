@@ -114,22 +114,21 @@ func InitGlobalAndStart(
 	overdueCallback OverdueCallback,
 	ctx context.Context,
 ) error {
+	globalInstanceMU.Lock()
+	defer globalInstanceMU.Unlock()
+
 	var err error
-	{
-		globalInstanceMU.Lock()
-		defer globalInstanceMU.Unlock()
 
-		if globalInstance != nil {
-			return errors.New("watchdog.InitGlobal can be called only once")
-		}
-
-		globalInstance, err = NewManager(
-			scanPeriod,
-			firePeriod,
-			selfHeartbeatPeriod,
-			overdueCallback,
-		)
+	if globalInstance != nil {
+		return errors.New("watchdog.InitGlobal can be called only once")
 	}
+
+	globalInstance, err = NewManager(
+		scanPeriod,
+		firePeriod,
+		selfHeartbeatPeriod,
+		overdueCallback,
+	)
 
 	if err != nil {
 		logger.Log.Error().Str("component", "WATCHDOG").Msgf("Global initialization error: %s", err)
@@ -137,7 +136,7 @@ func InitGlobalAndStart(
 	}
 
 	logger.Log.Info().Str("component", "WATCHDOG").Msg("Global initialization completed successfully.")
-	Global().start(ctx)
+	globalInstance.start(ctx)
 
 	return nil
 }
