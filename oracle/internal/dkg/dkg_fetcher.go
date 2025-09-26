@@ -7,7 +7,6 @@ import (
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/watchdog"
 )
 
 type Fetcher struct {
@@ -36,10 +35,6 @@ func (f *Fetcher) Work(ctx context.Context, wg *sync.WaitGroup) {
 	ticker := time.NewTicker(time.Duration(f.period) * time.Second)
 	defer ticker.Stop()
 
-	// Setup watchdog
-	watchdog.Global().Watch("DKGFetcher", time.Duration(f.period*2)*time.Second)
-	defer watchdog.Global().Unwatch("DKGFetcher")
-
 	for {
 		select {
 		case <-ctx.Done():
@@ -58,8 +53,6 @@ func (f *Fetcher) Work(ctx context.Context, wg *sync.WaitGroup) {
 					logger.Log.Debug().Msg("DKG Fetcher: Contract returns dkg==null")
 				}
 			}
-
-			watchdog.Global().Heartbeat("DKGFetcher")
 		}
 	}
 }

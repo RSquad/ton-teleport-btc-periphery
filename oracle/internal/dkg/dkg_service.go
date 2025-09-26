@@ -7,7 +7,6 @@ import (
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/watchdog"
 	helpers "github.com/rsquad/ton-teleport-btc-periphery/oracle/internal"
 	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/keystore"
 	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/validator"
@@ -57,10 +56,6 @@ func (s *Service) Work(ctx context.Context, wg *sync.WaitGroup, keystore keystor
 		ticker := time.NewTicker(time.Duration(s.sendStartDKGPeriod) * time.Second)
 		defer ticker.Stop()
 
-		// Setup watchdog
-		watchdog.Global().Watch("DKGService", time.Duration(s.sendStartDKGPeriod*2)*time.Second)
-		defer watchdog.Global().Unwatch("DKGService")
-
 		for {
 			select {
 			case <-ctx.Done():
@@ -84,8 +79,6 @@ func (s *Service) Work(ctx context.Context, wg *sync.WaitGroup, keystore keystor
 						logger.Log.Error().Msgf("Start DKG error: %v", err)
 					}
 				}
-
-				watchdog.Global().Heartbeat("DKGService")
 			}
 		}
 	}()

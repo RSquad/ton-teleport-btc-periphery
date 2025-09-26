@@ -11,7 +11,6 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/signer"
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/watchdog"
 	helpers "github.com/rsquad/ton-teleport-btc-periphery/oracle/internal"
 	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/keystore"
 	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/validator"
@@ -109,10 +108,6 @@ func (e *Executor) Work(ctx context.Context, wg *sync.WaitGroup) {
 	defer logger.DefaultLogFinishWork("DKG Executor")
 	logger.DefaultLogStartWork("DKG Executor")
 
-	// Setup watchdog
-	watchdog.Global().Watch("DKGExecutor", 300*time.Second)
-	defer watchdog.Global().Unwatch("DKGExecutor")
-
 	for {
 		select {
 		case <-ctx.Done():
@@ -124,7 +119,6 @@ func (e *Executor) Work(ctx context.Context, wg *sync.WaitGroup) {
 				return
 			}
 			e.Execute(dkg)
-			watchdog.Global().Heartbeat("DKGExecutor")
 		}
 	}
 }

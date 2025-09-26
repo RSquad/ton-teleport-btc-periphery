@@ -14,7 +14,6 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/pegoutcontract"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/watchdog"
 	helpers "github.com/rsquad/ton-teleport-btc-periphery/oracle/internal"
 	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/keystore"
 	"github.com/rsquad/ton-teleport-btc-periphery/oracle/internal/validator"
@@ -67,10 +66,6 @@ func (s *SignService) Work(ctx context.Context, wg *sync.WaitGroup) {
 	ticker := time.NewTicker(time.Duration(s.executeSignPeriod) * time.Second)
 	defer ticker.Stop()
 
-	// Setup watchdog
-	watchdog.Global().Watch("SignService", 300*time.Second)
-	defer watchdog.Global().Unwatch("SignService")
-
 	for {
 		select {
 		case <-ctx.Done():
@@ -82,7 +77,6 @@ func (s *SignService) Work(ctx context.Context, wg *sync.WaitGroup) {
 				return
 			}
 			s.ExecuteSign(ctx)
-			watchdog.Global().Heartbeat("SignService")
 		}
 	}
 }
