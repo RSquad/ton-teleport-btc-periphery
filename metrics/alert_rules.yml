@@ -142,6 +142,7 @@ groups:
         severity: info
       annotations:
         description: "DKG finished [INFO]"
+        dkg_until: "{{ $labels.until }}"
 
     - alert: DKGStatusInProgress
       expr: dkg_status == 1
@@ -149,6 +150,23 @@ groups:
         severity: info
       annotations:
         description: "DKG started [INFO]"
+        dkg_until: "{{ $labels.until }}"
+
+    - alert: DKGStatePart1Finished
+      expr: dkg_status == 2
+      labels:
+        severity: info
+      annotations:
+        description: "DKG Part1 finished [INFO]"
+        dkg_until: "{{ $labels.until }}"
+
+    - alert: DKGStatePart2Finished
+      expr: dkg_status == 3
+      labels:
+        severity: info
+      annotations:
+        description: "DKG Part2 finished [INFO]"
+        dkg_until: "{{ $labels.until }}"
 
   - name: total.service.fee
     rules:
