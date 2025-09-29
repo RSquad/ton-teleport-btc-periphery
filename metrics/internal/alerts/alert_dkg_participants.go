@@ -2,6 +2,7 @@ package alerts
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/mutils"
@@ -9,38 +10,40 @@ import (
 
 type AlertDkgParticipants struct {
 	severity Severity
+	labels   Labels
 }
 
 func NewAlertDkgParticipants() Alert {
 	return &AlertDkgParticipants{
 		severity: SEVERITY_UNKNOWN,
+		labels:   Labels{},
 	}
 }
 
 func (alert *AlertDkgParticipants) NewLabels() Labels {
-	return Labels{}
+	return Labels{
+		"participants_count": "",
+	}
 }
 
 func (alert *AlertDkgParticipants) Check(dataSource AlertDataSource) (Severity, Labels, IntValues, error) {
-	labels := alert.NewLabels()
-
 	// Get DKG
 	dkg, err := dataSource.DkgDB()
 	if err != nil {
-		return SEVERITY_UNKNOWN, labels, nil, err
+		return SEVERITY_UNKNOWN, alert.NewLabels(), nil, err
 	}
 
 	if dkg == nil {
-		return alert.severity, labels, nil, nil
+		return alert.severity, alert.labels, nil, nil
 	}
 
 	if dkg.State != coordinator.DKGStateFinished {
-		return alert.severity, labels, nil, nil
+		return alert.severity, alert.labels, nil, nil
 	}
 
 	coordinatorContractData, err := dataSource.CoordinatorContractStorageDB()
 	if err != nil {
-		return SEVERITY_UNKNOWN, labels, nil, err
+		return SEVERITY_UNKNOWN, alert.NewLabels(), nil, err
 	}
 
 	vSetSize := len(dkg.VSet)
@@ -49,7 +52,7 @@ func (alert *AlertDkgParticipants) Check(dataSource AlertDataSource) (Severity, 
 	if !coordinatorContractData.StandaloneMode {
 		maxValidators, err := dataSource.TonMaxMainValidators(context.Background())
 		if err != nil {
-			return SEVERITY_UNKNOWN, labels, nil, err
+			return SEVERITY_UNKNOWN, alert.NewLabels(), nil, err
 		}
 
 		validatorsCountMax = maxValidators
@@ -70,8 +73,9 @@ func (alert *AlertDkgParticipants) Check(dataSource AlertDataSource) (Severity, 
 
 	// Calulate severity
 	alert.severity = alert.GetSeverity(percentage)
+	alert.labels["participants_count"] = fmt.Sprintf("%d of %d (%d%%)", count-evictedCount, count, percentage)
 
-	return alert.severity, labels, nil, nil
+	return alert.severity, alert.labels, nil, nil
 }
 
 func (alert *AlertDkgParticipants) GetSeverity(percentage uint) Severity {
