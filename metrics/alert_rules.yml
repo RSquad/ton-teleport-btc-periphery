@@ -217,6 +217,7 @@ groups:
           severity: warning
         annotations:
           description: "The number of participants is less than 80% [WARNING]"
+          participants_count: "{{ $labels.participants_count }}"
 
       - alert: DKGParticipantsCritical
         expr: alert_dkg_participants >= 3
@@ -224,6 +225,7 @@ groups:
           severity: critical
         annotations:
           description: "The number of participants is less than 55% [CRITICAL]"
+          participants_count: "{{ $labels.participants_count }}"
 
   - name: dkg.culprit.found
     rules:

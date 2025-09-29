@@ -135,16 +135,24 @@ func (systemInfo *MetricsSystemInfo) SysLastPegoutTxInfo(
 	// BtcTxStatus
 	btcTxStatus := BTC_TX_NOT_PUBLISHED
 	bitcoinMempoolTime := int64(0)
+	cpfpLength := 0
 
 	if lastSignedPegout != nil {
 		btcTxTimestamp := int64(0)
 
 		{
-			btcMempoolEntry, err := bitcoinClient.RPCClient.GetMempoolEntry(mutils.BytesToBTCHash(lastSignedPegout.BitcoinTxId).String())
+			txHash := mutils.BytesToBTCHash(lastSignedPegout.BitcoinTxId)
+			btcMempoolEntry, err := bitcoinClient.RPCClient.GetMempoolEntry(txHash.String())
 			if err == nil {
 				if btcMempoolEntry != nil {
 					btcTxTimestamp = btcMempoolEntry.Time
 					btcTxStatus = BTC_TX_IN_MEMPOOL
+
+					// Detect CPFP length
+					cpfpLength, err = mutils.GetCPFPChainSize(bitcoinClient, txHash)
+					if err != nil {
+						return nil, err
+					}
 				}
 			}
 		}
@@ -168,15 +176,14 @@ func (systemInfo *MetricsSystemInfo) SysLastPegoutTxInfo(
 	return &SysLastPegoutTxInfo{
 		BtcTxStatus:        btcTxStatus,
 		BitcoinMempoolTime: int(bitcoinMempoolTime),
-		CPFP:               -1, // TODO: implement CPFP
+		CPFP:               cpfpLength,
 	}, nil
 }
 
 func (systemInfo *MetricsSystemInfo) PegoutSigningInfo(
 	dataSourceDB *data_sources.DataSourceDB,
 ) (*SysPegoutSigningInfo, error) {
-
-	// TODO: implement
+	?
 
 	return &SysPegoutSigningInfo{
 		Id:                           123,
