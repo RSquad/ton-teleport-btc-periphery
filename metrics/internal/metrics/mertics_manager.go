@@ -24,6 +24,7 @@ type MetricsManager struct {
 	contractAddrs       map[string]*address.Address
 	alertManager        *alerts.AlertManager
 	bitcoinClient       *bitcoin.Client
+	metricsSystemInfo   MetricsSystemInfo
 }
 
 func NewMetricsManager(
@@ -40,6 +41,9 @@ func NewMetricsManager(
 		contractAddrs:       contractAddrs,
 		alertManager:        alertManager,
 		bitcoinClient:       bitcoinClient,
+		metricsSystemInfo: MetricsSystemInfo{
+			lastUnsignedPegoutInfo: nil,
+		},
 	}
 }
 
@@ -488,8 +492,7 @@ func (manager *MetricsManager) PlotsSummaryJson() (string, error) {
 }
 
 func (manager *MetricsManager) DkgStatusJson(ctx context.Context) (string, error) {
-	var systemInfo MetricsSystemInfo
-	dkgStatus, err := systemInfo.DkgStatus(manager.dataSourceDB, manager.globalRuntimeConfig)
+	dkgStatus, err := manager.metricsSystemInfo.DkgStatus(manager.dataSourceDB, manager.globalRuntimeConfig)
 	if err != nil {
 		return "", err
 	}
@@ -534,8 +537,7 @@ func (manager *MetricsManager) ContractBalanceJson(name string) (string, error) 
 }
 
 func (manager *MetricsManager) SystemInfoJson() (string, error) {
-	var systemInfo MetricsSystemInfo
-	return systemInfo.SystemInfoJson(
+	return manager.metricsSystemInfo.SystemInfoJson(
 		manager.dataSourceDB,
 		manager.alertManager,
 		manager.contractAddrs,

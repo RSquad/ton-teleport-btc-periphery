@@ -1,9 +1,12 @@
 package metrics
 
 import (
+	"bytes"
 	"context"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
+	"sync"
 	"time"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
@@ -16,6 +19,8 @@ import (
 )
 
 type MetricsSystemInfo struct {
+	mu                     sync.Mutex
+	lastUnsignedPegoutInfo *SysPegoutSigningInfo
 }
 
 func (systemInfo *MetricsSystemInfo) SystemInfoJson(
@@ -25,7 +30,7 @@ func (systemInfo *MetricsSystemInfo) SystemInfoJson(
 	globalRuntimeConfig *config.GlobalRuntimeConfig,
 	bitcoinClient *bitcoin.Client,
 ) (string, error) {
-	sysDkgInfo, err := systemInfo.SysDkgInfo(dataSourceDB, alertManager, contractAddrs, globalRuntimeConfig)
+	sysDkgInfo, dkgStatus, err := systemInfo.SysDkgInfo(dataSourceDB, alertManager, contractAddrs, globalRuntimeConfig)
 	if err != nil {
 		return "", err
 	}
@@ -35,7 +40,7 @@ func (systemInfo *MetricsSystemInfo) SystemInfoJson(
 		return "", err
 	}
 
-	sysPegoutSigningInfo, err := systemInfo.PegoutSigningInfo(dataSourceDB)
+	sysPegoutSigningInfo, err := systemInfo.PegoutSigningInfo(dataSourceDB, alertManager, dkgStatus)
 	if err != nil {
 		return "", err
 	}
@@ -71,28 +76,28 @@ func (systemInfo *MetricsSystemInfo) SysDkgInfo(
 	alertManager *alerts.AlertManager,
 	contractAddrs map[string]*address.Address,
 	globalRuntimeConfig *config.GlobalRuntimeConfig,
-) (*SysDkgInfo, error) {
+) (*SysDkgInfo, *DkgStatus, error) {
 	dkg, err := dataSourceDB.Dkg()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// restarts, restartsSeverity
 	dkgRestartsAlertState, err := alertManager.GetAlertState("alert_dkg_restarts")
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// culprits, culpritsSeverity
 	dkgCulpritsAlertState, err := alertManager.GetAlertState("alert_dkg_culprit_found")
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// DkgStatus
 	dkgStatus, err := systemInfo.DkgStatus(dataSourceDB, globalRuntimeConfig)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	return &SysDkgInfo{
@@ -113,7 +118,7 @@ func (systemInfo *MetricsSystemInfo) SysDkgInfo(
 		ValidatorsEvictedIdx:  mutils.ExtractMapKeys(dkgStatus.DkgInfo.ValidatorsIdxEvicted),
 
 		Timeout: 0, // TODO: implement
-	}, nil
+	}, dkgStatus, nil
 }
 
 func (systemInfo *MetricsSystemInfo) SysLastPegoutTxInfo(
@@ -182,28 +187,109 @@ func (systemInfo *MetricsSystemInfo) SysLastPegoutTxInfo(
 
 func (systemInfo *MetricsSystemInfo) PegoutSigningInfo(
 	dataSourceDB *data_sources.DataSourceDB,
+	alertManager *alerts.AlertManager,
+	dkgStatus *DkgStatus,
 ) (*SysPegoutSigningInfo, error) {
-	?
+	coordinatorStorage, err := dataSourceDB.CoordinatorContractStorage()
+	if err != nil {
+		return nil, err
+	}
 
-	return &SysPegoutSigningInfo{
-		Id:                           123,
-		Restarts:                     0,
-		CulpritsIdx:                  make([]int, 0),
-		Until:                        time.Now(),
-		Signers:                      89,
-		QueueLength:                  3,
-		IsSigned:                     true,
-		IsSignedStr:                  "Yes",
-		SignersMax:                   100,
-		SignersCommitmentActive:      89,
-		SignersCommitmentActiveIdx:   make([]int, 89),
-		SignersCommitmentInactive:    19,
-		SignersCommitmentInactiveIdx: make([]int, 19),
-		SignersEvicted:               0,
-		SignersEvictedIdx:            make([]int, 0),
-		IsInternalKeyCorrect:         true,
-		IsInternalKeyCorrectStr:      "Internal Key Is Correct",
-	}, nil
+	prevDkg, err := dataSourceDB.PrevDkg()
+	if err != nil {
+		return nil, err
+	}
+
+	if len(coordinatorStorage.UnsignedPegouts) == 0 {
+		systemInfo.mu.Lock()
+		defer systemInfo.mu.Unlock()
+		if systemInfo.lastUnsignedPegoutInfo != nil {
+			systemInfo.lastUnsignedPegoutInfo.IsSigned = true
+			return systemInfo.lastUnsignedPegoutInfo, nil
+		}
+
+		return &SysPegoutSigningInfo{
+			Id:                           0,
+			Restarts:                     0,
+			RestartsSeverity:             alerts.SEVERITY_OK,
+			Until:                        time.Unix(0, 0),
+			QueueLength:                  0,
+			IsSigned:                     false,
+			IsAutopegout:                 false,
+			Signers:                      0,
+			SignersMax:                   int(coordinatorStorage.Dkg.MaxSigners),
+			SignersCommitmentActive:      0,
+			SignersCommitmentActiveIdx:   make([]int, 0),
+			SignersCommitmentInactive:    0,
+			SignersCommitmentInactiveIdx: make([]int, 0),
+			SignersEvicted:               0,
+			SignersEvictedIdx:            make([]int, 0),
+			IsInternalKeyCorrect:         true,
+			IsInternalKeyCorrectStr:      "Internal Key Is Correct",
+		}, nil
+	}
+
+	unsignedPegout := coordinatorStorage.UnsignedPegouts[0]
+
+	// restarts
+	pegoutRestartsAlertState, err := alertManager.GetAlertState("alert_pegout_restarts")
+	if err != nil {
+		return nil, err
+	}
+
+	isInternalKeyCorrect := bytes.Equal(unsignedPegout.InternalKey, prevDkg.R3.Data.InternalKey)
+	var isInternalKeyCorrectStr string
+	if isInternalKeyCorrect {
+		isInternalKeyCorrectStr = "Internal Key Is Correct"
+	} else {
+		isInternalKeyCorrectStr = "Internal Key Is INCORRECT"
+	}
+
+	// signers bitmask
+	signersCommitmentActiveIdx := make([]int, 0)
+	signersCommitmentInactiveIdx := make([]int, 0)
+	signersEvictedIdx := make([]int, 0)
+
+	for i := 0; i < dkgStatus.PrevDkgInfo.ValidatorsCountMax; i++ {
+		if prevDkg.R3.Mask.Bit(i) == 0 {
+			continue
+		}
+
+		if unsignedPegout.ClaimsMask.Bit(i) == 1 {
+			signersEvictedIdx = append(signersEvictedIdx, i)
+			continue
+		}
+
+		if unsignedPegout.SigningMask.Bit(i) == 1 {
+			signersCommitmentActiveIdx = append(signersCommitmentActiveIdx, i)
+		} else {
+			signersCommitmentInactiveIdx = append(signersCommitmentInactiveIdx, i)
+		}
+	}
+
+	systemInfo.mu.Lock()
+	defer systemInfo.mu.Unlock()
+	systemInfo.lastUnsignedPegoutInfo = &SysPegoutSigningInfo{
+		Id:                           int(unsignedPegout.ID),
+		Restarts:                     int(pegoutRestartsAlertState.Values["restarts"].(int64)),
+		RestartsSeverity:             pegoutRestartsAlertState.Severity,
+		Until:                        unsignedPegout.ExpiredAt,
+		QueueLength:                  len(coordinatorStorage.UnsignedPegouts),
+		IsSigned:                     false,
+		IsAutopegout:                 unsignedPegout.IsAutopegout,
+		Signers:                      mutils.Popcnt(unsignedPegout.SigningMask),
+		SignersMax:                   int(unsignedPegout.MaxSigners),
+		SignersCommitmentActive:      len(signersCommitmentActiveIdx),
+		SignersCommitmentActiveIdx:   signersCommitmentActiveIdx,
+		SignersCommitmentInactive:    len(signersCommitmentInactiveIdx),
+		SignersCommitmentInactiveIdx: signersCommitmentInactiveIdx,
+		SignersEvicted:               len(signersEvictedIdx),
+		SignersEvictedIdx:            signersEvictedIdx,
+		IsInternalKeyCorrect:         isInternalKeyCorrect,
+		IsInternalKeyCorrectStr:      isInternalKeyCorrectStr,
+	}
+
+	return systemInfo.lastUnsignedPegoutInfo, nil
 }
 
 func (systemInfo *MetricsSystemInfo) BalancesInfo(
@@ -283,19 +369,40 @@ func (systemInfo *MetricsSystemInfo) BalancesInfo(
 func (systemInfo *MetricsSystemInfo) TeleportInfo(
 	dataSourceDB *data_sources.DataSourceDB,
 ) (*SysTeleportInfo, error) {
+	teleportStorge, err := dataSourceDB.TeleportContractStorage()
+	if err != nil {
+		return nil, err
+	}
 
-	// TODO: implement
+	prevDkg, err := dataSourceDB.PrevDkg()
+	if err != nil {
+		return nil, err
+	}
+
+	// Check internal keys
+	teleportInternalKey, err := hex.DecodeString(teleportStorge.InternalKey)
+	if err != nil {
+		return nil, err
+	}
+
+	isInternalKeyCorrect := bytes.Equal(teleportInternalKey, prevDkg.R3.Data.InternalKey)
+	var isInternalKeyCorrectStr string
+	if isInternalKeyCorrect {
+		isInternalKeyCorrectStr = "The same input internal key"
+	} else {
+		isInternalKeyCorrectStr = "DIFFERENT INTERNAL KEYS"
+	}
 
 	return &SysTeleportInfo{
-		UTXO:                       0,
-		IsSameInputInternalKey:     true,
-		IsSameInputInternalKeyStr:  "The same input internal key",
+		UTXO:                       len(teleportStorge.UTXOset),
+		IsSameInputInternalKey:     isInternalKeyCorrect,
+		IsSameInputInternalKeyStr:  isInternalKeyCorrectStr,
 		TimeSinceLastAutopegout:    300,
 		TimeSinceLastAutopegoutStr: "5 min",
-		ServiceFee:                 -140,
-		LastConfirmed:              0,
-		LastBtc_LastTon:            3,
-		LastTon_PegoutBlock:        45,
+		ServiceFee:                 int(teleportStorge.TotalServiceFee),
+		LastConfirmed:              -1,
+		LastBtc_LastTon:            -1,
+		LastTon_PegoutBlock:        -1,
 	}, nil
 }
 

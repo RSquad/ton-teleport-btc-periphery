@@ -70,12 +70,12 @@ type SysLastPegoutTxInfo struct {
 type SysPegoutSigningInfo struct {
 	Id                           int
 	Restarts                     int
-	CulpritsIdx                  []int
+	RestartsSeverity             alerts.Severity
 	Until                        time.Time
-	Signers                      int
 	QueueLength                  int
 	IsSigned                     bool
-	IsSignedStr                  string
+	IsAutopegout                 bool
+	Signers                      int
 	SignersMax                   int
 	SignersCommitmentActive      int
 	SignersCommitmentActiveIdx   []int
