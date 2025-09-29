@@ -217,7 +217,7 @@ func (systemInfo *MetricsSystemInfo) PegoutSigningInfo(
 			IsSigned:                     false,
 			IsAutopegout:                 false,
 			Signers:                      0,
-			SignersMax:                   int(coordinatorStorage.Dkg.MaxSigners),
+			SignersMax:                   int(prevDkg.R3.Count),
 			SignersCommitmentActive:      0,
 			SignersCommitmentActiveIdx:   make([]int, 0),
 			SignersCommitmentInactive:    0,
