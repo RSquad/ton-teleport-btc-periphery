@@ -179,6 +179,7 @@
                         },
                         "mode": "reduceRow",
                         "reduce": {
+                            "include": [],
                             "reducer": "first"
                         },
                         "replaceFields": false,
@@ -193,7 +194,8 @@
                     "options": {
                         "excludeByName": {
                             "1": false,
-                            "First": false
+                            "First": false,
+                            "dkg_status": true
                         },
                         "includeByName": {},
                         "indexByName": {
@@ -306,5 +308,5 @@
     "timezone": "browser",
     "title": "Alerts",
     "uid": "cexq6rguh4ydcd",
-    "version": 4
+    "version": 5
 }
