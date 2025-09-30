@@ -34,7 +34,7 @@ func TestAlertDkgParticipants(t *testing.T) {
 					}, nil
 				},
 			}),
-			Expect: TestResWant{Severity: SEVERITY_OK, Labels: nil, Err: nil},
+			Expect: TestResWant{Severity: SEVERITY_OK, Labels: Labels{"participants_count": "10 of 10 (100%)"}, Err: nil},
 		},
 		{
 			Name: "SEVERITY_OK(DKG with 90% participants)",
@@ -60,7 +60,7 @@ func TestAlertDkgParticipants(t *testing.T) {
 					}, nil
 				},
 			}),
-			Expect: TestResWant{Severity: SEVERITY_OK, Labels: nil, Err: nil},
+			Expect: TestResWant{Severity: SEVERITY_OK, Labels: Labels{"participants_count": "9 of 10 (90%)"}, Err: nil},
 		},
 		{
 			Name: "SEVERITY_WARNING (DKG with 80% participants)",
@@ -86,7 +86,7 @@ func TestAlertDkgParticipants(t *testing.T) {
 					}, nil
 				},
 			}),
-			Expect: TestResWant{Severity: SEVERITY_WARNING, Labels: nil, Err: nil},
+			Expect: TestResWant{Severity: SEVERITY_WARNING, Labels: Labels{"participants_count": "8 of 10 (80%)"}, Err: nil},
 		},
 		{
 			Name: "SEVERITY_CRITICAL (DKG with 50% participants)",
@@ -112,7 +112,7 @@ func TestAlertDkgParticipants(t *testing.T) {
 					}, nil
 				},
 			}),
-			Expect: TestResWant{Severity: SEVERITY_CRITICAL, Labels: nil, Err: nil},
+			Expect: TestResWant{Severity: SEVERITY_CRITICAL, Labels: Labels{"participants_count": "5 of 10 (50%)"}, Err: nil},
 		},
 		{
 			Name: "SEVERITY_CRITICAL from old DKG (new DKG in progress)",
@@ -138,7 +138,7 @@ func TestAlertDkgParticipants(t *testing.T) {
 					}, nil
 				},
 			}),
-			Expect: TestResWant{Severity: SEVERITY_CRITICAL, Labels: nil, Err: nil},
+			Expect: TestResWant{Severity: SEVERITY_CRITICAL, Labels: Labels{"participants_count": "5 of 10 (50%)"}, Err: nil},
 		},
 		{
 			Name: "SEVERITY_OK (DKG with 100% participants)",
@@ -164,7 +164,7 @@ func TestAlertDkgParticipants(t *testing.T) {
 					}, nil
 				},
 			}),
-			Expect: TestResWant{Severity: SEVERITY_OK, Labels: nil, Err: nil},
+			Expect: TestResWant{Severity: SEVERITY_OK, Labels: Labels{"participants_count": "10 of 10 (100%)"}, Err: nil},
 		},
 	}
 
