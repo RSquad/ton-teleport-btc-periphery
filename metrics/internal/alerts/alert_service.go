@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/watchdog"
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/config"
 )
 
@@ -30,6 +31,10 @@ func (service *AlertService) Work(ctx context.Context) {
 	ticker := time.NewTicker(time.Duration(service.period) * time.Second)
 	defer ticker.Stop()
 
+	// Setup watchdog
+	watchdog.Global().Watch("AlertService", time.Duration(service.period*2)*time.Second)
+	defer watchdog.Global().Unwatch("AlertService")
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -37,6 +42,7 @@ func (service *AlertService) Work(ctx context.Context) {
 			return
 		case <-ticker.C:
 			service.alertManager.CheckAll()
+			watchdog.Global().Heartbeat("AlertService")
 		}
 	}
 }

@@ -10,6 +10,7 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/watchdog"
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/config"
 	"github.com/xssnick/tonutils-go/address"
 )
@@ -52,13 +53,18 @@ func (fetcher *FetcherContractBalance) Work(ctx context.Context, wg *sync.WaitGr
 	ticker := time.NewTicker(time.Duration(fetcher.period) * time.Second)
 	defer ticker.Stop()
 
+	// Setup watchdog
+	watchdog.Global().Watch("FetcherContractBalance"+fetcher.name, time.Duration(fetcher.period*2)*time.Second)
+	defer watchdog.Global().Unwatch("FetcherContractBalance" + fetcher.name)
+
 	for {
 		select {
 		case <-ctx.Done():
-			logger.Log.Info().Msg("FetcherContractBalances received shutdown signal...")
+			logger.Log.Info().Msg("FetcherContractBalance received shutdown signal...")
 			return
 		case <-ticker.C:
 			fetcher.Fetch()
+			watchdog.Global().Heartbeat("FetcherContractBalance" + fetcher.name)
 		}
 	}
 }
