@@ -193,13 +193,11 @@ func run(app *App) error {
 	var wg sync.WaitGroup
 
 	// FetcherService
-	/*
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			app.FetcherService.Work(context.Background())
-		}()
-	*/
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		app.FetcherService.Work(context.Background())
+	}()
 
 	// HttpService
 	wg.Add(1)
