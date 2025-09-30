@@ -56,11 +56,9 @@ func initialize() (*App, error) {
 	logger.Log.Info().Msg("Setup OS signal handler")
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
-	ctx, cancelFn := context.WithCancel(context.Background())
 	wg := sync.WaitGroup{}
 
 	if err := logger.Init("", logger.DebugLevel, 0, 0, 0); err != nil {
-		cancelFn()
 		return nil, fmt.Errorf("failed to initialize logger: %w", err)
 	}
 
@@ -70,21 +68,20 @@ func initialize() (*App, error) {
 
 	envConfig, err := utils.LoadCfg[config.EnvConfig]()
 	if err != nil {
-		cancelFn()
 		return nil, err
 	}
 
 	// Read .env config
 	cfg, err := config.NewServicesConfig(&envConfig)
 	if err != nil {
-		cancelFn()
 		return nil, fmt.Errorf("failed to parse .env config: %w", err)
 	}
 
 	logger.Log.Debug().Msg(config.CfgToString(cfg))
 
 	// Watchdog
-	err = watchdog.InitGlobalAndStart(
+	ctx, cancelFn := context.WithCancel(context.Background())
+	err = watchdog.Init(
 		10*time.Second,
 		60*time.Second,
 		60*time.Second,
@@ -97,6 +94,7 @@ func initialize() (*App, error) {
 		cancelFn()
 		return nil, fmt.Errorf("failed to initialize watchdog: %w", err)
 	}
+	logger.Log.Info().Str("component", "WATCHDOG").Msg("Global initialization completed successfully.")
 
 	// Bitcoin client
 	bitcoinClient, err := bitcoin.NewClient(

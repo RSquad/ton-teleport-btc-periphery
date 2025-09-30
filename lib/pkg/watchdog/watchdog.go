@@ -20,25 +20,25 @@ import (
 type OverdueCallback func(id string, overdue time.Duration)
 
 // WatchedTarget describes a single watched target's timing data.
-// It is stored internally by Manager.
+// It is stored internally by Watchdog.
 type WatchedTarget struct {
 	lastHeartbeat time.Time
 	lastFire      time.Time
 	period        time.Duration
 }
 
-// Manager monitors many targets and invokes a callback when any target
-// becomes overdue. Manager is safe for concurrent use by multiple goroutines.
+// Watchdog monitors many targets and invokes a callback when any target
+// becomes overdue. Watchdog is safe for concurrent use by multiple goroutines.
 //
 // Scanning:
-//   - The manager scans all targets every scanPeriod.
+//   - The Watchdog scans all targets every scanPeriod.
 //   - For each overdue target, overdueCallback is invoked at most once per
 //     firePeriod (per target).
 //
 // Self heartbeat:
-//   - The manager emits a log "SELF HEARTBEAT (is alive)" no more frequently
+//   - The Watchdog emits a log "SELF HEARTBEAT (is alive)" no more frequently
 //     than selfHeartbeatPeriod to indicate the Watchdog is alive.
-type Manager struct {
+type Watchdog struct {
 	scanPeriod          time.Duration
 	firePeriod          time.Duration
 	selfHeartbeatPeriod time.Duration
@@ -50,7 +50,7 @@ type Manager struct {
 	wg      sync.WaitGroup
 }
 
-// NewManager constructs a Watchdog Manager that scans targets every scanPeriod and,
+// New constructs a Watchdog that scans targets every scanPeriod and,
 // for each target that misses its heartbeat period, invokes overdueCallback,
 // throttled so it cannot fire more frequently than firePeriod per target.
 //
@@ -59,14 +59,14 @@ type Manager struct {
 //   - firePeriod must be > scanPeriod;
 //   - overdueCallback must be non-nil.
 //
-// selfHeartbeatPeriod controls how often the manager logs its own liveness
+// selfHeartbeatPeriod controls how often the Watchdog logs its own liveness
 // (zero or negative disables it). Returns an error if validation fails.
-func NewManager(
+func new(
 	scanPeriod time.Duration,
 	firePeriod time.Duration,
 	selfHeartbeatPeriod time.Duration,
 	overdueCallback OverdueCallback,
-) (*Manager, error) {
+) (*Watchdog, error) {
 	if scanPeriod <= 0 {
 		return nil, errors.New("watchdog scanPeriod must be > 0")
 	}
@@ -79,7 +79,7 @@ func NewManager(
 		return nil, errors.New("watchdog overdue callback is null")
 	}
 
-	return &Manager{
+	return &Watchdog{
 		scanPeriod:          scanPeriod,
 		firePeriod:          firePeriod,
 		selfHeartbeatPeriod: selfHeartbeatPeriod,
@@ -90,9 +90,9 @@ func NewManager(
 }
 
 var globalInstanceMU sync.Mutex
-var globalInstance *Manager = nil
+var globalInstance *Watchdog = nil
 
-// InitGlobalAndStart initializes the package-global Manager singleton and
+// InitGlobalAndStart initializes the package-global Watchdog singleton and
 // starts its background scan loop. If initialization has already occurred,
 // it returns an error. The scan loop runs until ctx is canceled.
 //
@@ -107,7 +107,7 @@ var globalInstance *Manager = nil
 //	...
 //	watchdog.Global().Heartbeat("my_goroutine_id")
 //	...
-func InitGlobalAndStart(
+func Init(
 	scanPeriod time.Duration,
 	firePeriod time.Duration,
 	selfHeartbeatPeriod time.Duration,
@@ -120,10 +120,10 @@ func InitGlobalAndStart(
 	var err error
 
 	if globalInstance != nil {
-		return errors.New("watchdog.InitGlobal can be called only once")
+		return errors.New("only a single Watchdog instance is supported per application")
 	}
 
-	globalInstance, err = NewManager(
+	globalInstance, err = new(
 		scanPeriod,
 		firePeriod,
 		selfHeartbeatPeriod,
@@ -131,39 +131,37 @@ func InitGlobalAndStart(
 	)
 
 	if err != nil {
-		logger.Log.Error().Str("component", "WATCHDOG").Msgf("Global initialization error: %s", err)
 		return err
 	}
 
-	logger.Log.Info().Str("component", "WATCHDOG").Msg("Global initialization completed successfully.")
 	globalInstance.start(ctx)
 
 	return nil
 }
 
-// Global returns the package-global Manager, or nil if it has not been
+// Global returns the package-global Watchdog, or nil if it has not been
 // initialized via InitGlobalAndStart.
-func Global() *Manager {
+func Global() *Watchdog {
 	globalInstanceMU.Lock()
 	defer globalInstanceMU.Unlock()
 
 	if globalInstance == nil {
-		logger.Log.Error().Str("component", "WATCHDOG").Msg("Global Manager is null. Please call watchdog.InitGlobalAndStart")
+		logger.Log.Error().Str("component", "WATCHDOG").Msg("Global Watchdog is null. Please call watchdog.InitGlobalAndStart")
 	}
 
 	return globalInstance
 }
 
-// start launches the Manager's background scan loop in a goroutine.
+// start launches the Watchdog's background scan loop in a goroutine.
 // It stops when ctx is canceled. Intended to be called by InitGlobalAndStart.
-func (manager *Manager) start(ctx context.Context) {
-	manager.wg.Add(1)
+func (w *Watchdog) start(ctx context.Context) {
+	w.wg.Add(1)
 	go func() {
-		defer manager.wg.Done()
+		defer w.wg.Done()
 
 		logger.Log.Info().Str("component", "WATCHDOG").Msg("Started")
 
-		t := time.NewTicker(manager.scanPeriod)
+		t := time.NewTicker(w.scanPeriod)
 		defer t.Stop()
 
 		for {
@@ -171,13 +169,13 @@ func (manager *Manager) start(ctx context.Context) {
 			case <-ctx.Done():
 				return
 			case <-t.C:
-				manager.scan()
+				w.scan()
 			}
 		}
 	}()
 }
 
-func (manager *Manager) Watch(id string, period time.Duration) {
+func (w *Watchdog) Watch(id string, period time.Duration) {
 	logger.Log.Debug().Str("component", "WATCHDOG").Msgf("Watch '%s'", id)
 
 	now := time.Now()
@@ -188,48 +186,46 @@ func (manager *Manager) Watch(id string, period time.Duration) {
 		period:        period,
 	}
 
-	manager.mu.Lock()
-	manager.targets[id] = target
-	manager.mu.Unlock()
+	w.mu.Lock()
+	w.targets[id] = target
+	w.mu.Unlock()
 }
 
-func (manager *Manager) Unwatch(id string) {
+func (w *Watchdog) Unwatch(id string) {
 	logger.Log.Debug().Str("component", "WATCHDOG").Msgf("Unwatch '%s'", id)
 
-	manager.mu.Lock()
-	delete(manager.targets, id)
-	manager.mu.Unlock()
+	w.mu.Lock()
+	delete(w.targets, id)
+	w.mu.Unlock()
 }
 
-func (manager *Manager) Heartbeat(id string) {
+func (w *Watchdog) Heartbeat(id string) {
 	logger.Log.Debug().Str("component", "WATCHDOG").Msgf("Heartbeat '%s'", id)
 
 	now := time.Now()
-	manager.mu.Lock()
-	if e, ok := manager.targets[id]; ok {
+	w.mu.Lock()
+	if e, ok := w.targets[id]; ok {
 		e.lastHeartbeat = now
-		manager.targets[id] = e
+		w.targets[id] = e
 	}
-	manager.mu.Unlock()
+	w.mu.Unlock()
 }
 
-func (manager *Manager) scan() {
+func (w *Watchdog) scan() {
 	now := time.Now()
 	var overdueIDs []string
 	var overdues []time.Duration
 
-	{
-		manager.mu.Lock()
-		defer manager.mu.Unlock()
+	w.mu.Lock()
+	defer w.mu.Unlock()
 
-		for id, target := range manager.targets {
-			// Check overdue
-			if dt := time.Since(target.lastHeartbeat); dt > target.period {
-				// Check firePeriod
-				if fd := now.Sub(target.lastFire); fd > manager.firePeriod {
-					overdueIDs = append(overdueIDs, id)
-					overdues = append(overdues, dt)
-				}
+	for id, target := range w.targets {
+		// Check overdue
+		if dt := time.Since(target.lastHeartbeat); dt > target.period {
+			// Check firePeriod
+			if fd := now.Sub(target.lastFire); fd > w.firePeriod {
+				overdueIDs = append(overdueIDs, id)
+				overdues = append(overdues, dt)
 			}
 		}
 	}
@@ -237,16 +233,16 @@ func (manager *Manager) scan() {
 	// Fire callbacks
 	for i, id := range overdueIDs {
 		od := overdues[i]
-		manager.overdueCallback(id, od)
+		w.overdueCallback(id, od)
 
-		t := manager.targets[id]
+		t := w.targets[id]
 		t.lastFire = now
-		manager.targets[id] = t
+		w.targets[id] = t
 	}
 
 	// Self heartbeat
-	if time.Since(manager.selfLastHeartbeat) > manager.selfHeartbeatPeriod {
-		manager.selfLastHeartbeat = now
-		logger.Log.Info().Str("component", "WATCHDOG").Msgf("SELF HEARTBEAT (is alive)")
+	if time.Since(w.selfLastHeartbeat) > w.selfHeartbeatPeriod {
+		w.selfLastHeartbeat = now
+		logger.Log.Info().Str("component", "WATCHDOG").Msgf("Watchdog is alive")
 	}
 }
