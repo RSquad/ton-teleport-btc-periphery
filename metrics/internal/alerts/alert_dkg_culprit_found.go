@@ -17,9 +17,11 @@ type AlertDkgCulpritFound struct {
 }
 
 func NewAlertDkgCulpritFound() Alert {
+	v := AlertDkgCulpritFound{}
+
 	return &AlertDkgCulpritFound{
 		DkgUntil: time.Unix(0, 0),
-		Labels:   Labels{},
+		Labels:   v.NewLabels(),
 		Severity: SEVERITY_UNKNOWN,
 	}
 }

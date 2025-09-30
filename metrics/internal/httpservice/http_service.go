@@ -3,7 +3,10 @@ package httpservice
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
+	"sync/atomic"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/cors"
@@ -53,12 +56,39 @@ func (s *HttpService) Work(ctx context.Context) {
 	httpBindAddrStr := fmt.Sprintf(":%d", s.httpPort)
 
 	logger.Log.Info().
-		Str("component", "main").
+		Str("component", "HttpServer").
 		Msgf("listening on %s", httpBindAddrStr)
-	if err := http.ListenAndServe(httpBindAddrStr, handlerWithCORS); err != nil {
-		logger.Log.Error().
-			Str("component", "main").
-			Err(err).
-			Msg("http server terminated")
+
+	srv := &http.Server{
+		Addr:    httpBindAddrStr,
+		Handler: handlerWithCORS,
 	}
+
+	var isStopRequested atomic.Bool
+
+	go func() {
+		if err := srv.ListenAndServe(); err != nil {
+			if !isStopRequested.Load() {
+				logger.Log.Error().
+					Str("component", "HttpServer").
+					Err(err).
+					Msg("terminated")
+			}
+		}
+	}()
+
+	<-ctx.Done()
+	isStopRequested.Store(true)
+	log.Println("shutdown requested")
+
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 4*time.Second)
+	defer cancel()
+	if err := srv.Shutdown(shutdownCtx); err != nil {
+		log.Printf("graceful shutdown failed: %v; forcing close", err)
+		_ = srv.Close()
+	}
+
+	logger.Log.Info().
+		Str("component", "HttpServer").
+		Msg("stopped")
 }
