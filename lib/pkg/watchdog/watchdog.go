@@ -146,7 +146,7 @@ func Global() *Watchdog {
 	defer globalInstanceMU.Unlock()
 
 	if globalInstance == nil {
-		logger.Log.Error().Str("component", "WATCHDOG").Msg("Global Watchdog is null. Please call watchdog.InitGlobalAndStart")
+		logger.Log.Error().Str("component", "WATCHDOG").Msg("Global Watchdog is null. Please call watchdog.Init")
 	}
 
 	return globalInstance
