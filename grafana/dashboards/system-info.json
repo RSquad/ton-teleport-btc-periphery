@@ -1,0 +1,2106 @@
+{
+    "annotations": {
+        "list": [
+            {
+                "builtIn": 1,
+                "datasource": {
+                    "type": "grafana",
+                    "uid": "-- Grafana --"
+                },
+                "enable": true,
+                "hide": true,
+                "iconColor": "rgba(0, 211, 255, 1)",
+                "name": "Annotations & Alerts",
+                "type": "dashboard"
+            }
+        ]
+    },
+    "editable": true,
+    "fiscalYearStartMonth": 0,
+    "graphTooltip": 0,
+    "id": 17,
+    "links": [],
+    "panels": [
+        {
+            "datasource": {
+                "type": "yesoreyeram-infinity-datasource",
+                "uid": "yesoreyeraminfinitydatasource"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "custom": {
+                        "align": "left",
+                        "cellOptions": {
+                            "mode": "basic",
+                            "type": "color-background",
+                            "wrapText": true
+                        },
+                        "inspect": false,
+                        "width": 150
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "dark-green",
+                                "value": null
+                            },
+                            {
+                                "color": "dark-red",
+                                "value": 80
+                            }
+                        ]
+                    }
+                },
+                "overrides": [
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Id"
+                        },
+                        "properties": [
+                            {
+                                "id": "custom.cellOptions",
+                                "value": {
+                                    "type": "auto"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Restarts"
+                        },
+                        "properties": [
+                            {
+                                "id": "thresholds",
+                                "value": {
+                                    "mode": "absolute",
+                                    "steps": [
+                                        {
+                                            "color": "dark-green",
+                                            "value": null
+                                        },
+                                        {
+                                            "color": "dark-yellow",
+                                            "value": 5
+                                        },
+                                        {
+                                            "color": "dark-orange",
+                                            "value": 7
+                                        },
+                                        {
+                                            "color": "dark-red",
+                                            "value": 10
+                                        }
+                                    ]
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Internal Key"
+                        },
+                        "properties": [
+                            {
+                                "id": "mappings",
+                                "value": [
+                                    {
+                                        "options": {
+                                            "false": {
+                                                "color": "dark-red",
+                                                "index": 1,
+                                                "text": "Internal Key is incorrect"
+                                            },
+                                            "true": {
+                                                "color": "dark-green",
+                                                "index": 0,
+                                                "text": "Internal Key is correct"
+                                            }
+                                        },
+                                        "type": "value"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Signed"
+                        },
+                        "properties": [
+                            {
+                                "id": "mappings",
+                                "value": [
+                                    {
+                                        "options": {
+                                            "false": {
+                                                "color": "dark-red",
+                                                "index": 1,
+                                                "text": "No"
+                                            },
+                                            "true": {
+                                                "color": "dark-green",
+                                                "index": 0,
+                                                "text": "Yes"
+                                            }
+                                        },
+                                        "type": "value"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Signers"
+                        },
+                        "properties": [
+                            {
+                                "id": "thresholds",
+                                "value": {
+                                    "mode": "percentage",
+                                    "steps": [
+                                        {
+                                            "color": "dark-red",
+                                            "value": null
+                                        },
+                                        {
+                                            "color": "dark-yellow",
+                                            "value": 60
+                                        },
+                                        {
+                                            "color": "dark-yellow",
+                                            "value": 70
+                                        },
+                                        {
+                                            "color": "dark-green",
+                                            "value": 90
+                                        }
+                                    ]
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Queue Length"
+                        },
+                        "properties": [
+                            {
+                                "id": "thresholds",
+                                "value": {
+                                    "mode": "absolute",
+                                    "steps": [
+                                        {
+                                            "color": "dark-green",
+                                            "value": null
+                                        },
+                                        {
+                                            "color": "dark-red",
+                                            "value": 20
+                                        }
+                                    ]
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Until"
+                        },
+                        "properties": [
+                            {
+                                "id": "custom.cellOptions",
+                                "value": {
+                                    "type": "auto"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Culprit Idx"
+                        },
+                        "properties": [
+                            {
+                                "id": "custom.width"
+                            },
+                            {
+                                "id": "thresholds",
+                                "value": {
+                                    "mode": "absolute",
+                                    "steps": [
+                                        {
+                                            "color": "dark-red",
+                                            "value": null
+                                        }
+                                    ]
+                                }
+                            },
+                            {
+                                "id": "custom.cellOptions",
+                                "value": {
+                                    "type": "color-text"
+                                }
+                            }
+                        ]
+                    }
+                ]
+            },
+            "gridPos": {
+                "h": 5,
+                "w": 24,
+                "x": 0,
+                "y": 0
+            },
+            "id": 8,
+            "options": {
+                "cellHeight": "sm",
+                "footer": {
+                    "countRows": false,
+                    "fields": "",
+                    "reducer": [
+                        "sum"
+                    ],
+                    "show": false
+                },
+                "showHeader": true
+            },
+            "pluginVersion": "12.1.0",
+            "targets": [
+                {
+                    "columns": [],
+                    "datasource": {
+                        "type": "yesoreyeram-infinity-datasource",
+                        "uid": "yesoreyeraminfinitydatasource"
+                    },
+                    "filters": [],
+                    "format": "table",
+                    "global_query_id": "",
+                    "parser": "backend",
+                    "refId": "A",
+                    "root_selector": "PegoutSigningInfo",
+                    "source": "url",
+                    "type": "json",
+                    "url": "http://metrics/metrics/api?source=system_info",
+                    "url_options": {
+                        "data": "",
+                        "method": "GET"
+                    }
+                }
+            ],
+            "title": "Pegout Signing",
+            "transformations": [
+                {
+                    "id": "organize",
+                    "options": {
+                        "excludeByName": {
+                            "IsInternalKeyCorrectStr": true,
+                            "IsSignedStr": true,
+                            "SignersCommitmentActive": true,
+                            "SignersCommitmentActiveIdx": true,
+                            "SignersCommitmentInactive": true,
+                            "SignersCommitmentInactiveIdx": true,
+                            "SignersEvicted": true,
+                            "SignersEvictedIdx": true,
+                            "SignersMax": true
+                        },
+                        "includeByName": {},
+                        "indexByName": {
+                            "CulpritsIdx": 10,
+                            "Id": 0,
+                            "IsInternalKeyCorrect": 2,
+                            "IsInternalKeyCorrectStr": 3,
+                            "IsSigned": 4,
+                            "IsSignedStr": 5,
+                            "QueueLength": 8,
+                            "Restarts": 1,
+                            "Signers": 6,
+                            "SignersCommitmentActive": 11,
+                            "SignersCommitmentActiveIdx": 12,
+                            "SignersCommitmentInactive": 13,
+                            "SignersCommitmentInactiveIdx": 14,
+                            "SignersEvicted": 15,
+                            "SignersEvictedIdx": 16,
+                            "SignersMax": 7,
+                            "Until": 9
+                        },
+                        "renameByName": {
+                            "CulpritsIdx": "Culprit Idx",
+                            "IsInternalKeyCorrect": "Internal Key",
+                            "IsInternalKeyCorrectStr": "Internal Key",
+                            "IsSigned": "Signed",
+                            "QueueLength": "Queue Length"
+                        }
+                    }
+                }
+            ],
+            "transparent": true,
+            "type": "table"
+        },
+        {
+            "datasource": {
+                "type": "yesoreyeram-infinity-datasource",
+                "uid": "yesoreyeraminfinitydatasource"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "custom": {
+                        "align": "center",
+                        "cellOptions": {
+                            "type": "color-text"
+                        },
+                        "inspect": false
+                    },
+                    "mappings": [],
+                    "noValue": "No Active Signers",
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "dark-green",
+                                "value": null
+                            }
+                        ]
+                    }
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 7,
+                "w": 3,
+                "x": 2,
+                "y": 5
+            },
+            "id": 9,
+            "options": {
+                "cellHeight": "sm",
+                "footer": {
+                    "countRows": false,
+                    "fields": "",
+                    "reducer": [
+                        "sum"
+                    ],
+                    "show": false
+                },
+                "showHeader": true
+            },
+            "pluginVersion": "12.1.0",
+            "targets": [
+                {
+                    "columns": [],
+                    "datasource": {
+                        "type": "yesoreyeram-infinity-datasource",
+                        "uid": "yesoreyeraminfinitydatasource"
+                    },
+                    "filters": [],
+                    "format": "table",
+                    "global_query_id": "",
+                    "parser": "backend",
+                    "refId": "A",
+                    "root_selector": "PegoutSigningInfo",
+                    "source": "url",
+                    "type": "json",
+                    "url": "http://metrics/metrics/api?source=system_info",
+                    "url_options": {
+                        "data": "",
+                        "method": "GET"
+                    }
+                }
+            ],
+            "title": "",
+            "transformations": [
+                {
+                    "id": "extractFields",
+                    "options": {
+                        "delimiter": ",",
+                        "keepTime": false,
+                        "replace": true,
+                        "source": "SignersCommitmentActiveIdx"
+                    }
+                },
+                {
+                    "id": "convertFieldType",
+                    "options": {
+                        "conversions": [
+                            {
+                                "destinationType": "number",
+                                "targetField": "ServiceFee"
+                            }
+                        ],
+                        "fields": {}
+                    }
+                },
+                {
+                    "id": "transpose",
+                    "options": {}
+                },
+                {
+                    "id": "organize",
+                    "options": {
+                        "excludeByName": {
+                            "Field": true
+                        },
+                        "includeByName": {},
+                        "indexByName": {},
+                        "renameByName": {
+                            "1": "Signers Active Idx"
+                        }
+                    }
+                }
+            ],
+            "transparent": true,
+            "type": "table"
+        },
+        {
+            "datasource": {
+                "type": "yesoreyeram-infinity-datasource",
+                "uid": "yesoreyeraminfinitydatasource"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "custom": {
+                        "align": "center",
+                        "cellOptions": {
+                            "type": "color-text"
+                        },
+                        "inspect": false
+                    },
+                    "mappings": [],
+                    "noValue": "No Inactive Signers",
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "dark-yellow",
+                                "value": null
+                            }
+                        ]
+                    }
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 7,
+                "w": 3,
+                "x": 5,
+                "y": 5
+            },
+            "id": 10,
+            "options": {
+                "cellHeight": "sm",
+                "footer": {
+                    "countRows": false,
+                    "fields": "",
+                    "reducer": [
+                        "sum"
+                    ],
+                    "show": false
+                },
+                "showHeader": true
+            },
+            "pluginVersion": "12.1.0",
+            "targets": [
+                {
+                    "columns": [],
+                    "datasource": {
+                        "type": "yesoreyeram-infinity-datasource",
+                        "uid": "yesoreyeraminfinitydatasource"
+                    },
+                    "filters": [],
+                    "format": "table",
+                    "global_query_id": "",
+                    "parser": "backend",
+                    "refId": "A",
+                    "root_selector": "PegoutSigningInfo",
+                    "source": "url",
+                    "type": "json",
+                    "url": "http://metrics/metrics/api?source=system_info",
+                    "url_options": {
+                        "data": "",
+                        "method": "GET"
+                    }
+                }
+            ],
+            "title": "",
+            "transformations": [
+                {
+                    "id": "extractFields",
+                    "options": {
+                        "delimiter": ",",
+                        "replace": true,
+                        "source": "SignersCommitmentInactiveIdx"
+                    }
+                },
+                {
+                    "id": "convertFieldType",
+                    "options": {
+                        "conversions": [
+                            {
+                                "destinationType": "number",
+                                "targetField": "ServiceFee"
+                            }
+                        ],
+                        "fields": {}
+                    }
+                },
+                {
+                    "id": "transpose",
+                    "options": {}
+                },
+                {
+                    "id": "organize",
+                    "options": {
+                        "excludeByName": {
+                            "Field": true
+                        },
+                        "includeByName": {},
+                        "indexByName": {},
+                        "renameByName": {
+                            "1": "Signers Inactive Idx"
+                        }
+                    }
+                }
+            ],
+            "transparent": true,
+            "type": "table"
+        },
+        {
+            "datasource": {
+                "type": "yesoreyeram-infinity-datasource",
+                "uid": "yesoreyeraminfinitydatasource"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "custom": {
+                        "align": "center",
+                        "cellOptions": {
+                            "type": "color-text"
+                        },
+                        "inspect": false
+                    },
+                    "mappings": [],
+                    "noValue": "No Evicted Signers",
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "dark-red",
+                                "value": null
+                            }
+                        ]
+                    }
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 7,
+                "w": 3,
+                "x": 8,
+                "y": 5
+            },
+            "id": 11,
+            "options": {
+                "cellHeight": "sm",
+                "footer": {
+                    "countRows": false,
+                    "fields": "",
+                    "reducer": [
+                        "sum"
+                    ],
+                    "show": false
+                },
+                "showHeader": true
+            },
+            "pluginVersion": "12.1.0",
+            "targets": [
+                {
+                    "columns": [],
+                    "datasource": {
+                        "type": "yesoreyeram-infinity-datasource",
+                        "uid": "yesoreyeraminfinitydatasource"
+                    },
+                    "filters": [],
+                    "format": "table",
+                    "global_query_id": "",
+                    "parser": "backend",
+                    "refId": "A",
+                    "root_selector": "PegoutSigningInfo",
+                    "source": "url",
+                    "type": "json",
+                    "url": "http://metrics/metrics/api?source=system_info",
+                    "url_options": {
+                        "data": "",
+                        "method": "GET"
+                    }
+                }
+            ],
+            "title": "",
+            "transformations": [
+                {
+                    "id": "extractFields",
+                    "options": {
+                        "delimiter": ",",
+                        "keepTime": false,
+                        "replace": true,
+                        "source": "SignersEvictedIdx"
+                    }
+                },
+                {
+                    "id": "convertFieldType",
+                    "options": {}
+                },
+                {
+                    "id": "transpose",
+                    "options": {}
+                },
+                {
+                    "id": "organize",
+                    "options": {
+                        "excludeByName": {
+                            "Field": true
+                        },
+                        "includeByName": {},
+                        "indexByName": {},
+                        "renameByName": {
+                            "1": "Evicted Signers"
+                        }
+                    }
+                }
+            ],
+            "transparent": true,
+            "type": "table"
+        },
+        {
+            "datasource": {
+                "type": "yesoreyeram-infinity-datasource",
+                "uid": "yesoreyeraminfinitydatasource"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "custom": {
+                        "align": "left",
+                        "cellOptions": {
+                            "mode": "basic",
+                            "type": "color-background"
+                        },
+                        "inspect": false
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "dark-green",
+                                "value": null
+                            },
+                            {
+                                "color": "dark-red",
+                                "value": 20
+                            }
+                        ]
+                    }
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 7,
+                "w": 10,
+                "x": 14,
+                "y": 5
+            },
+            "id": 7,
+            "options": {
+                "cellHeight": "sm",
+                "footer": {
+                    "countRows": false,
+                    "fields": "",
+                    "reducer": [
+                        "sum"
+                    ],
+                    "show": false
+                },
+                "showHeader": true
+            },
+            "pluginVersion": "12.1.0",
+            "targets": [
+                {
+                    "columns": [],
+                    "datasource": {
+                        "type": "yesoreyeram-infinity-datasource",
+                        "uid": "yesoreyeraminfinitydatasource"
+                    },
+                    "filters": [],
+                    "format": "table",
+                    "global_query_id": "",
+                    "parser": "backend",
+                    "refId": "A",
+                    "root_selector": "LastPegoutTxInfo",
+                    "source": "url",
+                    "type": "json",
+                    "url": "http://metrics/metrics/api?source=system_info",
+                    "url_options": {
+                        "data": "",
+                        "method": "GET"
+                    }
+                }
+            ],
+            "title": "Last Pegout Tx",
+            "transparent": true,
+            "type": "table"
+        },
+        {
+            "datasource": {
+                "type": "yesoreyeram-infinity-datasource",
+                "uid": "yesoreyeraminfinitydatasource"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "custom": {
+                        "align": "left",
+                        "cellOptions": {
+                            "type": "auto"
+                        },
+                        "inspect": false
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "dark-green",
+                                "value": null
+                            }
+                        ]
+                    }
+                },
+                "overrides": [
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Restarts"
+                        },
+                        "properties": [
+                            {
+                                "id": "custom.cellOptions",
+                                "value": {
+                                    "applyToRow": false,
+                                    "mode": "basic",
+                                    "type": "color-background",
+                                    "wrapText": false
+                                }
+                            },
+                            {
+                                "id": "custom.width",
+                                "value": 150
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Status"
+                        },
+                        "properties": [
+                            {
+                                "id": "custom.width",
+                                "value": 150
+                            },
+                            {
+                                "id": "custom.cellOptions",
+                                "value": {
+                                    "applyToRow": false,
+                                    "mode": "basic",
+                                    "type": "color-background",
+                                    "wrapText": false
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Culprits"
+                        },
+                        "properties": [
+                            {
+                                "id": "custom.cellOptions",
+                                "value": {
+                                    "applyToRow": false,
+                                    "mode": "basic",
+                                    "type": "color-background",
+                                    "wrapText": false
+                                }
+                            },
+                            {
+                                "id": "thresholds",
+                                "value": {
+                                    "mode": "absolute",
+                                    "steps": [
+                                        {
+                                            "color": "dark-green",
+                                            "value": null
+                                        }
+                                    ]
+                                }
+                            },
+                            {
+                                "id": "custom.width",
+                                "value": 150
+                            }
+                        ]
+                    }
+                ]
+            },
+            "gridPos": {
+                "h": 4,
+                "w": 14,
+                "x": 0,
+                "y": 12
+            },
+            "id": 2,
+            "options": {
+                "cellHeight": "sm",
+                "footer": {
+                    "countRows": false,
+                    "fields": "",
+                    "reducer": [
+                        "sum"
+                    ],
+                    "show": false
+                },
+                "showHeader": true
+            },
+            "pluginVersion": "12.1.0",
+            "targets": [
+                {
+                    "columns": [],
+                    "datasource": {
+                        "type": "yesoreyeram-infinity-datasource",
+                        "uid": "yesoreyeraminfinitydatasource"
+                    },
+                    "filters": [],
+                    "format": "table",
+                    "global_query_id": "",
+                    "parser": "backend",
+                    "refId": "A",
+                    "root_selector": "DkgInfo",
+                    "source": "url",
+                    "type": "json",
+                    "url": "http://metrics/metrics/api?source=system_info",
+                    "url_options": {
+                        "data": "",
+                        "method": "GET"
+                    }
+                }
+            ],
+            "title": "DKG",
+            "transformations": [
+                {
+                    "id": "organize",
+                    "options": {
+                        "excludeByName": {
+                            "CulpritsSeverity": true,
+                            "RestartsSeverity": true,
+                            "State": true,
+                            "Timeout": true,
+                            "Until": false,
+                            "ValidatorsActive": true,
+                            "ValidatorsActiveIdx": true,
+                            "ValidatorsEvicted": true,
+                            "ValidatorsEvictedIdx": true,
+                            "ValidatorsInactive": true,
+                            "ValidatorsInactiveIdx": true,
+                            "ValidatorsMax": true
+                        },
+                        "includeByName": {},
+                        "indexByName": {
+                            "Culprits": 2,
+                            "CulpritsSeverity": 3,
+                            "Restarts": 1,
+                            "RestartsSeverity": 4,
+                            "State": 6,
+                            "StateName": 0,
+                            "Timeout": 7,
+                            "Until": 5,
+                            "ValidatorsActive": 8,
+                            "ValidatorsActiveIdx": 9,
+                            "ValidatorsEvicted": 10,
+                            "ValidatorsEvictedIdx": 11,
+                            "ValidatorsInactive": 12,
+                            "ValidatorsInactiveIdx": 13,
+                            "ValidatorsMax": 14
+                        },
+                        "renameByName": {
+                            "StateName": "Status"
+                        }
+                    }
+                },
+                {
+                    "id": "convertFieldType",
+                    "options": {
+                        "conversions": [
+                            {
+                                "destinationType": "time",
+                                "targetField": "Until"
+                            }
+                        ],
+                        "fields": {}
+                    }
+                }
+            ],
+            "transparent": true,
+            "type": "table"
+        },
+        {
+            "datasource": {
+                "type": "yesoreyeram-infinity-datasource",
+                "uid": "yesoreyeraminfinitydatasource"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "custom": {
+                        "align": "left",
+                        "cellOptions": {
+                            "mode": "basic",
+                            "type": "color-background",
+                            "wrapText": true
+                        },
+                        "inspect": false
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "dark-green",
+                                "value": null
+                            }
+                        ]
+                    }
+                },
+                "overrides": [
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Internal Key"
+                        },
+                        "properties": [
+                            {
+                                "id": "mappings",
+                                "value": [
+                                    {
+                                        "options": {
+                                            "false": {
+                                                "color": "dark-red",
+                                                "index": 1,
+                                                "text": "Not same input internal key"
+                                            },
+                                            "true": {
+                                                "color": "dark-green",
+                                                "index": 0,
+                                                "text": "The same input internal key"
+                                            }
+                                        },
+                                        "type": "value"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "UTXO"
+                        },
+                        "properties": []
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "ServiceFee"
+                        },
+                        "properties": [
+                            {
+                                "id": "thresholds",
+                                "value": {
+                                    "mode": "absolute",
+                                    "steps": [
+                                        {
+                                            "color": "dark-red",
+                                            "value": null
+                                        },
+                                        {
+                                            "color": "dark-green",
+                                            "value": 0
+                                        }
+                                    ]
+                                }
+                            }
+                        ]
+                    }
+                ]
+            },
+            "gridPos": {
+                "h": 4,
+                "w": 10,
+                "x": 14,
+                "y": 12
+            },
+            "id": 12,
+            "options": {
+                "cellHeight": "sm",
+                "footer": {
+                    "countRows": false,
+                    "fields": "",
+                    "reducer": [
+                        "sum"
+                    ],
+                    "show": false
+                },
+                "showHeader": true
+            },
+            "pluginVersion": "12.1.0",
+            "targets": [
+                {
+                    "columns": [],
+                    "datasource": {
+                        "type": "yesoreyeram-infinity-datasource",
+                        "uid": "yesoreyeraminfinitydatasource"
+                    },
+                    "filters": [],
+                    "format": "table",
+                    "global_query_id": "",
+                    "parser": "backend",
+                    "refId": "A",
+                    "root_selector": "TeleportInfo",
+                    "source": "url",
+                    "type": "json",
+                    "url": "http://metrics/metrics/api?source=system_info",
+                    "url_options": {
+                        "data": "",
+                        "method": "GET"
+                    }
+                }
+            ],
+            "title": "Teleport",
+            "transformations": [
+                {
+                    "id": "organize",
+                    "options": {
+                        "excludeByName": {
+                            "IsSameInputInternalKeyStr": true,
+                            "LastBtc_LastTon": true,
+                            "LastConfirmed": true,
+                            "LastTon_PegoutBlock": true,
+                            "TimeSinceLastAutopegout": true
+                        },
+                        "includeByName": {},
+                        "indexByName": {
+                            "IsSameInputInternalKey": 1,
+                            "IsSameInputInternalKeyStr": 2,
+                            "LastBtc_LastTon": 3,
+                            "LastConfirmed": 4,
+                            "LastTon_PegoutBlock": 5,
+                            "ServiceFee": 8,
+                            "TimeSinceLastAutopegout": 6,
+                            "TimeSinceLastAutopegoutStr": 7,
+                            "UTXO": 0
+                        },
+                        "renameByName": {
+                            "IsSameInputInternalKey": "Internal Key",
+                            "ServiceFee": "Service Fee",
+                            "TimeSinceLastAutopegoutStr": "Since Last Autopegout"
+                        }
+                    }
+                },
+                {
+                    "id": "convertFieldType",
+                    "options": {
+                        "conversions": [
+                            {
+                                "destinationType": "number",
+                                "targetField": "ServiceFee"
+                            }
+                        ],
+                        "fields": {}
+                    }
+                }
+            ],
+            "transparent": true,
+            "type": "table"
+        },
+        {
+            "datasource": {
+                "type": "yesoreyeram-infinity-datasource",
+                "uid": "yesoreyeraminfinitydatasource"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "custom": {
+                        "align": "left",
+                        "cellOptions": {
+                            "type": "auto"
+                        },
+                        "inspect": false
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            }
+                        ]
+                    }
+                },
+                "overrides": [
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "ValidatorsMax"
+                        },
+                        "properties": [
+                            {
+                                "id": "custom.cellOptions",
+                                "value": {
+                                    "applyToRow": false,
+                                    "mode": "basic",
+                                    "type": "color-background",
+                                    "wrapText": false
+                                }
+                            },
+                            {
+                                "id": "thresholds",
+                                "value": {
+                                    "mode": "percentage",
+                                    "steps": [
+                                        {
+                                            "color": "dark-red",
+                                            "value": null
+                                        },
+                                        {
+                                            "color": "orange",
+                                            "value": 50
+                                        },
+                                        {
+                                            "color": "#EAB839",
+                                            "value": 75
+                                        },
+                                        {
+                                            "color": "dark-green",
+                                            "value": 100
+                                        }
+                                    ]
+                                }
+                            },
+                            {
+                                "id": "custom.width",
+                                "value": 150
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "ValidatorsActive"
+                        },
+                        "properties": [
+                            {
+                                "id": "custom.cellOptions",
+                                "value": {
+                                    "applyToRow": false,
+                                    "mode": "basic",
+                                    "type": "color-background",
+                                    "wrapText": false
+                                }
+                            },
+                            {
+                                "id": "thresholds",
+                                "value": {
+                                    "mode": "percentage",
+                                    "steps": [
+                                        {
+                                            "color": "dark-red",
+                                            "value": null
+                                        },
+                                        {
+                                            "color": "semi-dark-orange",
+                                            "value": 50
+                                        },
+                                        {
+                                            "color": "#EAB839",
+                                            "value": 60
+                                        },
+                                        {
+                                            "color": "dark-green",
+                                            "value": 70
+                                        }
+                                    ]
+                                }
+                            },
+                            {
+                                "id": "custom.width",
+                                "value": 150
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "ValidatorsInactive"
+                        },
+                        "properties": [
+                            {
+                                "id": "custom.cellOptions",
+                                "value": {
+                                    "applyToRow": false,
+                                    "mode": "basic",
+                                    "type": "color-background",
+                                    "wrapText": false
+                                }
+                            },
+                            {
+                                "id": "thresholds",
+                                "value": {
+                                    "mode": "percentage",
+                                    "steps": [
+                                        {
+                                            "color": "dark-green",
+                                            "value": null
+                                        },
+                                        {
+                                            "color": "semi-dark-yellow",
+                                            "value": 30
+                                        },
+                                        {
+                                            "color": "semi-dark-orange",
+                                            "value": 40
+                                        },
+                                        {
+                                            "color": "dark-red",
+                                            "value": 50
+                                        }
+                                    ]
+                                }
+                            },
+                            {
+                                "id": "custom.width",
+                                "value": 150
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "ValidatorsEvicted"
+                        },
+                        "properties": [
+                            {
+                                "id": "custom.width",
+                                "value": 150
+                            },
+                            {
+                                "id": "custom.cellOptions",
+                                "value": {
+                                    "applyToRow": false,
+                                    "mode": "basic",
+                                    "type": "color-background",
+                                    "wrapText": false
+                                }
+                            },
+                            {
+                                "id": "thresholds",
+                                "value": {
+                                    "mode": "absolute",
+                                    "steps": [
+                                        {
+                                            "color": "dark-green",
+                                            "value": null
+                                        },
+                                        {
+                                            "color": "semi-dark-yellow",
+                                            "value": 30
+                                        },
+                                        {
+                                            "color": "semi-dark-orange",
+                                            "value": 40
+                                        },
+                                        {
+                                            "color": "dark-red",
+                                            "value": 50
+                                        }
+                                    ]
+                                }
+                            }
+                        ]
+                    }
+                ]
+            },
+            "gridPos": {
+                "h": 3,
+                "w": 14,
+                "x": 0,
+                "y": 16
+            },
+            "id": 3,
+            "options": {
+                "cellHeight": "sm",
+                "footer": {
+                    "countRows": false,
+                    "fields": "",
+                    "reducer": [
+                        "sum"
+                    ],
+                    "show": false
+                },
+                "showHeader": true
+            },
+            "pluginVersion": "12.1.0",
+            "targets": [
+                {
+                    "columns": [],
+                    "datasource": {
+                        "type": "yesoreyeram-infinity-datasource",
+                        "uid": "yesoreyeraminfinitydatasource"
+                    },
+                    "filters": [],
+                    "format": "table",
+                    "global_query_id": "",
+                    "parser": "backend",
+                    "refId": "A",
+                    "root_selector": "DkgInfo",
+                    "source": "url",
+                    "type": "json",
+                    "url": "http://metrics/metrics/api?source=system_info",
+                    "url_options": {
+                        "data": "",
+                        "method": "GET"
+                    }
+                }
+            ],
+            "title": "",
+            "transformations": [
+                {
+                    "id": "organize",
+                    "options": {
+                        "excludeByName": {
+                            "Culprits": true,
+                            "CulpritsSeverity": true,
+                            "Restarts": true,
+                            "RestartsSeverity": true,
+                            "State": true,
+                            "StateName": true,
+                            "Timeout": false,
+                            "Until": true,
+                            "ValidatorsActiveIdx": true,
+                            "ValidatorsEvicted": false,
+                            "ValidatorsEvictedIdx": true,
+                            "ValidatorsInactiveIdx": true
+                        },
+                        "includeByName": {},
+                        "indexByName": {
+                            "Culprits": 8,
+                            "CulpritsSeverity": 9,
+                            "Restarts": 10,
+                            "RestartsSeverity": 11,
+                            "State": 12,
+                            "StateName": 13,
+                            "Timeout": 7,
+                            "Until": 14,
+                            "ValidatorsActive": 1,
+                            "ValidatorsActiveIdx": 4,
+                            "ValidatorsEvicted": 3,
+                            "ValidatorsEvictedIdx": 5,
+                            "ValidatorsInactive": 2,
+                            "ValidatorsInactiveIdx": 6,
+                            "ValidatorsMax": 0
+                        },
+                        "renameByName": {}
+                    }
+                }
+            ],
+            "transparent": true,
+            "type": "table"
+        },
+        {
+            "datasource": {
+                "type": "yesoreyeram-infinity-datasource",
+                "uid": "yesoreyeraminfinitydatasource"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "custom": {
+                        "align": "left",
+                        "cellOptions": {
+                            "type": "auto"
+                        },
+                        "inspect": false
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "dark-green",
+                                "value": null
+                            }
+                        ]
+                    }
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 3,
+                "w": 10,
+                "x": 14,
+                "y": 16
+            },
+            "id": 13,
+            "options": {
+                "cellHeight": "sm",
+                "footer": {
+                    "countRows": false,
+                    "fields": "",
+                    "reducer": [
+                        "sum"
+                    ],
+                    "show": false
+                },
+                "showHeader": true
+            },
+            "pluginVersion": "12.1.0",
+            "targets": [
+                {
+                    "columns": [],
+                    "datasource": {
+                        "type": "yesoreyeram-infinity-datasource",
+                        "uid": "yesoreyeraminfinitydatasource"
+                    },
+                    "filters": [],
+                    "format": "table",
+                    "global_query_id": "",
+                    "parser": "backend",
+                    "refId": "A",
+                    "root_selector": "TeleportInfo",
+                    "source": "url",
+                    "type": "json",
+                    "url": "http://metrics/metrics/api?source=system_info",
+                    "url_options": {
+                        "data": "",
+                        "method": "GET"
+                    }
+                }
+            ],
+            "title": "",
+            "transformations": [
+                {
+                    "id": "organize",
+                    "options": {
+                        "excludeByName": {
+                            "IsSameInputInternalKey": true,
+                            "IsSameInputInternalKeyStr": true,
+                            "ServiceFee": true,
+                            "TimeSinceLastAutopegout": true,
+                            "TimeSinceLastAutopegoutStr": true,
+                            "UTXO": true
+                        },
+                        "includeByName": {},
+                        "indexByName": {
+                            "IsSameInputInternalKey": 3,
+                            "IsSameInputInternalKeyStr": 4,
+                            "LastBtc_LastTon": 1,
+                            "LastConfirmed": 0,
+                            "LastTon_PegoutBlock": 2,
+                            "ServiceFee": 5,
+                            "TimeSinceLastAutopegout": 6,
+                            "TimeSinceLastAutopegoutStr": 7,
+                            "UTXO": 8
+                        },
+                        "renameByName": {
+                            "LastBtc_LastTon": "Last BTC - Last TON",
+                            "LastConfirmed": "Last Confirmed",
+                            "LastTon_PegoutBlock": "Last TON - Pegout Block"
+                        }
+                    }
+                }
+            ],
+            "transparent": true,
+            "type": "table"
+        },
+        {
+            "datasource": {
+                "type": "yesoreyeram-infinity-datasource",
+                "uid": "yesoreyeraminfinitydatasource"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "custom": {
+                        "align": "center",
+                        "cellOptions": {
+                            "type": "color-text"
+                        },
+                        "inspect": false
+                    },
+                    "mappings": [],
+                    "noValue": "No Active Validators",
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "dark-green",
+                                "value": null
+                            }
+                        ]
+                    }
+                },
+                "overrides": [
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "ValidatorsActiveIdx"
+                        },
+                        "properties": [
+                            {
+                                "id": "noValue",
+                                "value": "-"
+                            }
+                        ]
+                    }
+                ]
+            },
+            "gridPos": {
+                "h": 7,
+                "w": 3,
+                "x": 2,
+                "y": 19
+            },
+            "id": 4,
+            "options": {
+                "cellHeight": "sm",
+                "footer": {
+                    "countRows": false,
+                    "fields": "",
+                    "reducer": [
+                        "sum"
+                    ],
+                    "show": false
+                },
+                "showHeader": true
+            },
+            "pluginVersion": "12.1.0",
+            "targets": [
+                {
+                    "columns": [],
+                    "datasource": {
+                        "type": "yesoreyeram-infinity-datasource",
+                        "uid": "yesoreyeraminfinitydatasource"
+                    },
+                    "filters": [],
+                    "format": "table",
+                    "global_query_id": "",
+                    "parser": "backend",
+                    "refId": "A",
+                    "root_selector": "DkgInfo.ValidatorsActiveIdx",
+                    "source": "url",
+                    "type": "json",
+                    "url": "http://metrics/metrics/api?source=system_info",
+                    "url_options": {
+                        "data": "",
+                        "method": "GET"
+                    }
+                }
+            ],
+            "title": "",
+            "transformations": [
+                {
+                    "disabled": true,
+                    "id": "transpose",
+                    "options": {
+                        "restFieldsName": ""
+                    }
+                },
+                {
+                    "id": "organize",
+                    "options": {
+                        "excludeByName": {
+                            "Field": true
+                        },
+                        "includeByName": {},
+                        "indexByName": {},
+                        "renameByName": {
+                            "1": "Active Validators Idx",
+                            "A": "Active Validators Idx"
+                        }
+                    }
+                }
+            ],
+            "transparent": true,
+            "type": "table"
+        },
+        {
+            "datasource": {
+                "type": "yesoreyeram-infinity-datasource",
+                "uid": "yesoreyeraminfinitydatasource"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "custom": {
+                        "align": "center",
+                        "cellOptions": {
+                            "type": "color-text"
+                        },
+                        "inspect": false
+                    },
+                    "mappings": [],
+                    "noValue": "No Inactive Validators",
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "dark-yellow",
+                                "value": null
+                            }
+                        ]
+                    }
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 7,
+                "w": 3,
+                "x": 5,
+                "y": 19
+            },
+            "id": 5,
+            "options": {
+                "cellHeight": "sm",
+                "footer": {
+                    "countRows": false,
+                    "fields": "",
+                    "reducer": [
+                        "sum"
+                    ],
+                    "show": false
+                },
+                "showHeader": true
+            },
+            "pluginVersion": "12.1.0",
+            "targets": [
+                {
+                    "columns": [],
+                    "datasource": {
+                        "type": "yesoreyeram-infinity-datasource",
+                        "uid": "yesoreyeraminfinitydatasource"
+                    },
+                    "filters": [],
+                    "format": "table",
+                    "global_query_id": "",
+                    "parser": "backend",
+                    "refId": "A",
+                    "root_selector": "DkgInfo.ValidatorsInactiveIdx",
+                    "source": "url",
+                    "type": "json",
+                    "url": "http://metrics/metrics/api?source=system_info",
+                    "url_options": {
+                        "data": "",
+                        "method": "GET"
+                    }
+                }
+            ],
+            "title": "",
+            "transformations": [
+                {
+                    "disabled": true,
+                    "id": "transpose",
+                    "options": {}
+                },
+                {
+                    "id": "organize",
+                    "options": {
+                        "excludeByName": {
+                            "Field": true
+                        },
+                        "includeByName": {},
+                        "indexByName": {},
+                        "renameByName": {
+                            "1": "Inactive Validators Idx",
+                            "A": "Inactive Validators Idx"
+                        }
+                    }
+                }
+            ],
+            "transparent": true,
+            "type": "table"
+        },
+        {
+            "datasource": {
+                "type": "yesoreyeram-infinity-datasource",
+                "uid": "yesoreyeraminfinitydatasource"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "custom": {
+                        "align": "center",
+                        "cellOptions": {
+                            "type": "color-text"
+                        },
+                        "inspect": false
+                    },
+                    "mappings": [],
+                    "noValue": "No Evicted Validators",
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "dark-red",
+                                "value": null
+                            }
+                        ]
+                    }
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 7,
+                "w": 3,
+                "x": 8,
+                "y": 19
+            },
+            "id": 6,
+            "options": {
+                "cellHeight": "sm",
+                "footer": {
+                    "countRows": false,
+                    "fields": "",
+                    "reducer": [
+                        "sum"
+                    ],
+                    "show": false
+                },
+                "showHeader": true
+            },
+            "pluginVersion": "12.1.0",
+            "targets": [
+                {
+                    "columns": [],
+                    "datasource": {
+                        "type": "yesoreyeram-infinity-datasource",
+                        "uid": "yesoreyeraminfinitydatasource"
+                    },
+                    "filters": [],
+                    "format": "table",
+                    "global_query_id": "",
+                    "parser": "backend",
+                    "refId": "A",
+                    "root_selector": "DkgInfo.ValidatorsEvictedIdx",
+                    "source": "url",
+                    "type": "json",
+                    "url": "http://metrics/metrics/api?source=system_info",
+                    "url_options": {
+                        "data": "",
+                        "method": "GET"
+                    }
+                }
+            ],
+            "title": "",
+            "transformations": [
+                {
+                    "disabled": true,
+                    "id": "transpose",
+                    "options": {}
+                },
+                {
+                    "id": "organize",
+                    "options": {
+                        "excludeByName": {
+                            "Field": true
+                        },
+                        "includeByName": {},
+                        "indexByName": {},
+                        "renameByName": {
+                            "1": "Evicted Validators Idx",
+                            "A": "Evicted Validators Idx",
+                            "Field": ""
+                        }
+                    }
+                }
+            ],
+            "transparent": true,
+            "type": "table"
+        },
+        {
+            "datasource": {
+                "type": "yesoreyeram-infinity-datasource",
+                "uid": "yesoreyeraminfinitydatasource"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "custom": {
+                        "align": "left",
+                        "cellOptions": {
+                            "type": "auto"
+                        },
+                        "inspect": false
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "dark-red",
+                                "value": null
+                            },
+                            {
+                                "color": "semi-dark-yellow",
+                                "value": 2
+                            },
+                            {
+                                "color": "dark-green",
+                                "value": 5
+                            }
+                        ]
+                    }
+                },
+                "overrides": [
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Contract"
+                        },
+                        "properties": [
+                            {
+                                "id": "custom.width",
+                                "value": 200
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Balance"
+                        },
+                        "properties": [
+                            {
+                                "id": "custom.cellOptions",
+                                "value": {
+                                    "applyToRow": true,
+                                    "mode": "basic",
+                                    "type": "color-background",
+                                    "wrapText": false
+                                }
+                            }
+                        ]
+                    }
+                ]
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 10,
+                "x": 14,
+                "y": 19
+            },
+            "id": 1,
+            "options": {
+                "cellHeight": "sm",
+                "footer": {
+                    "countRows": false,
+                    "fields": "",
+                    "reducer": [
+                        "sum"
+                    ],
+                    "show": false
+                },
+                "showHeader": true
+            },
+            "pluginVersion": "12.1.0",
+            "targets": [
+                {
+                    "columns": [],
+                    "datasource": {
+                        "type": "yesoreyeram-infinity-datasource",
+                        "uid": "yesoreyeraminfinitydatasource"
+                    },
+                    "filters": [],
+                    "format": "table",
+                    "global_query_id": "",
+                    "parser": "backend",
+                    "refId": "A",
+                    "root_selector": "BalancesInfo",
+                    "source": "url",
+                    "type": "json",
+                    "url": "http://metrics/metrics/api?source=system_info",
+                    "url_options": {
+                        "data": "",
+                        "method": "GET"
+                    }
+                }
+            ],
+            "title": "Balances",
+            "transformations": [
+                {
+                    "id": "organize",
+                    "options": {
+                        "excludeByName": {
+                            "Bitclient": true,
+                            "BitclientAddr": true,
+                            "BitclientSeverity": true,
+                            "Coordinator": true,
+                            "CoordinatorAddr": true,
+                            "CoordinatorSeverity": true,
+                            "Minter": true,
+                            "MinterAddr": true,
+                            "MinterSeverity": true,
+                            "Relayer": true,
+                            "RelayerAddr": true,
+                            "RelayerSeverity": true,
+                            "Teleport": true,
+                            "TeleportAddr": true,
+                            "TeleportSeverity": true,
+                            "Total": false
+                        },
+                        "includeByName": {},
+                        "indexByName": {
+                            "Bitclient": 17,
+                            "BitclientAddr": 1,
+                            "BitclientSeverity": 15,
+                            "BitclientStr": 0,
+                            "Coordinator": 14,
+                            "CoordinatorAddr": 3,
+                            "CoordinatorSeverity": 18,
+                            "CoordinatorStr": 2,
+                            "Minter": 19,
+                            "MinterAddr": 5,
+                            "MinterSeverity": 12,
+                            "MinterStr": 4,
+                            "Relayer": 13,
+                            "RelayerAddr": 7,
+                            "RelayerSeverity": 11,
+                            "RelayerStr": 6,
+                            "Teleport": 10,
+                            "TeleportAddr": 9,
+                            "TeleportSeverity": 16,
+                            "TeleportStr": 8
+                        },
+                        "renameByName": {
+                            "BitclientStr": ""
+                        }
+                    }
+                },
+                {
+                    "id": "convertFieldType",
+                    "options": {
+                        "conversions": [
+                            {
+                                "destinationType": "number",
+                                "targetField": "BitclientStr"
+                            },
+                            {
+                                "destinationType": "number",
+                                "targetField": "CoordinatorStr"
+                            },
+                            {
+                                "destinationType": "number",
+                                "targetField": "MinterStr"
+                            },
+                            {
+                                "destinationType": "number",
+                                "targetField": "RelayerStr"
+                            },
+                            {
+                                "destinationType": "number",
+                                "targetField": "TeleportStr"
+                            }
+                        ],
+                        "fields": {}
+                    }
+                },
+                {
+                    "id": "transpose",
+                    "options": {}
+                },
+                {
+                    "id": "organize",
+                    "options": {
+                        "excludeByName": {},
+                        "includeByName": {},
+                        "indexByName": {},
+                        "renameByName": {
+                            "1": "Balance",
+                            "Field": "Contract"
+                        }
+                    }
+                }
+            ],
+            "transparent": true,
+            "type": "table"
+        }
+    ],
+    "preload": false,
+    "refresh": "1m",
+    "schemaVersion": 40,
+    "tags": [],
+    "templating": {
+        "list": []
+    },
+    "time": {
+        "from": "now-6h",
+        "to": "now"
+    },
+    "timepicker": {},
+    "timezone": "browser",
+    "title": "System Info",
+    "uid": "eexx65sccvg8wd",
+    "version": 1,
+    "weekStart": ""
+}
