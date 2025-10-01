@@ -13,6 +13,7 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/config"
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/data_models"
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/data_sources"
+	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/mutils"
 
 	"github.com/xssnick/tonutils-go/address"
 )
@@ -103,6 +104,9 @@ func (dataSource *AlertDataSourceLive) BtcGetBlockHeightByHash(hash *chainhash.H
 	return dataSource.bitcoinClient.GetBlockHeightByHash(hash)
 }
 
+func (dataSource *AlertDataSourceLive) BtcGetCpfpLength(hash *chainhash.Hash) (int, error) {
+	return mutils.GetCPFPChainSize(dataSource.bitcoinClient, hash)
+}
 func (dataSource *AlertDataSourceLive) BtcGetMempoolEntry(txHash string) (*btcjson.GetMempoolEntryResult, error) {
 	return dataSource.bitcoinClient.RPCClient.GetMempoolEntry(txHash)
 }
