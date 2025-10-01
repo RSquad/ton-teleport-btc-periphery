@@ -60,7 +60,6 @@ func (dataSource *AlertDataSourceLive) FirstUnsignedPegoutDB() (*coordinator.Peg
 		return nil, nil
 	}
 
-	// TODO: add test
 	if len(coordinatorContractStorage.UnsignedPegouts) == 0 {
 		return nil, nil
 	}

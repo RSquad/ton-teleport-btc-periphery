@@ -237,7 +237,7 @@ groups:
           severity: critical
         annotations:
           description: "DKG culprit found [CRITICAL]"
-          culprit_id: "{{ $labels.culprit_id }}"
+          culprit_ids: "{{ $labels.culprit_ids }}"
           not_evicted_ids: "{{ $labels.not_evicted_ids }}"
 
   - name: contract.balance.coordinator
