@@ -141,12 +141,12 @@ func (apiHandler AlertsTestingApiHandler) ParseState(queryParams *url.Values) (*
 	}
 
 	// int_values
-	var intValues alerts.IntValues = nil
+	var intValues alerts.Values = nil
 	{
 		intValuesStr := queryParams.Get("int_values")
 
 		if intValuesStr != "" {
-			intValues = make(alerts.IntValues)
+			intValues = make(alerts.Values)
 			values := strings.Split(intValuesStr, "|")
 
 			for _, v := range values {

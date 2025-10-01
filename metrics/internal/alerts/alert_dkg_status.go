@@ -1,6 +1,8 @@
 package alerts
 
 import (
+	"time"
+
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
 )
 
@@ -12,10 +14,12 @@ func NewAlertDkgStatus() Alert {
 }
 
 func (alert *AlertDkgStatus) NewLabels() Labels {
-	return Labels{}
+	return Labels{
+		"until": "",
+	}
 }
 
-func (alert *AlertDkgStatus) Check(dataSource AlertDataSource) (Severity, Labels, IntValues, error) {
+func (alert *AlertDkgStatus) Check(dataSource AlertDataSource) (Severity, Labels, Values, error) {
 	labels := alert.NewLabels()
 
 	// Get DKG
@@ -27,6 +31,8 @@ func (alert *AlertDkgStatus) Check(dataSource AlertDataSource) (Severity, Labels
 	if dkg == nil {
 		return Severity(coordinator.DKGStateFinished), labels, nil, nil
 	}
+
+	labels["until"] = dkg.Until.Format(time.RFC3339)
 
 	return Severity(dkg.State), labels, nil, nil
 }

@@ -26,7 +26,7 @@ func (alert *AlertContractBalance) NewLabels() Labels {
 	}
 }
 
-func (alert *AlertContractBalance) Check(dataSource AlertDataSource) (Severity, Labels, IntValues, error) {
+func (alert *AlertContractBalance) Check(dataSource AlertDataSource) (Severity, Labels, Values, error) {
 	labels := alert.NewLabels()
 
 	// Get current balance

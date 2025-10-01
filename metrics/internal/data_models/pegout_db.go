@@ -1,9 +1,11 @@
 package data_models
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/xssnick/tonutils-go/address"
 )
@@ -19,12 +21,21 @@ const (
 type PegoutTonAddr address.Address
 
 type Pegout struct {
-	Id               uint64
-	Addr             *PegoutTonAddr
-	Status           PegoutStatus
-	BitcoinTxRaw     []byte
-	BitcoinTxId      []byte
-	BitcoinBlockHash []byte
+	Id               uint64         `json:"id"`
+	Addr             *PegoutTonAddr `json:"addr"`
+	Status           PegoutStatus   `json:"status"`
+	BitcoinTxRaw     []byte         `json:"bitcoin_tx_raw"`
+	BitcoinTxId      []byte         `json:"bitcoin_tx_id"`
+	BitcoinBlockHash []byte         `json:"bitcoin_block_hash"`
+}
+
+type PegoutJSON struct {
+	Id                  uint64         `json:"id"`
+	Addr                *PegoutTonAddr `json:"addr"`
+	Status              PegoutStatus   `json:"status"`
+	BitcoinTxRawHex     string         `json:"bitcoin_tx_raw"`
+	BitcoinTxIdHex      string         `json:"bitcoin_tx_id"`
+	BitcoinBlockHashHex string         `json:"bitcoin_block_hash"`
 }
 
 func (s *PegoutTonAddr) UnmarshalJSON(data []byte) error {
@@ -115,11 +126,42 @@ func (s PegoutStatus) MarshalJSON() ([]byte, error) {
 }
 
 func DeserializePegoutDB(jsonData []byte) (*Pegout, error) {
-	var pegout Pegout
-	err := json.Unmarshal(jsonData, &pegout)
+	var pegoutJson PegoutJSON
+	err := json.Unmarshal(jsonData, &pegoutJson)
 	if err != nil {
 		return nil, err
 	}
+
+	h := func(s string) ([]byte, error) {
+		if s == "" {
+			return nil, nil
+		}
+		return hex.DecodeString(strings.TrimPrefix(strings.ToLower(s), "0x"))
+	}
+
+	bitcoinTxRaw, err := h(pegoutJson.BitcoinTxRawHex)
+	if err != nil {
+		return nil, err
+	}
+
+	bitcoinTxId, err := h(pegoutJson.BitcoinTxIdHex)
+	if err != nil {
+		return nil, err
+	}
+
+	bitcoinBlockHash, err := h(pegoutJson.BitcoinBlockHashHex)
+	if err != nil {
+		return nil, err
+	}
+
+	var pegout Pegout
+
+	pegout.Id = pegoutJson.Id
+	pegout.Addr = pegoutJson.Addr
+	pegout.Status = pegoutJson.Status
+	pegout.BitcoinTxRaw = bitcoinTxRaw
+	pegout.BitcoinTxId = bitcoinTxId
+	pegout.BitcoinBlockHash = bitcoinBlockHash
 
 	return &pegout, nil
 }

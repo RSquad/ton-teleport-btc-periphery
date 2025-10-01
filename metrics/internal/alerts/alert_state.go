@@ -12,7 +12,7 @@ type AlertState struct {
 	LastErr      error
 	Enforced     bool
 	LastUpdateTs time.Time
-	IntValues    IntValues
+	Values       Values
 }
 
 func NewAlertState(
@@ -21,7 +21,7 @@ func NewAlertState(
 	labels Labels,
 	lastErr error,
 	enforced bool,
-	intValues IntValues,
+	values Values,
 ) *AlertState {
 	return &AlertState{
 		Name:         name,
@@ -30,7 +30,7 @@ func NewAlertState(
 		LastErr:      lastErr,
 		Enforced:     enforced,
 		LastUpdateTs: time.Now(),
-		IntValues:    intValues,
+		Values:       values,
 	}
 }
 
@@ -41,10 +41,10 @@ func (state AlertState) DeepCopy() AlertState {
 		maps.Copy(labelsCopy, state.Labels)
 	}
 
-	var intValuesCopy IntValues
-	if state.IntValues != nil {
-		intValuesCopy = make(IntValues, len(state.IntValues))
-		maps.Copy(intValuesCopy, state.IntValues)
+	var valuesCopy Values
+	if state.Values != nil {
+		valuesCopy = make(Values, len(state.Values))
+		maps.Copy(valuesCopy, state.Values)
 	}
 
 	return AlertState{
@@ -54,6 +54,6 @@ func (state AlertState) DeepCopy() AlertState {
 		LastErr:      state.LastErr,
 		Enforced:     state.Enforced,
 		LastUpdateTs: state.LastUpdateTs,
-		IntValues:    intValuesCopy,
+		Values:       valuesCopy,
 	}
 }

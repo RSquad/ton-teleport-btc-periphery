@@ -142,6 +142,7 @@ groups:
         severity: info
       annotations:
         description: "DKG finished [INFO]"
+        dkg_until: "{{ $labels.until }}"
 
     - alert: DKGStatusInProgress
       expr: dkg_status == 1
@@ -149,6 +150,23 @@ groups:
         severity: info
       annotations:
         description: "DKG started [INFO]"
+        dkg_until: "{{ $labels.until }}"
+
+    - alert: DKGStatePart1Finished
+      expr: dkg_status == 2
+      labels:
+        severity: info
+      annotations:
+        description: "DKG Part1 finished [INFO]"
+        dkg_until: "{{ $labels.until }}"
+
+    - alert: DKGStatePart2Finished
+      expr: dkg_status == 3
+      labels:
+        severity: info
+      annotations:
+        description: "DKG Part2 finished [INFO]"
+        dkg_until: "{{ $labels.until }}"
 
   - name: total.service.fee
     rules:
@@ -199,6 +217,7 @@ groups:
           severity: warning
         annotations:
           description: "The number of participants is less than 80% [WARNING]"
+          participants_count: "{{ $labels.participants_count }}"
 
       - alert: DKGParticipantsCritical
         expr: alert_dkg_participants >= 3
@@ -206,6 +225,7 @@ groups:
           severity: critical
         annotations:
           description: "The number of participants is less than 55% [CRITICAL]"
+          participants_count: "{{ $labels.participants_count }}"
 
   - name: dkg.culprit.found
     rules:
@@ -217,7 +237,7 @@ groups:
           severity: critical
         annotations:
           description: "DKG culprit found [CRITICAL]"
-          culprit_id: "{{ $labels.culprit_id }}"
+          culprit_ids: "{{ $labels.culprit_ids }}"
           not_evicted_ids: "{{ $labels.not_evicted_ids }}"
 
   - name: contract.balance.coordinator
