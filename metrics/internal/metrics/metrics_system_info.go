@@ -397,12 +397,12 @@ func (systemInfo *MetricsSystemInfo) TeleportInfo(
 		UTXO:                       len(teleportStorge.UTXOset),
 		IsSameInputInternalKey:     isInternalKeyCorrect,
 		IsSameInputInternalKeyStr:  isInternalKeyCorrectStr,
-		TimeSinceLastAutopegout:    300,
-		TimeSinceLastAutopegoutStr: "5 min",
+		TimeSinceLastAutopegout:    300,     // TODO: implement
+		TimeSinceLastAutopegoutStr: "5 min", // TODO: implement
 		ServiceFee:                 int(teleportStorge.TotalServiceFee),
-		LastConfirmed:              -1,
-		LastBtc_LastTon:            -1,
-		LastTon_PegoutBlock:        -1,
+		LastConfirmed:              -1, // TODO: implement
+		LastBtc_LastTon:            -1, // TODO: implement
+		LastTon_PegoutBlock:        -1, // TODO: implement
 	}, nil
 }
 
