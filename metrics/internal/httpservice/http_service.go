@@ -55,17 +55,17 @@ func (s *HttpService) Work(ctx context.Context) {
 			Msg("The PProf HTTP endpoint is available at /internal/pprof/. Use it only for testing, and disable METRICS_PPROF_HTTP_ENABLE in production.")
 
 		// index + common endpoints
-		mux.HandleFunc("/internal/pprof/", pprof.Index)
-		mux.HandleFunc("/internal/pprof/cmdline", pprof.Cmdline)
-		mux.HandleFunc("/internal/pprof/profile", pprof.Profile) // ?seconds=30
-		mux.HandleFunc("/internal/pprof/symbol", pprof.Symbol)
-		mux.HandleFunc("/internal/pprof/trace", pprof.Trace)
+		mux.HandleFunc("/metrics/internal/pprof/", pprof.Index)
+		mux.HandleFunc("/metrics/internal/pprof/cmdline", pprof.Cmdline)
+		mux.HandleFunc("/metrics/internal/pprof/profile", pprof.Profile) // ?seconds=30
+		mux.HandleFunc("/metrics/internal/pprof/symbol", pprof.Symbol)
+		mux.HandleFunc("/metrics/internal/pprof/trace", pprof.Trace)
 
 		// individual profiles
 		for _, p := range []string{
 			"allocs", "block", "goroutine", "heap", "mutex", "threadcreate",
 		} {
-			mux.Handle("/internal/pprof/"+p, pprof.Handler(p))
+			mux.Handle("/metrics/internal/pprof/"+p, pprof.Handler(p))
 		}
 	}
 
