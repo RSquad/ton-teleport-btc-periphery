@@ -23,4 +23,5 @@ type EnvConfig struct {
 	CoordinatorContractFetchPeriod   string `env:"COORDINATOR_CONTRACT_FETCH_PERIOD"`
 	ContractBalancesFetchPeriod      string `env:"CONTRACT_BALANCES_FETCH_PERIOD"`
 	AlertsCheckPeriod                string `env:"ALERTS_CHECK_PERIOD"`
+	PProfHttpEnable                  string `env:"METRICS_PPROF_HTTP_ENABLE"`
 }

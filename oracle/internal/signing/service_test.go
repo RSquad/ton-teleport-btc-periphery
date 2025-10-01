@@ -309,11 +309,12 @@ func TestGenerateCommitmentsForEachInput(t *testing.T) {
 			InternalKey: groupPublicKey,
 		},
 		artifacts: &coordinator.PegoutRecord{
-			Commitments:     map[uint16][]byte{},
-			CommitmentsMask: make([]byte, 32),
-			MaxSigners:      maxSigners,
-			ExpiredAt:       time.Now().Add(time.Minute),
-			SigningMask:     big.NewInt(7),
+			Commitments:             map[uint16][]byte{},
+			CommitmentsMaskAccepted: big.NewInt(0),
+			CommitmentsMaskOther:    big.NewInt(0),
+			MaxSigners:              maxSigners,
+			ExpiredAt:               time.Now().Add(time.Minute),
+			SigningMask:             big.NewInt(7),
 			Signatures: coordinator.PegoutSignatures{
 				Mask:  big.NewInt(0),
 				Count: 0,
@@ -338,7 +339,8 @@ func TestGenerateCommitmentsForEachInput(t *testing.T) {
 				t.Fatal("validatorIdx should be 0")
 			}
 			pegout.artifacts.Commitments[validatorIdx] = commitments
-			pegout.artifacts.CommitmentsMask = []byte{1}
+			pegout.artifacts.CommitmentsMaskAccepted = big.NewInt(1)
+			pegout.artifacts.CommitmentsMaskOther = big.NewInt(0)
 			pegout.artifacts.SigningMask = big.NewInt(1)
 			return nil, nil
 		},
@@ -501,14 +503,15 @@ func TestNonceAndCommitmentCleanupOnExpiredAtChange(t *testing.T) {
 	originalExpiredAt := time.Now().Add(time.Hour)
 
 	unsignedPegout := &coordinator.PegoutRecord{
-		ID:                1,
-		Commitments:       map[uint16][]byte{},
-		CommitmentsMask:   make([]byte, 32),
-		SigningShares:     map[uint16]map[uint16][]byte{},
-		SigningSharesMask: make([]byte, 32),
-		MaxSigners:        maxSigners,
-		ExpiredAt:         time.Unix(0, 0),
-		SigningMask:       big.NewInt(7),
+		ID:                      1,
+		Commitments:             map[uint16][]byte{},
+		CommitmentsMaskAccepted: big.NewInt(0),
+		CommitmentsMaskOther:    big.NewInt(0),
+		SigningShares:           map[uint16]map[uint16][]byte{},
+		SigningSharesMask:       make([]byte, 32),
+		MaxSigners:              maxSigners,
+		ExpiredAt:               time.Unix(0, 0),
+		SigningMask:             big.NewInt(7),
 	}
 	// Prepare cached pegout with initial ExpiredAt
 	pegout := &CachedPegout{
@@ -525,12 +528,13 @@ func TestNonceAndCommitmentCleanupOnExpiredAtChange(t *testing.T) {
 			InternalKey: groupPublicKey,
 		},
 		artifacts: &coordinator.PegoutRecord{
-			ID:              1,
-			Commitments:     map[uint16][]byte{},
-			CommitmentsMask: make([]byte, 32),
-			MaxSigners:      maxSigners,
-			ExpiredAt:       time.Unix(0, 0),
-			SigningMask:     big.NewInt(7),
+			ID:                      1,
+			Commitments:             map[uint16][]byte{},
+			CommitmentsMaskAccepted: big.NewInt(0),
+			CommitmentsMaskOther:    big.NewInt(0),
+			MaxSigners:              maxSigners,
+			ExpiredAt:               time.Unix(0, 0),
+			SigningMask:             big.NewInt(7),
 		},
 		commitments: nil,
 		nonces:      nil,
@@ -595,9 +599,9 @@ func TestNonceAndCommitmentCleanupOnExpiredAtChange(t *testing.T) {
 	coordinator := &coordinator.CoordinatorMock{
 		SendCommitmentsFunc: func(pegoutID uint64, pegoutUntil int64, validatorIdx uint16, commitments []byte) (*tlb.Transaction, error) {
 			unsignedPegout.Commitments[validatorIdx] = commitments
-			mask := big.NewInt(0).SetBytes(unsignedPegout.CommitmentsMask)
+			mask := unsignedPegout.CommitmentsMaskAccepted
 			mask.SetBit(mask, int(validatorIdx), 1)
-			unsignedPegout.CommitmentsMask = mask.FillBytes(make([]byte, 32))
+			unsignedPegout.CommitmentsMaskAccepted = mask
 			if unsignedPegout.ExpiredAt == time.Unix(0, 0) {
 				unsignedPegout.ExpiredAt = originalExpiredAt
 			}
@@ -741,7 +745,8 @@ func TestNonceAndCommitmentCleanupOnExpiredAtChange(t *testing.T) {
 		unsignedPegout.ExpiredAt = originalExpiredAt.Add(time.Hour)
 		// reset commitments and commitments mask
 		unsignedPegout.Commitments = map[uint16][]byte{}
-		unsignedPegout.CommitmentsMask = make([]byte, 32)
+		unsignedPegout.CommitmentsMaskAccepted = big.NewInt(0)
+		unsignedPegout.CommitmentsMaskOther = big.NewInt(0)
 
 		// Verify nonces and commitments exist before cleanup
 		if len(pegout.commitments) == 0 {
@@ -788,7 +793,8 @@ func TestNonceAndCommitmentCleanupOnExpiredAtChange(t *testing.T) {
 		// Change ExpiredAt again
 		unsignedPegout.ExpiredAt = time.Now().Add(2 * time.Hour)
 		unsignedPegout.Commitments = map[uint16][]byte{}
-		unsignedPegout.CommitmentsMask = make([]byte, 32)
+		unsignedPegout.CommitmentsMaskAccepted = big.NewInt(0)
+		unsignedPegout.CommitmentsMaskOther = big.NewInt(0)
 
 		service.execute(context.Background(), prevDKG)
 
@@ -805,7 +811,8 @@ func TestNonceAndCommitmentCleanupOnExpiredAtChange(t *testing.T) {
 		// Change ExpiredAt a third time
 		unsignedPegout.ExpiredAt = time.Now().Add(3 * time.Hour)
 		unsignedPegout.Commitments = map[uint16][]byte{}
-		unsignedPegout.CommitmentsMask = make([]byte, 32)
+		unsignedPegout.CommitmentsMaskAccepted = big.NewInt(0)
+		unsignedPegout.CommitmentsMaskOther = big.NewInt(0)
 		service.execute(context.Background(), prevDKG)
 
 		// Verify third nonces are different from both first and second nonces

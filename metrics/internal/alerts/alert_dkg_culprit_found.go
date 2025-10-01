@@ -28,7 +28,7 @@ func NewAlertDkgCulpritFound() Alert {
 
 func (alert *AlertDkgCulpritFound) NewLabels() Labels {
 	return Labels{
-		"culprit_id":      "",
+		"culprit_ids":     "",
 		"not_evicted_ids": "",
 	}
 }
@@ -97,7 +97,7 @@ func (alert *AlertDkgCulpritFound) Check(dataSource AlertDataSource) (Severity, 
 
 		culpritIdsStr := mutils.ExtractMapKeysConv(alert.CulpritIds, strconv.Itoa)
 
-		alert.Labels["culprit_id"] = strings.Join(culpritIdsStr, ",")
+		alert.Labels["culprit_ids"] = strings.Join(culpritIdsStr, ",")
 		alert.Labels["not_evicted_ids"] = strings.Join(listOfNotEvicted, ",")
 		alert.Severity = SEVERITY_CRITICAL
 	} else {
@@ -136,7 +136,7 @@ func (alert *AlertDkgCulpritFound) MakeValues() Values {
 	values := make(Values, 1)
 
 	culpritIds := mutils.ExtractMapKeys(alert.CulpritIds)
-	values["culprit_id"] = culpritIds
+	values["culprit_ids"] = culpritIds
 
 	return values
 }

@@ -30,6 +30,7 @@ type ServicesConfig struct {
 	CoordinatorContractFetchPeriod   int
 	ContractBalancesFetchPeriod      int
 	AlertsCheckPeriod                int
+	PProfHttpEnable                  bool
 }
 
 func NewServicesConfig(config *EnvConfig) (*ServicesConfig, error) {
@@ -45,6 +46,7 @@ func NewServicesConfig(config *EnvConfig) (*ServicesConfig, error) {
 	coordinatorContractFetchPeriod := 12
 	contractBalancesFetchPeriod := 150
 	alertsCheckPeriod := 15
+	pprofHttpEnable := false
 
 	if len(config.DatabaseMaxConn) > 0 {
 		value, err := ParseInt(config.DatabaseMaxConn, "DatabaseMaxConn")
@@ -179,6 +181,15 @@ func NewServicesConfig(config *EnvConfig) (*ServicesConfig, error) {
 		alertsCheckPeriod = value
 	}
 
+	if len(config.PProfHttpEnable) > 0 {
+		value, err := ParseBool(config.PProfHttpEnable, "PProfHttpEnable")
+		if err != nil {
+			return nil, fmt.Errorf("wrong `METRICS_PPROF_HTTP_ENABLE` .env argument value '%s'. %w", config.PProfHttpEnable, err)
+		}
+
+		pprofHttpEnable = value
+	}
+
 	servicesConfig := &ServicesConfig{
 		BitcoinRpcHost:                   config.BitcoinRpcHost,
 		BitcoinRpcUser:                   config.BitcoinRpcUser,
@@ -202,6 +213,7 @@ func NewServicesConfig(config *EnvConfig) (*ServicesConfig, error) {
 		CoordinatorContractFetchPeriod:   coordinatorContractFetchPeriod,
 		ContractBalancesFetchPeriod:      contractBalancesFetchPeriod,
 		AlertsCheckPeriod:                alertsCheckPeriod,
+		PProfHttpEnable:                  pprofHttpEnable,
 	}
 
 	return servicesConfig, nil
@@ -228,6 +240,7 @@ TeleportContractFetchPeriod: %d sec.
 CoordinatorContractFetchPeriod: %d sec.
 ContractBalancesFetchPeriod: %d sec.
 AlertsCheckPeriod: %d sec.
+PProfHttpEnable: %t
 `,
 		config.BitcoinRpcHost,
 		config.TonConfigUrl,
@@ -248,6 +261,7 @@ AlertsCheckPeriod: %d sec.
 		config.CoordinatorContractFetchPeriod,
 		config.ContractBalancesFetchPeriod,
 		config.AlertsCheckPeriod,
+		config.PProfHttpEnable,
 	)
 }
 

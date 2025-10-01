@@ -175,6 +175,7 @@ func initialize() (*App, error) {
 		bitcoinClient,
 		tonClient,
 		teleportContract,
+		cfg.PProfHttpEnable,
 	)
 
 	logger.Log.Info().
