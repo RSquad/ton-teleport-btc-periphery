@@ -9,4 +9,5 @@ type EnvConfig struct {
 	DatabaseUrl             string `env:"INDEXER_DATABASE_URL,required"`
 	DatabaseMaxConn         string `env:"INDEXER_DATABASE_MAX_CONN"`
 	DatabaseMaxIdleConn     string `env:"INDEXER_DATABASE_MAX_IDLE_CONN"`
+	PProfHttpEnable         string `env:"INDEXER_PPROF_HTTP_ENABLE"`
 }

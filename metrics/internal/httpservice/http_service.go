@@ -14,6 +14,8 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/alerts"
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/config"
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/metrics"
+
+	"net/http/pprof"
 )
 
 type HttpService struct {
@@ -21,6 +23,7 @@ type HttpService struct {
 	alertManager        *alerts.AlertManager
 	httpPort            int
 	alertsTestApiEnable bool
+	pprofApiEnable      bool
 }
 
 func New(
@@ -33,6 +36,7 @@ func New(
 		alertManager:        alertManager,
 		httpPort:            cfg.HttpPort,
 		alertsTestApiEnable: cfg.AlertsTestApiEnable,
+		pprofApiEnable:      cfg.PProfHttpEnable,
 	}
 }
 
@@ -43,6 +47,26 @@ func (s *HttpService) Work(ctx context.Context) {
 
 	if s.alertsTestApiEnable {
 		mux.Handle("/metrics/alerts_testing", NewAlertsTestingApiHandler(s.alertManager))
+	}
+
+	if s.pprofApiEnable {
+		logger.Log.Warn().
+			Str("component", "HttpServer").
+			Msg("The PProf HTTP endpoint is available at /internal/pprof/. Use it only for testing, and disable METRICS_PPROF_HTTP_ENABLE in production.")
+
+		// index + common endpoints
+		mux.HandleFunc("/internal/pprof/", pprof.Index)
+		mux.HandleFunc("/internal/pprof/cmdline", pprof.Cmdline)
+		mux.HandleFunc("/internal/pprof/profile", pprof.Profile) // ?seconds=30
+		mux.HandleFunc("/internal/pprof/symbol", pprof.Symbol)
+		mux.HandleFunc("/internal/pprof/trace", pprof.Trace)
+
+		// individual profiles
+		for _, p := range []string{
+			"allocs", "block", "goroutine", "heap", "mutex", "threadcreate",
+		} {
+			mux.Handle("/internal/pprof/"+p, pprof.Handler(p))
+		}
 	}
 
 	c := cors.New(cors.Options{
