@@ -68,6 +68,9 @@
 {{ if .Annotations.dkg_until -}}
 - <b>Until: </b>{{ .Annotations.dkg_until }}
 {{ end -}}
+{{ if .Annotations.participants_count -}}
+- <b>Participants count: </b>{{ .Annotations.participants_count }}
+{{ end -}}
 {{ end -}}
 {{ end -}}
 {{ end -}}
