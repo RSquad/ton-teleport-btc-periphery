@@ -65,8 +65,8 @@
 {{ if .Annotations.last_pegout_txid -}}
 - <a href="https://mempool.space/signet/tx/{{ .Annotations.last_pegout_txid }}">{{ .Annotations.last_pegout_txid }}</a>
 {{ end -}}
-{{ if .Annotations.participants_count -}}
-- <b>Participants count: </b>{{ .Annotations.participants_count }}
+{{ if .Annotations.dkg_until -}}
+- <b>Until: </b>{{ .Annotations.dkg_until }}
 {{ end -}}
 {{ end -}}
 {{ end -}}
