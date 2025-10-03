@@ -56,6 +56,10 @@ func (dataSource *AlertDataSourceLive) FirstUnsignedPegoutDB() (*coordinator.Peg
 		return nil, err
 	}
 
+	if coordinatorContractStorage == nil {
+		return nil, nil
+	}
+
 	if len(coordinatorContractStorage.UnsignedPegouts) == 0 {
 		return nil, nil
 	}

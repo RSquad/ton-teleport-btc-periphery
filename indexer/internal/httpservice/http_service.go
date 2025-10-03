@@ -3,6 +3,7 @@ package httpservice
 import (
 	"context"
 	"net/http"
+	"net/http/pprof"
 
 	"entgo.io/contrib/entgql"
 	"github.com/99designs/gqlgen/graphql/handler"
@@ -21,6 +22,7 @@ type HttpService struct {
 	bitcoinClient    *bitcoin.Client
 	tonClient        *tonclient.TonClient
 	teleportContract *teleportcontract.TeleportContract
+	pprofApiEnable   bool
 }
 
 func New(
@@ -28,12 +30,14 @@ func New(
 	bitcoinClient *bitcoin.Client,
 	tonClient *tonclient.TonClient,
 	teleportContract *teleportcontract.TeleportContract,
+	pprofApiEnable bool,
 ) *HttpService {
 	return &HttpService{
 		repo:             repo,
 		bitcoinClient:    bitcoinClient,
 		tonClient:        tonClient,
 		teleportContract: teleportContract,
+		pprofApiEnable:   pprofApiEnable,
 	}
 }
 
@@ -46,6 +50,26 @@ func (s *HttpService) Work(ctx context.Context) {
 	mux := http.NewServeMux()
 	mux.Handle("/indexer/graphql", srv)
 	mux.Handle("/", playground.ApolloSandboxHandler("Indexer", "/indexer/graphql"))
+
+	if s.pprofApiEnable {
+		logger.Log.Warn().
+			Str("component", "HttpServer").
+			Msg("The PProf HTTP endpoint is available at /internal/pprof/. Use it only for testing, and disable METRICS_PPROF_HTTP_ENABLE in production.")
+
+		// index + common endpoints
+		mux.HandleFunc("/indexer/internal/pprof/", pprof.Index)
+		mux.HandleFunc("/indexer/internal/pprof/cmdline", pprof.Cmdline)
+		mux.HandleFunc("/indexer/internal/pprof/profile", pprof.Profile) // ?seconds=30
+		mux.HandleFunc("/indexer/internal/pprof/symbol", pprof.Symbol)
+		mux.HandleFunc("/indexer/internal/pprof/trace", pprof.Trace)
+
+		// individual profiles
+		for _, p := range []string{
+			"allocs", "block", "goroutine", "heap", "mutex", "threadcreate",
+		} {
+			mux.Handle("/indexer/internal/pprof/"+p, pprof.Handler(p))
+		}
+	}
 
 	c := cors.New(cors.Options{
 		AllowedOrigins:   []string{"*"},

@@ -35,7 +35,7 @@ func (alert *AlertPegoutSigningDuration) NewLabels() Labels {
 	}
 }
 
-func (alert *AlertPegoutSigningDuration) Check(dataSource AlertDataSource) (Severity, Labels, IntValues, error) {
+func (alert *AlertPegoutSigningDuration) Check(dataSource AlertDataSource) (Severity, Labels, Values, error) {
 	labels := alert.NewLabels()
 
 	// Get first unsigned pegout

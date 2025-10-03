@@ -78,13 +78,18 @@ func (es *EventService) Work(ctx context.Context) (err error) {
 			dispatcher.Work(ctx)
 		}()
 
+		// Wait for one of the three routines
+		<-done
+
+		cancel()
+
+		// Wait for other two routines
+		<-done
 		<-done
 
 		logger.Log.Info().
 			Str("component", "EventService").
 			Msg("Restart workers")
-
-		cancel()
 	}
 }
 
