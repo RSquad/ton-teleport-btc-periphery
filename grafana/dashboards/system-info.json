@@ -39,7 +39,7 @@
                             "wrapText": true
                         },
                         "inspect": false,
-                        "width": 150
+                        "width": 200
                     },
                     "mappings": [],
                     "thresholds": {
@@ -48,10 +48,6 @@
                             {
                                 "color": "dark-green",
                                 "value": null
-                            },
-                            {
-                                "color": "dark-red",
-                                "value": 80
                             }
                         ]
                     }
@@ -226,6 +222,9 @@
                                 "value": {
                                     "type": "auto"
                                 }
+                            },
+                            {
+                                "id": "custom.width"
                             }
                         ]
                     },
@@ -255,6 +254,34 @@
                                 "value": {
                                     "type": "color-text"
                                 }
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Autopegout"
+                        },
+                        "properties": [
+                            {
+                                "id": "mappings",
+                                "value": [
+                                    {
+                                        "options": {
+                                            "false": {
+                                                "color": "transparent",
+                                                "index": 0,
+                                                "text": "No"
+                                            },
+                                            "true": {
+                                                "color": "transparent",
+                                                "index": 1,
+                                                "text": "Yes"
+                                            }
+                                        },
+                                        "type": "value"
+                                    }
+                                ]
                             }
                         ]
                     }
@@ -310,6 +337,7 @@
                         "excludeByName": {
                             "IsInternalKeyCorrectStr": true,
                             "IsSignedStr": true,
+                            "RestartsSeverity": true,
                             "SignersCommitmentActive": true,
                             "SignersCommitmentActiveIdx": true,
                             "SignersCommitmentInactive": true,
@@ -320,26 +348,27 @@
                         },
                         "includeByName": {},
                         "indexByName": {
-                            "CulpritsIdx": 10,
                             "Id": 0,
+                            "IsAutopegout": 8,
                             "IsInternalKeyCorrect": 2,
                             "IsInternalKeyCorrectStr": 3,
                             "IsSigned": 4,
-                            "IsSignedStr": 5,
-                            "QueueLength": 8,
+                            "QueueLength": 7,
                             "Restarts": 1,
-                            "Signers": 6,
-                            "SignersCommitmentActive": 11,
-                            "SignersCommitmentActiveIdx": 12,
-                            "SignersCommitmentInactive": 13,
-                            "SignersCommitmentInactiveIdx": 14,
-                            "SignersEvicted": 15,
-                            "SignersEvictedIdx": 16,
-                            "SignersMax": 7,
+                            "RestartsSeverity": 16,
+                            "Signers": 5,
+                            "SignersCommitmentActive": 10,
+                            "SignersCommitmentActiveIdx": 11,
+                            "SignersCommitmentInactive": 12,
+                            "SignersCommitmentInactiveIdx": 13,
+                            "SignersEvicted": 14,
+                            "SignersEvictedIdx": 15,
+                            "SignersMax": 6,
                             "Until": 9
                         },
                         "renameByName": {
                             "CulpritsIdx": "Culprit Idx",
+                            "IsAutopegout": "Autopegout",
                             "IsInternalKeyCorrect": "Internal Key",
                             "IsInternalKeyCorrectStr": "Internal Key",
                             "IsSigned": "Signed",
@@ -425,6 +454,19 @@
                 }
             ],
             "title": "",
+            "transformations": [
+                {
+                    "id": "organize",
+                    "options": {
+                        "excludeByName": {},
+                        "includeByName": {},
+                        "indexByName": {},
+                        "renameByName": {
+                            "A": "Active Signers"
+                        }
+                    }
+                }
+            ],
             "transparent": true,
             "type": "table"
         },
@@ -502,6 +544,19 @@
                 }
             ],
             "title": "",
+            "transformations": [
+                {
+                    "id": "organize",
+                    "options": {
+                        "excludeByName": {},
+                        "includeByName": {},
+                        "indexByName": {},
+                        "renameByName": {
+                            "A": "Inactive Signers"
+                        }
+                    }
+                }
+            ],
             "transparent": true,
             "type": "table"
         },
@@ -579,6 +634,19 @@
                 }
             ],
             "title": "",
+            "transformations": [
+                {
+                    "id": "organize",
+                    "options": {
+                        "excludeByName": {},
+                        "includeByName": {},
+                        "indexByName": {},
+                        "renameByName": {
+                            "A": "Evicted Signers"
+                        }
+                    }
+                }
+            ],
             "transparent": true,
             "type": "table"
         },
@@ -615,7 +683,53 @@
                         ]
                     }
                 },
-                "overrides": []
+                "overrides": [
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "BitcoinMempoolTime"
+                        },
+                        "properties": [
+                            {
+                                "id": "decimals"
+                            },
+                            {
+                                "id": "unit",
+                                "value": "ms"
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "BtcTxStatus"
+                        },
+                        "properties": [
+                            {
+                                "id": "mappings",
+                                "value": [
+                                    {
+                                        "options": {
+                                            "0": {
+                                                "index": 0,
+                                                "text": "Tx not published"
+                                            },
+                                            "1": {
+                                                "index": 1,
+                                                "text": "Tx in mempool"
+                                            },
+                                            "2": {
+                                                "index": 2,
+                                                "text": "Tx in block"
+                                            }
+                                        },
+                                        "type": "value"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
             },
             "gridPos": {
                 "h": 7,
@@ -1544,13 +1658,6 @@
             "title": "",
             "transformations": [
                 {
-                    "disabled": true,
-                    "id": "transpose",
-                    "options": {
-                        "restFieldsName": ""
-                    }
-                },
-                {
                     "id": "organize",
                     "options": {
                         "excludeByName": {
@@ -1560,7 +1667,7 @@
                         "indexByName": {},
                         "renameByName": {
                             "1": "Active Validators Idx",
-                            "A": "Active Validators Idx"
+                            "A": "Active Validators"
                         }
                     }
                 }
@@ -1644,11 +1751,6 @@
             "title": "",
             "transformations": [
                 {
-                    "disabled": true,
-                    "id": "transpose",
-                    "options": {}
-                },
-                {
                     "id": "organize",
                     "options": {
                         "excludeByName": {
@@ -1658,7 +1760,7 @@
                         "indexByName": {},
                         "renameByName": {
                             "1": "Inactive Validators Idx",
-                            "A": "Inactive Validators Idx"
+                            "A": "Inactive Validators"
                         }
                     }
                 }
@@ -1742,11 +1844,6 @@
             "title": "",
             "transformations": [
                 {
-                    "disabled": true,
-                    "id": "transpose",
-                    "options": {}
-                },
-                {
                     "id": "organize",
                     "options": {
                         "excludeByName": {
@@ -1756,7 +1853,7 @@
                         "indexByName": {},
                         "renameByName": {
                             "1": "Evicted Validators Idx",
-                            "A": "Evicted Validators Idx",
+                            "A": "Evicted Validators",
                             "Field": ""
                         }
                     }
