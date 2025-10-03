@@ -204,7 +204,7 @@ func (systemInfo *MetricsSystemInfo) PegoutSigningInfo(
 		systemInfo.mu.Lock()
 		defer systemInfo.mu.Unlock()
 		if systemInfo.lastUnsignedPegoutInfo != nil {
-			systemInfo.lastUnsignedPegoutInfo.IsSigned = true
+			systemInfo.lastUnsignedPegoutInfo.IsSigned = SIGNING_STATUS_SIGNED
 			return systemInfo.lastUnsignedPegoutInfo, nil
 		}
 
@@ -214,9 +214,9 @@ func (systemInfo *MetricsSystemInfo) PegoutSigningInfo(
 			RestartsSeverity:             alerts.SEVERITY_OK,
 			Until:                        time.Unix(0, 0),
 			QueueLength:                  0,
-			IsSigned:                     false,
+			IsSigned:                     NO_PEGOUT,
 			IsAutopegout:                 false,
-			Signers:                      0,
+			Signers:                      -1,
 			SignersMax:                   int(prevDkg.R3.Count),
 			SignersCommitmentActive:      0,
 			SignersCommitmentActiveIdx:   make([]int, 0),
@@ -275,7 +275,7 @@ func (systemInfo *MetricsSystemInfo) PegoutSigningInfo(
 		RestartsSeverity:             pegoutRestartsAlertState.Severity,
 		Until:                        unsignedPegout.ExpiredAt,
 		QueueLength:                  len(coordinatorStorage.UnsignedPegouts),
-		IsSigned:                     false,
+		IsSigned:                     SIGNING_STATUS_NOT_SIGNED,
 		IsAutopegout:                 unsignedPegout.IsAutopegout,
 		Signers:                      mutils.Popcnt(unsignedPegout.SigningMask),
 		SignersMax:                   int(unsignedPegout.MaxSigners),
