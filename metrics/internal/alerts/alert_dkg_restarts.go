@@ -22,25 +22,25 @@ func (alert *AlertDkgRestarts) NewLabels() Labels {
 	return Labels{}
 }
 
-func (alert *AlertDkgRestarts) Check(dataSource AlertDataSource) (Severity, Labels, IntValues, error) {
+func (alert *AlertDkgRestarts) Check(dataSource AlertDataSource) (Severity, Labels, Values, error) {
 	labels := alert.NewLabels()
 
 	// Get DKG
 	dkg, err := dataSource.DkgDB()
 	if err != nil {
-		return SEVERITY_UNKNOWN, labels, alert.MakeIntValues(), err
+		return SEVERITY_UNKNOWN, labels, alert.MakeValues(), err
 	}
 
 	if dkg == nil {
 		alert.dkgUntil = time.Unix(0, 0)
 		alert.restartsCounter = 0
-		return SEVERITY_OK, labels, alert.MakeIntValues(), nil
+		return SEVERITY_OK, labels, alert.MakeValues(), nil
 	}
 
 	if dkg.State == coordinator.DKGStateFinished {
 		alert.dkgUntil = time.Unix(0, 0)
 		alert.restartsCounter = 0
-		return SEVERITY_OK, labels, alert.MakeIntValues(), nil
+		return SEVERITY_OK, labels, alert.MakeValues(), nil
 	}
 
 	// Check for restart
@@ -55,7 +55,7 @@ func (alert *AlertDkgRestarts) Check(dataSource AlertDataSource) (Severity, Labe
 	// Calulate severity
 	severity := alert.GetSeverity()
 
-	return severity, labels, alert.MakeIntValues(), nil
+	return severity, labels, alert.MakeValues(), nil
 }
 
 func (alert *AlertDkgRestarts) GetSeverity() Severity {
@@ -70,9 +70,9 @@ func (alert *AlertDkgRestarts) GetSeverity() Severity {
 	return severity
 }
 
-func (alert *AlertDkgRestarts) MakeIntValues() IntValues {
-	intValues := make(IntValues, 1)
-	intValues["restarts"] = int64(alert.restartsCounter)
+func (alert *AlertDkgRestarts) MakeValues() Values {
+	values := make(Values, 1)
+	values["restarts"] = int64(alert.restartsCounter)
 
-	return intValues
+	return values
 }

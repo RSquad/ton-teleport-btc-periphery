@@ -3,7 +3,10 @@ package httpservice
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
+	"sync/atomic"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/cors"
@@ -11,6 +14,8 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/alerts"
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/config"
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/metrics"
+
+	"net/http/pprof"
 )
 
 type HttpService struct {
@@ -18,6 +23,7 @@ type HttpService struct {
 	alertManager        *alerts.AlertManager
 	httpPort            int
 	alertsTestApiEnable bool
+	pprofApiEnable      bool
 }
 
 func New(
@@ -30,6 +36,7 @@ func New(
 		alertManager:        alertManager,
 		httpPort:            cfg.HttpPort,
 		alertsTestApiEnable: cfg.AlertsTestApiEnable,
+		pprofApiEnable:      cfg.PProfHttpEnable,
 	}
 }
 
@@ -40,6 +47,26 @@ func (s *HttpService) Work(ctx context.Context) {
 
 	if s.alertsTestApiEnable {
 		mux.Handle("/metrics/alerts_testing", NewAlertsTestingApiHandler(s.alertManager))
+	}
+
+	if s.pprofApiEnable {
+		logger.Log.Warn().
+			Str("component", "HttpServer").
+			Msg("The PProf HTTP endpoint is available at /internal/pprof/. Use it only for testing, and disable METRICS_PPROF_HTTP_ENABLE in production.")
+
+		// index + common endpoints
+		mux.HandleFunc("/metrics/internal/pprof/", pprof.Index)
+		mux.HandleFunc("/metrics/internal/pprof/cmdline", pprof.Cmdline)
+		mux.HandleFunc("/metrics/internal/pprof/profile", pprof.Profile) // ?seconds=30
+		mux.HandleFunc("/metrics/internal/pprof/symbol", pprof.Symbol)
+		mux.HandleFunc("/metrics/internal/pprof/trace", pprof.Trace)
+
+		// individual profiles
+		for _, p := range []string{
+			"allocs", "block", "goroutine", "heap", "mutex", "threadcreate",
+		} {
+			mux.Handle("/metrics/internal/pprof/"+p, pprof.Handler(p))
+		}
 	}
 
 	c := cors.New(cors.Options{
@@ -53,12 +80,39 @@ func (s *HttpService) Work(ctx context.Context) {
 	httpBindAddrStr := fmt.Sprintf(":%d", s.httpPort)
 
 	logger.Log.Info().
-		Str("component", "main").
+		Str("component", "HttpServer").
 		Msgf("listening on %s", httpBindAddrStr)
-	if err := http.ListenAndServe(httpBindAddrStr, handlerWithCORS); err != nil {
-		logger.Log.Error().
-			Str("component", "main").
-			Err(err).
-			Msg("http server terminated")
+
+	srv := &http.Server{
+		Addr:    httpBindAddrStr,
+		Handler: handlerWithCORS,
 	}
+
+	var isStopRequested atomic.Bool
+
+	go func() {
+		if err := srv.ListenAndServe(); err != nil {
+			if !isStopRequested.Load() {
+				logger.Log.Error().
+					Str("component", "HttpServer").
+					Err(err).
+					Msg("terminated")
+			}
+		}
+	}()
+
+	<-ctx.Done()
+	isStopRequested.Store(true)
+	log.Println("shutdown requested")
+
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 4*time.Second)
+	defer cancel()
+	if err := srv.Shutdown(shutdownCtx); err != nil {
+		log.Printf("graceful shutdown failed: %v; forcing close", err)
+		_ = srv.Close()
+	}
+
+	logger.Log.Info().
+		Str("component", "HttpServer").
+		Msg("stopped")
 }

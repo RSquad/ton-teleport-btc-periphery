@@ -16,11 +16,13 @@ type ServicesConfig struct {
 	DatabaseMaxConn         int
 	DatabaseMaxIdleConn     int
 	CoordinatorContractAddr *address.Address
+	PProfHttpEnable         bool
 }
 
 func NewServicesConfig(envConfig *EnvConfig) (*ServicesConfig, error) {
 	databaseMaxConn := 8
 	databaseMaxIdleConn := 8
+	pprofHttpEnable := false
 
 	if len(envConfig.DatabaseMaxConn) > 0 {
 		value, err := ParseInt(envConfig.DatabaseMaxConn, "DatabaseMaxConn")
@@ -43,6 +45,15 @@ func NewServicesConfig(envConfig *EnvConfig) (*ServicesConfig, error) {
 		return nil, fmt.Errorf("parsing the Coordinator Contract address '%s' failed", envConfig.CoordinatorContractAddr)
 	}
 
+	if len(envConfig.PProfHttpEnable) > 0 {
+		value, err := ParseBool(envConfig.PProfHttpEnable, "PProfHttpEnable")
+		if err != nil {
+			return nil, fmt.Errorf("wrong `INDEXER_PPROF_HTTP_ENABLE` .env argument value '%s'. %w", envConfig.PProfHttpEnable, err)
+		}
+
+		pprofHttpEnable = value
+	}
+
 	cfg := &ServicesConfig{
 		BitcoinRpcHost:          envConfig.BitcoinRpcHost,
 		BitcoinRpcUser:          envConfig.BitcoinRpcUser,
@@ -52,6 +63,7 @@ func NewServicesConfig(envConfig *EnvConfig) (*ServicesConfig, error) {
 		DatabaseMaxConn:         databaseMaxConn,
 		DatabaseMaxIdleConn:     databaseMaxIdleConn,
 		CoordinatorContractAddr: coordinatorContractAddr,
+		PProfHttpEnable:         pprofHttpEnable,
 	}
 
 	return cfg, nil
@@ -64,12 +76,14 @@ TonConfigUrl: %s
 DatabaseMaxConn: %d
 DatabaseMaxIdleConn: %d
 CoordinatorContractAddr: %s
+PProfHttpEnable: %t
 `,
 		config.BitcoinRpcHost,
 		config.TonConfigUrl,
 		config.DatabaseMaxConn,
 		config.DatabaseMaxIdleConn,
 		config.CoordinatorContractAddr,
+		config.PProfHttpEnable,
 	)
 }
 
@@ -80,4 +94,13 @@ func ParseInt(value string, name string) (int, error) {
 	}
 
 	return int(val), nil
+}
+
+func ParseBool(value string, name string) (bool, error) {
+	val, err := strconv.ParseBool(value)
+	if err != nil {
+		return false, fmt.Errorf("incorrect bool value '%s' assigned to %s", value, name)
+	}
+
+	return val, nil
 }

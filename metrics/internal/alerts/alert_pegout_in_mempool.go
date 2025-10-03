@@ -31,7 +31,7 @@ func (alert *AlertPegoutInMempool) NewLabels() Labels {
 	}
 }
 
-func (alert *AlertPegoutInMempool) Check(dataSource AlertDataSource) (Severity, Labels, IntValues, error) {
+func (alert *AlertPegoutInMempool) Check(dataSource AlertDataSource) (Severity, Labels, Values, error) {
 	labels := alert.NewLabels()
 
 	if alert.pegoutToCheck == nil {
@@ -104,7 +104,6 @@ func (alert *AlertPegoutInMempool) Check(dataSource AlertDataSource) (Severity, 
 		duration := time.Duration(dataSource.NowUnixTs()-alert.beginTimestamp) * time.Second
 		severity = alert.GetSeverity(duration)
 	} else {
-		// isInMempoolOrBlock == true
 		alert.pegoutToCheck = nil
 	}
 

@@ -16,3 +16,5 @@ configMapGenerator:
   - statistics.json
   - app-logs.json
   - contract-balances.json
+  - alerts.json
+  - system-info.json

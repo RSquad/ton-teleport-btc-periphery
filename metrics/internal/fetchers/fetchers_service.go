@@ -54,7 +54,8 @@ func NewService(
 	}
 
 	// Fetcher: Contract Bitcoin client
-	fetcherContractBitcoinClient := NewFetcherContractBitcoinClient(writerDbChan, db, bitcoinClient, bitcoinClientContract, int64(cfg.BitcoinClientContractFetchPeriod))
+	fetcherContractBitcoinClient := NewFetcherContractBitcoinClient(
+		writerDbChan, db, bitcoinClient, bitcoinClientContract, int64(cfg.BitcoinClientContractFetchPeriod))
 
 	// Fetcher: ContractTeleport
 	fetcherContractTeleport := NewFetcherContractTeleport(writerDbChan, teleportContract, int64(cfg.TeleportContractFetchPeriod))

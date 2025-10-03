@@ -20,7 +20,7 @@ func (alert *AlertPegoutFeeNotReset) NewLabels() Labels {
 	}
 }
 
-func (alert *AlertPegoutFeeNotReset) Check(dataSource AlertDataSource) (Severity, Labels, IntValues, error) {
+func (alert *AlertPegoutFeeNotReset) Check(dataSource AlertDataSource) (Severity, Labels, Values, error) {
 	labels := alert.NewLabels()
 
 	// Get last signed pegout
@@ -30,6 +30,9 @@ func (alert *AlertPegoutFeeNotReset) Check(dataSource AlertDataSource) (Severity
 	}
 
 	if pegout == nil {
+
+		// TODO: add LastConfirmedPegout...
+
 		return SEVERITY_OK, labels, nil, nil
 	}
 

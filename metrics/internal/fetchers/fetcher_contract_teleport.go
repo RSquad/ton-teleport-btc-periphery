@@ -8,6 +8,7 @@ import (
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/teleportcontract"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/watchdog"
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/data_models"
 )
 
@@ -38,6 +39,10 @@ func (fetcher *FetcherContractTeleport) Work(ctx context.Context, wg *sync.WaitG
 	ticker := time.NewTicker(time.Duration(fetcher.period) * time.Second)
 	defer ticker.Stop()
 
+	// Setup watchdog
+	watchdog.Global().Watch("FetcherContractTeleport", time.Duration(fetcher.period*2)*time.Second)
+	defer watchdog.Global().Unwatch("FetcherContractTeleport")
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -45,6 +50,7 @@ func (fetcher *FetcherContractTeleport) Work(ctx context.Context, wg *sync.WaitG
 			return
 		case <-ticker.C:
 			fetcher.Fetch()
+			watchdog.Global().Heartbeat("FetcherContractTeleport")
 		}
 	}
 }

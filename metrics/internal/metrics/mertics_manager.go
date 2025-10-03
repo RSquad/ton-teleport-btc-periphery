@@ -3,12 +3,11 @@ package metrics
 import (
 	"context"
 	"database/sql"
-	"encoding/base64"
 	"encoding/json"
 	"math/big"
 
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/teleportcontract"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/alerts"
@@ -24,6 +23,8 @@ type MetricsManager struct {
 	globalRuntimeConfig *config.GlobalRuntimeConfig
 	contractAddrs       map[string]*address.Address
 	alertManager        *alerts.AlertManager
+	bitcoinClient       *bitcoin.Client
+	metricsSystemInfo   MetricsSystemInfo
 }
 
 func NewMetricsManager(
@@ -31,6 +32,7 @@ func NewMetricsManager(
 	globalRuntimeConfig *config.GlobalRuntimeConfig,
 	contractAddrs map[string]*address.Address,
 	alertManager *alerts.AlertManager,
+	bitcoinClient *bitcoin.Client,
 ) *MetricsManager {
 	return &MetricsManager{
 		db:                  db,
@@ -38,6 +40,10 @@ func NewMetricsManager(
 		globalRuntimeConfig: globalRuntimeConfig,
 		contractAddrs:       contractAddrs,
 		alertManager:        alertManager,
+		bitcoinClient:       bitcoinClient,
+		metricsSystemInfo: MetricsSystemInfo{
+			lastUnsignedPegoutInfo: nil,
+		},
 	}
 }
 
@@ -486,122 +492,12 @@ func (manager *MetricsManager) PlotsSummaryJson() (string, error) {
 }
 
 func (manager *MetricsManager) DkgStatusJson(ctx context.Context) (string, error) {
-	type OriginalData struct {
-		Dkg            *coordinator.DKG
-		LastRestartDkg *coordinator.DKG
-		PrevDkg        *coordinator.DKG
-	}
-
-	type DkgInfo struct {
-		State              string
-		VSetSize           int
-		ValidatorsCountMax int
-
-		ValidatorsCountInDkg    int
-		ValidatorsCountNotInDkg int
-		ValidatorsCountEvicted  int
-
-		ValidatorsIdxInDkg    map[int]string
-		ValidatorsIdxNotInDkg map[int]string
-		ValidatorsIdxEvicted  map[int]string
-	}
-
-	type DkgStatus struct {
-		StandaloneMode bool
-		DkgInfo        DkgInfo
-		PrevDkgInfo    DkgInfo
-		Original       OriginalData
-	}
-
-	dkg, err := manager.dataSourceDB.Dkg()
+	dkgStatus, err := manager.metricsSystemInfo.DkgStatus(manager.dataSourceDB, manager.globalRuntimeConfig)
 	if err != nil {
 		return "", err
 	}
 
-	lastRestartDkg, err := manager.dataSourceDB.DkgBeforeRestart(dkg.Until)
-	if err != nil {
-		return "", err
-	}
-
-	prevDkg, err := manager.dataSourceDB.PrevDkg()
-	if err != nil {
-		return "", err
-	}
-
-	coordinatorContractData, err := manager.dataSourceDB.CoordinatorContractStorage()
-	if err != nil {
-		return "", err
-	}
-
-	var status DkgStatus
-	status.StandaloneMode = coordinatorContractData.StandaloneMode
-	status.Original.Dkg = dkg
-	status.Original.LastRestartDkg = lastRestartDkg
-	status.Original.PrevDkg = prevDkg
-
-	sumarizeDkgInfo := func(dkg *coordinator.DKG) (*DkgInfo, error) {
-		var info DkgInfo
-
-		info.State = dkg.State.String()
-		info.VSetSize = len(dkg.VSet)
-
-		if dkg.R1 != nil {
-			info.ValidatorsCountInDkg = int(dkg.R1.Count)
-		} else {
-			info.ValidatorsCountInDkg = 0
-		}
-
-		if !coordinatorContractData.StandaloneMode {
-			maxValidators, err := manager.globalRuntimeConfig.TonMaxMainValidators(ctx)
-			if err != nil {
-				return nil, err
-			}
-
-			info.ValidatorsCountMax = maxValidators
-		} else {
-			info.ValidatorsCountMax = info.VSetSize
-		}
-
-		info.ValidatorsCountNotInDkg = info.ValidatorsCountMax - info.ValidatorsCountInDkg
-		info.ValidatorsIdxInDkg = make(map[int]string)
-		info.ValidatorsIdxNotInDkg = make(map[int]string)
-		info.ValidatorsIdxEvicted = make(map[int]string)
-
-		count := min(info.VSetSize, info.ValidatorsCountMax)
-
-		for i := 0; i < count; i++ {
-			pubkey := dkg.VSet[uint16(i)]
-			pubkeyBase64 := base64.StdEncoding.EncodeToString(pubkey)
-
-			if dkg.VSetMask.Bit(i) == 1 {
-				if dkg.R1.Mask.Bit(i) == 1 {
-					info.ValidatorsIdxInDkg[i] = pubkeyBase64
-				} else {
-					info.ValidatorsIdxNotInDkg[i] = pubkeyBase64
-				}
-			} else {
-				info.ValidatorsIdxEvicted[i] = pubkeyBase64
-			}
-		}
-
-		info.ValidatorsCountEvicted = len(info.ValidatorsIdxEvicted)
-
-		return &info, nil
-	}
-
-	dkgInfo, err := sumarizeDkgInfo(status.Original.Dkg)
-	if err != nil {
-		return "", err
-	}
-	status.DkgInfo = *dkgInfo
-
-	prevDkgInfo, err := sumarizeDkgInfo(status.Original.PrevDkg)
-	if err != nil {
-		return "", err
-	}
-	status.PrevDkgInfo = *prevDkgInfo
-
-	jsonData, err := json.Marshal(status)
+	jsonData, err := json.Marshal(dkgStatus)
 	if err != nil {
 		return "", err
 	}
@@ -641,6 +537,11 @@ func (manager *MetricsManager) ContractBalanceJson(name string) (string, error) 
 }
 
 func (manager *MetricsManager) SystemInfoJson() (string, error) {
-	var systemInfo MetricsSystemInfo
-	return systemInfo.SystemInfoJson(manager.dataSourceDB, manager.alertManager, manager.contractAddrs)
+	return manager.metricsSystemInfo.SystemInfoJson(
+		manager.dataSourceDB,
+		manager.alertManager,
+		manager.contractAddrs,
+		manager.globalRuntimeConfig,
+		manager.bitcoinClient,
+	)
 }
