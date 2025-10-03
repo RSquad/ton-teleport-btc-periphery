@@ -346,7 +346,7 @@
                 }
             ],
             "transparent": true,
-            "pluginVersion": "11.5.2",
+            "pluginVersion": "12.1.0",
             "targets": [
                 {
                     "columns": [],
@@ -362,7 +362,7 @@
                     "root_selector": "PegoutSigningInfo",
                     "source": "url",
                     "type": "json",
-                    "url": "http://host.docker.internal:3000/metrics/api?source=system_info",
+                    "url": "http://metrics/metrics/api?source=system_info",
                     "url_options": {
                         "data": "",
                         "method": "GET"
@@ -452,7 +452,7 @@
                     "root_selector": "PegoutSigningInfo.SignersCommitmentActiveIdx",
                     "source": "url",
                     "type": "json",
-                    "url": "http://host.docker.internal:3000/metrics/api?source=system_info",
+                    "url": "http://metrics/metrics/api?source=system_info",
                     "url_options": {
                         "data": "",
                         "method": "GET"
@@ -542,7 +542,7 @@
                     "root_selector": "PegoutSigningInfo.SignersCommitmentInactiveIdx",
                     "source": "url",
                     "type": "json",
-                    "url": "http://host.docker.internal:3000/metrics/api?source=system_info",
+                    "url": "http://metrics/metrics/api?source=system_info",
                     "url_options": {
                         "data": "",
                         "method": "GET"
@@ -632,7 +632,7 @@
                     "root_selector": "PegoutSigningInfo.SignersEvictedIdx",
                     "source": "url",
                     "type": "json",
-                    "url": "http://host.docker.internal:3000/metrics/api?source=system_info",
+                    "url": "http://metrics/metrics/api?source=system_info",
                     "url_options": {
                         "data": "",
                         "method": "GET"
@@ -772,7 +772,7 @@
                     "root_selector": "LastPegoutTxInfo",
                     "source": "url",
                     "type": "json",
-                    "url": "http://host.docker.internal:3000/metrics/api?source=system_info",
+                    "url": "http://metrics/metrics/api?source=system_info",
                     "url_options": {
                         "data": "",
                         "method": "GET"
@@ -924,7 +924,7 @@
                     "root_selector": "DkgInfo",
                     "source": "url",
                     "type": "json",
-                    "url": "http://host.docker.internal:3000/metrics/api?source=system_info",
+                    "url": "http://metrics/metrics/api?source=system_info",
                     "url_options": {
                         "data": "",
                         "method": "GET"
@@ -1116,7 +1116,7 @@
                     "root_selector": "TeleportInfo",
                     "source": "url",
                     "type": "json",
-                    "url": "http://host.docker.internal:3000/metrics/api?source=system_info",
+                    "url": "http://metrics/metrics/api?source=system_info",
                     "url_options": {
                         "data": "",
                         "method": "GET"
@@ -1416,7 +1416,7 @@
                     "root_selector": "DkgInfo",
                     "source": "url",
                     "type": "json",
-                    "url": "http://host.docker.internal:3000/metrics/api?source=system_info",
+                    "url": "http://metrics/metrics/api?source=system_info",
                     "url_options": {
                         "data": "",
                         "method": "GET"
@@ -1532,7 +1532,7 @@
                     "root_selector": "TeleportInfo",
                     "source": "url",
                     "type": "json",
-                    "url": "http://host.docker.internal:3000/metrics/api?source=system_info",
+                    "url": "http://metrics/metrics/api?source=system_info",
                     "url_options": {
                         "data": "",
                         "method": "GET"
@@ -1654,7 +1654,7 @@
                     "root_selector": "DkgInfo.ValidatorsActiveIdx",
                     "source": "url",
                     "type": "json",
-                    "url": "http://host.docker.internal:3000/metrics/api?source=system_info",
+                    "url": "http://metrics/metrics/api?source=system_info",
                     "url_options": {
                         "data": "",
                         "method": "GET"
@@ -1747,7 +1747,7 @@
                     "root_selector": "DkgInfo.ValidatorsInactiveIdx",
                     "source": "url",
                     "type": "json",
-                    "url": "http://host.docker.internal:3000/metrics/api?source=system_info",
+                    "url": "http://metrics/metrics/api?source=system_info",
                     "url_options": {
                         "data": "",
                         "method": "GET"
@@ -1840,7 +1840,7 @@
                     "root_selector": "DkgInfo.ValidatorsEvictedIdx",
                     "source": "url",
                     "type": "json",
-                    "url": "http://host.docker.internal:3000/metrics/api?source=system_info",
+                    "url": "http://metrics/metrics/api?source=system_info",
                     "url_options": {
                         "data": "",
                         "method": "GET"
@@ -1971,7 +1971,7 @@
                     "root_selector": "BalancesInfo",
                     "source": "url",
                     "type": "json",
-                    "url": "http://host.docker.internal:3000/metrics/api?source=system_info",
+                    "url": "http://metrics/metrics/api?source=system_info",
                     "url_options": {
                         "data": "",
                         "method": "GET"
