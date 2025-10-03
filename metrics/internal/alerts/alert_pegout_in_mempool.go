@@ -2,6 +2,7 @@ package alerts
 
 import (
 	"encoding/hex"
+	"fmt"
 	"sort"
 	"time"
 
@@ -72,6 +73,12 @@ func (alert *AlertPegoutInMempool) Check(dataSource AlertDataSource) (Severity, 
 	}
 
 	var isInMempoolOrBlock bool = false
+
+	// Check alert.pegoutToCheck.BitcoinTxId
+	if len(alert.pegoutToCheck.BitcoinTxId) != 32 {
+		labels["bitcoin_tx_id"] = hex.EncodeToString(alert.pegoutToCheck.BitcoinTxId)
+		return SEVERITY_UNKNOWN, labels, nil, fmt.Errorf("wrong BitcoinTxId value '%s'", labels["bitcoin_tx_id"])
+	}
 
 	// Check mempool
 	{
