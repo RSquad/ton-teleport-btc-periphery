@@ -3,6 +3,7 @@ package data_models
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
 )
@@ -15,7 +16,7 @@ func DeserializeCoordinatorContractStorage(jsonData []byte) (*coordinator.Storag
 	var storage coordinator.Storage
 	err := json.Unmarshal(jsonData, &storage)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to call `DeserializeCoordinatorContractStorage`, json '%s': %w", string(jsonData), err)
 	}
 
 	return &storage, nil
