@@ -18,7 +18,7 @@
     "editable": true,
     "fiscalYearStartMonth": 0,
     "graphTooltip": 0,
-    "id": 6,
+    "id": 10,
     "links": [],
     "panels": [
         {
@@ -2052,7 +2052,7 @@
                         "conversions": [
                             {
                                 "destinationType": "number",
-                                "targetField": "TeleportStr"
+                                "targetField": "BitclientStr"
                             }
                         ],
                         "fields": {}
@@ -2255,7 +2255,7 @@
                         "conversions": [
                             {
                                 "destinationType": "number",
-                                "targetField": "TeleportStr"
+                                "targetField": "CoordinatorStr"
                             }
                         ],
                         "fields": {}
@@ -2460,7 +2460,7 @@
                         "conversions": [
                             {
                                 "destinationType": "number",
-                                "targetField": "TeleportStr"
+                                "targetField": "MinterStr"
                             }
                         ],
                         "fields": {}
@@ -2667,7 +2667,7 @@
                         "conversions": [
                             {
                                 "destinationType": "number",
-                                "targetField": "TeleportStr"
+                                "targetField": "RelayerStr"
                             }
                         ],
                         "fields": {}
