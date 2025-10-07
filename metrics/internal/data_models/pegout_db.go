@@ -129,7 +129,7 @@ func DeserializePegoutDB(jsonData []byte) (*Pegout, error) {
 	var pegoutJson PegoutJSON
 	err := json.Unmarshal(jsonData, &pegoutJson)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to call `DeserializePegoutDB`, json '%s': %w", string(jsonData), err)
 	}
 
 	return PegoutJsonToPegout(&pegoutJson)
@@ -139,7 +139,7 @@ func DeserializePegoutsDB(jsonData []byte) ([]*Pegout, error) {
 	var pegoutsJson []*PegoutJSON
 	err := json.Unmarshal(jsonData, &pegoutsJson)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to call `DeserializePegoutsDB`, json '%s': %w", string(jsonData), err)
 	}
 
 	pegouts := make([]*Pegout, len(pegoutsJson))
