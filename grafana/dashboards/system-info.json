@@ -18,26 +18,24 @@
     "editable": true,
     "fiscalYearStartMonth": 0,
     "graphTooltip": 0,
-    "id": 17,
+    "id": 6,
     "links": [],
     "panels": [
         {
-            "id": 8,
-            "type": "table",
-            "title": "Pegout Signing",
-            "gridPos": {
-                "x": 0,
-                "y": 0,
-                "h": 5,
-                "w": 24
+            "datasource": {
+                "type": "yesoreyeram-infinity-datasource",
+                "uid": "yesoreyeraminfinitydatasource"
             },
             "fieldConfig": {
                 "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
                     "custom": {
                         "align": "left",
                         "cellOptions": {
-                            "type": "color-background",
                             "mode": "basic",
+                            "type": "color-background",
                             "wrapText": true
                         },
                         "inspect": false,
@@ -52,9 +50,6 @@
                                 "value": null
                             }
                         ]
-                    },
-                    "color": {
-                        "mode": "thresholds"
                     }
                 },
                 "overrides": [
@@ -142,24 +137,19 @@
                                 "id": "mappings",
                                 "value": [
                                     {
-                                        "type": "value",
                                         "options": {
-                                            "0": {
+                                            "false": {
                                                 "color": "dark-red",
                                                 "index": 1,
                                                 "text": "No"
                                             },
-                                            "1": {
+                                            "true": {
                                                 "color": "dark-green",
                                                 "index": 0,
                                                 "text": "Yes"
-                                            },
-                                            "-1": {
-                                                "text": "No Active Pegout",
-                                                "color": "transparent",
-                                                "index": 2
                                             }
-                                        }
+                                        },
+                                        "type": "value"
                                     }
                                 ]
                             }
@@ -194,21 +184,6 @@
                                         }
                                     ]
                                 }
-                            },
-                            {
-                                "id": "mappings",
-                                "value": [
-                                    {
-                                        "type": "value",
-                                        "options": {
-                                            "-1": {
-                                                "text": "No Active Pegout",
-                                                "color": "transparent",
-                                                "index": 0
-                                            }
-                                        }
-                                    }
-                                ]
                             }
                         ]
                     },
@@ -250,21 +225,35 @@
                             },
                             {
                                 "id": "custom.width"
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Culprit Idx"
+                        },
+                        "properties": [
+                            {
+                                "id": "custom.width"
                             },
                             {
-                                "id": "mappings",
-                                "value": [
-                                    {
-                                        "type": "value",
-                                        "options": {
-                                            "1970-01-01T03:00:00+03:00": {
-                                                "text": "No Active Pegout",
-                                                "color": "transparent",
-                                                "index": 0
-                                            }
+                                "id": "thresholds",
+                                "value": {
+                                    "mode": "absolute",
+                                    "steps": [
+                                        {
+                                            "color": "dark-red",
+                                            "value": null
                                         }
-                                    }
-                                ]
+                                    ]
+                                }
+                            },
+                            {
+                                "id": "custom.cellOptions",
+                                "value": {
+                                    "type": "color-text"
+                                }
                             }
                         ]
                     },
@@ -298,6 +287,49 @@
                     }
                 ]
             },
+            "gridPos": {
+                "h": 5,
+                "w": 24,
+                "x": 0,
+                "y": 0
+            },
+            "id": 8,
+            "options": {
+                "cellHeight": "sm",
+                "footer": {
+                    "countRows": false,
+                    "fields": "",
+                    "reducer": [
+                        "sum"
+                    ],
+                    "show": false
+                },
+                "showHeader": true
+            },
+            "pluginVersion": "12.1.0",
+            "targets": [
+                {
+                    "columns": [],
+                    "datasource": {
+                        "type": "yesoreyeram-infinity-datasource",
+                        "uid": "yesoreyeraminfinitydatasource"
+                    },
+                    "filters": [],
+                    "format": "table",
+                    "global_query_id": "",
+                    "parser": "backend",
+                    "refId": "A",
+                    "root_selector": "PegoutSigningInfo",
+                    "source": "url",
+                    "type": "json",
+                    "url": "http://metrics/metrics/api?source=system_info",
+                    "url_options": {
+                        "data": "",
+                        "method": "GET"
+                    }
+                }
+            ],
+            "title": "Pegout Signing",
             "transformations": [
                 {
                     "id": "organize",
@@ -346,45 +378,7 @@
                 }
             ],
             "transparent": true,
-            "pluginVersion": "12.1.0",
-            "targets": [
-                {
-                    "columns": [],
-                    "datasource": {
-                        "type": "yesoreyeram-infinity-datasource",
-                        "uid": "yesoreyeraminfinitydatasource"
-                    },
-                    "filters": [],
-                    "format": "table",
-                    "global_query_id": "",
-                    "parser": "backend",
-                    "refId": "A",
-                    "root_selector": "PegoutSigningInfo",
-                    "source": "url",
-                    "type": "json",
-                    "url": "http://metrics/metrics/api?source=system_info",
-                    "url_options": {
-                        "data": "",
-                        "method": "GET"
-                    }
-                }
-            ],
-            "datasource": {
-                "type": "yesoreyeram-infinity-datasource",
-                "uid": "yesoreyeraminfinitydatasource"
-            },
-            "options": {
-                "showHeader": true,
-                "cellHeight": "sm",
-                "footer": {
-                    "show": false,
-                    "reducer": [
-                        "sum"
-                    ],
-                    "countRows": false,
-                    "fields": ""
-                }
-            }
+            "type": "table"
         },
         {
             "datasource": {
@@ -1908,19 +1902,19 @@
                     {
                         "matcher": {
                             "id": "byName",
-                            "options": "Contract"
+                            "options": "BitclientStr"
                         },
                         "properties": [
                             {
                                 "id": "custom.width",
-                                "value": 200
+                                "value": 150
                             }
                         ]
                     },
                     {
                         "matcher": {
                             "id": "byName",
-                            "options": "Balance"
+                            "options": "BitclientStr"
                         },
                         "properties": [
                             {
@@ -1933,11 +1927,29 @@
                                 }
                             }
                         ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "BitclientAddr"
+                        },
+                        "properties": [
+                            {
+                                "id": "links",
+                                "value": [
+                                    {
+                                        "targetBlank": true,
+                                        "title": "",
+                                        "url": "https://testnet.tonviewer.com/${__value.text}"
+                                    }
+                                ]
+                            }
+                        ]
                     }
                 ]
             },
             "gridPos": {
-                "h": 8,
+                "h": 4,
                 "w": 10,
                 "x": 14,
                 "y": 19
@@ -1985,20 +1997,24 @@
                     "options": {
                         "excludeByName": {
                             "Bitclient": true,
-                            "BitclientAddr": true,
+                            "BitclientAddr": false,
                             "BitclientSeverity": true,
                             "Coordinator": true,
                             "CoordinatorAddr": true,
                             "CoordinatorSeverity": true,
+                            "CoordinatorStr": true,
                             "Minter": true,
                             "MinterAddr": true,
                             "MinterSeverity": true,
+                            "MinterStr": true,
                             "Relayer": true,
                             "RelayerAddr": true,
                             "RelayerSeverity": true,
+                            "RelayerStr": true,
                             "Teleport": true,
                             "TeleportAddr": true,
                             "TeleportSeverity": true,
+                            "TeleportStr": true,
                             "Total": false
                         },
                         "includeByName": {},
@@ -2025,7 +2041,8 @@
                             "TeleportStr": 8
                         },
                         "renameByName": {
-                            "BitclientStr": ""
+                            "BitclientAddr": " ",
+                            "BitclientStr": "Bitclient"
                         }
                     }
                 },
@@ -2035,20 +2052,207 @@
                         "conversions": [
                             {
                                 "destinationType": "number",
-                                "targetField": "BitclientStr"
+                                "targetField": "TeleportStr"
+                            }
+                        ],
+                        "fields": {}
+                    }
+                }
+            ],
+            "transparent": true,
+            "type": "table"
+        },
+        {
+            "datasource": {
+                "type": "yesoreyeram-infinity-datasource",
+                "uid": "yesoreyeraminfinitydatasource"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "custom": {
+                        "align": "left",
+                        "cellOptions": {
+                            "type": "auto"
+                        },
+                        "inspect": false
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "dark-red",
+                                "value": null
                             },
                             {
-                                "destinationType": "number",
-                                "targetField": "CoordinatorStr"
+                                "color": "semi-dark-yellow",
+                                "value": 2
                             },
                             {
-                                "destinationType": "number",
-                                "targetField": "MinterStr"
-                            },
+                                "color": "dark-green",
+                                "value": 5
+                            }
+                        ]
+                    }
+                },
+                "overrides": [
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "CoordinatorStr"
+                        },
+                        "properties": [
                             {
-                                "destinationType": "number",
-                                "targetField": "RelayerStr"
-                            },
+                                "id": "custom.width",
+                                "value": 150
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "CoordinatorStr"
+                        },
+                        "properties": [
+                            {
+                                "id": "custom.cellOptions",
+                                "value": {
+                                    "applyToRow": true,
+                                    "mode": "basic",
+                                    "type": "color-background",
+                                    "wrapText": false
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "CoordinatorAddr"
+                        },
+                        "properties": [
+                            {
+                                "id": "links",
+                                "value": [
+                                    {
+                                        "targetBlank": true,
+                                        "title": "",
+                                        "url": "https://testnet.tonviewer.com/${__value.text}"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            },
+            "gridPos": {
+                "h": 3,
+                "w": 10,
+                "x": 14,
+                "y": 23
+            },
+            "id": 14,
+            "options": {
+                "cellHeight": "sm",
+                "footer": {
+                    "countRows": false,
+                    "fields": "",
+                    "reducer": [
+                        "sum"
+                    ],
+                    "show": false
+                },
+                "showHeader": true
+            },
+            "pluginVersion": "12.1.0",
+            "targets": [
+                {
+                    "columns": [],
+                    "datasource": {
+                        "type": "yesoreyeram-infinity-datasource",
+                        "uid": "yesoreyeraminfinitydatasource"
+                    },
+                    "filters": [],
+                    "format": "table",
+                    "global_query_id": "",
+                    "parser": "backend",
+                    "refId": "A",
+                    "root_selector": "BalancesInfo",
+                    "source": "url",
+                    "type": "json",
+                    "url": "http://metrics/metrics/api?source=system_info",
+                    "url_options": {
+                        "data": "",
+                        "method": "GET"
+                    }
+                }
+            ],
+            "title": "",
+            "transformations": [
+                {
+                    "id": "organize",
+                    "options": {
+                        "excludeByName": {
+                            "Bitclient": true,
+                            "BitclientAddr": true,
+                            "BitclientSeverity": true,
+                            "BitclientStr": true,
+                            "Coordinator": true,
+                            "CoordinatorAddr": false,
+                            "CoordinatorSeverity": true,
+                            "CoordinatorStr": false,
+                            "Minter": true,
+                            "MinterAddr": true,
+                            "MinterSeverity": true,
+                            "MinterStr": true,
+                            "Relayer": true,
+                            "RelayerAddr": true,
+                            "RelayerSeverity": true,
+                            "RelayerStr": true,
+                            "Teleport": true,
+                            "TeleportAddr": true,
+                            "TeleportSeverity": true,
+                            "TeleportStr": true,
+                            "Total": false
+                        },
+                        "includeByName": {},
+                        "indexByName": {
+                            "Bitclient": 17,
+                            "BitclientAddr": 1,
+                            "BitclientSeverity": 15,
+                            "BitclientStr": 0,
+                            "Coordinator": 14,
+                            "CoordinatorAddr": 3,
+                            "CoordinatorSeverity": 18,
+                            "CoordinatorStr": 2,
+                            "Minter": 19,
+                            "MinterAddr": 5,
+                            "MinterSeverity": 12,
+                            "MinterStr": 4,
+                            "Relayer": 13,
+                            "RelayerAddr": 7,
+                            "RelayerSeverity": 11,
+                            "RelayerStr": 6,
+                            "Teleport": 10,
+                            "TeleportAddr": 9,
+                            "TeleportSeverity": 16,
+                            "TeleportStr": 8
+                        },
+                        "renameByName": {
+                            "BitclientAddr": "",
+                            "BitclientStr": "",
+                            "CoordinatorAddr": " ",
+                            "CoordinatorStr": "Coordinator"
+                        }
+                    }
+                },
+                {
+                    "id": "convertFieldType",
+                    "options": {
+                        "conversions": [
                             {
                                 "destinationType": "number",
                                 "targetField": "TeleportStr"
@@ -2056,21 +2260,626 @@
                         ],
                         "fields": {}
                     }
+                }
+            ],
+            "transparent": true,
+            "type": "table"
+        },
+        {
+            "datasource": {
+                "type": "yesoreyeram-infinity-datasource",
+                "uid": "yesoreyeraminfinitydatasource"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "custom": {
+                        "align": "left",
+                        "cellOptions": {
+                            "type": "auto"
+                        },
+                        "inspect": false
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "dark-red",
+                                "value": null
+                            },
+                            {
+                                "color": "semi-dark-yellow",
+                                "value": 2
+                            },
+                            {
+                                "color": "dark-green",
+                                "value": 5
+                            }
+                        ]
+                    }
                 },
+                "overrides": [
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "MinterStr"
+                        },
+                        "properties": [
+                            {
+                                "id": "custom.width",
+                                "value": 150
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "MinterStr"
+                        },
+                        "properties": [
+                            {
+                                "id": "custom.cellOptions",
+                                "value": {
+                                    "applyToRow": true,
+                                    "mode": "basic",
+                                    "type": "color-background",
+                                    "wrapText": false
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "MinterAddr"
+                        },
+                        "properties": [
+                            {
+                                "id": "links",
+                                "value": [
+                                    {
+                                        "targetBlank": true,
+                                        "title": "",
+                                        "url": "https://testnet.tonviewer.com/${__value.text}"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            },
+            "gridPos": {
+                "h": 3,
+                "w": 10,
+                "x": 14,
+                "y": 26
+            },
+            "id": 15,
+            "options": {
+                "cellHeight": "sm",
+                "footer": {
+                    "countRows": false,
+                    "fields": "",
+                    "reducer": [
+                        "sum"
+                    ],
+                    "show": false
+                },
+                "showHeader": true
+            },
+            "pluginVersion": "12.1.0",
+            "targets": [
                 {
-                    "id": "transpose",
-                    "options": {}
-                },
+                    "columns": [],
+                    "datasource": {
+                        "type": "yesoreyeram-infinity-datasource",
+                        "uid": "yesoreyeraminfinitydatasource"
+                    },
+                    "filters": [],
+                    "format": "table",
+                    "global_query_id": "",
+                    "parser": "backend",
+                    "refId": "A",
+                    "root_selector": "BalancesInfo",
+                    "source": "url",
+                    "type": "json",
+                    "url": "http://metrics/metrics/api?source=system_info",
+                    "url_options": {
+                        "data": "",
+                        "method": "GET"
+                    }
+                }
+            ],
+            "title": "",
+            "transformations": [
                 {
                     "id": "organize",
                     "options": {
-                        "excludeByName": {},
+                        "excludeByName": {
+                            "Bitclient": true,
+                            "BitclientAddr": true,
+                            "BitclientSeverity": true,
+                            "BitclientStr": true,
+                            "Coordinator": true,
+                            "CoordinatorAddr": true,
+                            "CoordinatorSeverity": true,
+                            "CoordinatorStr": true,
+                            "Minter": true,
+                            "MinterAddr": false,
+                            "MinterSeverity": true,
+                            "MinterStr": false,
+                            "Relayer": true,
+                            "RelayerAddr": true,
+                            "RelayerSeverity": true,
+                            "RelayerStr": true,
+                            "Teleport": true,
+                            "TeleportAddr": true,
+                            "TeleportSeverity": true,
+                            "TeleportStr": true,
+                            "Total": false
+                        },
                         "includeByName": {},
-                        "indexByName": {},
+                        "indexByName": {
+                            "Bitclient": 17,
+                            "BitclientAddr": 1,
+                            "BitclientSeverity": 15,
+                            "BitclientStr": 0,
+                            "Coordinator": 14,
+                            "CoordinatorAddr": 3,
+                            "CoordinatorSeverity": 18,
+                            "CoordinatorStr": 2,
+                            "Minter": 19,
+                            "MinterAddr": 5,
+                            "MinterSeverity": 12,
+                            "MinterStr": 4,
+                            "Relayer": 13,
+                            "RelayerAddr": 7,
+                            "RelayerSeverity": 11,
+                            "RelayerStr": 6,
+                            "Teleport": 10,
+                            "TeleportAddr": 9,
+                            "TeleportSeverity": 16,
+                            "TeleportStr": 8
+                        },
                         "renameByName": {
-                            "1": "Balance",
-                            "Field": "Contract"
+                            "BitclientAddr": "",
+                            "BitclientStr": "",
+                            "CoordinatorAddr": " ",
+                            "CoordinatorStr": "Coordinator",
+                            "MinterAddr": " ",
+                            "MinterStr": "Minter"
                         }
+                    }
+                },
+                {
+                    "id": "convertFieldType",
+                    "options": {
+                        "conversions": [
+                            {
+                                "destinationType": "number",
+                                "targetField": "TeleportStr"
+                            }
+                        ],
+                        "fields": {}
+                    }
+                }
+            ],
+            "transparent": true,
+            "type": "table"
+        },
+        {
+            "datasource": {
+                "type": "yesoreyeram-infinity-datasource",
+                "uid": "yesoreyeraminfinitydatasource"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "custom": {
+                        "align": "left",
+                        "cellOptions": {
+                            "type": "auto"
+                        },
+                        "inspect": false
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "dark-red",
+                                "value": null
+                            },
+                            {
+                                "color": "semi-dark-yellow",
+                                "value": 2
+                            },
+                            {
+                                "color": "dark-green",
+                                "value": 5
+                            }
+                        ]
+                    }
+                },
+                "overrides": [
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "RelayerStr"
+                        },
+                        "properties": [
+                            {
+                                "id": "custom.width",
+                                "value": 150
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "RelayerStr"
+                        },
+                        "properties": [
+                            {
+                                "id": "custom.cellOptions",
+                                "value": {
+                                    "applyToRow": true,
+                                    "mode": "basic",
+                                    "type": "color-background",
+                                    "wrapText": false
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "RelayerAddr"
+                        },
+                        "properties": [
+                            {
+                                "id": "links",
+                                "value": [
+                                    {
+                                        "targetBlank": true,
+                                        "title": "",
+                                        "url": "https://testnet.tonviewer.com/${__value.text}"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            },
+            "gridPos": {
+                "h": 3,
+                "w": 10,
+                "x": 14,
+                "y": 29
+            },
+            "id": 16,
+            "options": {
+                "cellHeight": "sm",
+                "footer": {
+                    "countRows": false,
+                    "fields": "",
+                    "reducer": [
+                        "sum"
+                    ],
+                    "show": false
+                },
+                "showHeader": true
+            },
+            "pluginVersion": "12.1.0",
+            "targets": [
+                {
+                    "columns": [],
+                    "datasource": {
+                        "type": "yesoreyeram-infinity-datasource",
+                        "uid": "yesoreyeraminfinitydatasource"
+                    },
+                    "filters": [],
+                    "format": "table",
+                    "global_query_id": "",
+                    "parser": "backend",
+                    "refId": "A",
+                    "root_selector": "BalancesInfo",
+                    "source": "url",
+                    "type": "json",
+                    "url": "http://metrics/metrics/api?source=system_info",
+                    "url_options": {
+                        "data": "",
+                        "method": "GET"
+                    }
+                }
+            ],
+            "title": "",
+            "transformations": [
+                {
+                    "id": "organize",
+                    "options": {
+                        "excludeByName": {
+                            "Bitclient": true,
+                            "BitclientAddr": true,
+                            "BitclientSeverity": true,
+                            "BitclientStr": true,
+                            "Coordinator": true,
+                            "CoordinatorAddr": true,
+                            "CoordinatorSeverity": true,
+                            "CoordinatorStr": true,
+                            "Minter": true,
+                            "MinterAddr": true,
+                            "MinterSeverity": true,
+                            "MinterStr": true,
+                            "Relayer": true,
+                            "RelayerAddr": false,
+                            "RelayerSeverity": true,
+                            "RelayerStr": false,
+                            "Teleport": true,
+                            "TeleportAddr": true,
+                            "TeleportSeverity": true,
+                            "TeleportStr": true,
+                            "Total": false
+                        },
+                        "includeByName": {},
+                        "indexByName": {
+                            "Bitclient": 17,
+                            "BitclientAddr": 1,
+                            "BitclientSeverity": 15,
+                            "BitclientStr": 0,
+                            "Coordinator": 14,
+                            "CoordinatorAddr": 3,
+                            "CoordinatorSeverity": 18,
+                            "CoordinatorStr": 2,
+                            "Minter": 19,
+                            "MinterAddr": 5,
+                            "MinterSeverity": 12,
+                            "MinterStr": 4,
+                            "Relayer": 13,
+                            "RelayerAddr": 7,
+                            "RelayerSeverity": 11,
+                            "RelayerStr": 6,
+                            "Teleport": 10,
+                            "TeleportAddr": 9,
+                            "TeleportSeverity": 16,
+                            "TeleportStr": 8
+                        },
+                        "renameByName": {
+                            "BitclientAddr": "",
+                            "BitclientStr": "",
+                            "CoordinatorAddr": " ",
+                            "CoordinatorStr": "Coordinator",
+                            "MinterAddr": "",
+                            "MinterStr": "",
+                            "RelayerAddr": " ",
+                            "RelayerStr": "Relayer"
+                        }
+                    }
+                },
+                {
+                    "id": "convertFieldType",
+                    "options": {
+                        "conversions": [
+                            {
+                                "destinationType": "number",
+                                "targetField": "TeleportStr"
+                            }
+                        ],
+                        "fields": {}
+                    }
+                }
+            ],
+            "transparent": true,
+            "type": "table"
+        },
+        {
+            "datasource": {
+                "type": "yesoreyeram-infinity-datasource",
+                "uid": "yesoreyeraminfinitydatasource"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "custom": {
+                        "align": "left",
+                        "cellOptions": {
+                            "type": "auto"
+                        },
+                        "inspect": false
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "dark-red",
+                                "value": null
+                            },
+                            {
+                                "color": "semi-dark-yellow",
+                                "value": 2
+                            },
+                            {
+                                "color": "dark-green",
+                                "value": 5
+                            }
+                        ]
+                    }
+                },
+                "overrides": [
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "TeleportStr"
+                        },
+                        "properties": [
+                            {
+                                "id": "custom.width",
+                                "value": 150
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "TeleportStr"
+                        },
+                        "properties": [
+                            {
+                                "id": "custom.cellOptions",
+                                "value": {
+                                    "applyToRow": true,
+                                    "mode": "basic",
+                                    "type": "color-background",
+                                    "wrapText": false
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "TeleportAddr"
+                        },
+                        "properties": [
+                            {
+                                "id": "links",
+                                "value": [
+                                    {
+                                        "targetBlank": true,
+                                        "title": "",
+                                        "url": "https://testnet.tonviewer.com/${__value.text}"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            },
+            "gridPos": {
+                "h": 3,
+                "w": 10,
+                "x": 14,
+                "y": 32
+            },
+            "id": 17,
+            "options": {
+                "cellHeight": "sm",
+                "footer": {
+                    "countRows": false,
+                    "fields": "",
+                    "reducer": [
+                        "sum"
+                    ],
+                    "show": false
+                },
+                "showHeader": true
+            },
+            "pluginVersion": "12.1.0",
+            "targets": [
+                {
+                    "columns": [],
+                    "datasource": {
+                        "type": "yesoreyeram-infinity-datasource",
+                        "uid": "yesoreyeraminfinitydatasource"
+                    },
+                    "filters": [],
+                    "format": "table",
+                    "global_query_id": "",
+                    "parser": "backend",
+                    "refId": "A",
+                    "root_selector": "BalancesInfo",
+                    "source": "url",
+                    "type": "json",
+                    "url": "http://metrics/metrics/api?source=system_info",
+                    "url_options": {
+                        "data": "",
+                        "method": "GET"
+                    }
+                }
+            ],
+            "title": "",
+            "transformations": [
+                {
+                    "id": "organize",
+                    "options": {
+                        "excludeByName": {
+                            "Bitclient": true,
+                            "BitclientAddr": true,
+                            "BitclientSeverity": true,
+                            "BitclientStr": true,
+                            "Coordinator": true,
+                            "CoordinatorAddr": true,
+                            "CoordinatorSeverity": true,
+                            "CoordinatorStr": true,
+                            "Minter": true,
+                            "MinterAddr": true,
+                            "MinterSeverity": true,
+                            "MinterStr": true,
+                            "Relayer": true,
+                            "RelayerAddr": true,
+                            "RelayerSeverity": true,
+                            "RelayerStr": true,
+                            "Teleport": true,
+                            "TeleportAddr": false,
+                            "TeleportSeverity": true,
+                            "TeleportStr": false,
+                            "Total": false
+                        },
+                        "includeByName": {},
+                        "indexByName": {
+                            "Bitclient": 17,
+                            "BitclientAddr": 1,
+                            "BitclientSeverity": 15,
+                            "BitclientStr": 0,
+                            "Coordinator": 14,
+                            "CoordinatorAddr": 3,
+                            "CoordinatorSeverity": 18,
+                            "CoordinatorStr": 2,
+                            "Minter": 19,
+                            "MinterAddr": 5,
+                            "MinterSeverity": 12,
+                            "MinterStr": 4,
+                            "Relayer": 13,
+                            "RelayerAddr": 7,
+                            "RelayerSeverity": 11,
+                            "RelayerStr": 6,
+                            "Teleport": 10,
+                            "TeleportAddr": 9,
+                            "TeleportSeverity": 16,
+                            "TeleportStr": 8
+                        },
+                        "renameByName": {
+                            "BitclientAddr": "",
+                            "BitclientStr": "",
+                            "CoordinatorAddr": " ",
+                            "CoordinatorStr": "Coordinator",
+                            "MinterAddr": "",
+                            "MinterStr": "",
+                            "RelayerAddr": "",
+                            "RelayerStr": "",
+                            "TeleportAddr": " ",
+                            "TeleportStr": "Teleport"
+                        }
+                    }
+                },
+                {
+                    "id": "convertFieldType",
+                    "options": {
+                        "conversions": [
+                            {
+                                "destinationType": "number",
+                                "targetField": "TeleportStr"
+                            }
+                        ],
+                        "fields": {}
                     }
                 }
             ],
