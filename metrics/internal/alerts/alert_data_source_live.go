@@ -13,6 +13,7 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/config"
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/data_models"
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/data_sources"
+	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/mutils"
 
 	"github.com/xssnick/tonutils-go/address"
 )
@@ -93,6 +94,10 @@ func (dataSource *AlertDataSourceLive) PegoutDB(address *address.Address) (*data
 
 func (dataSource *AlertDataSourceLive) NowUnixTs() int64 {
 	return time.Now().Unix()
+}
+
+func (dataSource *AlertDataSourceLive) BtcGetBestBlockHeight() (int, error) {
+	return mutils.GetBestBlockHeight(dataSource.bitcoinClient)
 }
 
 func (dataSource *AlertDataSourceLive) BtcGetBlockHashByTxID(txID *chainhash.Hash) (*chainhash.Hash, error) {
