@@ -18,7 +18,7 @@
     "editable": true,
     "fiscalYearStartMonth": 0,
     "graphTooltip": 0,
-    "id": 17,
+    "id": 10,
     "links": [],
     "panels": [
         {
@@ -39,7 +39,7 @@
                             "wrapText": true
                         },
                         "inspect": false,
-                        "width": 150
+                        "width": 200
                     },
                     "mappings": [],
                     "thresholds": {
@@ -48,10 +48,6 @@
                             {
                                 "color": "dark-green",
                                 "value": null
-                            },
-                            {
-                                "color": "dark-red",
-                                "value": 80
                             }
                         ]
                     }
@@ -226,6 +222,9 @@
                                 "value": {
                                     "type": "auto"
                                 }
+                            },
+                            {
+                                "id": "custom.width"
                             }
                         ]
                     },
@@ -255,6 +254,34 @@
                                 "value": {
                                     "type": "color-text"
                                 }
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Autopegout"
+                        },
+                        "properties": [
+                            {
+                                "id": "mappings",
+                                "value": [
+                                    {
+                                        "options": {
+                                            "false": {
+                                                "color": "transparent",
+                                                "index": 0,
+                                                "text": "No"
+                                            },
+                                            "true": {
+                                                "color": "transparent",
+                                                "index": 1,
+                                                "text": "Yes"
+                                            }
+                                        },
+                                        "type": "value"
+                                    }
+                                ]
                             }
                         ]
                     }
@@ -310,6 +337,7 @@
                         "excludeByName": {
                             "IsInternalKeyCorrectStr": true,
                             "IsSignedStr": true,
+                            "RestartsSeverity": true,
                             "SignersCommitmentActive": true,
                             "SignersCommitmentActiveIdx": true,
                             "SignersCommitmentInactive": true,
@@ -320,26 +348,27 @@
                         },
                         "includeByName": {},
                         "indexByName": {
-                            "CulpritsIdx": 10,
                             "Id": 0,
+                            "IsAutopegout": 8,
                             "IsInternalKeyCorrect": 2,
                             "IsInternalKeyCorrectStr": 3,
                             "IsSigned": 4,
-                            "IsSignedStr": 5,
-                            "QueueLength": 8,
+                            "QueueLength": 7,
                             "Restarts": 1,
-                            "Signers": 6,
-                            "SignersCommitmentActive": 11,
-                            "SignersCommitmentActiveIdx": 12,
-                            "SignersCommitmentInactive": 13,
-                            "SignersCommitmentInactiveIdx": 14,
-                            "SignersEvicted": 15,
-                            "SignersEvictedIdx": 16,
-                            "SignersMax": 7,
+                            "RestartsSeverity": 16,
+                            "Signers": 5,
+                            "SignersCommitmentActive": 10,
+                            "SignersCommitmentActiveIdx": 11,
+                            "SignersCommitmentInactive": 12,
+                            "SignersCommitmentInactiveIdx": 13,
+                            "SignersEvicted": 14,
+                            "SignersEvictedIdx": 15,
+                            "SignersMax": 6,
                             "Until": 9
                         },
                         "renameByName": {
                             "CulpritsIdx": "Culprit Idx",
+                            "IsAutopegout": "Autopegout",
                             "IsInternalKeyCorrect": "Internal Key",
                             "IsInternalKeyCorrectStr": "Internal Key",
                             "IsSigned": "Signed",
@@ -414,7 +443,7 @@
                     "global_query_id": "",
                     "parser": "backend",
                     "refId": "A",
-                    "root_selector": "PegoutSigningInfo",
+                    "root_selector": "PegoutSigningInfo.SignersCommitmentActiveIdx",
                     "source": "url",
                     "type": "json",
                     "url": "http://metrics/metrics/api?source=system_info",
@@ -427,40 +456,13 @@
             "title": "",
             "transformations": [
                 {
-                    "id": "extractFields",
-                    "options": {
-                        "delimiter": ",",
-                        "keepTime": false,
-                        "replace": true,
-                        "source": "SignersCommitmentActiveIdx"
-                    }
-                },
-                {
-                    "id": "convertFieldType",
-                    "options": {
-                        "conversions": [
-                            {
-                                "destinationType": "number",
-                                "targetField": "ServiceFee"
-                            }
-                        ],
-                        "fields": {}
-                    }
-                },
-                {
-                    "id": "transpose",
-                    "options": {}
-                },
-                {
                     "id": "organize",
                     "options": {
-                        "excludeByName": {
-                            "Field": true
-                        },
+                        "excludeByName": {},
                         "includeByName": {},
                         "indexByName": {},
                         "renameByName": {
-                            "1": "Signers Active Idx"
+                            "A": "Active Signers"
                         }
                     }
                 }
@@ -531,7 +533,7 @@
                     "global_query_id": "",
                     "parser": "backend",
                     "refId": "A",
-                    "root_selector": "PegoutSigningInfo",
+                    "root_selector": "PegoutSigningInfo.SignersCommitmentInactiveIdx",
                     "source": "url",
                     "type": "json",
                     "url": "http://metrics/metrics/api?source=system_info",
@@ -544,39 +546,13 @@
             "title": "",
             "transformations": [
                 {
-                    "id": "extractFields",
-                    "options": {
-                        "delimiter": ",",
-                        "replace": true,
-                        "source": "SignersCommitmentInactiveIdx"
-                    }
-                },
-                {
-                    "id": "convertFieldType",
-                    "options": {
-                        "conversions": [
-                            {
-                                "destinationType": "number",
-                                "targetField": "ServiceFee"
-                            }
-                        ],
-                        "fields": {}
-                    }
-                },
-                {
-                    "id": "transpose",
-                    "options": {}
-                },
-                {
                     "id": "organize",
                     "options": {
-                        "excludeByName": {
-                            "Field": true
-                        },
+                        "excludeByName": {},
                         "includeByName": {},
                         "indexByName": {},
                         "renameByName": {
-                            "1": "Signers Inactive Idx"
+                            "A": "Inactive Signers"
                         }
                     }
                 }
@@ -647,7 +623,7 @@
                     "global_query_id": "",
                     "parser": "backend",
                     "refId": "A",
-                    "root_selector": "PegoutSigningInfo",
+                    "root_selector": "PegoutSigningInfo.SignersEvictedIdx",
                     "source": "url",
                     "type": "json",
                     "url": "http://metrics/metrics/api?source=system_info",
@@ -660,32 +636,13 @@
             "title": "",
             "transformations": [
                 {
-                    "id": "extractFields",
-                    "options": {
-                        "delimiter": ",",
-                        "keepTime": false,
-                        "replace": true,
-                        "source": "SignersEvictedIdx"
-                    }
-                },
-                {
-                    "id": "convertFieldType",
-                    "options": {}
-                },
-                {
-                    "id": "transpose",
-                    "options": {}
-                },
-                {
                     "id": "organize",
                     "options": {
-                        "excludeByName": {
-                            "Field": true
-                        },
+                        "excludeByName": {},
                         "includeByName": {},
                         "indexByName": {},
                         "renameByName": {
-                            "1": "Evicted Signers"
+                            "A": "Evicted Signers"
                         }
                     }
                 }
@@ -726,7 +683,53 @@
                         ]
                     }
                 },
-                "overrides": []
+                "overrides": [
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "BitcoinMempoolTime"
+                        },
+                        "properties": [
+                            {
+                                "id": "decimals"
+                            },
+                            {
+                                "id": "unit",
+                                "value": "ms"
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "BtcTxStatus"
+                        },
+                        "properties": [
+                            {
+                                "id": "mappings",
+                                "value": [
+                                    {
+                                        "options": {
+                                            "0": {
+                                                "index": 0,
+                                                "text": "Tx not published"
+                                            },
+                                            "1": {
+                                                "index": 1,
+                                                "text": "Tx in mempool"
+                                            },
+                                            "2": {
+                                                "index": 2,
+                                                "text": "Tx in block"
+                                            }
+                                        },
+                                        "type": "value"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
             },
             "gridPos": {
                 "h": 7,
@@ -1655,13 +1658,6 @@
             "title": "",
             "transformations": [
                 {
-                    "disabled": true,
-                    "id": "transpose",
-                    "options": {
-                        "restFieldsName": ""
-                    }
-                },
-                {
                     "id": "organize",
                     "options": {
                         "excludeByName": {
@@ -1671,7 +1667,7 @@
                         "indexByName": {},
                         "renameByName": {
                             "1": "Active Validators Idx",
-                            "A": "Active Validators Idx"
+                            "A": "Active Validators"
                         }
                     }
                 }
@@ -1755,11 +1751,6 @@
             "title": "",
             "transformations": [
                 {
-                    "disabled": true,
-                    "id": "transpose",
-                    "options": {}
-                },
-                {
                     "id": "organize",
                     "options": {
                         "excludeByName": {
@@ -1769,7 +1760,7 @@
                         "indexByName": {},
                         "renameByName": {
                             "1": "Inactive Validators Idx",
-                            "A": "Inactive Validators Idx"
+                            "A": "Inactive Validators"
                         }
                     }
                 }
@@ -1853,11 +1844,6 @@
             "title": "",
             "transformations": [
                 {
-                    "disabled": true,
-                    "id": "transpose",
-                    "options": {}
-                },
-                {
                     "id": "organize",
                     "options": {
                         "excludeByName": {
@@ -1867,7 +1853,7 @@
                         "indexByName": {},
                         "renameByName": {
                             "1": "Evicted Validators Idx",
-                            "A": "Evicted Validators Idx",
+                            "A": "Evicted Validators",
                             "Field": ""
                         }
                     }
@@ -1916,19 +1902,19 @@
                     {
                         "matcher": {
                             "id": "byName",
-                            "options": "Contract"
+                            "options": "BitclientStr"
                         },
                         "properties": [
                             {
                                 "id": "custom.width",
-                                "value": 200
+                                "value": 150
                             }
                         ]
                     },
                     {
                         "matcher": {
                             "id": "byName",
-                            "options": "Balance"
+                            "options": "BitclientStr"
                         },
                         "properties": [
                             {
@@ -1941,11 +1927,29 @@
                                 }
                             }
                         ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "BitclientAddr"
+                        },
+                        "properties": [
+                            {
+                                "id": "links",
+                                "value": [
+                                    {
+                                        "targetBlank": true,
+                                        "title": "",
+                                        "url": "https://testnet.tonviewer.com/${__value.text}"
+                                    }
+                                ]
+                            }
+                        ]
                     }
                 ]
             },
             "gridPos": {
-                "h": 8,
+                "h": 4,
                 "w": 10,
                 "x": 14,
                 "y": 19
@@ -1993,20 +1997,24 @@
                     "options": {
                         "excludeByName": {
                             "Bitclient": true,
-                            "BitclientAddr": true,
+                            "BitclientAddr": false,
                             "BitclientSeverity": true,
                             "Coordinator": true,
                             "CoordinatorAddr": true,
                             "CoordinatorSeverity": true,
+                            "CoordinatorStr": true,
                             "Minter": true,
                             "MinterAddr": true,
                             "MinterSeverity": true,
+                            "MinterStr": true,
                             "Relayer": true,
                             "RelayerAddr": true,
                             "RelayerSeverity": true,
+                            "RelayerStr": true,
                             "Teleport": true,
                             "TeleportAddr": true,
                             "TeleportSeverity": true,
+                            "TeleportStr": true,
                             "Total": false
                         },
                         "includeByName": {},
@@ -2033,7 +2041,8 @@
                             "TeleportStr": 8
                         },
                         "renameByName": {
-                            "BitclientStr": ""
+                            "BitclientAddr": " ",
+                            "BitclientStr": "Bitclient"
                         }
                     }
                 },
@@ -2044,41 +2053,833 @@
                             {
                                 "destinationType": "number",
                                 "targetField": "BitclientStr"
+                            }
+                        ],
+                        "fields": {}
+                    }
+                }
+            ],
+            "transparent": true,
+            "type": "table"
+        },
+        {
+            "datasource": {
+                "type": "yesoreyeram-infinity-datasource",
+                "uid": "yesoreyeraminfinitydatasource"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "custom": {
+                        "align": "left",
+                        "cellOptions": {
+                            "type": "auto"
+                        },
+                        "inspect": false
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "dark-red",
+                                "value": null
                             },
+                            {
+                                "color": "semi-dark-yellow",
+                                "value": 2
+                            },
+                            {
+                                "color": "dark-green",
+                                "value": 5
+                            }
+                        ]
+                    }
+                },
+                "overrides": [
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "CoordinatorStr"
+                        },
+                        "properties": [
+                            {
+                                "id": "custom.width",
+                                "value": 150
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "CoordinatorStr"
+                        },
+                        "properties": [
+                            {
+                                "id": "custom.cellOptions",
+                                "value": {
+                                    "applyToRow": true,
+                                    "mode": "basic",
+                                    "type": "color-background",
+                                    "wrapText": false
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "CoordinatorAddr"
+                        },
+                        "properties": [
+                            {
+                                "id": "links",
+                                "value": [
+                                    {
+                                        "targetBlank": true,
+                                        "title": "",
+                                        "url": "https://testnet.tonviewer.com/${__value.text}"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            },
+            "gridPos": {
+                "h": 3,
+                "w": 10,
+                "x": 14,
+                "y": 23
+            },
+            "id": 14,
+            "options": {
+                "cellHeight": "sm",
+                "footer": {
+                    "countRows": false,
+                    "fields": "",
+                    "reducer": [
+                        "sum"
+                    ],
+                    "show": false
+                },
+                "showHeader": true
+            },
+            "pluginVersion": "12.1.0",
+            "targets": [
+                {
+                    "columns": [],
+                    "datasource": {
+                        "type": "yesoreyeram-infinity-datasource",
+                        "uid": "yesoreyeraminfinitydatasource"
+                    },
+                    "filters": [],
+                    "format": "table",
+                    "global_query_id": "",
+                    "parser": "backend",
+                    "refId": "A",
+                    "root_selector": "BalancesInfo",
+                    "source": "url",
+                    "type": "json",
+                    "url": "http://metrics/metrics/api?source=system_info",
+                    "url_options": {
+                        "data": "",
+                        "method": "GET"
+                    }
+                }
+            ],
+            "title": "",
+            "transformations": [
+                {
+                    "id": "organize",
+                    "options": {
+                        "excludeByName": {
+                            "Bitclient": true,
+                            "BitclientAddr": true,
+                            "BitclientSeverity": true,
+                            "BitclientStr": true,
+                            "Coordinator": true,
+                            "CoordinatorAddr": false,
+                            "CoordinatorSeverity": true,
+                            "CoordinatorStr": false,
+                            "Minter": true,
+                            "MinterAddr": true,
+                            "MinterSeverity": true,
+                            "MinterStr": true,
+                            "Relayer": true,
+                            "RelayerAddr": true,
+                            "RelayerSeverity": true,
+                            "RelayerStr": true,
+                            "Teleport": true,
+                            "TeleportAddr": true,
+                            "TeleportSeverity": true,
+                            "TeleportStr": true,
+                            "Total": false
+                        },
+                        "includeByName": {},
+                        "indexByName": {
+                            "Bitclient": 17,
+                            "BitclientAddr": 1,
+                            "BitclientSeverity": 15,
+                            "BitclientStr": 0,
+                            "Coordinator": 14,
+                            "CoordinatorAddr": 3,
+                            "CoordinatorSeverity": 18,
+                            "CoordinatorStr": 2,
+                            "Minter": 19,
+                            "MinterAddr": 5,
+                            "MinterSeverity": 12,
+                            "MinterStr": 4,
+                            "Relayer": 13,
+                            "RelayerAddr": 7,
+                            "RelayerSeverity": 11,
+                            "RelayerStr": 6,
+                            "Teleport": 10,
+                            "TeleportAddr": 9,
+                            "TeleportSeverity": 16,
+                            "TeleportStr": 8
+                        },
+                        "renameByName": {
+                            "BitclientAddr": "",
+                            "BitclientStr": "",
+                            "CoordinatorAddr": " ",
+                            "CoordinatorStr": "Coordinator"
+                        }
+                    }
+                },
+                {
+                    "id": "convertFieldType",
+                    "options": {
+                        "conversions": [
                             {
                                 "destinationType": "number",
                                 "targetField": "CoordinatorStr"
+                            }
+                        ],
+                        "fields": {}
+                    }
+                }
+            ],
+            "transparent": true,
+            "type": "table"
+        },
+        {
+            "datasource": {
+                "type": "yesoreyeram-infinity-datasource",
+                "uid": "yesoreyeraminfinitydatasource"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "custom": {
+                        "align": "left",
+                        "cellOptions": {
+                            "type": "auto"
+                        },
+                        "inspect": false
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "dark-red",
+                                "value": null
                             },
+                            {
+                                "color": "semi-dark-yellow",
+                                "value": 2
+                            },
+                            {
+                                "color": "dark-green",
+                                "value": 5
+                            }
+                        ]
+                    }
+                },
+                "overrides": [
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "MinterStr"
+                        },
+                        "properties": [
+                            {
+                                "id": "custom.width",
+                                "value": 150
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "MinterStr"
+                        },
+                        "properties": [
+                            {
+                                "id": "custom.cellOptions",
+                                "value": {
+                                    "applyToRow": true,
+                                    "mode": "basic",
+                                    "type": "color-background",
+                                    "wrapText": false
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "MinterAddr"
+                        },
+                        "properties": [
+                            {
+                                "id": "links",
+                                "value": [
+                                    {
+                                        "targetBlank": true,
+                                        "title": "",
+                                        "url": "https://testnet.tonviewer.com/${__value.text}"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            },
+            "gridPos": {
+                "h": 3,
+                "w": 10,
+                "x": 14,
+                "y": 26
+            },
+            "id": 15,
+            "options": {
+                "cellHeight": "sm",
+                "footer": {
+                    "countRows": false,
+                    "fields": "",
+                    "reducer": [
+                        "sum"
+                    ],
+                    "show": false
+                },
+                "showHeader": true
+            },
+            "pluginVersion": "12.1.0",
+            "targets": [
+                {
+                    "columns": [],
+                    "datasource": {
+                        "type": "yesoreyeram-infinity-datasource",
+                        "uid": "yesoreyeraminfinitydatasource"
+                    },
+                    "filters": [],
+                    "format": "table",
+                    "global_query_id": "",
+                    "parser": "backend",
+                    "refId": "A",
+                    "root_selector": "BalancesInfo",
+                    "source": "url",
+                    "type": "json",
+                    "url": "http://metrics/metrics/api?source=system_info",
+                    "url_options": {
+                        "data": "",
+                        "method": "GET"
+                    }
+                }
+            ],
+            "title": "",
+            "transformations": [
+                {
+                    "id": "organize",
+                    "options": {
+                        "excludeByName": {
+                            "Bitclient": true,
+                            "BitclientAddr": true,
+                            "BitclientSeverity": true,
+                            "BitclientStr": true,
+                            "Coordinator": true,
+                            "CoordinatorAddr": true,
+                            "CoordinatorSeverity": true,
+                            "CoordinatorStr": true,
+                            "Minter": true,
+                            "MinterAddr": false,
+                            "MinterSeverity": true,
+                            "MinterStr": false,
+                            "Relayer": true,
+                            "RelayerAddr": true,
+                            "RelayerSeverity": true,
+                            "RelayerStr": true,
+                            "Teleport": true,
+                            "TeleportAddr": true,
+                            "TeleportSeverity": true,
+                            "TeleportStr": true,
+                            "Total": false
+                        },
+                        "includeByName": {},
+                        "indexByName": {
+                            "Bitclient": 17,
+                            "BitclientAddr": 1,
+                            "BitclientSeverity": 15,
+                            "BitclientStr": 0,
+                            "Coordinator": 14,
+                            "CoordinatorAddr": 3,
+                            "CoordinatorSeverity": 18,
+                            "CoordinatorStr": 2,
+                            "Minter": 19,
+                            "MinterAddr": 5,
+                            "MinterSeverity": 12,
+                            "MinterStr": 4,
+                            "Relayer": 13,
+                            "RelayerAddr": 7,
+                            "RelayerSeverity": 11,
+                            "RelayerStr": 6,
+                            "Teleport": 10,
+                            "TeleportAddr": 9,
+                            "TeleportSeverity": 16,
+                            "TeleportStr": 8
+                        },
+                        "renameByName": {
+                            "BitclientAddr": "",
+                            "BitclientStr": "",
+                            "CoordinatorAddr": " ",
+                            "CoordinatorStr": "Coordinator",
+                            "MinterAddr": " ",
+                            "MinterStr": "Minter"
+                        }
+                    }
+                },
+                {
+                    "id": "convertFieldType",
+                    "options": {
+                        "conversions": [
                             {
                                 "destinationType": "number",
                                 "targetField": "MinterStr"
+                            }
+                        ],
+                        "fields": {}
+                    }
+                }
+            ],
+            "transparent": true,
+            "type": "table"
+        },
+        {
+            "datasource": {
+                "type": "yesoreyeram-infinity-datasource",
+                "uid": "yesoreyeraminfinitydatasource"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "custom": {
+                        "align": "left",
+                        "cellOptions": {
+                            "type": "auto"
+                        },
+                        "inspect": false
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "dark-red",
+                                "value": null
                             },
+                            {
+                                "color": "semi-dark-yellow",
+                                "value": 2
+                            },
+                            {
+                                "color": "dark-green",
+                                "value": 5
+                            }
+                        ]
+                    }
+                },
+                "overrides": [
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "RelayerStr"
+                        },
+                        "properties": [
+                            {
+                                "id": "custom.width",
+                                "value": 150
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "RelayerStr"
+                        },
+                        "properties": [
+                            {
+                                "id": "custom.cellOptions",
+                                "value": {
+                                    "applyToRow": true,
+                                    "mode": "basic",
+                                    "type": "color-background",
+                                    "wrapText": false
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "RelayerAddr"
+                        },
+                        "properties": [
+                            {
+                                "id": "links",
+                                "value": [
+                                    {
+                                        "targetBlank": true,
+                                        "title": "",
+                                        "url": "https://testnet.tonviewer.com/${__value.text}"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            },
+            "gridPos": {
+                "h": 3,
+                "w": 10,
+                "x": 14,
+                "y": 29
+            },
+            "id": 16,
+            "options": {
+                "cellHeight": "sm",
+                "footer": {
+                    "countRows": false,
+                    "fields": "",
+                    "reducer": [
+                        "sum"
+                    ],
+                    "show": false
+                },
+                "showHeader": true
+            },
+            "pluginVersion": "12.1.0",
+            "targets": [
+                {
+                    "columns": [],
+                    "datasource": {
+                        "type": "yesoreyeram-infinity-datasource",
+                        "uid": "yesoreyeraminfinitydatasource"
+                    },
+                    "filters": [],
+                    "format": "table",
+                    "global_query_id": "",
+                    "parser": "backend",
+                    "refId": "A",
+                    "root_selector": "BalancesInfo",
+                    "source": "url",
+                    "type": "json",
+                    "url": "http://metrics/metrics/api?source=system_info",
+                    "url_options": {
+                        "data": "",
+                        "method": "GET"
+                    }
+                }
+            ],
+            "title": "",
+            "transformations": [
+                {
+                    "id": "organize",
+                    "options": {
+                        "excludeByName": {
+                            "Bitclient": true,
+                            "BitclientAddr": true,
+                            "BitclientSeverity": true,
+                            "BitclientStr": true,
+                            "Coordinator": true,
+                            "CoordinatorAddr": true,
+                            "CoordinatorSeverity": true,
+                            "CoordinatorStr": true,
+                            "Minter": true,
+                            "MinterAddr": true,
+                            "MinterSeverity": true,
+                            "MinterStr": true,
+                            "Relayer": true,
+                            "RelayerAddr": false,
+                            "RelayerSeverity": true,
+                            "RelayerStr": false,
+                            "Teleport": true,
+                            "TeleportAddr": true,
+                            "TeleportSeverity": true,
+                            "TeleportStr": true,
+                            "Total": false
+                        },
+                        "includeByName": {},
+                        "indexByName": {
+                            "Bitclient": 17,
+                            "BitclientAddr": 1,
+                            "BitclientSeverity": 15,
+                            "BitclientStr": 0,
+                            "Coordinator": 14,
+                            "CoordinatorAddr": 3,
+                            "CoordinatorSeverity": 18,
+                            "CoordinatorStr": 2,
+                            "Minter": 19,
+                            "MinterAddr": 5,
+                            "MinterSeverity": 12,
+                            "MinterStr": 4,
+                            "Relayer": 13,
+                            "RelayerAddr": 7,
+                            "RelayerSeverity": 11,
+                            "RelayerStr": 6,
+                            "Teleport": 10,
+                            "TeleportAddr": 9,
+                            "TeleportSeverity": 16,
+                            "TeleportStr": 8
+                        },
+                        "renameByName": {
+                            "BitclientAddr": "",
+                            "BitclientStr": "",
+                            "CoordinatorAddr": " ",
+                            "CoordinatorStr": "Coordinator",
+                            "MinterAddr": "",
+                            "MinterStr": "",
+                            "RelayerAddr": " ",
+                            "RelayerStr": "Relayer"
+                        }
+                    }
+                },
+                {
+                    "id": "convertFieldType",
+                    "options": {
+                        "conversions": [
                             {
                                 "destinationType": "number",
                                 "targetField": "RelayerStr"
+                            }
+                        ],
+                        "fields": {}
+                    }
+                }
+            ],
+            "transparent": true,
+            "type": "table"
+        },
+        {
+            "datasource": {
+                "type": "yesoreyeram-infinity-datasource",
+                "uid": "yesoreyeraminfinitydatasource"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "custom": {
+                        "align": "left",
+                        "cellOptions": {
+                            "type": "auto"
+                        },
+                        "inspect": false
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "dark-red",
+                                "value": null
                             },
+                            {
+                                "color": "semi-dark-yellow",
+                                "value": 2
+                            },
+                            {
+                                "color": "dark-green",
+                                "value": 5
+                            }
+                        ]
+                    }
+                },
+                "overrides": [
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "TeleportStr"
+                        },
+                        "properties": [
+                            {
+                                "id": "custom.width",
+                                "value": 150
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "TeleportStr"
+                        },
+                        "properties": [
+                            {
+                                "id": "custom.cellOptions",
+                                "value": {
+                                    "applyToRow": true,
+                                    "mode": "basic",
+                                    "type": "color-background",
+                                    "wrapText": false
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "TeleportAddr"
+                        },
+                        "properties": [
+                            {
+                                "id": "links",
+                                "value": [
+                                    {
+                                        "targetBlank": true,
+                                        "title": "",
+                                        "url": "https://testnet.tonviewer.com/${__value.text}"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            },
+            "gridPos": {
+                "h": 3,
+                "w": 10,
+                "x": 14,
+                "y": 32
+            },
+            "id": 17,
+            "options": {
+                "cellHeight": "sm",
+                "footer": {
+                    "countRows": false,
+                    "fields": "",
+                    "reducer": [
+                        "sum"
+                    ],
+                    "show": false
+                },
+                "showHeader": true
+            },
+            "pluginVersion": "12.1.0",
+            "targets": [
+                {
+                    "columns": [],
+                    "datasource": {
+                        "type": "yesoreyeram-infinity-datasource",
+                        "uid": "yesoreyeraminfinitydatasource"
+                    },
+                    "filters": [],
+                    "format": "table",
+                    "global_query_id": "",
+                    "parser": "backend",
+                    "refId": "A",
+                    "root_selector": "BalancesInfo",
+                    "source": "url",
+                    "type": "json",
+                    "url": "http://metrics/metrics/api?source=system_info",
+                    "url_options": {
+                        "data": "",
+                        "method": "GET"
+                    }
+                }
+            ],
+            "title": "",
+            "transformations": [
+                {
+                    "id": "organize",
+                    "options": {
+                        "excludeByName": {
+                            "Bitclient": true,
+                            "BitclientAddr": true,
+                            "BitclientSeverity": true,
+                            "BitclientStr": true,
+                            "Coordinator": true,
+                            "CoordinatorAddr": true,
+                            "CoordinatorSeverity": true,
+                            "CoordinatorStr": true,
+                            "Minter": true,
+                            "MinterAddr": true,
+                            "MinterSeverity": true,
+                            "MinterStr": true,
+                            "Relayer": true,
+                            "RelayerAddr": true,
+                            "RelayerSeverity": true,
+                            "RelayerStr": true,
+                            "Teleport": true,
+                            "TeleportAddr": false,
+                            "TeleportSeverity": true,
+                            "TeleportStr": false,
+                            "Total": false
+                        },
+                        "includeByName": {},
+                        "indexByName": {
+                            "Bitclient": 17,
+                            "BitclientAddr": 1,
+                            "BitclientSeverity": 15,
+                            "BitclientStr": 0,
+                            "Coordinator": 14,
+                            "CoordinatorAddr": 3,
+                            "CoordinatorSeverity": 18,
+                            "CoordinatorStr": 2,
+                            "Minter": 19,
+                            "MinterAddr": 5,
+                            "MinterSeverity": 12,
+                            "MinterStr": 4,
+                            "Relayer": 13,
+                            "RelayerAddr": 7,
+                            "RelayerSeverity": 11,
+                            "RelayerStr": 6,
+                            "Teleport": 10,
+                            "TeleportAddr": 9,
+                            "TeleportSeverity": 16,
+                            "TeleportStr": 8
+                        },
+                        "renameByName": {
+                            "BitclientAddr": "",
+                            "BitclientStr": "",
+                            "CoordinatorAddr": " ",
+                            "CoordinatorStr": "Coordinator",
+                            "MinterAddr": "",
+                            "MinterStr": "",
+                            "RelayerAddr": "",
+                            "RelayerStr": "",
+                            "TeleportAddr": " ",
+                            "TeleportStr": "Teleport"
+                        }
+                    }
+                },
+                {
+                    "id": "convertFieldType",
+                    "options": {
+                        "conversions": [
                             {
                                 "destinationType": "number",
                                 "targetField": "TeleportStr"
                             }
                         ],
                         "fields": {}
-                    }
-                },
-                {
-                    "id": "transpose",
-                    "options": {}
-                },
-                {
-                    "id": "organize",
-                    "options": {
-                        "excludeByName": {},
-                        "includeByName": {},
-                        "indexByName": {},
-                        "renameByName": {
-                            "1": "Balance",
-                            "Field": "Contract"
-                        }
                     }
                 }
             ],

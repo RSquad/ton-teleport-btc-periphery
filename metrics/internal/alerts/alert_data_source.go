@@ -25,6 +25,7 @@ type AlertDataSource interface {
 	DkgBeforeRestartDB(t time.Time) (*coordinator.DKG, error)
 	BtcGetBlockHashByTxID(txID *chainhash.Hash) (*chainhash.Hash, error)
 	BtcGetBlockHeightByHash(hash *chainhash.Hash) (int64, error)
+	BtcGetBestBlockHeight() (int, error)
 	BtcGetCpfpLength(hash *chainhash.Hash) (int, error)
 	BtcGetMempoolEntry(txHash string) (*btcjson.GetMempoolEntryResult, error)
 	TonMaxMainValidators(ctx context.Context) (int, error)

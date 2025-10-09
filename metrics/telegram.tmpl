@@ -57,7 +57,7 @@
 - <b>Not evicted IDs: </b>{{ .Annotations.not_evicted_ids }}
 {{ end -}}
 {{ if .Annotations.pegout_txid -}}
-- <a href="https://mempool.space/signet/tx/{{ .Annotations.pegout_txid }}">Bitcoin TX</a>
+- <a href="https://mempool.space/signet/tx/{{ .Annotations.pegout_txid }}">{{ .Annotations.pegout_txid }}</a>
 {{ end -}}
 {{ if .Annotations.pegout_addr -}}
 - <a href="https://testnet.tonviewer.com/{{ .Annotations.pegout_addr }}">{{ .Annotations.pegout_addr }}</a>
@@ -65,8 +65,14 @@
 {{ if .Annotations.last_pegout_txid -}}
 - <a href="https://mempool.space/signet/tx/{{ .Annotations.last_pegout_txid }}">{{ .Annotations.last_pegout_txid }}</a>
 {{ end -}}
+{{ if .Annotations.dkg_until -}}
+- <b>Until: </b>{{ .Annotations.dkg_until }}
+{{ end -}}
 {{ if .Annotations.participants_count -}}
 - <b>Participants count: </b>{{ .Annotations.participants_count }}
+{{ end -}}
+{{ if .Annotations.bitClientBlockHash -}}
+<b>Bitcoin client contract block hash: </b>{{ .Annotations.bitClientBlockHash }}
 {{ end -}}
 {{ end -}}
 {{ end -}}

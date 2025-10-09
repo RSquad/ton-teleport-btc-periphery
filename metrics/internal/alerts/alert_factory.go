@@ -70,6 +70,11 @@ func NewAlertFactory(contractAddrs map[string]*address.Address) *AlertFactory {
 		return NewAlertDkgCulpritFound()
 	}
 
+	// alert_btc_block_delta
+	factories["alert_btc_block_delta"] = func() Alert {
+		return NewAlertBtcBlockDelta()
+	}
+
 	// alert_alert_pegout_cpfp_length (pegout.cpfp.length)
 	factories["alert_pegout_cpfp_length"] = func() Alert {
 		return NewAlertCpfpLength()

@@ -129,9 +129,34 @@ func DeserializePegoutDB(jsonData []byte) (*Pegout, error) {
 	var pegoutJson PegoutJSON
 	err := json.Unmarshal(jsonData, &pegoutJson)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to call `DeserializePegoutDB`, json '%s': %w", string(jsonData), err)
 	}
 
+	return PegoutJsonToPegout(&pegoutJson)
+}
+
+func DeserializePegoutsDB(jsonData []byte) ([]*Pegout, error) {
+	var pegoutsJson []*PegoutJSON
+	err := json.Unmarshal(jsonData, &pegoutsJson)
+	if err != nil {
+		return nil, fmt.Errorf("failed to call `DeserializePegoutsDB`, json '%s': %w", string(jsonData), err)
+	}
+
+	pegouts := make([]*Pegout, len(pegoutsJson))
+
+	for i, pegoutJson := range pegoutsJson {
+		pegout, err := PegoutJsonToPegout(pegoutJson)
+		if err != nil {
+			return nil, err
+		}
+
+		pegouts[i] = pegout
+	}
+
+	return pegouts, nil
+}
+
+func PegoutJsonToPegout(pegoutJson *PegoutJSON) (*Pegout, error) {
 	h := func(s string) ([]byte, error) {
 		if s == "" {
 			return nil, nil
@@ -164,14 +189,4 @@ func DeserializePegoutDB(jsonData []byte) (*Pegout, error) {
 	pegout.BitcoinBlockHash = bitcoinBlockHash
 
 	return &pegout, nil
-}
-
-func DeserializePegoutsDB(jsonData []byte) ([]*Pegout, error) {
-	var pegouts []*Pegout
-	err := json.Unmarshal(jsonData, &pegouts)
-	if err != nil {
-		return nil, err
-	}
-
-	return pegouts, nil
 }

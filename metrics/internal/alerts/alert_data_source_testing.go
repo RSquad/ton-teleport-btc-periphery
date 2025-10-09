@@ -28,6 +28,7 @@ type (
 	BtcGetBlockHeightByHashFn                     func(hash *chainhash.Hash) (int64, error)
 	BtcGetCpfpLengthFn                            func(hash *chainhash.Hash) (int, error)
 	BtcGetMempoolEntryFn                          func(txHash string) (*btcjson.GetMempoolEntryResult, error)
+	BtcGetBestBlockHeightFn                       func() (int, error)
 	BitcoinClientContractLastConfirmedBlockHashFn func() (*chainhash.Hash, error)
 	TonMaxMainValidatorsFn                        func(ctx context.Context) (int, error)
 	ActualContractBalanceFn                       func(name string) (int64, error)
@@ -50,6 +51,7 @@ type AlertDataSourceTestingConfig struct {
 	BtcGetBlockHeightByHashFn                     BtcGetBlockHeightByHashFn
 	BtcGetCpfpLengthFn                            BtcGetCpfpLengthFn
 	BtcGetMempoolEntryFn                          BtcGetMempoolEntryFn
+	BtcGetBestBlockHeightFn                       BtcGetBestBlockHeightFn
 	BitcoinClientContractLastConfirmedBlockHashFn BitcoinClientContractLastConfirmedBlockHashFn
 	TonMaxMainValidatorsFn                        TonMaxMainValidatorsFn
 	ActualContractBalanceFn                       ActualContractBalanceFn
@@ -146,6 +148,13 @@ func (dataSource *AlertDataSourceTesting) BtcGetBlockHeightByHash(hash *chainhas
 		return 0, errors.New("BtcGetBlockHeightByHashFn callback not set")
 	}
 	return dataSource.cfg.BtcGetBlockHeightByHashFn(hash)
+}
+
+func (dataSource *AlertDataSourceTesting) BtcGetBestBlockHeight() (int, error) {
+	if dataSource.cfg.BtcGetBestBlockHeightFn == nil {
+		return 0, errors.New("BtcGetBestBlockHeightFn callback not set")
+	}
+	return dataSource.cfg.BtcGetBestBlockHeightFn()
 }
 
 func (dataSource *AlertDataSourceTesting) BtcGetCpfpLength(hash *chainhash.Hash) (int, error) {
