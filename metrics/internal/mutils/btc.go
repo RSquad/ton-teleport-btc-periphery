@@ -7,7 +7,7 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
 )
 
-func GetBestBlockHeight(bitcoinClient *bitcoin.Client) (int, error) {
+func BtcGetBestBlockHeight(bitcoinClient *bitcoin.Client) (int, error) {
 	btcInfo, err := bitcoinClient.GetBlockChainInfo()
 	if err != nil {
 		return 0, fmt.Errorf("failed to get btc blockchain info: %v", err)
@@ -16,7 +16,7 @@ func GetBestBlockHeight(bitcoinClient *bitcoin.Client) (int, error) {
 	return int(btcInfo.Blocks), nil
 }
 
-func GetCPFPChainSize(bitcoinClient *bitcoin.Client, txHash *chainhash.Hash) (int, error) {
+func BtcGetCPFPChainSize(bitcoinClient *bitcoin.Client, txHash *chainhash.Hash) (int, error) {
 	chainSize := 0
 	currentTxHash := txHash
 	visited := make(map[string]bool) // Prevent infinite loops

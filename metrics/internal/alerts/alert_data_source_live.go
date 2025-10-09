@@ -97,7 +97,7 @@ func (dataSource *AlertDataSourceLive) NowUnixTs() int64 {
 }
 
 func (dataSource *AlertDataSourceLive) BtcGetBestBlockHeight() (int, error) {
-	return mutils.GetBestBlockHeight(dataSource.bitcoinClient)
+	return mutils.BtcGetBestBlockHeight(dataSource.bitcoinClient)
 }
 
 func (dataSource *AlertDataSourceLive) BtcGetBlockHashByTxID(txID *chainhash.Hash) (*chainhash.Hash, error) {

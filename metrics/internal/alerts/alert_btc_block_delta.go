@@ -1,12 +1,23 @@
 package alerts
 
-import "math"
-
 type AlertBtcBlockDelta struct {
+	lastUpdateTs int64
+	severity     Severity
+	labels       Labels
+	vaules       Values
+	err          error
 }
 
 func NewAlertBtcBlockDelta() Alert {
-	return &AlertBtcBlockDelta{}
+	a := AlertBtcBlockDelta{}
+
+	return &AlertBtcBlockDelta{
+		lastUpdateTs: 0,
+		severity:     SEVERITY_UNKNOWN,
+		labels:       a.NewLabels(),
+		vaules:       nil,
+		err:          nil,
+	}
 }
 
 func (alert *AlertBtcBlockDelta) NewLabels() Labels {
@@ -16,53 +27,53 @@ func (alert *AlertBtcBlockDelta) NewLabels() Labels {
 }
 
 func (alert *AlertBtcBlockDelta) Check(dataSource AlertDataSource) (Severity, Labels, Values, error) {
-	labels := alert.NewLabels()
+	nowTs := dataSource.NowUnixTs()
 
-	delta := 0
-	blockHeightContract := 0
-	blockHeightNetwork := 0
-	blockHash := ""
+	// No more often than every 2 minutes
+	if (nowTs - alert.lastUpdateTs) < (2 * 60) {
+		return alert.severity, alert.labels, alert.vaules, alert.err
+	}
+
+	alert.lastUpdateTs = nowTs
+	alert.labels = alert.NewLabels()
+	alert.err = nil
 
 	storage, err := dataSource.BitcoinClientContractStorageDB()
 
 	if err != nil {
-		return SEVERITY_UNKNOWN, labels, nil, err
+		alert.severity = SEVERITY_UNKNOWN
+		alert.err = err
+
+		return alert.severity, alert.labels, alert.vaules, alert.err
 	}
 
-	blockHeightContract = int(storage.LastConfirmedBlockHeight)
-	blockHeightNetwork, err = dataSource.BtcGetBestBlockHeight()
-
-	for i := range storage.CandidateBlockHashes {
-		canditateHeight, err := dataSource.BtcGetBlockHeightByHash(storage.CandidateBlockHashes[i])
-		if err != nil {
-			return SEVERITY_UNKNOWN, labels, nil, err
-		}
-		if int(canditateHeight) > blockHeightNetwork {
-			blockHeightNetwork = int(canditateHeight)
-			blockHash = storage.CandidateBlockHashes[i].String()
-		}
-	}
+	blockHeightContract := int(storage.LastConfirmedBlockHeight + storage.ConfirmationsNeeded)
+	blockHeightNetwork, err := dataSource.BtcGetBestBlockHeight()
 
 	if err != nil {
-		return SEVERITY_UNKNOWN, labels, nil, err
+		alert.severity = SEVERITY_UNKNOWN
+		alert.err = err
+
+		return alert.severity, alert.labels, alert.vaules, alert.err
 	}
 
-	delta = blockHeightNetwork - blockHeightContract
+	delta := blockHeightNetwork - blockHeightContract
 
-	severity := alert.GetSeverity(int(math.Abs(float64(delta))))
-	labels["blockHash"] = blockHash
+	alert.severity = alert.GetSeverity(delta)
+	alert.labels["blockHash"] = storage.LastConfirmedBlockHash.String()
+	alert.err = nil
 
-	return severity, labels, nil, nil
+	return alert.severity, alert.labels, alert.vaules, alert.err
 }
 
 func (alert *AlertBtcBlockDelta) GetSeverity(delta int) Severity {
 	severity := SEVERITY_OK
 
-	if delta == 1 {
+	if delta == 2 {
 		severity = SEVERITY_WARNING
 	}
 
-	if delta >= 2 {
+	if delta >= 3 {
 		severity = SEVERITY_CRITICAL
 	}
 

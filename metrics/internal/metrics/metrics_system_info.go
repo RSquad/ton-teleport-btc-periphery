@@ -154,7 +154,7 @@ func (systemInfo *MetricsSystemInfo) SysLastPegoutTxInfo(
 					btcTxStatus = BTC_TX_IN_MEMPOOL
 
 					// Detect CPFP length
-					cpfpLength, err = mutils.GetCPFPChainSize(bitcoinClient, txHash)
+					cpfpLength, err = mutils.BtcGetCPFPChainSize(bitcoinClient, txHash)
 					if err != nil {
 						return nil, err
 					}
