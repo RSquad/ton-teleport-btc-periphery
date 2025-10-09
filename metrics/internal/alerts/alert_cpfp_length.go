@@ -2,15 +2,24 @@ package alerts
 
 import (
 	"encoding/hex"
+	"time"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/mutils"
 	"github.com/xssnick/tonutils-go/address"
 )
 
-type AlertCpfpLength struct{}
+type AlertCpfpLength struct {
+	lastUpdated time.Time
+	severity    Severity
+	labels      Labels
+}
 
 func NewAlertCpfpLength() Alert {
-	return &AlertCpfpLength{}
+	return &AlertCpfpLength{
+		lastUpdated: time.Time{},
+		severity:    SEVERITY_OK,
+		labels:      Labels{},
+	}
 }
 
 func (alert *AlertCpfpLength) NewLabels() Labels {
@@ -36,6 +45,10 @@ func (alert *AlertCpfpLength) Check(dataSource AlertDataSource) (Severity, Label
 		return SEVERITY_OK, labels, nil, nil
 	}
 
+	if time.Since(alert.lastUpdated) < 2*time.Minute {
+		return alert.severity, alert.labels, nil, nil
+	}
+
 	chainSize, err := dataSource.BtcGetCpfpLength(mutils.BytesToBTCHash(pegout.BitcoinTxId))
 
 	if err != nil {
@@ -48,6 +61,10 @@ func (alert *AlertCpfpLength) Check(dataSource AlertDataSource) (Severity, Label
 	labels["pegout_addr"] = (*address.Address)(pegout.Addr).StringRaw()
 
 	severity := alert.GetSeverity(chainSize)
+
+	alert.lastUpdated = time.Now()
+	alert.severity = severity
+	alert.labels = labels
 
 	return severity, labels, nil, nil
 }
