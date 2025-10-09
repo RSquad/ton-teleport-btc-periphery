@@ -4,7 +4,7 @@ type AlertBtcBlockDelta struct {
 	lastUpdateTs int64
 	severity     Severity
 	labels       Labels
-	vaules       Values
+	values       Values
 	err          error
 }
 
@@ -15,7 +15,7 @@ func NewAlertBtcBlockDelta() Alert {
 		lastUpdateTs: 0,
 		severity:     SEVERITY_UNKNOWN,
 		labels:       a.NewLabels(),
-		vaules:       nil,
+		values:       nil,
 		err:          nil,
 	}
 }
@@ -31,12 +31,13 @@ func (alert *AlertBtcBlockDelta) Check(dataSource AlertDataSource) (Severity, La
 
 	// No more often than every 2 minutes
 	if (nowTs - alert.lastUpdateTs) < (2 * 60) {
-		return alert.severity, alert.labels, alert.vaules, alert.err
+		return alert.severity, alert.labels, alert.values, alert.err
 	}
 
 	alert.lastUpdateTs = nowTs
 	alert.labels = alert.NewLabels()
 	alert.err = nil
+	alert.values = nil
 
 	storage, err := dataSource.BitcoinClientContractStorageDB()
 
@@ -44,7 +45,7 @@ func (alert *AlertBtcBlockDelta) Check(dataSource AlertDataSource) (Severity, La
 		alert.severity = SEVERITY_UNKNOWN
 		alert.err = err
 
-		return alert.severity, alert.labels, alert.vaules, alert.err
+		return alert.severity, alert.labels, alert.values, alert.err
 	}
 
 	blockHeightContract := int(storage.LastConfirmedBlockHeight + storage.ConfirmationsNeeded)
@@ -54,7 +55,7 @@ func (alert *AlertBtcBlockDelta) Check(dataSource AlertDataSource) (Severity, La
 		alert.severity = SEVERITY_UNKNOWN
 		alert.err = err
 
-		return alert.severity, alert.labels, alert.vaules, alert.err
+		return alert.severity, alert.labels, alert.values, alert.err
 	}
 
 	delta := blockHeightNetwork - blockHeightContract
@@ -63,7 +64,7 @@ func (alert *AlertBtcBlockDelta) Check(dataSource AlertDataSource) (Severity, La
 	alert.labels["blockHash"] = storage.LastConfirmedBlockHash.String()
 	alert.err = nil
 
-	return alert.severity, alert.labels, alert.vaules, alert.err
+	return alert.severity, alert.labels, alert.values, alert.err
 }
 
 func (alert *AlertBtcBlockDelta) GetSeverity(delta int) Severity {
