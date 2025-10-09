@@ -2,23 +2,28 @@ package alerts
 
 import (
 	"encoding/hex"
-	"time"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/mutils"
 	"github.com/xssnick/tonutils-go/address"
 )
 
 type AlertCpfpLength struct {
-	lastUpdated time.Time
-	severity    Severity
-	labels      Labels
+	lastUpdateTs int64
+	severity     Severity
+	labels       Labels
+	values       Values
+	err          error
 }
 
 func NewAlertCpfpLength() Alert {
+	a := AlertCpfpLength{}
+
 	return &AlertCpfpLength{
-		lastUpdated: time.Time{},
-		severity:    SEVERITY_OK,
-		labels:      Labels{},
+		lastUpdateTs: 0,
+		severity:     SEVERITY_UNKNOWN,
+		labels:       a.NewLabels(),
+		values:       nil,
+		err:          nil,
 	}
 }
 
@@ -30,43 +35,52 @@ func (alert *AlertCpfpLength) NewLabels() Labels {
 }
 
 func (alert *AlertCpfpLength) Check(dataSource AlertDataSource) (Severity, Labels, Values, error) {
-	labels := alert.NewLabels()
+	nowTs := dataSource.NowUnixTs()
+
+	if (nowTs - alert.lastUpdateTs) < (2 * 60) {
+		return alert.severity, alert.labels, alert.values, alert.err
+	}
+
+	alert.lastUpdateTs = nowTs
+	alert.labels = alert.NewLabels()
+	alert.err = nil
+	alert.values = nil
 
 	pegout, err := dataSource.LastSignedPegoutDB()
 	if err != nil {
-		return SEVERITY_UNKNOWN, labels, nil, err
+		alert.severity = SEVERITY_UNKNOWN
+		alert.err = err
+		return alert.severity, alert.labels, alert.values, alert.err
 	}
 
 	if pegout == nil {
-		return SEVERITY_OK, labels, nil, nil
+		alert.severity = SEVERITY_OK
+		alert.err = err
+		return alert.severity, alert.labels, alert.values, alert.err
 	}
 
 	if pegout.BitcoinTxId == nil {
-		return SEVERITY_OK, labels, nil, nil
-	}
-
-	if time.Since(alert.lastUpdated) < 2*time.Minute {
-		return alert.severity, alert.labels, nil, nil
+		alert.severity = SEVERITY_OK
+		alert.err = err
+		return alert.severity, alert.labels, alert.values, alert.err
 	}
 
 	chainSize, err := dataSource.BtcGetCpfpLength(mutils.BytesToBTCHash(pegout.BitcoinTxId))
 
 	if err != nil {
-		return SEVERITY_UNKNOWN, labels, nil, err
+		alert.severity = SEVERITY_OK
+		alert.err = err
+		return alert.severity, alert.labels, alert.values, alert.err
 	}
 
 	if pegout.BitcoinTxId != nil {
-		labels["bitcoin_tx_id"] = hex.EncodeToString(pegout.BitcoinTxId)
+		alert.labels["bitcoin_tx_id"] = hex.EncodeToString(pegout.BitcoinTxId)
 	}
-	labels["pegout_addr"] = (*address.Address)(pegout.Addr).StringRaw()
+	alert.labels["pegout_addr"] = (*address.Address)(pegout.Addr).StringRaw()
+	alert.severity = alert.GetSeverity(chainSize)
+	alert.err = nil
 
-	severity := alert.GetSeverity(chainSize)
-
-	alert.lastUpdated = time.Now()
-	alert.severity = severity
-	alert.labels = labels
-
-	return severity, labels, nil, nil
+	return alert.severity, alert.labels, alert.values, alert.err
 }
 
 func (alert *AlertCpfpLength) GetSeverity(chainSize int) Severity {
