@@ -344,9 +344,9 @@ groups:
       annotations:
         description: 'Relayer balance is less than 0.5 TON [CRITICAL]'
         contract_address: "{{ $labels.address }}"
+
   - name: pegout.cpfp.length
     rules:
-      # 0 (SEVERITY_OK) - cpfp length is less than 10
       # 2 (SEVERITY_WARNING) - cpfp length is less than 20
       # 3 (SEVERITY_CRITICAL) - cpfp length is more than 20
       - alert: PegoutCPFPLengthWarning
@@ -364,3 +364,23 @@ groups:
         annotations:
           description: "The CPFP chain length is more than 20 [CRITICAL]"
           last_pegout_txid: "{{ $labels.last_pegout_txid }}"
+
+  - name: btc.block.delta
+    rules:
+      # 2 (SEVERITY_WARNING) - block height delta >= 2
+      # 3 (SEVERITY_CRITICAL) - block height delta >= 3
+      - alert: BtcBlockDeltaWarning
+        expr: alert_btc_block_delta >= 2
+        labels:
+          severity: warning
+        annotations:
+          description: "The block-height delta between the BitcoinClient contract and the Bitcoin network is greater than or equal to 2 [WARNING]"
+          bitClientBlockHash: "{{ $labels.blockHash }}"
+
+      - alert: BtcBlockDeltaCritical
+        expr: alert_btc_block_delta >= 3
+        labels:
+          severity: critical
+        annotations:
+          description: "The block-height delta between the BitcoinClient contract and the Bitcoin network is greater than or equal to 3 [CRITICAL]"
+          bitClientBlockHash: "{{ $labels.blockHash }}"
