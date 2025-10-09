@@ -77,7 +77,7 @@ func (fetcher *FetcherContractBitcoinClient) Fetch() {
 		return
 	}
 
-	// CandidateBlockHashes
+	// ConfirmationsNeeded
 	confirmationsNeeded := fetcher.bitcoinClientContract.GetConfirmationsNeededFromCell(storageCell)
 
 	// LastConfirmedBlockHash
