@@ -2,6 +2,7 @@ package data_models
 
 import (
 	"encoding/json"
+	"fmt"
 )
 
 type BitcoinNetworkInfo struct {
@@ -15,7 +16,7 @@ func DeserializeBitcoinNetworkInfoDB(jsonData []byte) (*BitcoinNetworkInfo, erro
 	var info BitcoinNetworkInfo
 	err := json.Unmarshal(jsonData, &info)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to call `DeserializeBitcoinNetworkInfoDB`, json '%s': %w", string(jsonData), err)
 	}
 
 	return &info, nil
