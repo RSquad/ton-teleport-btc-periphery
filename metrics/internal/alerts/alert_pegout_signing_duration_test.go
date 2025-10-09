@@ -11,7 +11,7 @@ import (
 )
 
 func TestAlertPegoutSigningDuration(t *testing.T) {
-	signingTimeout := int64(60 * 20) // 20 min
+	signingTimeout := int64(60 * 22) // 22 min
 	beginTs := int64(123456)
 	pegoutAddress1, _ := address.ParseAddr("EQAPtQRffHrXATHokYMFQgupunwxfTe2Main1FYFUt-8eHn-")
 	pegoutAddress2, _ := address.ParseAddr("Ef8VjV6LGTyiNLzefOm1dpuCMLcoewhqfQubtgbWcPwt2Gwp")
@@ -101,7 +101,7 @@ func TestAlertPegoutSigningDuration(t *testing.T) {
 			Expect: TestResWant{Severity: SEVERITY_OK, Labels: pegoutLabels1, Err: nil},
 		},
 		{
-			Name: "SEVERITY_CRITICAL (same unsigned pegout, 20 minute later)",
+			Name: "SEVERITY_CRITICAL (same unsigned pegout, 22 minute later)",
 			DataSource: NewAlertDataSourceTesting(AlertDataSourceTestingConfig{
 				FirstUnsignedPegoutDbFn: func() (*coordinator.PegoutRecord, error) {
 					return &coordinator.PegoutRecord{
@@ -115,7 +115,7 @@ func TestAlertPegoutSigningDuration(t *testing.T) {
 					}, nil
 				},
 				NowUnixTsFn: func() int64 {
-					return beginTs + 60*20
+					return beginTs + 60*22
 				},
 			}),
 			Expect: TestResWant{Severity: SEVERITY_CRITICAL, Labels: pegoutLabels1, Err: nil},
