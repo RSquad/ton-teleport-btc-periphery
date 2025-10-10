@@ -68,6 +68,10 @@ func (dataSource *AlertDataSourceLive) FirstUnsignedPegoutDB() (*coordinator.Peg
 	return &coordinatorContractStorage.UnsignedPegouts[0], nil
 }
 
+func (dataSource *AlertDataSourceLive) LastConfirmedPegout() (*data_models.Pegout, error) {
+	return dataSource.dataSourceDB.LastConfirmedPegout()
+}
+
 func (dataSource *AlertDataSourceLive) LastSignedPegoutDB() (*data_models.Pegout, error) {
 	return dataSource.dataSourceDB.LastSignedPegout()
 }
@@ -109,8 +113,9 @@ func (dataSource *AlertDataSourceLive) BtcGetBlockHeightByHash(hash *chainhash.H
 }
 
 func (dataSource *AlertDataSourceLive) BtcGetCpfpLength(hash *chainhash.Hash) (int, error) {
-	return mutils.GetCPFPChainSize(dataSource.bitcoinClient, hash)
+	return mutils.BtcGetCPFPChainSize(dataSource.bitcoinClient, hash)
 }
+
 func (dataSource *AlertDataSourceLive) BtcGetMempoolEntry(txHash string) (*btcjson.GetMempoolEntryResult, error) {
 	return dataSource.bitcoinClient.RPCClient.GetMempoolEntry(txHash)
 }

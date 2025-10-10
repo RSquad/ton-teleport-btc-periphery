@@ -18,6 +18,7 @@ type (
 	TeleportContractStorageDbFn                   func() (*teleportcontract.Storage, error)
 	BitcoinClientContractStorageDbFn              func() (*data_models.BitcoinClientContractStorage, error)
 	FirstUnsignedPegoutDbFn                       func() (*coordinator.PegoutRecord, error)
+	LastConfirmedPegout                           func() (*data_models.Pegout, error)
 	LastSignedPegoutDbFn                          func() (*data_models.Pegout, error)
 	LastSignedPegoutsDbFn                         func(limit uint) ([]*data_models.Pegout, error)
 	PegoutDbFn                                    func(address *address.Address) (*data_models.Pegout, error)
@@ -41,6 +42,7 @@ type AlertDataSourceTestingConfig struct {
 	TeleportContractStorageDbFn                   TeleportContractStorageDbFn
 	BitcoinClientContractStorageDbFn              BitcoinClientContractStorageDbFn
 	FirstUnsignedPegoutDbFn                       FirstUnsignedPegoutDbFn
+	LastConfirmedPegoutFn                         LastConfirmedPegout
 	LastSignedPegoutDbFn                          LastSignedPegoutDbFn
 	LastSignedPegoutsDbFn                         LastSignedPegoutsDbFn
 	PegoutDbFn                                    PegoutDbFn
@@ -92,6 +94,13 @@ func (dataSource *AlertDataSourceTesting) FirstUnsignedPegoutDB() (*coordinator.
 		return nil, errors.New("FirstUnsignedPegoutDbFn callback not set")
 	}
 	return dataSource.cfg.FirstUnsignedPegoutDbFn()
+}
+
+func (dataSource *AlertDataSourceTesting) LastConfirmedPegout() (*data_models.Pegout, error) {
+	if dataSource.cfg.LastConfirmedPegoutFn == nil {
+		return nil, errors.New("LastConfirmedPegout callback not set")
+	}
+	return dataSource.cfg.LastConfirmedPegoutFn()
 }
 
 func (dataSource *AlertDataSourceTesting) LastSignedPegoutDB() (*data_models.Pegout, error) {

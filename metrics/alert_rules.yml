@@ -347,7 +347,7 @@ groups:
 
   - name: pegout.cpfp.length
     rules:
-      # 2 (SEVERITY_WARNING) - cpfp length is less than 20
+      # 2 (SEVERITY_WARNING) - cpfp length is more than 10
       # 3 (SEVERITY_CRITICAL) - cpfp length is more than 20
       - alert: PegoutCPFPLengthWarning
         expr: alert_pegout_cpfp_length >= 2
@@ -355,6 +355,7 @@ groups:
           severity: warning
         annotations:
           description: "The CPFP chain length is more than 10 [WARNING]"
+          pegout_txid: "{{ $labels.bitcoin_tx_id }}"
           last_pegout_txid: "{{ $labels.last_pegout_txid }}"
 
       - alert: PegoutCPFPLengthCritical
@@ -363,6 +364,7 @@ groups:
           severity: critical
         annotations:
           description: "The CPFP chain length is more than 20 [CRITICAL]"
+          pegout_txid: "{{ $labels.bitcoin_tx_id }}"
           last_pegout_txid: "{{ $labels.last_pegout_txid }}"
 
   - name: btc.block.delta

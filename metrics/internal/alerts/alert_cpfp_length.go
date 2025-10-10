@@ -2,6 +2,7 @@ package alerts
 
 import (
 	"encoding/hex"
+	"fmt"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/mutils"
 	"github.com/xssnick/tonutils-go/address"
@@ -37,6 +38,7 @@ func (alert *AlertCpfpLength) NewLabels() Labels {
 func (alert *AlertCpfpLength) Check(dataSource AlertDataSource) (Severity, Labels, Values, error) {
 	nowTs := dataSource.NowUnixTs()
 
+	// Not more often than once every 2 minutes
 	if (nowTs - alert.lastUpdateTs) < (2 * 60) {
 		return alert.severity, alert.labels, alert.values, alert.err
 	}
@@ -46,7 +48,7 @@ func (alert *AlertCpfpLength) Check(dataSource AlertDataSource) (Severity, Label
 	alert.err = nil
 	alert.values = nil
 
-	pegout, err := dataSource.LastSignedPegoutDB()
+	pegout, err := dataSource.LastConfirmedPegout()
 	if err != nil {
 		alert.severity = SEVERITY_UNKNOWN
 		alert.err = err
@@ -55,28 +57,28 @@ func (alert *AlertCpfpLength) Check(dataSource AlertDataSource) (Severity, Label
 
 	if pegout == nil {
 		alert.severity = SEVERITY_OK
-		alert.err = err
+		alert.err = nil
 		return alert.severity, alert.labels, alert.values, alert.err
 	}
 
+	alert.labels["pegout_addr"] = (*address.Address)(pegout.Addr).StringRaw()
+
 	if pegout.BitcoinTxId == nil {
-		alert.severity = SEVERITY_OK
-		alert.err = err
+		alert.severity = SEVERITY_UNKNOWN
+		alert.err = fmt.Errorf("bitcoin TxId is null")
 		return alert.severity, alert.labels, alert.values, alert.err
 	}
+
+	alert.labels["bitcoin_tx_id"] = hex.EncodeToString(pegout.BitcoinTxId)
 
 	chainSize, err := dataSource.BtcGetCpfpLength(mutils.BytesToBTCHash(pegout.BitcoinTxId))
 
 	if err != nil {
-		alert.severity = SEVERITY_OK
+		alert.severity = SEVERITY_UNKNOWN
 		alert.err = err
 		return alert.severity, alert.labels, alert.values, alert.err
 	}
 
-	if pegout.BitcoinTxId != nil {
-		alert.labels["bitcoin_tx_id"] = hex.EncodeToString(pegout.BitcoinTxId)
-	}
-	alert.labels["pegout_addr"] = (*address.Address)(pegout.Addr).StringRaw()
 	alert.severity = alert.GetSeverity(chainSize)
 	alert.err = nil
 

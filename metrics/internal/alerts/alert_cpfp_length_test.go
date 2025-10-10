@@ -26,9 +26,9 @@ func TestAlertCpfpLength(t *testing.T) {
 
 	tests := []TestDesc{
 		{
-			Name: "SEVERITY_OK",
+			Name: "SEVERITY_OK (no pegouts)",
 			DataSource: NewAlertDataSourceTesting(AlertDataSourceTestingConfig{
-				LastSignedPegoutDbFn: func() (*data_models.Pegout, error) {
+				LastConfirmedPegoutFn: func() (*data_models.Pegout, error) {
 					return nil, nil
 				},
 				BtcGetCpfpLengthFn: func(hash *chainhash.Hash) (int, error) {
@@ -41,17 +41,16 @@ func TestAlertCpfpLength(t *testing.T) {
 			Expect: TestResWant{Severity: SEVERITY_OK, Labels: pegoutLabelsEmpty, Err: nil},
 		},
 		{
-			Name: "SEVERITY_OK (cpfpLen < 10)",
+			Name: "SEVERITY_OK (cpfpLen = 1)",
 			DataSource: NewAlertDataSourceTesting(AlertDataSourceTestingConfig{
-				LastSignedPegoutDbFn: func() (*data_models.Pegout, error) {
+				LastConfirmedPegoutFn: func() (*data_models.Pegout, error) {
 					return &data_models.Pegout{
-						Addr:             (*data_models.PegoutTonAddr)(pegoutAddress1),
-						BitcoinTxId:      bitcoin_tx_id_1,
-						BitcoinBlockHash: []byte("2323233"),
+						Addr:        (*data_models.PegoutTonAddr)(pegoutAddress1),
+						BitcoinTxId: bitcoin_tx_id_1,
 					}, nil
 				},
 				BtcGetCpfpLengthFn: func(hash *chainhash.Hash) (int, error) {
-					return 0, nil
+					return 1, nil
 				},
 				NowUnixTsFn: func() int64 {
 					return 1234560 + 2*60
@@ -60,17 +59,16 @@ func TestAlertCpfpLength(t *testing.T) {
 			Expect: TestResWant{Severity: SEVERITY_OK, Labels: pegoutLabels1, Err: nil},
 		},
 		{
-			Name: "SEVERITY_OK (cpfpLen < 10, time < 2 min)",
+			Name: "SEVERITY_OK (cpfpLen = 10, from cache (time delta < 2 min))",
 			DataSource: NewAlertDataSourceTesting(AlertDataSourceTestingConfig{
-				LastSignedPegoutDbFn: func() (*data_models.Pegout, error) {
+				LastConfirmedPegoutFn: func() (*data_models.Pegout, error) {
 					return &data_models.Pegout{
-						Addr:             (*data_models.PegoutTonAddr)(pegoutAddress1),
-						BitcoinTxId:      bitcoin_tx_id_1,
-						BitcoinBlockHash: []byte("2323233"),
+						Addr:        (*data_models.PegoutTonAddr)(pegoutAddress1),
+						BitcoinTxId: bitcoin_tx_id_1,
 					}, nil
 				},
 				BtcGetCpfpLengthFn: func(hash *chainhash.Hash) (int, error) {
-					return 0, nil
+					return 10, nil
 				},
 				NowUnixTsFn: func() int64 {
 					return 1234560 + 3*60
@@ -79,36 +77,52 @@ func TestAlertCpfpLength(t *testing.T) {
 			Expect: TestResWant{Severity: SEVERITY_OK, Labels: pegoutLabels1, Err: nil},
 		},
 		{
-			Name: "SEVERITY_OK (cpfpLen < 10)",
+			Name: "SEVERITY_WARNING (cppfLen = 10)",
 			DataSource: NewAlertDataSourceTesting(AlertDataSourceTestingConfig{
-				LastSignedPegoutDbFn: func() (*data_models.Pegout, error) {
+				LastConfirmedPegoutFn: func() (*data_models.Pegout, error) {
 					return &data_models.Pegout{
-						Addr:             (*data_models.PegoutTonAddr)(pegoutAddress1),
-						BitcoinTxId:      bitcoin_tx_id_1,
-						BitcoinBlockHash: []byte("2323233"),
+						Addr:        (*data_models.PegoutTonAddr)(pegoutAddress1),
+						BitcoinTxId: bitcoin_tx_id_1,
 					}, nil
 				},
 				BtcGetCpfpLengthFn: func(hash *chainhash.Hash) (int, error) {
-					return 0, nil
+					return 10, nil
 				},
 				NowUnixTsFn: func() int64 {
-					return 1234560 + 5*60
+					return 1234560 + 4*60
 				},
 			}),
-			Expect: TestResWant{Severity: SEVERITY_OK, Labels: pegoutLabels1, Err: nil},
+			Expect: TestResWant{Severity: SEVERITY_WARNING, Labels: pegoutLabels1, Err: nil},
 		},
 		{
-			Name: "SEVERITY_WARNING (10 <= cppfLen < 20, time < 2 min)",
+			Name: "SEVERITY_WARNING (cppfLen = 15)",
 			DataSource: NewAlertDataSourceTesting(AlertDataSourceTestingConfig{
-				LastSignedPegoutDbFn: func() (*data_models.Pegout, error) {
+				LastConfirmedPegoutFn: func() (*data_models.Pegout, error) {
 					return &data_models.Pegout{
-						Addr:             (*data_models.PegoutTonAddr)(pegoutAddress1),
-						BitcoinTxId:      bitcoin_tx_id_1,
-						BitcoinBlockHash: nil,
+						Addr:        (*data_models.PegoutTonAddr)(pegoutAddress1),
+						BitcoinTxId: bitcoin_tx_id_1,
 					}, nil
 				},
 				BtcGetCpfpLengthFn: func(hash *chainhash.Hash) (int, error) {
 					return 15, nil
+				},
+				NowUnixTsFn: func() int64 {
+					return 1234560 + 6*60
+				},
+			}),
+			Expect: TestResWant{Severity: SEVERITY_WARNING, Labels: pegoutLabels1, Err: nil},
+		},
+		{
+			Name: "SEVERITY_WARNING (cpfpLen = 20, from cache (time delta < 2 min))",
+			DataSource: NewAlertDataSourceTesting(AlertDataSourceTestingConfig{
+				LastConfirmedPegoutFn: func() (*data_models.Pegout, error) {
+					return &data_models.Pegout{
+						Addr:        (*data_models.PegoutTonAddr)(pegoutAddress1),
+						BitcoinTxId: bitcoin_tx_id_1,
+					}, nil
+				},
+				BtcGetCpfpLengthFn: func(hash *chainhash.Hash) (int, error) {
+					return 20, nil
 				},
 				NowUnixTsFn: func() int64 {
 					return 1234560 + 7*60
@@ -117,61 +131,58 @@ func TestAlertCpfpLength(t *testing.T) {
 			Expect: TestResWant{Severity: SEVERITY_WARNING, Labels: pegoutLabels1, Err: nil},
 		},
 		{
-			Name: "SEVERITY_WARNING (10 <= cppfLen < 20, time > 2 min)",
+			Name: "SEVERITY_CRITICAL (cpfpLen = 20)",
 			DataSource: NewAlertDataSourceTesting(AlertDataSourceTestingConfig{
-				LastSignedPegoutDbFn: func() (*data_models.Pegout, error) {
+				LastConfirmedPegoutFn: func() (*data_models.Pegout, error) {
 					return &data_models.Pegout{
-						Addr:             (*data_models.PegoutTonAddr)(pegoutAddress1),
-						BitcoinTxId:      bitcoin_tx_id_1,
-						BitcoinBlockHash: nil,
+						Addr:        (*data_models.PegoutTonAddr)(pegoutAddress1),
+						BitcoinTxId: bitcoin_tx_id_1,
 					}, nil
 				},
 				BtcGetCpfpLengthFn: func(hash *chainhash.Hash) (int, error) {
-					return 15, nil
+					return 20, nil
+				},
+				NowUnixTsFn: func() int64 {
+					return 1234560 + 8*60
+				},
+			}),
+			Expect: TestResWant{Severity: SEVERITY_CRITICAL, Labels: pegoutLabels1, Err: nil},
+		},
+		{
+			Name: "SEVERITY_CRITICAL (cpfpLen = 1, from cache (time delta < 2 min))",
+			DataSource: NewAlertDataSourceTesting(AlertDataSourceTestingConfig{
+				LastConfirmedPegoutFn: func() (*data_models.Pegout, error) {
+					return &data_models.Pegout{
+						Addr:        (*data_models.PegoutTonAddr)(pegoutAddress1),
+						BitcoinTxId: bitcoin_tx_id_1,
+					}, nil
+				},
+				BtcGetCpfpLengthFn: func(hash *chainhash.Hash) (int, error) {
+					return 1, nil
 				},
 				NowUnixTsFn: func() int64 {
 					return 1234560 + 9*60
 				},
 			}),
-			Expect: TestResWant{Severity: SEVERITY_WARNING, Labels: pegoutLabels1, Err: nil},
-		},
-		{
-			Name: "SEVERITY_CRITICAL (cpfpLen >= 20 time < 2 min)",
-			DataSource: NewAlertDataSourceTesting(AlertDataSourceTestingConfig{
-				LastSignedPegoutDbFn: func() (*data_models.Pegout, error) {
-					return &data_models.Pegout{
-						Addr:             (*data_models.PegoutTonAddr)(pegoutAddress1),
-						BitcoinTxId:      bitcoin_tx_id_1,
-						BitcoinBlockHash: []byte("2323"),
-					}, nil
-				},
-				BtcGetCpfpLengthFn: func(hash *chainhash.Hash) (int, error) {
-					return 20, nil
-				},
-				NowUnixTsFn: func() int64 {
-					return 1234560 + 11*60
-				},
-			}),
 			Expect: TestResWant{Severity: SEVERITY_CRITICAL, Labels: pegoutLabels1, Err: nil},
 		},
 		{
-			Name: "SEVERITY_CRITICAL (cpfpLen >= 20, time > 2 min)",
+			Name: "SEVERITY_OK (cpfpLen = 1)",
 			DataSource: NewAlertDataSourceTesting(AlertDataSourceTestingConfig{
-				LastSignedPegoutDbFn: func() (*data_models.Pegout, error) {
+				LastConfirmedPegoutFn: func() (*data_models.Pegout, error) {
 					return &data_models.Pegout{
-						Addr:             (*data_models.PegoutTonAddr)(pegoutAddress1),
-						BitcoinTxId:      bitcoin_tx_id_1,
-						BitcoinBlockHash: []byte("2323"),
+						Addr:        (*data_models.PegoutTonAddr)(pegoutAddress1),
+						BitcoinTxId: bitcoin_tx_id_1,
 					}, nil
 				},
 				BtcGetCpfpLengthFn: func(hash *chainhash.Hash) (int, error) {
-					return 20, nil
+					return 1, nil
 				},
 				NowUnixTsFn: func() int64 {
-					return 1234560 + 14*60
+					return 1234560 + 10*60
 				},
 			}),
-			Expect: TestResWant{Severity: SEVERITY_CRITICAL, Labels: pegoutLabels1, Err: nil},
+			Expect: TestResWant{Severity: SEVERITY_OK, Labels: pegoutLabels1, Err: nil},
 		},
 	}
 

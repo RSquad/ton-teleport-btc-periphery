@@ -17,6 +17,7 @@ type AlertDataSource interface {
 	TeleportContractStorageDB() (*teleportcontract.Storage, error)
 	BitcoinClientContractStorageDB() (*data_models.BitcoinClientContractStorage, error)
 	FirstUnsignedPegoutDB() (*coordinator.PegoutRecord, error)
+	LastConfirmedPegout() (*data_models.Pegout, error)
 	LastSignedPegoutDB() (*data_models.Pegout, error)
 	LastSignedPegoutsDB(limit uint) ([]*data_models.Pegout, error)
 	PegoutDB(address *address.Address) (*data_models.Pegout, error)
