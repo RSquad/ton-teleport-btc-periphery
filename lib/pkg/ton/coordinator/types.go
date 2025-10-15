@@ -135,9 +135,9 @@ type PegoutSignatures struct {
 
 type PegoutRecord struct {
 	ID                      uint64
-	PegoutAddress           *address.Address
-	InternalKey             []byte
-	IsAutopegout            bool
+	PegoutAddress           *address.Address // address for the pegout contract
+	InternalKey             []byte           // internal publickey used to sign pegout inputs
+	IsAutopegout            bool             // true if pegout is autopegout
 	Commitments             map[uint16][]byte
 	CommitmentsMaskAccepted *big.Int
 	CommitmentsMaskOther    *big.Int
@@ -147,9 +147,9 @@ type PegoutRecord struct {
 	ClaimsMask              *big.Int
 	ClaimsCount             uint16
 	ClaimsCounters          map[uint16]uint16
-	MaxSigners              uint16
-	ExpiredAt               time.Time
-	SigningMask             *big.Int
+	Signers                 uint16    // number of signers (count of bit 1 in signing mask)
+	ExpiredAt               time.Time // timestamp when the pegout expires
+	SigningMask             *big.Int  // bitmask for signing permissions
 }
 
 func (p *PegoutRecord) HasCommitment(idx uint16) bool {

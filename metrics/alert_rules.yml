@@ -119,14 +119,14 @@ groups:
 
   - name: pegout.signing.duration
     rules:
-      # 0 (SEVERITY_OK) - pegout is signed or signing is in progress for less than 20 minutes
-      # 3 (SEVERITY_CRITICAL) - pegout is unsigned for 20 minutes or more
+      # 0 (SEVERITY_OK) - pegout is signed or signing is in progress for less than 22 minutes
+      # 3 (SEVERITY_CRITICAL) - pegout is unsigned for 22 minutes or more
       - alert: PegoutSigningCritical
         expr: alert_pegout_signing_duration >= 3
         labels:
           severity: critical
         annotations:
-          description: "pegout transaction was not signed within 20 minutes [CRITICAL]"
+          description: "pegout transaction was not signed within 22 minutes [CRITICAL]"
           pegout_txid: "{{ $labels.bitcoin_tx_id }}"
           pegout_addr: "{{ $labels.pegout_addr }}"
 
@@ -171,14 +171,14 @@ groups:
   - name: total.service.fee
     rules:
       # 0 (SEVERITY_OK) - total_service_fee is enough
-      # 2 (SEVERITY_WARNING) - total_service_fee is less than 1000 satoshi
+      # 2 (SEVERITY_WARNING) - total_service_fee is less than 3000 satoshi
       # 3 (SEVERITY_CRITICAL) - total_service_fee is negative
       - alert: TotalServiceFeeWarning
         expr: alert_total_service_fee >= 2
         labels:
           severity: warning
         annotations:
-          description: "total service fee is less than 1000 satoshi [WARNING]"
+          description: "total service fee is less than 3000 satoshi [WARNING]"
 
       - alert: TotalServiceFeeCritical
         expr: alert_total_service_fee >= 3

@@ -9,22 +9,22 @@ import (
 func TestAlertTotalServiceFee(t *testing.T) {
 	tests := []TestDesc{
 		{
-			Name: "SEVERITY_OK (TotalServiceFee = 2000)",
+			Name: "SEVERITY_OK (TotalServiceFee = 4000)",
 			DataSource: NewAlertDataSourceTesting(AlertDataSourceTestingConfig{
 				TeleportContractStorageDbFn: func() (*teleportcontract.Storage, error) {
 					return &teleportcontract.Storage{
-						TotalServiceFee: 2000,
+						TotalServiceFee: 4000,
 					}, nil
 				},
 			}),
 			Expect: TestResWant{Severity: SEVERITY_OK, Labels: nil, Err: nil},
 		},
 		{
-			Name: "SEVERITY_WARNING (TotalServiceFee = 1000)",
+			Name: "SEVERITY_WARNING (TotalServiceFee = 3000)",
 			DataSource: NewAlertDataSourceTesting(AlertDataSourceTestingConfig{
 				TeleportContractStorageDbFn: func() (*teleportcontract.Storage, error) {
 					return &teleportcontract.Storage{
-						TotalServiceFee: 1000,
+						TotalServiceFee: 3000,
 					}, nil
 				},
 			}),
