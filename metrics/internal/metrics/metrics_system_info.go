@@ -278,7 +278,7 @@ func (systemInfo *MetricsSystemInfo) PegoutSigningInfo(
 		IsSigned:                     SIGNING_STATUS_NOT_SIGNED,
 		IsAutopegout:                 unsignedPegout.IsAutopegout,
 		Signers:                      mutils.Popcnt(unsignedPegout.SigningMask),
-		SignersMax:                   int(unsignedPegout.MaxSigners),
+		SignersMax:                   int(dkgStatus.PrevDkgInfo.ValidatorsCountInDkg),
 		SignersCommitmentActive:      len(signersCommitmentActiveIdx),
 		SignersCommitmentActiveIdx:   signersCommitmentActiveIdx,
 		SignersCommitmentInactive:    len(signersCommitmentInactiveIdx),

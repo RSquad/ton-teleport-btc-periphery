@@ -40,6 +40,12 @@ func (alert *AlertPegoutSigners) Check(dataSource AlertDataSource) (Severity, La
 		return SEVERITY_UNKNOWN, labels, nil, err
 	}
 
+	// Get Prev DKG
+	prevDkg, err := dataSource.PrevDkgDB()
+	if err != nil {
+		return SEVERITY_UNKNOWN, labels, nil, err
+	}
+
 	// Update labels
 	if pegout.BitcoinTxId != nil {
 		labels["bitcoin_tx_id"] = hex.EncodeToString(pegout.BitcoinTxId)
@@ -47,10 +53,7 @@ func (alert *AlertPegoutSigners) Check(dataSource AlertDataSource) (Severity, La
 	labels["pegout_addr"] = unsignedPegout.PegoutAddress.StringRaw()
 
 	// Calulate signersAllowedPercentage
-	maxSigners := unsignedPegout.MaxSigners
-	if maxSigners == 0 {
-		return SEVERITY_CRITICAL, labels, nil, nil
-	}
+	maxSigners := prevDkg.MaxSigners
 	signersAllowedCount := mutils.Popcnt(unsignedPegout.SigningMask)
 	signersAllowedPercentage := mutils.MulDivCeil(uint(signersAllowedCount), 100, uint(maxSigners))
 

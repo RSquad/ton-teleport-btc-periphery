@@ -53,8 +53,14 @@ func (alert *AlertPegoutCommintments) Check(dataSource AlertDataSource) (Severit
 		return SEVERITY_OK, labels, nil, nil
 	}
 
+	// Get Prev DKG
+	prevDkg, err := dataSource.PrevDkgDB()
+	if err != nil {
+		return SEVERITY_UNKNOWN, labels, nil, err
+	}
+
 	// Calulate commitmentsPercentage
-	maxSigners := unsignedPegout.MaxSigners
+	maxSigners := prevDkg.MaxSigners
 	commitmentsMask := new(big.Int).Or(
 		unsignedPegout.CommitmentsMaskAccepted,
 		unsignedPegout.CommitmentsMaskOther,
