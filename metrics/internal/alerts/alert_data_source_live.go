@@ -13,6 +13,7 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/config"
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/data_models"
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/data_sources"
+	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/mutils"
 
 	"github.com/xssnick/tonutils-go/address"
 )
@@ -67,6 +68,10 @@ func (dataSource *AlertDataSourceLive) FirstUnsignedPegoutDB() (*coordinator.Peg
 	return &coordinatorContractStorage.UnsignedPegouts[0], nil
 }
 
+func (dataSource *AlertDataSourceLive) LastConfirmedPegout() (*data_models.Pegout, error) {
+	return dataSource.dataSourceDB.LastConfirmedPegout()
+}
+
 func (dataSource *AlertDataSourceLive) LastSignedPegoutDB() (*data_models.Pegout, error) {
 	return dataSource.dataSourceDB.LastSignedPegout()
 }
@@ -95,12 +100,20 @@ func (dataSource *AlertDataSourceLive) NowUnixTs() int64 {
 	return time.Now().Unix()
 }
 
+func (dataSource *AlertDataSourceLive) BtcGetBestBlockHeight() (int, error) {
+	return mutils.BtcGetBestBlockHeight(dataSource.bitcoinClient)
+}
+
 func (dataSource *AlertDataSourceLive) BtcGetBlockHashByTxID(txID *chainhash.Hash) (*chainhash.Hash, error) {
 	return dataSource.bitcoinClient.GetBlockHashByTxID(txID)
 }
 
 func (dataSource *AlertDataSourceLive) BtcGetBlockHeightByHash(hash *chainhash.Hash) (int64, error) {
 	return dataSource.bitcoinClient.GetBlockHeightByHash(hash)
+}
+
+func (dataSource *AlertDataSourceLive) BtcGetCpfpLength(hash *chainhash.Hash) (int, error) {
+	return mutils.BtcGetCPFPChainSize(dataSource.bitcoinClient, hash)
 }
 
 func (dataSource *AlertDataSourceLive) BtcGetMempoolEntry(txHash string) (*btcjson.GetMempoolEntryResult, error) {

@@ -67,13 +67,21 @@ type SysLastPegoutTxInfo struct {
 	CPFP               int
 }
 
+type SigningStatus int
+
+const (
+	SIGNING_STATUS_NOT_SIGNED SigningStatus = iota
+	SIGNING_STATUS_SIGNED
+	NO_PEGOUT = -1
+)
+
 type SysPegoutSigningInfo struct {
 	Id                           int
 	Restarts                     int
 	RestartsSeverity             alerts.Severity
 	Until                        time.Time
 	QueueLength                  int
-	IsSigned                     bool
+	IsSigned                     SigningStatus
 	IsAutopegout                 bool
 	Signers                      int
 	SignersMax                   int

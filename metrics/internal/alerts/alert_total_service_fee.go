@@ -34,7 +34,7 @@ func (alert *AlertTotalServiceFee) GetSeverity(totalServiceFee int32) Severity {
 
 	if totalServiceFee <= 0 {
 		severity = SEVERITY_CRITICAL
-	} else if totalServiceFee <= 1000 {
+	} else if totalServiceFee <= 3000 {
 		severity = SEVERITY_WARNING
 	}
 
