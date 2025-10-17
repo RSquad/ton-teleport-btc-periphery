@@ -117,7 +117,7 @@ func (alert *AlertPegoutSigningDuration) Check(dataSource AlertDataSource) (Seve
 func (alert *AlertPegoutSigningDuration) GetSeverity(duration time.Duration) Severity {
 	severity := SEVERITY_OK
 
-	if duration >= 20*time.Minute {
+	if duration >= 22*time.Minute {
 		severity = SEVERITY_CRITICAL
 	}
 

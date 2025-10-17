@@ -52,8 +52,8 @@ func (manager *MetricsManager) MintsJson() (string, error) {
 
 	rows, err := manager.db.Query(
 		`SELECT COALESCE(jsonb_agg(result), '[]') AS data FROM (
-			SELECT
-				m.created_at,
+				SELECT 
+				COALESCE(tt.created_at, m.created_at) AS created_at,
 				m.status,
 				TO_CHAR(m.amount::numeric(24,8) / 100000000::numeric(24,8), 'FM999999990.00000000') || ' BTC' AS amount,
 				COALESCE(tt.hash, '_') AS ton_tx,

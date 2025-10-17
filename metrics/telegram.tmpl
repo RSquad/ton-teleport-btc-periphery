@@ -71,6 +71,9 @@
 {{ if .Annotations.participants_count -}}
 - <b>Participants count: </b>{{ .Annotations.participants_count }}
 {{ end -}}
+{{ if .Annotations.bitClientBlockHash -}}
+<b>Bitcoin client contract block hash: </b>{{ .Annotations.bitClientBlockHash }}
+{{ end -}}
 {{ end -}}
 {{ end -}}
 {{ end -}}

@@ -18,6 +18,7 @@ type (
 	TeleportContractStorageDbFn                   func() (*teleportcontract.Storage, error)
 	BitcoinClientContractStorageDbFn              func() (*data_models.BitcoinClientContractStorage, error)
 	FirstUnsignedPegoutDbFn                       func() (*coordinator.PegoutRecord, error)
+	LastConfirmedPegout                           func() (*data_models.Pegout, error)
 	LastSignedPegoutDbFn                          func() (*data_models.Pegout, error)
 	LastSignedPegoutsDbFn                         func(limit uint) ([]*data_models.Pegout, error)
 	PegoutDbFn                                    func(address *address.Address) (*data_models.Pegout, error)
@@ -26,7 +27,9 @@ type (
 	DkgBeforeRestartDbFn                          func(t time.Time) (*coordinator.DKG, error)
 	BtcGetBlockHashByTxIdFn                       func(txID *chainhash.Hash) (*chainhash.Hash, error)
 	BtcGetBlockHeightByHashFn                     func(hash *chainhash.Hash) (int64, error)
+	BtcGetCpfpLengthFn                            func(hash *chainhash.Hash) (int, error)
 	BtcGetMempoolEntryFn                          func(txHash string) (*btcjson.GetMempoolEntryResult, error)
+	BtcGetBestBlockHeightFn                       func() (int, error)
 	BitcoinClientContractLastConfirmedBlockHashFn func() (*chainhash.Hash, error)
 	TonMaxMainValidatorsFn                        func(ctx context.Context) (int, error)
 	ActualContractBalanceFn                       func(name string) (int64, error)
@@ -39,6 +42,7 @@ type AlertDataSourceTestingConfig struct {
 	TeleportContractStorageDbFn                   TeleportContractStorageDbFn
 	BitcoinClientContractStorageDbFn              BitcoinClientContractStorageDbFn
 	FirstUnsignedPegoutDbFn                       FirstUnsignedPegoutDbFn
+	LastConfirmedPegoutFn                         LastConfirmedPegout
 	LastSignedPegoutDbFn                          LastSignedPegoutDbFn
 	LastSignedPegoutsDbFn                         LastSignedPegoutsDbFn
 	PegoutDbFn                                    PegoutDbFn
@@ -47,7 +51,9 @@ type AlertDataSourceTestingConfig struct {
 	DkgBeforeRestartDbFn                          DkgBeforeRestartDbFn
 	BtcGetBlockHashByTxIdFn                       BtcGetBlockHashByTxIdFn
 	BtcGetBlockHeightByHashFn                     BtcGetBlockHeightByHashFn
+	BtcGetCpfpLengthFn                            BtcGetCpfpLengthFn
 	BtcGetMempoolEntryFn                          BtcGetMempoolEntryFn
+	BtcGetBestBlockHeightFn                       BtcGetBestBlockHeightFn
 	BitcoinClientContractLastConfirmedBlockHashFn BitcoinClientContractLastConfirmedBlockHashFn
 	TonMaxMainValidatorsFn                        TonMaxMainValidatorsFn
 	ActualContractBalanceFn                       ActualContractBalanceFn
@@ -88,6 +94,13 @@ func (dataSource *AlertDataSourceTesting) FirstUnsignedPegoutDB() (*coordinator.
 		return nil, errors.New("FirstUnsignedPegoutDbFn callback not set")
 	}
 	return dataSource.cfg.FirstUnsignedPegoutDbFn()
+}
+
+func (dataSource *AlertDataSourceTesting) LastConfirmedPegout() (*data_models.Pegout, error) {
+	if dataSource.cfg.LastConfirmedPegoutFn == nil {
+		return nil, errors.New("LastConfirmedPegout callback not set")
+	}
+	return dataSource.cfg.LastConfirmedPegoutFn()
 }
 
 func (dataSource *AlertDataSourceTesting) LastSignedPegoutDB() (*data_models.Pegout, error) {
@@ -144,6 +157,20 @@ func (dataSource *AlertDataSourceTesting) BtcGetBlockHeightByHash(hash *chainhas
 		return 0, errors.New("BtcGetBlockHeightByHashFn callback not set")
 	}
 	return dataSource.cfg.BtcGetBlockHeightByHashFn(hash)
+}
+
+func (dataSource *AlertDataSourceTesting) BtcGetBestBlockHeight() (int, error) {
+	if dataSource.cfg.BtcGetBestBlockHeightFn == nil {
+		return 0, errors.New("BtcGetBestBlockHeightFn callback not set")
+	}
+	return dataSource.cfg.BtcGetBestBlockHeightFn()
+}
+
+func (dataSource *AlertDataSourceTesting) BtcGetCpfpLength(hash *chainhash.Hash) (int, error) {
+	if dataSource.cfg.BtcGetCpfpLengthFn == nil {
+		return 0, errors.New("BtcGetCpfpLengthFn callback not set")
+	}
+	return dataSource.cfg.BtcGetCpfpLengthFn(hash)
 }
 
 func (dataSource *AlertDataSourceTesting) BtcGetMempoolEntry(txHash string) (*btcjson.GetMempoolEntryResult, error) {

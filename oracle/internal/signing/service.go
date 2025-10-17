@@ -366,7 +366,7 @@ func (s *SignService) doAggregate(
 
 	// Check if the signatures have already been sent
 	if checkSignaturesMask(pegout, validatorIdx) {
-		s.logSignaturesSent(pegout.ID, pegout.artifacts.Signatures.Count, pegout.artifacts.MaxSigners)
+		s.logSignaturesSent(pegout.ID, pegout.artifacts.Signatures.Count, pegout.artifacts.Signers)
 		return
 	}
 
