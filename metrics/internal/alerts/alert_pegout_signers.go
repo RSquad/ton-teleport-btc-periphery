@@ -48,6 +48,9 @@ func (alert *AlertPegoutSigners) Check(dataSource AlertDataSource) (Severity, La
 
 	// Calulate signersAllowedPercentage
 	maxSigners := unsignedPegout.MaxSigners
+	if maxSigners == 0 {
+		return SEVERITY_CRITICAL, labels, nil, nil
+	}
 	signersAllowedCount := mutils.Popcnt(unsignedPegout.SigningMask)
 	signersAllowedPercentage := mutils.MulDivCeil(uint(signersAllowedCount), 100, uint(maxSigners))
 
