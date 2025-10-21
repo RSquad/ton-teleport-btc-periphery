@@ -18,7 +18,7 @@
     "editable": true,
     "fiscalYearStartMonth": 0,
     "graphTooltip": 0,
-    "id": 8,
+    "id": 13,
     "links": [],
     "panels": [
         {
@@ -138,20 +138,20 @@
                                 "value": [
                                     {
                                         "options": {
-                                            "-1": {
-                                                "color": "transparent",
-                                                "index": 2,
-                                                "text": "No active pegout"
-                                            },
-                                            "false": {
+                                            "0": {
                                                 "color": "dark-red",
                                                 "index": 1,
                                                 "text": "No"
                                             },
-                                            "true": {
+                                            "1": {
                                                 "color": "dark-green",
                                                 "index": 0,
                                                 "text": "Yes"
+                                            },
+                                            "-1": {
+                                                "color": "transparent",
+                                                "index": 2,
+                                                "text": "No active pegout"
                                             }
                                         },
                                         "type": "value"
@@ -169,14 +169,14 @@
                             {
                                 "id": "thresholds",
                                 "value": {
-                                    "mode": "percentage",
+                                    "mode": "absolute",
                                     "steps": [
                                         {
                                             "color": "dark-red",
                                             "value": null
                                         },
                                         {
-                                            "color": "dark-yellow",
+                                            "color": "dark-orange",
                                             "value": 60
                                         },
                                         {
@@ -326,7 +326,7 @@
                 },
                 "showHeader": true
             },
-            "pluginVersion": "12.1.0",
+            "pluginVersion": "11.5.2",
             "targets": [
                 {
                     "columns": [],
@@ -450,7 +450,7 @@
                 },
                 "showHeader": true
             },
-            "pluginVersion": "12.1.0",
+            "pluginVersion": "11.5.2",
             "targets": [
                 {
                     "columns": [],
@@ -540,7 +540,7 @@
                 },
                 "showHeader": true
             },
-            "pluginVersion": "12.1.0",
+            "pluginVersion": "11.5.2",
             "targets": [
                 {
                     "columns": [],
@@ -630,7 +630,7 @@
                 },
                 "showHeader": true
             },
-            "pluginVersion": "12.1.0",
+            "pluginVersion": "11.5.2",
             "targets": [
                 {
                     "columns": [],
@@ -770,7 +770,7 @@
                 },
                 "showHeader": true
             },
-            "pluginVersion": "12.1.0",
+            "pluginVersion": "11.5.2",
             "targets": [
                 {
                     "columns": [],
@@ -922,7 +922,7 @@
                 },
                 "showHeader": true
             },
-            "pluginVersion": "12.1.0",
+            "pluginVersion": "11.5.2",
             "targets": [
                 {
                     "columns": [],
@@ -1114,7 +1114,7 @@
                 },
                 "showHeader": true
             },
-            "pluginVersion": "12.1.0",
+            "pluginVersion": "11.5.2",
             "targets": [
                 {
                     "columns": [],
@@ -1414,7 +1414,7 @@
                 },
                 "showHeader": true
             },
-            "pluginVersion": "12.1.0",
+            "pluginVersion": "11.5.2",
             "targets": [
                 {
                     "columns": [],
@@ -1530,7 +1530,7 @@
                 },
                 "showHeader": true
             },
-            "pluginVersion": "12.1.0",
+            "pluginVersion": "11.5.2",
             "targets": [
                 {
                     "columns": [],
@@ -1652,7 +1652,7 @@
                 },
                 "showHeader": true
             },
-            "pluginVersion": "12.1.0",
+            "pluginVersion": "11.5.2",
             "targets": [
                 {
                     "columns": [],
@@ -1745,7 +1745,7 @@
                 },
                 "showHeader": true
             },
-            "pluginVersion": "12.1.0",
+            "pluginVersion": "11.5.2",
             "targets": [
                 {
                     "columns": [],
@@ -1838,7 +1838,7 @@
                 },
                 "showHeader": true
             },
-            "pluginVersion": "12.1.0",
+            "pluginVersion": "11.5.2",
             "targets": [
                 {
                     "columns": [],
@@ -1987,7 +1987,7 @@
                 },
                 "showHeader": true
             },
-            "pluginVersion": "12.1.0",
+            "pluginVersion": "11.5.2",
             "targets": [
                 {
                     "columns": [],
