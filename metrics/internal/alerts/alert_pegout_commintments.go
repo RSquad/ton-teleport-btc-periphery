@@ -19,7 +19,7 @@ func (alert *AlertPegoutCommintments) Check(dataSource AlertDataSource) (Severit
 	// Get first unsigned pegout
 	unsignedPegout, err := dataSource.FirstUnsignedPegoutDB()
 	if err != nil {
-		return SEVERITY_CRITICAL, "", nil, err
+		return SEVERITY_UNKNOWN, "", nil, err
 	}
 
 	// No unsigned pegouts
@@ -30,15 +30,22 @@ func (alert *AlertPegoutCommintments) Check(dataSource AlertDataSource) (Severit
 	// Get pegout record from DB
 	pegout, err := dataSource.PegoutDB(unsignedPegout.PegoutAddress)
 	if err != nil {
-		return SEVERITY_CRITICAL, "", nil, err
+		return SEVERITY_UNKNOWN, "", nil, err
 	}
+
 	// Wait until the signing stage starts
 	if unsignedPegout.Signatures.Count == 0 {
 		return SEVERITY_OK, "OK", nil, nil
 	}
 
+	// Get Prev DKG
+	prevDkg, err := dataSource.PrevDkgDB()
+	if err != nil {
+		return SEVERITY_UNKNOWN, "", nil, err
+	}
+
 	// Calulate commitmentsPercentage
-	maxSigners := unsignedPegout.MaxSigners
+	maxSigners := prevDkg.MaxSigners
 	commitmentsMask := new(big.Int).Or(
 		unsignedPegout.CommitmentsMaskAccepted,
 		unsignedPegout.CommitmentsMaskOther,

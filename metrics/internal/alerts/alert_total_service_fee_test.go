@@ -1,6 +1,5 @@
 package alerts
 
-/*
 import (
 	"testing"
 
@@ -10,26 +9,34 @@ import (
 func TestAlertTotalServiceFee(t *testing.T) {
 	tests := []TestDesc{
 		{
-			Name: "SEVERITY_OK (TotalServiceFee = 2000)",
+			Name: "SEVERITY_OK (TotalServiceFee = 4000)",
 			DataSource: NewAlertDataSourceTesting(AlertDataSourceTestingConfig{
 				TeleportContractStorageDbFn: func() (*teleportcontract.Storage, error) {
 					return &teleportcontract.Storage{
-						TotalServiceFee: 2000,
+						TotalServiceFee: 4000,
 					}, nil
 				},
 			}),
-			Expect: TestResWant{Severity: SEVERITY_OK, Labels: nil, Err: nil},
+			Expect: TestResWant{
+				Severity:    SEVERITY_OK,
+				Description: "OK",
+				Err:         nil,
+			},
 		},
 		{
-			Name: "SEVERITY_WARNING (TotalServiceFee = 1000)",
+			Name: "SEVERITY_WARNING (TotalServiceFee = 2999)",
 			DataSource: NewAlertDataSourceTesting(AlertDataSourceTestingConfig{
 				TeleportContractStorageDbFn: func() (*teleportcontract.Storage, error) {
 					return &teleportcontract.Storage{
-						TotalServiceFee: 1000,
+						TotalServiceFee: 2999,
 					}, nil
 				},
 			}),
-			Expect: TestResWant{Severity: SEVERITY_WARNING, Labels: nil, Err: nil},
+			Expect: TestResWant{
+				Severity:    SEVERITY_WARNING,
+				Description: "Total service fee 2999 is less than 3000 satoshi",
+				Err:         nil,
+			},
 		},
 		{
 			Name: "SEVERITY_CRITICAL (TotalServiceFee = 0)",
@@ -40,7 +47,11 @@ func TestAlertTotalServiceFee(t *testing.T) {
 					}, nil
 				},
 			}),
-			Expect: TestResWant{Severity: SEVERITY_CRITICAL, Labels: nil, Err: nil},
+			Expect: TestResWant{
+				Severity:    SEVERITY_CRITICAL,
+				Description: "Total service fee 0 is less than 3000 satoshi",
+				Err:         nil,
+			},
 		},
 		{
 			Name: "SEVERITY_CRITICAL (TotalServiceFee = -100)",
@@ -51,10 +62,13 @@ func TestAlertTotalServiceFee(t *testing.T) {
 					}, nil
 				},
 			}),
-			Expect: TestResWant{Severity: SEVERITY_CRITICAL, Labels: nil, Err: nil},
+			Expect: TestResWant{
+				Severity:    SEVERITY_CRITICAL,
+				Description: "Total service fee -100 is less than 3000 satoshi",
+				Err:         nil,
+			},
 		},
 	}
 
 	DoAlertTests(t, tests, NewAlertTotalServiceFee())
 }
-*/

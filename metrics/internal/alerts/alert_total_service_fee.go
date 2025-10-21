@@ -1,6 +1,7 @@
 package alerts
 
-/*
+import "fmt"
+
 type AlertTotalServiceFee struct{}
 
 func NewAlertTotalServiceFee() Alert {
@@ -8,22 +9,28 @@ func NewAlertTotalServiceFee() Alert {
 }
 
 func (alert *AlertTotalServiceFee) Check(dataSource AlertDataSource) (Severity, Description, Values, error) {
-	labels := alert.NewLabels()
-
 	// Get last signed pegout
 	teleportContractStorage, err := dataSource.TeleportContractStorageDB()
 	if err != nil {
-		return SEVERITY_CRITICAL, labels, nil, err
+		return SEVERITY_CRITICAL, "", nil, err
 	}
 
 	if teleportContractStorage == nil {
-		return SEVERITY_OK, labels, nil, nil
+		return SEVERITY_OK, "OK", nil, nil
 	}
 
 	// Calulate severity
 	severity := alert.GetSeverity(teleportContractStorage.TotalServiceFee)
+	description := "OK"
 
-	return severity, labels, nil, nil
+	if severity > SEVERITY_OK {
+		description = fmt.Sprintf(
+			"Total service fee %d is less than 3000 satoshi",
+			teleportContractStorage.TotalServiceFee,
+		)
+	}
+
+	return severity, Description(description), nil, nil
 }
 
 func (alert *AlertTotalServiceFee) GetSeverity(totalServiceFee int32) Severity {
@@ -31,10 +38,9 @@ func (alert *AlertTotalServiceFee) GetSeverity(totalServiceFee int32) Severity {
 
 	if totalServiceFee <= 0 {
 		severity = SEVERITY_CRITICAL
-	} else if totalServiceFee <= 1000 {
+	} else if totalServiceFee < 3000 {
 		severity = SEVERITY_WARNING
 	}
 
 	return severity
 }
-*/

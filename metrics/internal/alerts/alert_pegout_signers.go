@@ -18,7 +18,7 @@ func (alert *AlertPegoutSigners) Check(dataSource AlertDataSource) (Severity, De
 	// Get first unsigned pegout
 	unsignedPegout, err := dataSource.FirstUnsignedPegoutDB()
 	if err != nil {
-		return SEVERITY_CRITICAL, "", nil, err
+		return SEVERITY_UNKNOWN, "", nil, err
 	}
 
 	// No unsigned pegouts
@@ -29,11 +29,17 @@ func (alert *AlertPegoutSigners) Check(dataSource AlertDataSource) (Severity, De
 	// Get pegout record from DB
 	pegout, err := dataSource.PegoutDB(unsignedPegout.PegoutAddress)
 	if err != nil {
-		return SEVERITY_CRITICAL, "", nil, err
+		return SEVERITY_UNKNOWN, "", nil, err
+	}
+
+	// Get Prev DKG
+	prevDkg, err := dataSource.PrevDkgDB()
+	if err != nil {
+		return SEVERITY_UNKNOWN, "", nil, err
 	}
 
 	// Calulate signersAllowedPercentage
-	maxSigners := unsignedPegout.MaxSigners
+	maxSigners := prevDkg.MaxSigners
 	signersAllowedCount := mutils.Popcnt(unsignedPegout.SigningMask)
 	signersAllowedPercentage := mutils.MulDivCeil(uint(signersAllowedCount), 100, uint(maxSigners))
 

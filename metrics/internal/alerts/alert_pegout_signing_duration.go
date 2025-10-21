@@ -6,9 +6,12 @@
 package alerts
 
 import (
+	"encoding/hex"
+	"fmt"
 	"time"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
+	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/mutils"
 )
 
 type AlertPegoutSigningDuration struct {
@@ -31,7 +34,7 @@ func (alert *AlertPegoutSigningDuration) Check(dataSource AlertDataSource) (Seve
 	// Get first unsigned pegout
 	unsignedPegout, err := dataSource.FirstUnsignedPegoutDB()
 	if err != nil {
-		return SEVERITY_CRITICAL, "", nil, err
+		return SEVERITY_UNKNOWN, "", nil, err
 	}
 
 	// No unsigned pegouts
@@ -45,7 +48,7 @@ func (alert *AlertPegoutSigningDuration) Check(dataSource AlertDataSource) (Seve
 	if alert.signingTimeout == 0 {
 		coordinatorData, err := dataSource.CoordinatorContractStorageDB()
 		if err != nil {
-			return SEVERITY_CRITICAL, "", nil, err
+			return SEVERITY_UNKNOWN, "", nil, err
 		}
 		alert.signingTimeout = coordinatorData.SigningTimeout
 	}
@@ -54,14 +57,7 @@ func (alert *AlertPegoutSigningDuration) Check(dataSource AlertDataSource) (Seve
 	duration := 0 * time.Second
 	if (alert.currentUnsignedPegout == nil) ||
 		(!alert.currentUnsignedPegout.PegoutAddress.Equals(unsignedPegout.PegoutAddress)) {
-		// Update severity
-		if alert.currentUnsignedPegout != nil {
-			// alert.beginTimestamp - from previous pegout
-			duration = time.Duration(dataSource.NowUnixTs()-alert.beginTimestamp) * time.Second
-
-			// alert.severity will be calculated from previous pegout
-			alert.severity = alert.GetSeverity(duration)
-		}
+		alert.severity = SEVERITY_OK
 
 		// Save new unsigned pegout
 		alert.currentUnsignedPegout = unsignedPegout
@@ -75,7 +71,7 @@ func (alert *AlertPegoutSigningDuration) Check(dataSource AlertDataSource) (Seve
 		}
 
 		if beginTimestamp <= 0 {
-			return SEVERITY_CRITICAL, "", nil, err
+			return SEVERITY_UNKNOWN, "", nil, err
 		}
 
 		alert.beginTimestamp = beginTimestamp
@@ -92,22 +88,26 @@ func (alert *AlertPegoutSigningDuration) Check(dataSource AlertDataSource) (Seve
 	// Get pegout record from DB
 	pegout, err := dataSource.PegoutDB(alert.currentUnsignedPegout.PegoutAddress)
 	if err != nil {
-		return SEVERITY_CRITICAL, "", nil, err
+		return SEVERITY_UNKNOWN, "", nil, err
 	}
 
 	description := "OK"
-	if alert.severity > SEVERITY_OK {
-		/*
-			if pegout.BitcoinTxId != nil {
-				labels["bitcoin_tx_id"] = hex.EncodeToString(pegout.BitcoinTxId)
-			}
-			labels["pegout_addr"] = alert.currentUnsignedPegout.PegoutAddress.StringRaw()
-		*/
 
-		//pegout transaction was not signed within 22 minutes
+	if alert.severity > SEVERITY_OK {
+		bitcoinTxId := ""
+		if pegout.BitcoinTxId != nil {
+			bitcoinTxId = hex.EncodeToString(pegout.BitcoinTxId)
+		}
+
+		description = fmt.Sprintf(
+			"Pegout transaction was not signed within %d minutes. Pegout: %s. Bitcoin TX: %s",
+			duration/time.Minute,
+			mutils.TonExplorerLink(unsignedPegout.PegoutAddress.StringRaw()),
+			mutils.BtcExplorerLink(bitcoinTxId),
+		)
 	}
 
-	return alert.severity, description, nil, nil
+	return alert.severity, Description(description), nil, nil
 }
 
 func (alert *AlertPegoutSigningDuration) GetSeverity(duration time.Duration) Severity {

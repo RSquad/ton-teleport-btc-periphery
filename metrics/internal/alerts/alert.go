@@ -38,14 +38,3 @@ func StrToSeverity(s string) (Severity, error) {
 
 	return severity, nil
 }
-
-/*
-{{ if .Annotations.pegout_txid -}}
-- <a href="https://mempool.space/signet/tx/{{ .Annotations.pegout_txid }}">{{ .Annotations.pegout_txid }}</a>
-{{ end -}}
-{{ if .Annotations.pegout_addr -}}
-- <a href="https://testnet.tonviewer.com/{{ .Annotations.pegout_addr }}">{{ .Annotations.pegout_addr }}</a>
-{{ end -}}
-
-
-*/

@@ -77,21 +77,15 @@ func NewAlertFactory(contractAddrs map[string]*address.Address) *AlertFactory {
 		return NewAlertPegoutSigningDuration()
 	}
 
-	/*
+	// dkg_status (dkg.status)
+	factories["dkg_status"] = func() Alert {
+		return NewAlertDkgStatus()
+	}
 
-
-
-
-		// dkg_status (dkg.status)
-		factories["dkg_status"] = func() Alert {
-			return NewAlertDkgStatus()
-		}
-
-		// alert_total_service_fee (total.service.fee)
-		factories["alert_total_service_fee"] = func() Alert {
-			return NewAlertTotalServiceFee()
-		}
-	*/
+	// alert_total_service_fee (total.service.fee)
+	factories["alert_total_service_fee"] = func() Alert {
+		return NewAlertTotalServiceFee()
+	}
 
 	return &AlertFactory{
 		Factories: factories,
