@@ -121,22 +121,12 @@ func (apiHandler AlertsTestingApiHandler) ParseState(queryParams *url.Values) (*
 	}
 
 	// labels
-	var labels alerts.Labels = nil
+	description := alerts.Description("OK")
 	{
-		labelsStr := queryParams.Get("labels")
+		descriptionStr := queryParams.Get("description")
 
-		if labelsStr != "" {
-			labels = make(alerts.Labels)
-			values := strings.Split(labelsStr, "|")
-
-			for _, v := range values {
-				parts := strings.Split(v, "=")
-				if len(parts) != 2 {
-					return nil, fmt.Errorf("wrong label value '%s'", labelsStr)
-				}
-
-				labels[parts[0]] = parts[1]
-			}
+		if descriptionStr != "" {
+			description = alerts.Description(descriptionStr)
 		}
 	}
 
@@ -165,5 +155,5 @@ func (apiHandler AlertsTestingApiHandler) ParseState(queryParams *url.Values) (*
 		}
 	}
 
-	return alerts.NewAlertState(nameStr, severity, labels, nil, true, intValues), nil
+	return alerts.NewAlertState(nameStr, severity, description, nil, true, intValues), nil
 }
