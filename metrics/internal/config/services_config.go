@@ -31,6 +31,8 @@ type ServicesConfig struct {
 	ContractBalancesFetchPeriod      int
 	AlertsCheckPeriod                int
 	PProfHttpEnable                  bool
+	TonExplorer                      string
+	BtcExplorer                      string
 }
 
 func NewServicesConfig(config *EnvConfig) (*ServicesConfig, error) {
@@ -214,6 +216,8 @@ func NewServicesConfig(config *EnvConfig) (*ServicesConfig, error) {
 		ContractBalancesFetchPeriod:      contractBalancesFetchPeriod,
 		AlertsCheckPeriod:                alertsCheckPeriod,
 		PProfHttpEnable:                  pprofHttpEnable,
+		TonExplorer:                      config.TonExplorer,
+		BtcExplorer:                      config.BtcExplorer,
 	}
 
 	return servicesConfig, nil

@@ -2,9 +2,11 @@ package alerts
 
 import (
 	"encoding/hex"
+	"fmt"
 	"time"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
+	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/mutils"
 )
 
 type AlertPegoutRestarts struct {
@@ -19,39 +21,24 @@ func NewAlertPegoutRestarts() Alert {
 	}
 }
 
-func (alert *AlertPegoutRestarts) NewLabels() Labels {
-	return Labels{
-		"bitcoin_tx_id": "",
-		"pegout_addr":   "",
-	}
-}
-
-func (alert *AlertPegoutRestarts) Check(dataSource AlertDataSource) (Severity, Labels, Values, error) {
-	labels := alert.NewLabels()
-
+func (alert *AlertPegoutRestarts) Check(dataSource AlertDataSource) (Severity, Description, Values, error) {
 	// Get first unsigned pegout
 	unsignedPegout, err := dataSource.FirstUnsignedPegoutDB()
 	if err != nil {
-		return SEVERITY_UNKNOWN, labels, alert.MakeValues(), err
+		return SEVERITY_CRITICAL, "", alert.MakeValues(), err
 	}
 
 	// No unsigned pegouts
 	if unsignedPegout == nil {
 		alert.restartsCounter = 0
-		return SEVERITY_OK, labels, alert.MakeValues(), nil
+		return SEVERITY_OK, "OK", alert.MakeValues(), nil
 	}
 
 	// Get pegout record from DB
 	pegout, err := dataSource.PegoutDB(unsignedPegout.PegoutAddress)
 	if err != nil {
-		return SEVERITY_UNKNOWN, labels, alert.MakeValues(), err
+		return SEVERITY_CRITICAL, "", alert.MakeValues(), err
 	}
-
-	// Update labels
-	if pegout.BitcoinTxId != nil {
-		labels["bitcoin_tx_id"] = hex.EncodeToString(pegout.BitcoinTxId)
-	}
-	labels["pegout_addr"] = unsignedPegout.PegoutAddress.StringRaw()
 
 	// Check if pegout is new: current is null or new PegoutAddress
 	if (alert.currentUnsignedPegout == nil) ||
@@ -61,7 +48,7 @@ func (alert *AlertPegoutRestarts) Check(dataSource AlertDataSource) (Severity, L
 		alert.currentUnsignedPegout = unsignedPegout
 		alert.restartsCounter = 0
 
-		return SEVERITY_OK, labels, alert.MakeValues(), nil
+		return SEVERITY_OK, "OK", alert.MakeValues(), nil
 	}
 
 	// Check for restart
@@ -75,8 +62,23 @@ func (alert *AlertPegoutRestarts) Check(dataSource AlertDataSource) (Severity, L
 
 	// Calulate severity
 	severity := alert.GetSeverity()
+	description := "OK"
 
-	return severity, labels, alert.MakeValues(), nil
+	if severity > SEVERITY_OK {
+		bitcoinTxId := ""
+		if pegout.BitcoinTxId != nil {
+			bitcoinTxId = hex.EncodeToString(pegout.BitcoinTxId)
+		}
+
+		description = fmt.Sprintf(
+			"The pegout signing was restarted %d times. Pegout: %s. Bitcoin TX: %s",
+			alert.restartsCounter,
+			mutils.TonExplorerLink(unsignedPegout.PegoutAddress.StringRaw()),
+			mutils.BtcExplorerLink(bitcoinTxId),
+		)
+	}
+
+	return severity, Description(description), alert.MakeValues(), nil
 }
 
 func (alert *AlertPegoutRestarts) GetSeverity() Severity {

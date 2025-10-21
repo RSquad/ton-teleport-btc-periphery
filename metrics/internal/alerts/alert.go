@@ -3,7 +3,7 @@ package alerts
 import "fmt"
 
 type Severity int
-type Labels map[string]string
+type Description string
 type Values map[string]any
 
 const (
@@ -15,8 +15,7 @@ const (
 )
 
 type Alert interface {
-	Check(dataSource AlertDataSource) (Severity, Labels, Values, error)
-	NewLabels() Labels
+	Check(dataSource AlertDataSource) (Severity, Description, Values, error)
 }
 
 func StrToSeverity(s string) (Severity, error) {
@@ -39,3 +38,14 @@ func StrToSeverity(s string) (Severity, error) {
 
 	return severity, nil
 }
+
+/*
+{{ if .Annotations.pegout_txid -}}
+- <a href="https://mempool.space/signet/tx/{{ .Annotations.pegout_txid }}">{{ .Annotations.pegout_txid }}</a>
+{{ end -}}
+{{ if .Annotations.pegout_addr -}}
+- <a href="https://testnet.tonviewer.com/{{ .Annotations.pegout_addr }}">{{ .Annotations.pegout_addr }}</a>
+{{ end -}}
+
+
+*/

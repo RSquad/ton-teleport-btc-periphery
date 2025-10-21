@@ -19,21 +19,18 @@ import (
 )
 
 type AlertDataSourceLive struct {
-	dataSourceDB        *data_sources.DataSourceDB
-	bitcoinClient       *bitcoin.Client
-	globalRuntimeConfig *config.GlobalRuntimeConfig
+	dataSourceDB  *data_sources.DataSourceDB
+	bitcoinClient *bitcoin.Client
 }
 
 func NewAlertDataSourceLive(
 	db *sql.DB,
 	bitcoinClient *bitcoin.Client,
-	globalRuntimeConfig *config.GlobalRuntimeConfig,
 	contractAddrs map[string]*address.Address,
 ) AlertDataSource {
 	dataSource := AlertDataSourceLive{
-		dataSourceDB:        data_sources.NewDataSourceDB(db),
-		bitcoinClient:       bitcoinClient,
-		globalRuntimeConfig: globalRuntimeConfig,
+		dataSourceDB:  data_sources.NewDataSourceDB(db),
+		bitcoinClient: bitcoinClient,
 	}
 
 	return &dataSource
@@ -121,7 +118,7 @@ func (dataSource *AlertDataSourceLive) BtcGetMempoolEntry(txHash string) (*btcjs
 }
 
 func (dataSource *AlertDataSourceLive) TonMaxMainValidators(ctx context.Context) (int, error) {
-	return dataSource.globalRuntimeConfig.TonMaxMainValidators(ctx)
+	return config.GetGlobalRuntimeConfig().TonMaxMainValidators(ctx)
 }
 
 func (dataSource *AlertDataSourceLive) ActualContractBalance(name string) (int64, error) {

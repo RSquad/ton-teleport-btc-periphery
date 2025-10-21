@@ -1,7 +1,6 @@
 package alerts
 
 import (
-	"fmt"
 	"sync"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -29,17 +28,11 @@ func (d *AlertDispatcherPrometheus) getOrCreateGaugeVec(state *AlertState) *prom
 		return gv
 	}
 
-	labelNames := make([]string, 0)
-	if state.Labels != nil {
-		for name := range state.Labels {
-			labelNames = append(labelNames, name)
-		}
-	}
+	labelNames := []string{"description"}
 
 	gv = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: state.Name,
-			Help: fmt.Sprintf("Severity gauge for `%s`", state.Name),
 		},
 		labelNames,
 	)
@@ -58,7 +51,7 @@ func (d *AlertDispatcherPrometheus) OnAlert(state *AlertState) error {
 	gv := d.getOrCreateGaugeVec(state)
 	gv.Reset()
 
-	g, err := gv.GetMetricWith(prometheus.Labels(state.Labels))
+	g, err := gv.GetMetricWith(prometheus.Labels{"description": ""})
 	if err != nil {
 		return err
 	}

@@ -1,5 +1,6 @@
 package alerts
 
+/*
 import (
 	"testing"
 
@@ -56,3 +57,4 @@ func TestAlertTotalServiceFee(t *testing.T) {
 
 	DoAlertTests(t, tests, NewAlertTotalServiceFee())
 }
+*/

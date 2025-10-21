@@ -1,22 +1,19 @@
 package alerts
 
+/*
 type AlertTotalServiceFee struct{}
 
 func NewAlertTotalServiceFee() Alert {
 	return &AlertTotalServiceFee{}
 }
 
-func (alert *AlertTotalServiceFee) NewLabels() Labels {
-	return Labels{}
-}
-
-func (alert *AlertTotalServiceFee) Check(dataSource AlertDataSource) (Severity, Labels, Values, error) {
+func (alert *AlertTotalServiceFee) Check(dataSource AlertDataSource) (Severity, Description, Values, error) {
 	labels := alert.NewLabels()
 
 	// Get last signed pegout
 	teleportContractStorage, err := dataSource.TeleportContractStorageDB()
 	if err != nil {
-		return SEVERITY_UNKNOWN, labels, nil, err
+		return SEVERITY_CRITICAL, labels, nil, err
 	}
 
 	if teleportContractStorage == nil {
@@ -40,3 +37,4 @@ func (alert *AlertTotalServiceFee) GetSeverity(totalServiceFee int32) Severity {
 
 	return severity
 }
+*/
