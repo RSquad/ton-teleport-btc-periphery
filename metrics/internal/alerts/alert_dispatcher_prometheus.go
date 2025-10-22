@@ -51,7 +51,7 @@ func (d *AlertDispatcherPrometheus) OnAlert(state *AlertState) error {
 	gv := d.getOrCreateGaugeVec(state)
 	gv.Reset()
 
-	g, err := gv.GetMetricWith(prometheus.Labels{"description": ""})
+	g, err := gv.GetMetricWith(prometheus.Labels{"description": string(state.Description)})
 	if err != nil {
 		return err
 	}

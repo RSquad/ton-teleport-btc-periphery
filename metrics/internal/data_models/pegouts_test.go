@@ -34,7 +34,7 @@ func TestDeserializePegouts_Success(t *testing.T) {
     "ClaimsMask": 0,
     "ClaimsCount": 0,
     "ClaimsCounters": {},
-    "MaxSigners": 91,
+    "Signers": 91,
     "ExpiredAt": "2025-07-16T03:27:21Z",
     "SigningMask": 2475880078570760549798248447
   }
@@ -118,9 +118,9 @@ func TestDeserializePegouts_Success(t *testing.T) {
 		t.Errorf("ClaimsCounters len=%d, want 0", len(pegout.ClaimsCounters))
 	}
 
-	// MaxSigners
-	if pegout.MaxSigners != 91 {
-		t.Errorf("MaxSigners=%d, want 91", pegout.MaxSigners)
+	// Signers
+	if pegout.Signers != 91 {
+		t.Errorf("Signers=%d, want 91", pegout.Signers)
 	}
 
 	// ExpiredAt
