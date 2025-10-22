@@ -8,7 +8,6 @@ import (
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/watchdog"
-	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/mutils"
 	"github.com/xssnick/tonutils-go/address"
 )
 
@@ -65,51 +64,61 @@ func (manager *AlertManager) CheckAll() {
 	for alertName, alert := range manager.alerts {
 		var state *AlertState = nil
 		// Check enforced state
-		{
-			manager.mu.RLock()
-			if enforcedState, ok := manager.alertStatesEnforced[alertName]; ok {
-				state = enforcedState
-			}
-			manager.mu.RUnlock()
+		manager.mu.RLock()
+		if enforcedState, ok := manager.alertStatesEnforced[alertName]; ok {
+			state = enforcedState
 		}
+		manager.mu.RUnlock()
 
-		if state == nil { // State in not enforced
-			severity, labels, values, err := alert.Check(manager.dataSource)
+		if state == nil { // State is not enforced
+			severity, description, values, err := alert.Check(manager.dataSource)
+
+			if err != nil {
+				description = Description(err.Error())
+			}
 
 			state = NewAlertState(
 				alertName,
 				severity,
-				labels,
+				description,
 				err,
 				false,
 				values,
 			)
-
-			if err != nil {
-				manager.UpdateState(state)
-				manager.LogAlertError(alertName, err)
-				continue
-			}
 		}
 
 		manager.UpdateState(state)
 
+		// Send to the alert dispatcher
+		var dispatcherError error = nil
 		if state.Severity >= SEVERITY_OK {
-			err := manager.alertDispatcher.OnAlert(state)
-			if err != nil {
-				manager.LogAlertError(alertName, err)
-			}
+			dispatcherError = manager.alertDispatcher.OnAlert(state)
 		}
+
+		manager.LogAlert(state, dispatcherError)
 	}
 
 	watchdog.Global().Heartbeat("AlertManager")
 }
 
-func (manager *AlertManager) LogAlertError(alertName string, err error) {
-	logger.Log.Error().
-		Str("Alert", alertName).
-		Err(err).
-		Msg("Alert finished work with error")
+func (manager *AlertManager) LogAlert(state *AlertState, extErr error) {
+	if state.LastErr != nil {
+		logger.Log.Error().
+			Str("Alert", state.Name).
+			Err(state.LastErr).
+			Msg("Alert finished work with error")
+	} else {
+		logger.Log.Debug().
+			Str("Alert", state.Name).
+			Msg(string(state.Description))
+	}
+
+	if extErr != nil {
+		logger.Log.Error().
+			Str("Alert", state.Name).
+			Err(extErr).
+			Msg("Alert finished work with error")
+	}
 }
 
 func (manager *AlertManager) GetAlertState(name string) (AlertState, error) {
@@ -150,9 +159,8 @@ func (manager *AlertManager) GetEnforceInfoJsonStr() (string, error) {
 
 func (manager *AlertManager) UpdateState(state *AlertState) {
 	manager.mu.Lock()
-	defer manager.mu.Unlock()
-
 	manager.alertStates[state.Name] = state
+	manager.mu.Unlock()
 }
 
 func (manager *AlertManager) EnforceState(state *AlertState) error {
@@ -163,29 +171,6 @@ func (manager *AlertManager) EnforceState(state *AlertState) error {
 	_, ok := manager.alerts[state.Name]
 	if !ok {
 		return fmt.Errorf("alert not found: '%s'", state.Name)
-	}
-
-	// Verify labels
-	alert, err := manager.alertsFactory.NewAlertInstance(state.Name)
-	if !ok {
-		return err
-	}
-
-	expectedLabels := alert.NewLabels()
-	expectedLabelsKeys := mutils.ExtractMapKeys(expectedLabels)
-	expectedLabelsStr := mutils.JoinToStr(expectedLabelsKeys)
-	stateLabelsKeys := mutils.ExtractMapKeys(state.Labels)
-	stateLabelsStr := mutils.JoinToStr(stateLabelsKeys)
-
-	if len(expectedLabelsKeys) != len(state.Labels) {
-		return fmt.Errorf("expected labels '%s', but got '%s'", expectedLabelsStr, stateLabelsStr)
-	}
-
-	for name := range expectedLabels {
-		_, ok := state.Labels[name]
-		if !ok {
-			return fmt.Errorf("expected labels '%s', but got '%s'", expectedLabelsStr, stateLabelsStr)
-		}
 	}
 
 	// Update enforced state

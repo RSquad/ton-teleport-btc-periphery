@@ -17,18 +17,8 @@ func TestAlertPegoutInMempool(t *testing.T) {
 	pegoutAddress1, _ := address.ParseAddr("EQAPtQRffHrXATHokYMFQgupunwxfTe2Main1FYFUt-8eHn-")
 	pegoutAddress2, _ := address.ParseAddr("Ef8VjV6LGTyiNLzefOm1dpuCMLcoewhqfQubtgbWcPwt2Gwp")
 
-	pegoutLabels1 := Labels{
-		"bitcoin_tx_id": "f7df2a86684e500a3c6c7ca785b8500e4e3c89d1751edf86b6deb68e761a329b",
-		"pegout_addr":   pegoutAddress1.StringRaw(),
-	}
-
-	pegoutLabels2 := Labels{
-		"bitcoin_tx_id": "3d46303861d5336c3ebdea3a20883a1cb77f4f3a66a2fb5e6494d3a0ab878bd1",
-		"pegout_addr":   pegoutAddress2.StringRaw(),
-	}
-
-	bitcoin_tx_id_1, _ := hex.DecodeString(pegoutLabels1["bitcoin_tx_id"])
-	bitcoin_tx_id_2, _ := hex.DecodeString(pegoutLabels2["bitcoin_tx_id"])
+	bitcoin_tx_id_1, _ := hex.DecodeString("f7df2a86684e500a3c6c7ca785b8500e4e3c89d1751edf86b6deb68e761a329b")
+	bitcoin_tx_id_2, _ := hex.DecodeString("3d46303861d5336c3ebdea3a20883a1cb77f4f3a66a2fb5e6494d3a0ab878bd1")
 
 	pegouts := []*data_models.Pegout{
 		{
@@ -43,11 +33,6 @@ func TestAlertPegoutInMempool(t *testing.T) {
 		},
 	}
 
-	pegoutLabelsEmpty := Labels{
-		"bitcoin_tx_id": "",
-		"pegout_addr":   "",
-	}
-
 	tests := []TestDesc{
 		{
 			Name: "SEVERITY_OK (no pegouts)",
@@ -56,7 +41,11 @@ func TestAlertPegoutInMempool(t *testing.T) {
 					return nil, nil
 				},
 			}),
-			Expect: TestResWant{Severity: SEVERITY_OK, Labels: pegoutLabelsEmpty, Err: nil},
+			Expect: TestResWant{
+				Severity:    SEVERITY_OK,
+				Description: "OK",
+				Err:         nil,
+			},
 		},
 		{
 			Name: "SEVERITY_OK (pegout1 not in mempool or block, duration: 0 min)",
@@ -74,7 +63,11 @@ func TestAlertPegoutInMempool(t *testing.T) {
 					return beginTs
 				},
 			}),
-			Expect: TestResWant{Severity: SEVERITY_OK, Labels: pegoutLabels1, Err: nil},
+			Expect: TestResWant{
+				Severity:    SEVERITY_OK,
+				Description: "OK",
+				Err:         nil,
+			},
 		},
 		{
 			Name: "SEVERITY_OK (pegout1 not in mempool or block, duration: 1 min)",
@@ -92,7 +85,10 @@ func TestAlertPegoutInMempool(t *testing.T) {
 					return beginTs + 1*60
 				},
 			}),
-			Expect: TestResWant{Severity: SEVERITY_OK, Labels: pegoutLabels1, Err: nil},
+			Expect: TestResWant{
+				Severity:    SEVERITY_OK,
+				Description: "OK",
+				Err:         nil},
 		},
 		{
 			Name: "SEVERITY_WARNING (pegout1 not in mempool or block, duration: 10 min)",
@@ -110,7 +106,11 @@ func TestAlertPegoutInMempool(t *testing.T) {
 					return beginTs + 10*60
 				},
 			}),
-			Expect: TestResWant{Severity: SEVERITY_WARNING, Labels: pegoutLabels1, Err: nil},
+			Expect: TestResWant{
+				Severity:    SEVERITY_WARNING,
+				Description: "Pegout transaction not found in mempool for 10 minutes. Pegout: <a href=\"http://ton/0:0fb5045f7c7ad70131e8918305420ba9ba7c317d37b631a8a7d4560552dfbc78\">0:0fb5045f7c7ad70131e8918305420ba9ba7c317d37b631a8a7d4560552dfbc78</a>. Bitcoin TX: <a href=\"http://btc/f7df2a86684e500a3c6c7ca785b8500e4e3c89d1751edf86b6deb68e761a329b\">f7df2a86684e500a3c6c7ca785b8500e4e3c89d1751edf86b6deb68e761a329b</a>",
+				Err:         nil,
+			},
 		},
 		{
 			Name: "SEVERITY_OK (pegout1 in mempool, next pegout2 (will be checked next time), duration: 0 min)",
@@ -128,7 +128,11 @@ func TestAlertPegoutInMempool(t *testing.T) {
 					return beginTs
 				},
 			}),
-			Expect: TestResWant{Severity: SEVERITY_OK, Labels: pegoutLabels1, Err: nil},
+			Expect: TestResWant{
+				Severity:    SEVERITY_OK,
+				Description: "OK",
+				Err:         nil,
+			},
 		},
 		{
 			Name: "SEVERITY_OK (pegout2 not in mempool or block duration: 0 min)",
@@ -146,7 +150,11 @@ func TestAlertPegoutInMempool(t *testing.T) {
 					return beginTs
 				},
 			}),
-			Expect: TestResWant{Severity: SEVERITY_OK, Labels: pegoutLabels2, Err: nil},
+			Expect: TestResWant{
+				Severity:    SEVERITY_OK,
+				Description: "OK",
+				Err:         nil,
+			},
 		},
 		{
 			Name: "SEVERITY_WARNING (pegout2 not in mempool or block duration: 10 min)",
@@ -164,7 +172,11 @@ func TestAlertPegoutInMempool(t *testing.T) {
 					return beginTs + 10*60
 				},
 			}),
-			Expect: TestResWant{Severity: SEVERITY_WARNING, Labels: pegoutLabels2, Err: nil},
+			Expect: TestResWant{
+				Severity:    SEVERITY_WARNING,
+				Description: "Pegout transaction not found in mempool for 10 minutes. Pegout: <a href=\"http://ton/-1:158d5e8b193ca234bcde7ce9b5769b8230b7287b086a7d0b9bb606d670fc2dd8\">-1:158d5e8b193ca234bcde7ce9b5769b8230b7287b086a7d0b9bb606d670fc2dd8</a>. Bitcoin TX: <a href=\"http://btc/3d46303861d5336c3ebdea3a20883a1cb77f4f3a66a2fb5e6494d3a0ab878bd1\">3d46303861d5336c3ebdea3a20883a1cb77f4f3a66a2fb5e6494d3a0ab878bd1</a>",
+				Err:         nil,
+			},
 		},
 		{
 			Name: "SEVERITY_CRITICAL (pegout2 not in mempool or block duration: 10 min)",
@@ -182,7 +194,11 @@ func TestAlertPegoutInMempool(t *testing.T) {
 					return beginTs + 40*60
 				},
 			}),
-			Expect: TestResWant{Severity: SEVERITY_CRITICAL, Labels: pegoutLabels2, Err: nil},
+			Expect: TestResWant{
+				Severity:    SEVERITY_CRITICAL,
+				Description: "Pegout transaction not found in mempool for 40 minutes. Pegout: <a href=\"http://ton/-1:158d5e8b193ca234bcde7ce9b5769b8230b7287b086a7d0b9bb606d670fc2dd8\">-1:158d5e8b193ca234bcde7ce9b5769b8230b7287b086a7d0b9bb606d670fc2dd8</a>. Bitcoin TX: <a href=\"http://btc/3d46303861d5336c3ebdea3a20883a1cb77f4f3a66a2fb5e6494d3a0ab878bd1\">3d46303861d5336c3ebdea3a20883a1cb77f4f3a66a2fb5e6494d3a0ab878bd1</a>",
+				Err:         nil,
+			},
 		},
 		{
 			Name: "SEVERITY_OK (pegout2 in block, no new pegouts)",
@@ -200,7 +216,11 @@ func TestAlertPegoutInMempool(t *testing.T) {
 					return beginTs + 44*60
 				},
 			}),
-			Expect: TestResWant{Severity: SEVERITY_OK, Labels: pegoutLabels2, Err: nil},
+			Expect: TestResWant{
+				Severity:    SEVERITY_OK,
+				Description: "OK",
+				Err:         nil,
+			},
 		},
 		{
 			Name: "SEVERITY_OK (no new pegouts)",
@@ -212,7 +232,11 @@ func TestAlertPegoutInMempool(t *testing.T) {
 					return beginTs + 46*60
 				},
 			}),
-			Expect: TestResWant{Severity: SEVERITY_OK, Labels: pegoutLabelsEmpty, Err: nil},
+			Expect: TestResWant{
+				Severity:    SEVERITY_OK,
+				Description: "OK",
+				Err:         nil,
+			},
 		},
 	}
 

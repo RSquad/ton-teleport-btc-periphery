@@ -2,6 +2,7 @@ package alerts
 
 import (
 	"encoding/hex"
+	"fmt"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/mutils"
 )
@@ -13,44 +14,29 @@ func NewAlertPegoutSigners() Alert {
 	return &AlertPegoutSigners{}
 }
 
-func (alert *AlertPegoutSigners) NewLabels() Labels {
-	return Labels{
-		"bitcoin_tx_id": "",
-		"pegout_addr":   "",
-	}
-}
-
-func (alert *AlertPegoutSigners) Check(dataSource AlertDataSource) (Severity, Labels, Values, error) {
-	labels := alert.NewLabels()
-
+func (alert *AlertPegoutSigners) Check(dataSource AlertDataSource) (Severity, Description, Values, error) {
 	// Get first unsigned pegout
 	unsignedPegout, err := dataSource.FirstUnsignedPegoutDB()
 	if err != nil {
-		return SEVERITY_UNKNOWN, labels, nil, err
+		return SEVERITY_UNKNOWN, "", nil, err
 	}
 
 	// No unsigned pegouts
 	if unsignedPegout == nil {
-		return SEVERITY_OK, labels, nil, nil
+		return SEVERITY_OK, "OK", nil, nil
 	}
 
 	// Get pegout record from DB
 	pegout, err := dataSource.PegoutDB(unsignedPegout.PegoutAddress)
 	if err != nil {
-		return SEVERITY_UNKNOWN, labels, nil, err
+		return SEVERITY_UNKNOWN, "", nil, err
 	}
 
 	// Get Prev DKG
 	prevDkg, err := dataSource.PrevDkgDB()
 	if err != nil {
-		return SEVERITY_UNKNOWN, labels, nil, err
+		return SEVERITY_UNKNOWN, "", nil, err
 	}
-
-	// Update labels
-	if pegout.BitcoinTxId != nil {
-		labels["bitcoin_tx_id"] = hex.EncodeToString(pegout.BitcoinTxId)
-	}
-	labels["pegout_addr"] = unsignedPegout.PegoutAddress.StringRaw()
 
 	// Calulate signersAllowedPercentage
 	maxSigners := prevDkg.MaxSigners
@@ -59,8 +45,25 @@ func (alert *AlertPegoutSigners) Check(dataSource AlertDataSource) (Severity, La
 
 	// Calulate severity
 	severity := alert.GetSeverity(signersAllowedPercentage)
+	description := "OK"
 
-	return severity, labels, nil, nil
+	if severity > SEVERITY_OK {
+		bitcoinTxId := ""
+		if pegout.BitcoinTxId != nil {
+			bitcoinTxId = hex.EncodeToString(pegout.BitcoinTxId)
+		}
+
+		description = fmt.Sprintf(
+			"Number of validators allowed to sign pegout is %d of %d (%d%%). Pegout: %s. Bitcoin TX: %s",
+			signersAllowedCount,
+			maxSigners,
+			signersAllowedPercentage,
+			mutils.TonExplorerLink(unsignedPegout.PegoutAddress.StringRaw()),
+			mutils.BtcExplorerLink(bitcoinTxId),
+		)
+	}
+
+	return severity, Description(description), nil, nil
 }
 
 func (alert *AlertPegoutSigners) GetSeverity(signersAllowedPercentage uint) Severity {
