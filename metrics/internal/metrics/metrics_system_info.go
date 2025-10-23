@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/alerts"
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/config"
@@ -407,22 +408,30 @@ func (systemInfo *MetricsSystemInfo) TeleportInfo(
 func (systemInfo *MetricsSystemInfo) DkgStatus(
 	dataSourceDB *data_sources.DataSourceDB,
 ) (*DkgStatus, error) {
+	logger.Log.Debug().Str("component", "DKG_DEBUG").Msg("dataSourceDB.Dkg() begin")
 	dkg, err := dataSourceDB.Dkg()
+	logger.Log.Debug().Str("component", "DKG_DEBUG").Msg("dataSourceDB.Dkg() end")
 	if err != nil {
 		return nil, err
 	}
 
+	logger.Log.Debug().Str("component", "DKG_DEBUG").Msg("dataSourceDB.DkgBeforeRestart() begin")
 	lastRestartDkg, err := dataSourceDB.DkgBeforeRestart(dkg.Until)
+	logger.Log.Debug().Str("component", "DKG_DEBUG").Msg("dataSourceDB.DkgBeforeRestart() end")
 	if err != nil {
 		return nil, err
 	}
 
+	logger.Log.Debug().Str("component", "DKG_DEBUG").Msg("dataSourceDB.PrevDkg() begin")
 	prevDkg, err := dataSourceDB.PrevDkg()
+	logger.Log.Debug().Str("component", "DKG_DEBUG").Msg("dataSourceDB.PrevDkg() end")
 	if err != nil {
 		return nil, err
 	}
 
+	logger.Log.Debug().Str("component", "DKG_DEBUG").Msg("dataSourceDB.CoordinatorContractStorage() begin")
 	coordinatorContractData, err := dataSourceDB.CoordinatorContractStorage()
+	logger.Log.Debug().Str("component", "DKG_DEBUG").Msg("dataSourceDB.CoordinatorContractStorage() end")
 	if err != nil {
 		return nil, err
 	}
@@ -434,6 +443,7 @@ func (systemInfo *MetricsSystemInfo) DkgStatus(
 	status.Original.PrevDkg = prevDkg
 
 	sumarizeDkgInfo := func(dkg *coordinator.DKG) (*DkgInfo, error) {
+		logger.Log.Debug().Str("component", "DKG_DEBUG").Msg("sumarizeDkgInfo begin")
 		var info DkgInfo
 
 		info.State = dkg.State.String()
@@ -446,7 +456,9 @@ func (systemInfo *MetricsSystemInfo) DkgStatus(
 		}
 
 		if !coordinatorContractData.StandaloneMode {
-			maxValidators, err := config.GetGlobalRuntimeConfig().TonMaxMainValidators(context.Background()) // TODO: replace with user defined ctx
+			logger.Log.Debug().Str("component", "DKG_DEBUG").Msg("config.GetGlobalRuntimeConfig().TonMaxMainValidators begin")
+			maxValidators, err := config.GetGlobalRuntimeConfig().TonMaxMainValidators(context.Background())
+			logger.Log.Debug().Str("component", "DKG_DEBUG").Msg("config.GetGlobalRuntimeConfig().TonMaxMainValidators end")
 			if err != nil {
 				return nil, err
 			}
@@ -480,16 +492,22 @@ func (systemInfo *MetricsSystemInfo) DkgStatus(
 
 		info.ValidatorsCountEvicted = len(info.ValidatorsIdxEvicted)
 
+		logger.Log.Debug().Str("component", "DKG_DEBUG").Msg("sumarizeDkgInfo end")
+
 		return &info, nil
 	}
 
+	logger.Log.Debug().Str("component", "DKG_DEBUG").Msg("sumarizeDkgInfo(status.Original.Dkg) begin")
 	dkgInfo, err := sumarizeDkgInfo(status.Original.Dkg)
+	logger.Log.Debug().Str("component", "DKG_DEBUG").Msg("sumarizeDkgInfo(status.Original.Dkg) end")
 	if err != nil {
 		return nil, err
 	}
 	status.DkgInfo = *dkgInfo
 
+	logger.Log.Debug().Str("component", "DKG_DEBUG").Msg("sumarizeDkgInfo(status.Original.PrevDkg) begin")
 	prevDkgInfo, err := sumarizeDkgInfo(status.Original.PrevDkg)
+	logger.Log.Debug().Str("component", "DKG_DEBUG").Msg("sumarizeDkgInfo(status.Original.PrevDkg) end")
 	if err != nil {
 		return nil, err
 	}
