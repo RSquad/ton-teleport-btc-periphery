@@ -115,7 +115,10 @@ func (pm *PegoutManager) executeSigningPegoutsCycle() (err error) {
 	logStartProcessingSigningPegouts()
 
 	pegouts, err := pm.repo.Pegout.Query().
-		Where(entpegout.StatusEQ(entpegout.StatusSigning), entpegout.AddrNEQ("NONE"), entpegout.AddrNEQ("NONE1")).
+		Where(
+			entpegout.StatusEQ(entpegout.StatusSigning),
+			entpegout.AddrNotNil(),
+			entpegout.AddrNotIn("NONE", "NONE1")).
 		Limit(pegoutQueryLimit).
 		All(pm.ctx)
 	if err != nil {
@@ -200,7 +203,10 @@ func (pm *PegoutManager) executeSignedPegoutsCycle() (err error) {
 	pm.excludedSignedPegoutIDsMux.Unlock()
 
 	query := pm.repo.Pegout.Query().
-		Where(entpegout.StatusEQ(entpegout.StatusSigned), entpegout.AddrNEQ("NONE"), entpegout.AddrNEQ("NONE1")).
+		Where(
+			entpegout.StatusEQ(entpegout.StatusSigned),
+			entpegout.AddrNotNil(),
+			entpegout.AddrNotIn("NONE", "NONE1")).
 		Limit(pegoutQueryLimit)
 
 	if len(excludedIDs) > 0 {
