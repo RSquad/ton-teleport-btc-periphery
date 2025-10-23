@@ -61,7 +61,6 @@ func (alert *AlertCpfpLength) Check(dataSource AlertDataSource) (Severity, Descr
 	}
 
 	chainSize, err := dataSource.BtcGetCpfpLength(mutils.BytesToBTCHash(pegout.BitcoinTxId))
-
 	if err != nil {
 		alert.severity = SEVERITY_CRITICAL
 		alert.err = err
@@ -83,12 +82,10 @@ func (alert *AlertCpfpLength) Check(dataSource AlertDataSource) (Severity, Descr
 func (alert *AlertCpfpLength) GetSeverity(chainSize int) Severity {
 	severity := SEVERITY_OK
 
-	if chainSize >= 10 {
-		severity = SEVERITY_WARNING
-	}
-
 	if chainSize >= 20 {
 		severity = SEVERITY_CRITICAL
+	} else if chainSize >= 10 {
+		severity = SEVERITY_WARNING
 	}
 
 	return severity

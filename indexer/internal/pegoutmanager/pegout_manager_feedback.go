@@ -9,18 +9,17 @@ import (
 )
 
 var (
-	errGetPegoutState                 = "failed to get pegout state: %w"
-	errQuerySigningPegouts            = "failed to query signing pegouts: %w"
-	errQuerySignedPegouts             = "failed to query signed pegouts: %w"
-	errGetPegoutTxParts               = "failed to get pegout tx parts: %w"
-	errBuildPegoutTx                  = "failed to build pegout tx: %w"
-	errSerializePegoutTx              = "failed to serialize pegout tx: %w"
-	errUpdatePegoutToSigned           = "failed to update pegout to signed: %w"
-	errParseTxHash                    = "failed to parse tx hash: %w"
-	errUpdatePegoutToConfirm          = "failed to update pegout to confirmed: %w"
-	errDeserializePegoutTx            = "failed to deserialize pegout tx for send: %w"
-	errSendPegoutTx                   = "failed to send pegout tx: %w"
-	errFailedToFetchPegoutForAgeCheck = "failed to fetch pegout with edges for age check: %w"
+	errGetPegoutState        = "failed to get pegout state: %w"
+	errQuerySigningPegouts   = "failed to query signing pegouts: %w"
+	errQuerySignedPegouts    = "failed to query signed pegouts: %w"
+	errGetPegoutTxParts      = "failed to get pegout tx parts: %w"
+	errBuildPegoutTx         = "failed to build pegout tx: %w"
+	errSerializePegoutTx     = "failed to serialize pegout tx: %w"
+	errUpdatePegoutToSigned  = "failed to update pegout to signed: %w"
+	errParseTxHash           = "failed to parse tx hash: %w"
+	errUpdatePegoutToConfirm = "failed to update pegout to confirmed: %w"
+	errDeserializePegoutTx   = "failed to deserialize pegout tx for send: %w"
+	errSendPegoutTx          = "failed to send pegout tx: %w"
 )
 
 func (pm *PegoutManager) logStartManager() {

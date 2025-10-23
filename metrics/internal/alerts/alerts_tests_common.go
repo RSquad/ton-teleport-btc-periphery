@@ -31,7 +31,7 @@ func DoAlertTests(t *testing.T, tests []TestDesc, alert Alert) {
 			}
 
 			if severity != tt.Expect.Severity {
-				t.Fatalf("expected severity %v, got %v", tt.Expect.Severity, severity)
+				t.Fatalf("expected severity %s, got %s", tt.Expect.Severity.String(), severity.String())
 			}
 
 			if description != tt.Expect.Description {

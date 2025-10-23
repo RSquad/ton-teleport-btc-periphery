@@ -1,6 +1,9 @@
 package alerts
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+)
 
 type AlertBtcBlockDelta struct {
 	lastUpdateTs int64
@@ -36,8 +39,8 @@ func (alert *AlertBtcBlockDelta) Check(dataSource AlertDataSource) (Severity, De
 	alert.values = nil
 
 	storage, err := dataSource.BitcoinClientContractStorageDB()
-
 	if err != nil {
+		alert.description = ""
 		alert.severity = SEVERITY_CRITICAL
 		alert.err = err
 
@@ -45,27 +48,19 @@ func (alert *AlertBtcBlockDelta) Check(dataSource AlertDataSource) (Severity, De
 	}
 
 	blockHeightContract := int(storage.LastConfirmedBlockHeight + storage.ConfirmationsNeeded)
-	blockHeightBtcNetwork := 0
-	delta := 0
-	for tryId := 1; tryId <= 5; tryId++ {
-		var err error
-		blockHeightBtcNetwork, err = dataSource.BtcGetBestBlockHeight()
-
-		if err == nil {
-			break
-		}
-
+	blockHeightBtcNetwork, err := alert.btcGetBestBlockHeight(dataSource)
+	if err != nil {
+		alert.description = ""
 		alert.severity = SEVERITY_CRITICAL
 		alert.err = err
 
-		if tryId == 5 {
-			return alert.severity, alert.description, alert.values, alert.err
-		}
+		return alert.severity, alert.description, alert.values, alert.err
 	}
 
-	delta = blockHeightBtcNetwork - blockHeightContract
-
+	delta := blockHeightBtcNetwork - blockHeightContract
 	alert.severity = alert.GetSeverity(delta)
+	alert.err = nil
+	alert.description = "OK"
 
 	if alert.severity > SEVERITY_OK {
 		alert.description = Description(
@@ -78,11 +73,7 @@ func (alert *AlertBtcBlockDelta) Check(dataSource AlertDataSource) (Severity, De
 				blockHeightBtcNetwork,
 			),
 		)
-	} else {
-
 	}
-
-	alert.err = nil
 
 	return alert.severity, alert.description, alert.values, alert.err
 }
@@ -90,13 +81,28 @@ func (alert *AlertBtcBlockDelta) Check(dataSource AlertDataSource) (Severity, De
 func (alert *AlertBtcBlockDelta) GetSeverity(delta int) Severity {
 	severity := SEVERITY_OK
 
-	if delta == 2 {
+	if delta >= 3 {
+		severity = SEVERITY_CRITICAL
+	} else if delta >= 2 {
 		severity = SEVERITY_WARNING
 	}
 
-	if delta >= 3 {
-		severity = SEVERITY_CRITICAL
+	return severity
+}
+
+func (alert *AlertBtcBlockDelta) btcGetBestBlockHeight(dataSource AlertDataSource) (int, error) {
+	var err error = nil
+	blockHeightBtcNetwork := 0
+
+	for tryId := 1; tryId <= 5; tryId++ {
+		blockHeightBtcNetwork, err = dataSource.BtcGetBestBlockHeight()
+
+		if err == nil {
+			return blockHeightBtcNetwork, nil
+		}
+
+		time.Sleep(2 * time.Second)
 	}
 
-	return severity
+	return 0, err
 }
