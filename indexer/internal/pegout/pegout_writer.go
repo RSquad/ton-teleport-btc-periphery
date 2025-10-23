@@ -45,7 +45,7 @@ func (ew *PegoutWriter) WriteFromEvent(
 	pegout, err := pegoutCli.Create().
 		SetAddr(func() string {
 			if event.GetPegoutAddr().IsAddrNone() {
-				return ""
+				return "NONE"
 			}
 			return utils.AddrToRawString(event.GetPegoutAddr())
 		}()).
