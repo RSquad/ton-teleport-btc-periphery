@@ -479,7 +479,6 @@ func (systemInfo *MetricsSystemInfo) DkgStatus(
 		}
 
 		info.ValidatorsCountEvicted = len(info.ValidatorsIdxEvicted)
-
 		return &info, nil
 	}
 
