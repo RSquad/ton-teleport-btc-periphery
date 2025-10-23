@@ -1,6 +1,11 @@
 package alerts
 
-import "github.com/xssnick/tonutils-go/address"
+import (
+	"fmt"
+
+	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/mutils"
+	"github.com/xssnick/tonutils-go/address"
+)
 
 type AlertContractBalance struct {
 	Name        string
@@ -20,25 +25,26 @@ func NewAlertContractBalance(
 	}
 }
 
-func (alert *AlertContractBalance) NewLabels() Labels {
-	return Labels{
-		"address": "",
-	}
-}
-
-func (alert *AlertContractBalance) Check(dataSource AlertDataSource) (Severity, Labels, Values, error) {
-	labels := alert.NewLabels()
-
+func (alert *AlertContractBalance) Check(dataSource AlertDataSource) (Severity, Description, Values, error) {
 	// Get current balance
 	balance, err := dataSource.ActualContractBalance(alert.BalanceName)
 	if err != nil {
-		return SEVERITY_UNKNOWN, labels, nil, err
+		return SEVERITY_CRITICAL, "", nil, err
 	}
 
 	severity := alert.GetSeverity(balance)
-	labels["address"] = alert.Addr.StringRaw()
+	description := "OK"
 
-	return severity, labels, nil, nil
+	if severity > SEVERITY_OK {
+		description = fmt.Sprintf(
+			"The %s contract (%s) has a low balance: %s TON.",
+			alert.BalanceName,
+			mutils.TonExplorerLink(alert.Addr.StringRaw()),
+			mutils.NanoIntToString(balance),
+		)
+	}
+
+	return severity, Description(description), nil, nil
 }
 
 func (alert *AlertContractBalance) GetSeverity(balance int64) Severity {

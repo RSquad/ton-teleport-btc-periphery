@@ -19,7 +19,11 @@ func TestAlertDkgRestarts(t *testing.T) {
 					}, nil
 				},
 			}),
-			Expect: TestResWant{Severity: SEVERITY_OK, Labels: nil, Err: nil},
+			Expect: TestResWant{
+				Severity:    SEVERITY_OK,
+				Description: "OK",
+				Err:         nil,
+			},
 		},
 		{
 			Name: "SEVERITY_OK (restarts: 1)",
@@ -31,7 +35,11 @@ func TestAlertDkgRestarts(t *testing.T) {
 					}, nil
 				},
 			}),
-			Expect: TestResWant{Severity: SEVERITY_OK, Labels: nil, Err: nil},
+			Expect: TestResWant{
+				Severity:    SEVERITY_OK,
+				Description: "OK",
+				Err:         nil,
+			},
 		},
 		{
 			Name: "SEVERITY_WARNING (restarts: 2)",
@@ -43,7 +51,11 @@ func TestAlertDkgRestarts(t *testing.T) {
 					}, nil
 				},
 			}),
-			Expect: TestResWant{Severity: SEVERITY_WARNING, Labels: nil, Err: nil},
+			Expect: TestResWant{
+				Severity:    SEVERITY_WARNING,
+				Description: "The DKG was restarted 2 times",
+				Err:         nil,
+			},
 		},
 		{
 			Name: "SEVERITY_WARNING (restarts: 3)",
@@ -55,7 +67,11 @@ func TestAlertDkgRestarts(t *testing.T) {
 					}, nil
 				},
 			}),
-			Expect: TestResWant{Severity: SEVERITY_WARNING, Labels: nil, Err: nil},
+			Expect: TestResWant{
+				Severity:    SEVERITY_WARNING,
+				Description: "The DKG was restarted 3 times",
+				Err:         nil,
+			},
 		},
 		{
 			Name: "SEVERITY_WARNING (restarts: 4)",
@@ -67,7 +83,11 @@ func TestAlertDkgRestarts(t *testing.T) {
 					}, nil
 				},
 			}),
-			Expect: TestResWant{Severity: SEVERITY_WARNING, Labels: nil, Err: nil},
+			Expect: TestResWant{
+				Severity:    SEVERITY_WARNING,
+				Description: "The DKG was restarted 4 times",
+				Err:         nil,
+			},
 		},
 		{
 			Name: "SEVERITY_CRITICAL (restarts: 5)",
@@ -79,7 +99,11 @@ func TestAlertDkgRestarts(t *testing.T) {
 					}, nil
 				},
 			}),
-			Expect: TestResWant{Severity: SEVERITY_CRITICAL, Labels: nil, Err: nil},
+			Expect: TestResWant{
+				Severity:    SEVERITY_CRITICAL,
+				Description: "The DKG was restarted 5 times",
+				Err:         nil,
+			},
 		},
 		{
 			Name: "SEVERITY_CRITICAL (restarts: 6)",
@@ -91,7 +115,11 @@ func TestAlertDkgRestarts(t *testing.T) {
 					}, nil
 				},
 			}),
-			Expect: TestResWant{Severity: SEVERITY_CRITICAL, Labels: nil, Err: nil},
+			Expect: TestResWant{
+				Severity:    SEVERITY_CRITICAL,
+				Description: "The DKG was restarted 6 times",
+				Err:         nil,
+			},
 		},
 		{
 			Name: "SEVERITY_OK (no DKG)",
@@ -100,7 +128,11 @@ func TestAlertDkgRestarts(t *testing.T) {
 					return nil, nil
 				},
 			}),
-			Expect: TestResWant{Severity: SEVERITY_OK, Labels: nil, Err: nil},
+			Expect: TestResWant{
+				Severity:    SEVERITY_OK,
+				Description: "OK",
+				Err:         nil,
+			},
 		},
 		{
 			Name: "SEVERITY_OK (new DKG)",
@@ -111,7 +143,11 @@ func TestAlertDkgRestarts(t *testing.T) {
 					}, nil
 				},
 			}),
-			Expect: TestResWant{Severity: SEVERITY_OK, Labels: nil, Err: nil},
+			Expect: TestResWant{
+				Severity:    SEVERITY_OK,
+				Description: "OK",
+				Err:         nil,
+			},
 		},
 	}
 

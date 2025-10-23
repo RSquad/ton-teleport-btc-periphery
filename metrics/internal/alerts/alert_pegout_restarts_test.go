@@ -15,23 +15,8 @@ func TestAlertPegoutRestarts(t *testing.T) {
 	pegoutAddress1, _ := address.ParseAddr("EQAPtQRffHrXATHokYMFQgupunwxfTe2Main1FYFUt-8eHn-")
 	pegoutAddress2, _ := address.ParseAddr("Ef8VjV6LGTyiNLzefOm1dpuCMLcoewhqfQubtgbWcPwt2Gwp")
 
-	pegoutLabels1 := Labels{
-		"bitcoin_tx_id": "f7df2a86684e500a3c6c7ca785b8500e4e3c89d1751edf86b6deb68e761a329b",
-		"pegout_addr":   pegoutAddress1.StringRaw(),
-	}
-
-	pegoutLabels2 := Labels{
-		"bitcoin_tx_id": "3d46303861d5336c3ebdea3a20883a1cb77f4f3a66a2fb5e6494d3a0ab878bd1",
-		"pegout_addr":   pegoutAddress2.StringRaw(),
-	}
-
-	bitcoin_tx_id_1, _ := hex.DecodeString(pegoutLabels1["bitcoin_tx_id"])
-	bitcoin_tx_id_2, _ := hex.DecodeString(pegoutLabels2["bitcoin_tx_id"])
-
-	pegoutLabelsEmpty := Labels{
-		"bitcoin_tx_id": "",
-		"pegout_addr":   "",
-	}
+	bitcoin_tx_id_1, _ := hex.DecodeString("f7df2a86684e500a3c6c7ca785b8500e4e3c89d1751edf86b6deb68e761a329b")
+	bitcoin_tx_id_2, _ := hex.DecodeString("3d46303861d5336c3ebdea3a20883a1cb77f4f3a66a2fb5e6494d3a0ab878bd1")
 
 	tests := []TestDesc{
 		{
@@ -49,7 +34,11 @@ func TestAlertPegoutRestarts(t *testing.T) {
 					}, nil
 				},
 			}),
-			Expect: TestResWant{Severity: SEVERITY_OK, Labels: pegoutLabels1, Err: nil},
+			Expect: TestResWant{
+				Severity:    SEVERITY_OK,
+				Description: "OK",
+				Err:         nil,
+			},
 		},
 		{
 			Name: "SEVERITY_OK (no restart, just ExpiredAt != 0)",
@@ -66,7 +55,11 @@ func TestAlertPegoutRestarts(t *testing.T) {
 					}, nil
 				},
 			}),
-			Expect: TestResWant{Severity: SEVERITY_OK, Labels: pegoutLabels1, Err: nil},
+			Expect: TestResWant{
+				Severity:    SEVERITY_OK,
+				Description: "OK",
+				Err:         nil,
+			},
 		},
 		{
 			Name: "SEVERITY_WARNING (1 restart)",
@@ -83,7 +76,11 @@ func TestAlertPegoutRestarts(t *testing.T) {
 					}, nil
 				},
 			}),
-			Expect: TestResWant{Severity: SEVERITY_WARNING, Labels: pegoutLabels1, Err: nil},
+			Expect: TestResWant{
+				Severity:    SEVERITY_WARNING,
+				Description: "The pegout signing was restarted 1 times. Pegout: <a href=\"http://ton/0:0fb5045f7c7ad70131e8918305420ba9ba7c317d37b631a8a7d4560552dfbc78\">0:0fb5045f7c7ad70131e8918305420ba9ba7c317d37b631a8a7d4560552dfbc78</a>. Bitcoin TX: <a href=\"http://btc/f7df2a86684e500a3c6c7ca785b8500e4e3c89d1751edf86b6deb68e761a329b\">f7df2a86684e500a3c6c7ca785b8500e4e3c89d1751edf86b6deb68e761a329b</a>",
+				Err:         nil,
+			},
 		},
 		{
 			Name: "SEVERITY_WARNING (2 restarts)",
@@ -100,7 +97,11 @@ func TestAlertPegoutRestarts(t *testing.T) {
 					}, nil
 				},
 			}),
-			Expect: TestResWant{Severity: SEVERITY_WARNING, Labels: pegoutLabels1, Err: nil},
+			Expect: TestResWant{
+				Severity:    SEVERITY_WARNING,
+				Description: "The pegout signing was restarted 2 times. Pegout: <a href=\"http://ton/0:0fb5045f7c7ad70131e8918305420ba9ba7c317d37b631a8a7d4560552dfbc78\">0:0fb5045f7c7ad70131e8918305420ba9ba7c317d37b631a8a7d4560552dfbc78</a>. Bitcoin TX: <a href=\"http://btc/f7df2a86684e500a3c6c7ca785b8500e4e3c89d1751edf86b6deb68e761a329b\">f7df2a86684e500a3c6c7ca785b8500e4e3c89d1751edf86b6deb68e761a329b</a>",
+				Err:         nil,
+			},
 		},
 		{
 			Name: "SEVERITY_WARNING (3 restarts)",
@@ -117,7 +118,11 @@ func TestAlertPegoutRestarts(t *testing.T) {
 					}, nil
 				},
 			}),
-			Expect: TestResWant{Severity: SEVERITY_WARNING, Labels: pegoutLabels1, Err: nil},
+			Expect: TestResWant{
+				Severity:    SEVERITY_WARNING,
+				Description: "The pegout signing was restarted 3 times. Pegout: <a href=\"http://ton/0:0fb5045f7c7ad70131e8918305420ba9ba7c317d37b631a8a7d4560552dfbc78\">0:0fb5045f7c7ad70131e8918305420ba9ba7c317d37b631a8a7d4560552dfbc78</a>. Bitcoin TX: <a href=\"http://btc/f7df2a86684e500a3c6c7ca785b8500e4e3c89d1751edf86b6deb68e761a329b\">f7df2a86684e500a3c6c7ca785b8500e4e3c89d1751edf86b6deb68e761a329b</a>",
+				Err:         nil,
+			},
 		},
 		{
 			Name: "SEVERITY_WARNING (4 restarts)",
@@ -134,7 +139,11 @@ func TestAlertPegoutRestarts(t *testing.T) {
 					}, nil
 				},
 			}),
-			Expect: TestResWant{Severity: SEVERITY_WARNING, Labels: pegoutLabels1, Err: nil},
+			Expect: TestResWant{
+				Severity:    SEVERITY_WARNING,
+				Description: "The pegout signing was restarted 4 times. Pegout: <a href=\"http://ton/0:0fb5045f7c7ad70131e8918305420ba9ba7c317d37b631a8a7d4560552dfbc78\">0:0fb5045f7c7ad70131e8918305420ba9ba7c317d37b631a8a7d4560552dfbc78</a>. Bitcoin TX: <a href=\"http://btc/f7df2a86684e500a3c6c7ca785b8500e4e3c89d1751edf86b6deb68e761a329b\">f7df2a86684e500a3c6c7ca785b8500e4e3c89d1751edf86b6deb68e761a329b</a>",
+				Err:         nil,
+			},
 		},
 		{
 			Name: "SEVERITY_CRITICAL (5 restarts)",
@@ -151,7 +160,11 @@ func TestAlertPegoutRestarts(t *testing.T) {
 					}, nil
 				},
 			}),
-			Expect: TestResWant{Severity: SEVERITY_CRITICAL, Labels: pegoutLabels1, Err: nil},
+			Expect: TestResWant{
+				Severity:    SEVERITY_CRITICAL,
+				Description: "The pegout signing was restarted 5 times. Pegout: <a href=\"http://ton/0:0fb5045f7c7ad70131e8918305420ba9ba7c317d37b631a8a7d4560552dfbc78\">0:0fb5045f7c7ad70131e8918305420ba9ba7c317d37b631a8a7d4560552dfbc78</a>. Bitcoin TX: <a href=\"http://btc/f7df2a86684e500a3c6c7ca785b8500e4e3c89d1751edf86b6deb68e761a329b\">f7df2a86684e500a3c6c7ca785b8500e4e3c89d1751edf86b6deb68e761a329b</a>",
+				Err:         nil,
+			},
 		},
 		{
 			Name: "SEVERITY_CRITICAL (6 restarts)",
@@ -168,7 +181,11 @@ func TestAlertPegoutRestarts(t *testing.T) {
 					}, nil
 				},
 			}),
-			Expect: TestResWant{Severity: SEVERITY_CRITICAL, Labels: pegoutLabels1, Err: nil},
+			Expect: TestResWant{
+				Severity:    SEVERITY_CRITICAL,
+				Description: "The pegout signing was restarted 6 times. Pegout: <a href=\"http://ton/0:0fb5045f7c7ad70131e8918305420ba9ba7c317d37b631a8a7d4560552dfbc78\">0:0fb5045f7c7ad70131e8918305420ba9ba7c317d37b631a8a7d4560552dfbc78</a>. Bitcoin TX: <a href=\"http://btc/f7df2a86684e500a3c6c7ca785b8500e4e3c89d1751edf86b6deb68e761a329b\">f7df2a86684e500a3c6c7ca785b8500e4e3c89d1751edf86b6deb68e761a329b</a>",
+				Err:         nil,
+			},
 		},
 		{
 			Name: "SEVERITY_OK (0 restarts, new pegout)",
@@ -185,7 +202,11 @@ func TestAlertPegoutRestarts(t *testing.T) {
 					}, nil
 				},
 			}),
-			Expect: TestResWant{Severity: SEVERITY_OK, Labels: pegoutLabels2, Err: nil},
+			Expect: TestResWant{
+				Severity:    SEVERITY_OK,
+				Description: "OK",
+				Err:         nil,
+			},
 		},
 		{
 			Name: "SEVERITY_OK (0 restarts, new pegout)",
@@ -194,7 +215,11 @@ func TestAlertPegoutRestarts(t *testing.T) {
 					return nil, nil
 				},
 			}),
-			Expect: TestResWant{Severity: SEVERITY_OK, Labels: pegoutLabelsEmpty, Err: nil},
+			Expect: TestResWant{
+				Severity:    SEVERITY_OK,
+				Description: "OK",
+				Err:         nil,
+			},
 		},
 	}
 

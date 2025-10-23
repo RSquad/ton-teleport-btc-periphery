@@ -156,7 +156,7 @@ func initialize() (*App, error) {
 	}
 
 	// Global runtime config
-	globalRuntimeConfig := config.NewGlobalRuntimeConfig(tonClient)
+	config.InitGlobalRuntimeConfig(tonClient, cfg)
 
 	contractAddrs := map[string]*address.Address{
 		"coordinator": cfg.CoordinatorContractAddr,
@@ -184,7 +184,7 @@ func initialize() (*App, error) {
 
 	// Alert manager
 	alertManager, err := alerts.NewAlertManager(
-		alerts.NewAlertDataSourceLive(dbConnPool, bitcoinClient, globalRuntimeConfig, contractAddrs),
+		alerts.NewAlertDataSourceLive(dbConnPool, bitcoinClient, contractAddrs),
 		alerts.NewAlertDispatcherPrometheus(),
 		contractAddrs,
 	)
@@ -196,7 +196,6 @@ func initialize() (*App, error) {
 	// Metrics manager
 	metricsManager := metrics.NewMetricsManager(
 		dbConnPool,
-		globalRuntimeConfig,
 		contractAddrs,
 		alertManager,
 		bitcoinClient,

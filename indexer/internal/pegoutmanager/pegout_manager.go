@@ -115,7 +115,10 @@ func (pm *PegoutManager) executeSigningPegoutsCycle() (err error) {
 	logStartProcessingSigningPegouts()
 
 	pegouts, err := pm.repo.Pegout.Query().
-		Where(entpegout.StatusEQ(entpegout.StatusSigning), entpegout.AddrNEQ("NONE"), entpegout.AddrNEQ("NONE1")).
+		Where(
+			entpegout.StatusEQ(entpegout.StatusSigning),
+			entpegout.AddrNotNil(),
+			entpegout.AddrNotIn("NONE", "NONE1", "")).
 		Limit(pegoutQueryLimit).
 		All(pm.ctx)
 	if err != nil {
@@ -200,7 +203,10 @@ func (pm *PegoutManager) executeSignedPegoutsCycle() (err error) {
 	pm.excludedSignedPegoutIDsMux.Unlock()
 
 	query := pm.repo.Pegout.Query().
-		Where(entpegout.StatusEQ(entpegout.StatusSigned), entpegout.AddrNEQ("NONE"), entpegout.AddrNEQ("NONE1")).
+		Where(
+			entpegout.StatusEQ(entpegout.StatusSigned),
+			entpegout.AddrNotNil(),
+			entpegout.AddrNotIn("NONE", "NONE1", "")).
 		Limit(pegoutQueryLimit)
 
 	if len(excludedIDs) > 0 {
@@ -259,7 +265,12 @@ func (pm *PegoutManager) handleSigningPegout(
 	block *ton.BlockIDExt,
 	pegout *ent.Pegout,
 ) error {
-	pegoutState, err := pm.tonClient.API.GetAccount(pm.ctx, block, address.MustParseRawAddr(pegout.Addr))
+	pegoutAddr, err := address.ParseRawAddr(pegout.Addr)
+	if err != nil {
+		return fmt.Errorf(errGetPegoutState, err)
+	}
+
+	pegoutState, err := pm.tonClient.API.GetAccount(pm.ctx, block, pegoutAddr)
 	if err != nil {
 		return fmt.Errorf(errGetPegoutState, err)
 	}
@@ -269,7 +280,7 @@ func (pm *PegoutManager) handleSigningPegout(
 	}
 
 	pegoutContract := pegoutcontract.New(
-		address.MustParseRawAddr(pegout.Addr),
+		pegoutAddr,
 		pm.tonClient,
 		pm.ctx,
 	)

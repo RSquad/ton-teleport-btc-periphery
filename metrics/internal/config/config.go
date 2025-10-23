@@ -24,4 +24,6 @@ type EnvConfig struct {
 	ContractBalancesFetchPeriod      string `env:"CONTRACT_BALANCES_FETCH_PERIOD"`
 	AlertsCheckPeriod                string `env:"ALERTS_CHECK_PERIOD"`
 	PProfHttpEnable                  string `env:"METRICS_PPROF_HTTP_ENABLE"`
+	TonExplorer                      string `env:"TON_EXPLORER"`
+	BtcExplorer                      string `env:"BTC_EXPLORER"`
 }

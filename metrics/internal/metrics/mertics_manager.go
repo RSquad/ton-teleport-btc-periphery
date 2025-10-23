@@ -11,36 +11,32 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/teleportcontract"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/alerts"
-	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/config"
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/data_models"
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/data_sources"
 	"github.com/xssnick/tonutils-go/address"
 )
 
 type MetricsManager struct {
-	db                  *sql.DB
-	dataSourceDB        *data_sources.DataSourceDB
-	globalRuntimeConfig *config.GlobalRuntimeConfig
-	contractAddrs       map[string]*address.Address
-	alertManager        *alerts.AlertManager
-	bitcoinClient       *bitcoin.Client
-	metricsSystemInfo   MetricsSystemInfo
+	db                *sql.DB
+	dataSourceDB      *data_sources.DataSourceDB
+	contractAddrs     map[string]*address.Address
+	alertManager      *alerts.AlertManager
+	bitcoinClient     *bitcoin.Client
+	metricsSystemInfo MetricsSystemInfo
 }
 
 func NewMetricsManager(
 	db *sql.DB,
-	globalRuntimeConfig *config.GlobalRuntimeConfig,
 	contractAddrs map[string]*address.Address,
 	alertManager *alerts.AlertManager,
 	bitcoinClient *bitcoin.Client,
 ) *MetricsManager {
 	return &MetricsManager{
-		db:                  db,
-		dataSourceDB:        data_sources.NewDataSourceDB(db),
-		globalRuntimeConfig: globalRuntimeConfig,
-		contractAddrs:       contractAddrs,
-		alertManager:        alertManager,
-		bitcoinClient:       bitcoinClient,
+		db:            db,
+		dataSourceDB:  data_sources.NewDataSourceDB(db),
+		contractAddrs: contractAddrs,
+		alertManager:  alertManager,
+		bitcoinClient: bitcoinClient,
 		metricsSystemInfo: MetricsSystemInfo{
 			lastUnsignedPegoutInfo: nil,
 		},
@@ -492,7 +488,7 @@ func (manager *MetricsManager) PlotsSummaryJson() (string, error) {
 }
 
 func (manager *MetricsManager) DkgStatusJson(ctx context.Context) (string, error) {
-	dkgStatus, err := manager.metricsSystemInfo.DkgStatus(manager.dataSourceDB, manager.globalRuntimeConfig)
+	dkgStatus, err := manager.metricsSystemInfo.DkgStatus(manager.dataSourceDB)
 	if err != nil {
 		return "", err
 	}
@@ -541,7 +537,6 @@ func (manager *MetricsManager) SystemInfoJson() (string, error) {
 		manager.dataSourceDB,
 		manager.alertManager,
 		manager.contractAddrs,
-		manager.globalRuntimeConfig,
 		manager.bitcoinClient,
 	)
 }
