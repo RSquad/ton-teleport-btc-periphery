@@ -118,7 +118,7 @@ func (pm *PegoutManager) executeSigningPegoutsCycle() (err error) {
 		Where(
 			entpegout.StatusEQ(entpegout.StatusSigning),
 			entpegout.AddrNotNil(),
-			entpegout.AddrNotIn("NONE", "NONE1")).
+			entpegout.AddrNotIn("NONE", "NONE1", "")).
 		Limit(pegoutQueryLimit).
 		All(pm.ctx)
 	if err != nil {
@@ -206,7 +206,7 @@ func (pm *PegoutManager) executeSignedPegoutsCycle() (err error) {
 		Where(
 			entpegout.StatusEQ(entpegout.StatusSigned),
 			entpegout.AddrNotNil(),
-			entpegout.AddrNotIn("NONE", "NONE1")).
+			entpegout.AddrNotIn("NONE", "NONE1", "")).
 		Limit(pegoutQueryLimit)
 
 	if len(excludedIDs) > 0 {
