@@ -93,9 +93,8 @@ func (alert *AlertPegoutInMempool) Check(dataSource AlertDataSource) (Severity, 
 	// Calulate severity
 	severity := SEVERITY_OK
 
-	duration := 0 * time.Second
 	if !isInMempoolOrBlock {
-		duration = time.Duration(dataSource.NowUnixTs()-alert.beginTimestamp) * time.Second
+		duration := time.Duration(dataSource.NowUnixTs()-alert.beginTimestamp) * time.Second
 		severity = alert.GetSeverity(duration)
 	} else {
 		alert.pegoutToCheck = nil
@@ -104,9 +103,14 @@ func (alert *AlertPegoutInMempool) Check(dataSource AlertDataSource) (Severity, 
 	description := "OK"
 
 	if severity > SEVERITY_OK {
+		timeout := 10
+		if severity == SEVERITY_CRITICAL {
+			timeout = 40
+		}
+
 		description = fmt.Sprintf(
-			"Pegout transaction not found in mempool for %d minutes. Pegout: %s. Bitcoin TX: %s",
-			duration/time.Minute,
+			"Pegout transaction has not been found in the mempool for more than %d minutes. Pegout: %s. Bitcoin TX: %s",
+			timeout,
 			mutils.TonExplorerLink((*address.Address)(alert.pegoutToCheck.Addr).StringRaw()),
 			mutils.BtcExplorerLink(hex.EncodeToString(alert.pegoutToCheck.BitcoinTxId)),
 		)

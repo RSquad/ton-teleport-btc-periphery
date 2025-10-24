@@ -1,7 +1,6 @@
 package metrics
 
 import (
-	"context"
 	"database/sql"
 	"encoding/json"
 	"math/big"
@@ -63,7 +62,6 @@ func (manager *MetricsManager) MintsJson() (string, error) {
 		) AS result;`,
 		limit,
 	)
-
 	if err != nil {
 		return "", err
 	}
@@ -487,7 +485,7 @@ func (manager *MetricsManager) PlotsSummaryJson() (string, error) {
 	return data, nil
 }
 
-func (manager *MetricsManager) DkgStatusJson(ctx context.Context) (string, error) {
+func (manager *MetricsManager) DkgStatusJson() (string, error) {
 	dkgStatus, err := manager.metricsSystemInfo.DkgStatus(manager.dataSourceDB)
 	if err != nil {
 		return "", err

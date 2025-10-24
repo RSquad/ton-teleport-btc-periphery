@@ -446,7 +446,7 @@ func (systemInfo *MetricsSystemInfo) DkgStatus(
 		}
 
 		if !coordinatorContractData.StandaloneMode {
-			maxValidators, err := config.GetGlobalRuntimeConfig().TonMaxMainValidators(context.Background()) // TODO: replace with user defined ctx
+			maxValidators, err := config.GetGlobalRuntimeConfig().TonMaxMainValidators(context.Background())
 			if err != nil {
 				return nil, err
 			}
@@ -479,7 +479,6 @@ func (systemInfo *MetricsSystemInfo) DkgStatus(
 		}
 
 		info.ValidatorsCountEvicted = len(info.ValidatorsIdxEvicted)
-
 		return &info, nil
 	}
 
