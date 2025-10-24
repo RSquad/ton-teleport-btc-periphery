@@ -7,7 +7,6 @@ import (
 
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/teleportcontract"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/alerts"
@@ -487,19 +486,15 @@ func (manager *MetricsManager) PlotsSummaryJson() (string, error) {
 }
 
 func (manager *MetricsManager) DkgStatusJson() (string, error) {
-	logger.Log.Debug().Str("component", "DKG_DEBUG").Msg("manager.metricsSystemInfo.DkgStatus begin")
 	dkgStatus, err := manager.metricsSystemInfo.DkgStatus(manager.dataSourceDB)
-	logger.Log.Debug().Str("component", "DKG_DEBUG").Msg("manager.metricsSystemInfo.DkgStatus end")
 	if err != nil {
 		return "", err
 	}
 
-	logger.Log.Debug().Str("component", "DKG_DEBUG").Msg("json.Marshal begin")
 	jsonData, err := json.Marshal(dkgStatus)
 	if err != nil {
 		return "", err
 	}
-	logger.Log.Debug().Str("component", "DKG_DEBUG").Msg("json.Marshal end")
 
 	return string(jsonData), nil
 }

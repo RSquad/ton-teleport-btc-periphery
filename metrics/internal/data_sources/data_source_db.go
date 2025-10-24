@@ -149,10 +149,11 @@ func (dataSource *DataSourceDB) PrevDkg() (*coordinator.DKG, error) {
 }
 
 func (dataSource *DataSourceDB) DkgBeforeRestartJson(t time.Time) ([]byte, error) {
+	ts := t.Unix()
 	return dataSource.selectAsJsonObj(
-		"SELECT payload FROM metrics_data WHERE type_id = $1 AND EXTRACT(EPOCH FROM (payload->>'Until')::timestamptz) = $2 ORDER BY id DESC LIMIT 1",
+		"SELECT payload FROM metrics_data WHERE type_id = $1 AND dkg_until_ts = $2 ORDER BY id DESC LIMIT 1",
 		fetchers.PayloadTypePrevDKG,
-		t.Unix(),
+		time.Unix(ts, 0).UTC(),
 	)
 }
 
