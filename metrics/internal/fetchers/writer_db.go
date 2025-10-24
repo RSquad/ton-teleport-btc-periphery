@@ -116,6 +116,14 @@ func (writer *WriterDB) PrepareDB() error {
 		return err
 	}
 
+	//
+	_, err = writer.db.Exec(`CREATE INDEX CONCURRENTLY IF NOT EXISTS metrics_data_t0_dkg_until_id_desc_idx
+  ON metrics_data (dkg_until_ts, id DESC)
+  WHERE type_id = 0 AND dkg_until_ts IS NOT NULL`)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 

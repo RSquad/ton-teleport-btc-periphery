@@ -59,7 +59,7 @@ func (alert *AlertDkgCulpritFound) Check(dataSource AlertDataSource) (Severity, 
 	}
 
 	// Get DKG info before restart
-	dkgBeforeRestart, err := dataSource.DkgBeforeRestartDB(alert.DkgUntil)
+	dkgBeforeRestart, err := dataSource.DkgUntilDB(alert.DkgUntil)
 	if err != nil {
 		return SEVERITY_CRITICAL, "", alert.MakeValues(), err
 	}

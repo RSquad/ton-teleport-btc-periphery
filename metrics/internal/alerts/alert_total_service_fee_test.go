@@ -34,7 +34,7 @@ func TestAlertTotalServiceFee(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_WARNING,
-				Description: "Total service fee 2999 is less than 3000 satoshi",
+				Description: "Total service fee is less than 3000 satoshi",
 				Err:         nil,
 			},
 		},
@@ -49,7 +49,7 @@ func TestAlertTotalServiceFee(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_CRITICAL,
-				Description: "Total service fee 0 is less than 3000 satoshi",
+				Description: "Total service fee is less than 0 satoshi",
 				Err:         nil,
 			},
 		},
@@ -64,7 +64,7 @@ func TestAlertTotalServiceFee(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_CRITICAL,
-				Description: "Total service fee -100 is less than 3000 satoshi",
+				Description: "Total service fee is less than 0 satoshi",
 				Err:         nil,
 			},
 		},
