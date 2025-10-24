@@ -71,7 +71,7 @@ func NewClient(host string, user string, pass string) (*Client, error) {
 		User:         user,
 		Pass:         pass,
 		HTTPPostMode: true,
-		DisableTLS:   true, // This was the original default
+		DisableTLS:   false,
 	}
 
 	legacyRPCClient, err := rpcclient.New(connCfg, nil)
@@ -81,10 +81,10 @@ func NewClient(host string, user string, pass string) (*Client, error) {
 
 	// HTTP client setup for direct sendRequest calls
 	url := host
-	if strings.HasPrefix(url, "https://") {
-		url = "http://" + strings.TrimPrefix(url, "https://")
-	} else if !strings.HasPrefix(url, "http://") {
-		url = "http://" + url
+	if strings.HasPrefix(url, "http://") {
+		url = "https://" + strings.TrimPrefix(url, "http://")
+	} else if !strings.HasPrefix(url, "https://") {
+		url = "https://" + url
 	}
 
 	// Configure custom transport for better connection pooling
