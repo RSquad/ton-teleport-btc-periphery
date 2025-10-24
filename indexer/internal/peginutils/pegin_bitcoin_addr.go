@@ -2,9 +2,6 @@ package peginutils
 
 import (
 	"github.com/btcsuite/btcd/btcec/v2"
-	"github.com/btcsuite/btcd/btcec/v2/schnorr"
-	"github.com/btcsuite/btcd/btcutil"
-	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
@@ -35,12 +32,12 @@ func buildTaprootScriptTree(csvScript, opReturnScript []byte) *txscript.IndexedT
 	)
 }
 
-func CalcPeginBitcoinAddr(
+func CalcPeginBitcoinScript(
 	internalKey *btcec.PublicKey,
 	recoveryKey *btcec.PublicKey,
 	receiverAddr *address.Address,
 	csvLock uint32,
-) (*btcutil.AddressTaproot, error) {
+) ([]byte, error) {
 	csvScript, err := buildCSVScript(recoveryKey, csvLock)
 	if err != nil {
 		return nil, err
@@ -57,8 +54,5 @@ func CalcPeginBitcoinAddr(
 
 	outputKey := txscript.ComputeTaprootOutputKey(internalKey, taprootScriptTreeHash[:])
 
-	return btcutil.NewAddressTaproot(
-		schnorr.SerializePubKey(outputKey),
-		&chaincfg.MainNetParams,
-	)
+	return txscript.PayToTaprootScript(outputKey)
 }
