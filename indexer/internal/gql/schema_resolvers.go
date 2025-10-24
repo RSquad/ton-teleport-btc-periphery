@@ -190,14 +190,13 @@ searchLoop:
 	for _, ik := range internalKeys {
 		for _, rk := range recoveryKeys {
 			for _, cvsLock := range possibleCvsLocks {
-				peginBitcoinAddr, err := peginutils.CalcPeginBitcoinAddr(ik, rk, receiverAddr, cvsLock)
+				peginBitcoinScript, err := peginutils.CalcPeginBitcoinScript(ik, rk, receiverAddr, cvsLock)
 				if err != nil {
 					// Log? Should this error be fatal or just skip combination?
 					fmt.Printf("Warning: Failed to calculate pegin address for combination: %v\n", err)
 					continue // Skip this combination
 				}
-				addrStr := peginBitcoinAddr.String()
-				if addrFound, voutFound := bitcoin.TxContainsOutWithAddr(bitcoinTx, addrStr); addrFound {
+				if addrFound, voutFound := bitcoin.TxContainsOutWithScript(bitcoinTx, peginBitcoinScript); addrFound {
 					foundInternalKey = ik
 					foundRecoveryKey = rk
 					foundVout = voutFound

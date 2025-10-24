@@ -64,27 +64,32 @@ type TxChildrenCount struct {
 	ChildrenCount int
 }
 
-func NewClient(host string, user string, pass string) (*Client, error) {
+func NewClient(url string, user string, pass string) (*Client, error) {
+	// HTTP client setup for direct sendRequest calls
+	disableTLS := false
+	host := ""
+	if strings.HasPrefix(url, "http://") {
+		disableTLS = true
+		host = strings.TrimPrefix(url, "http://")
+	} else if strings.HasPrefix(url, "https://") {
+		disableTLS = false
+		host = strings.TrimPrefix(url, "https://")
+	} else {
+		return nil, fmt.Errorf("wrong url '%s'", url)
+	}
+
 	// Legacy RPC Client setup
 	connCfg := &rpcclient.ConnConfig{
 		Host:         host,
 		User:         user,
 		Pass:         pass,
 		HTTPPostMode: true,
-		DisableTLS:   false,
+		DisableTLS:   disableTLS,
 	}
 
 	legacyRPCClient, err := rpcclient.New(connCfg, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create legacy rpc client: %w", err)
-	}
-
-	// HTTP client setup for direct sendRequest calls
-	url := host
-	if strings.HasPrefix(url, "http://") {
-		url = "https://" + strings.TrimPrefix(url, "http://")
-	} else if !strings.HasPrefix(url, "https://") {
-		url = "https://" + url
 	}
 
 	// Configure custom transport for better connection pooling

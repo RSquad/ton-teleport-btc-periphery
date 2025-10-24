@@ -5,12 +5,15 @@ import (
 	"testing"
 
 	"github.com/btcsuite/btcd/btcec/v2/schnorr"
+	"github.com/btcsuite/btcd/btcutil"
+	"github.com/btcsuite/btcd/chaincfg"
+	"github.com/btcsuite/btcd/txscript"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
 	"github.com/stretchr/testify/assert"
 	"github.com/xssnick/tonutils-go/address"
 )
 
-func TestCalcPeginBitcoinAddr(t *testing.T) {
+func TestCalcPeginBitcoinScript(t *testing.T) {
 	input := struct {
 		internalKey  string
 		recoveryKey  string
@@ -22,16 +25,29 @@ func TestCalcPeginBitcoinAddr(t *testing.T) {
 		receiverAddr: "0:2eba6c129806cbb5d885c7a9dbf55bc5be72da5cd682ccb47a3b8d17dc57501d",
 		csvLock:      29,
 	}
-
 	expectedAddr := "tb1prg8469u2nu4uqurudkagmddea7rfrfarsu2sdegd0n4j3kd9l4xss65etp"
 
 	internalKey, _ := schnorr.ParsePubKey(utils.MustHexToBytes(input.internalKey, 32))
 	recoveryKey, _ := schnorr.ParsePubKey(utils.MustHexToBytes(input.recoveryKey, 32))
 	receiverAddr := address.MustParseRawAddr(input.receiverAddr)
 
-	addr, err := CalcPeginBitcoinAddr(internalKey, recoveryKey, receiverAddr, input.csvLock)
-	assert.NoError(t, err, "CalcPeginBitcoinAddr returned an error")
-	assert.Equal(t, addr.String(), expectedAddr)
+	script, err := CalcPeginBitcoinScript(internalKey, recoveryKey, receiverAddr, input.csvLock)
+	assert.NoError(t, err, "CalcPeginBitcoinScript returned an error")
+
+	decoded, err := btcutil.DecodeAddress(expectedAddr, &chaincfg.SigNetParams)
+	assert.NoError(t, err, "btcutil.DecodeAddress returned an error")
+	payToTaprootScript, err := txscript.NewScriptBuilder().
+		AddOp(txscript.OP_1).
+		AddData(decoded.ScriptAddress()).
+		Script()
+	assert.NoError(t, err, "txscript.NewScriptBuilder returned an error")
+
+	assert.Equal(t, script, payToTaprootScript)
+
+	addr, err := btcutil.NewAddressTaproot(script[2:], &chaincfg.SigNetParams)
+	assert.NoError(t, err, "btcutil.NewAddressTaproot returned an error")
+
+	assert.Equal(t, expectedAddr, addr.String())
 }
 
 func TestBuildOpReturnScript(t *testing.T) {
@@ -85,7 +101,7 @@ func TestBuildTaprootScriptTree(t *testing.T) {
 	assert.Equal(t, expectedTreeHash, hex.EncodeToString(treeHash[:]))
 }
 
-func TestCalcPeginBitcoinAddrWithLeadingZeros(t *testing.T) {
+func TestCalcPeginBitcoinScriptWithLeadingZeros(t *testing.T) {
 	input := struct {
 		internalKey  string
 		receiverAddr string
@@ -104,7 +120,10 @@ func TestCalcPeginBitcoinAddrWithLeadingZeros(t *testing.T) {
 	recoveryKey, _ := schnorr.ParsePubKey(utils.MustHexToBytes(input.recoveryKey, 32))
 	receiverAddr := address.MustParseRawAddr(input.receiverAddr)
 
-	addr, err := CalcPeginBitcoinAddr(internalKey, recoveryKey, receiverAddr, input.csvLock)
-	assert.NoError(t, err, "CalcPeginBitcoinAddr returned an error")
-	assert.Equal(t, addr.String(), expectedAddr)
+	script, err := CalcPeginBitcoinScript(internalKey, recoveryKey, receiverAddr, input.csvLock)
+	assert.NoError(t, err, "CalcPeginBitcoinScript returned an error")
+	addr, err := btcutil.NewAddressTaproot(script[2:], &chaincfg.SigNetParams)
+	assert.NoError(t, err, "btcutil.NewAddressTaproot returned an error")
+
+	assert.Equal(t, expectedAddr, addr.String())
 }
