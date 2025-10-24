@@ -70,9 +70,8 @@ func BtcExplorerLink(address string) string {
 	}
 
 	return fmt.Sprintf(
-		"<a href=\"%s/%s\">%s</a>",
+		"%s/%s",
 		explorerUrl,
-		address,
 		address,
 	)
 }
@@ -86,9 +85,8 @@ func TonExplorerLink(address string) string {
 	}
 
 	return fmt.Sprintf(
-		"<a href=\"%s/%s\">%s</a>",
+		"%s/%s",
 		explorerUrl,
-		address,
 		address,
 	)
 }

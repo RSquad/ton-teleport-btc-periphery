@@ -88,7 +88,8 @@ func TestAlertPegoutInMempool(t *testing.T) {
 			Expect: TestResWant{
 				Severity:    SEVERITY_OK,
 				Description: "OK",
-				Err:         nil},
+				Err:         nil,
+			},
 		},
 		{
 			Name: "SEVERITY_WARNING (pegout1 not in mempool or block, duration: 10 min)",
@@ -108,7 +109,7 @@ func TestAlertPegoutInMempool(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_WARNING,
-				Description: "Pegout transaction not found in mempool for 10 minutes. Pegout: <a href=\"http://ton/0:0fb5045f7c7ad70131e8918305420ba9ba7c317d37b631a8a7d4560552dfbc78\">0:0fb5045f7c7ad70131e8918305420ba9ba7c317d37b631a8a7d4560552dfbc78</a>. Bitcoin TX: <a href=\"http://btc/f7df2a86684e500a3c6c7ca785b8500e4e3c89d1751edf86b6deb68e761a329b\">f7df2a86684e500a3c6c7ca785b8500e4e3c89d1751edf86b6deb68e761a329b</a>",
+				Description: "Pegout transaction has not been found in the mempool for more than 10 minutes. Pegout: http://ton/0:0fb5045f7c7ad70131e8918305420ba9ba7c317d37b631a8a7d4560552dfbc78. Bitcoin TX: http://btc/f7df2a86684e500a3c6c7ca785b8500e4e3c89d1751edf86b6deb68e761a329b",
 				Err:         nil,
 			},
 		},
@@ -174,7 +175,7 @@ func TestAlertPegoutInMempool(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_WARNING,
-				Description: "Pegout transaction not found in mempool for 10 minutes. Pegout: <a href=\"http://ton/-1:158d5e8b193ca234bcde7ce9b5769b8230b7287b086a7d0b9bb606d670fc2dd8\">-1:158d5e8b193ca234bcde7ce9b5769b8230b7287b086a7d0b9bb606d670fc2dd8</a>. Bitcoin TX: <a href=\"http://btc/3d46303861d5336c3ebdea3a20883a1cb77f4f3a66a2fb5e6494d3a0ab878bd1\">3d46303861d5336c3ebdea3a20883a1cb77f4f3a66a2fb5e6494d3a0ab878bd1</a>",
+				Description: "Pegout transaction has not been found in the mempool for more than 10 minutes. Pegout: http://ton/-1:158d5e8b193ca234bcde7ce9b5769b8230b7287b086a7d0b9bb606d670fc2dd8. Bitcoin TX: http://btc/3d46303861d5336c3ebdea3a20883a1cb77f4f3a66a2fb5e6494d3a0ab878bd1",
 				Err:         nil,
 			},
 		},
@@ -196,7 +197,7 @@ func TestAlertPegoutInMempool(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_CRITICAL,
-				Description: "Pegout transaction not found in mempool for 40 minutes. Pegout: <a href=\"http://ton/-1:158d5e8b193ca234bcde7ce9b5769b8230b7287b086a7d0b9bb606d670fc2dd8\">-1:158d5e8b193ca234bcde7ce9b5769b8230b7287b086a7d0b9bb606d670fc2dd8</a>. Bitcoin TX: <a href=\"http://btc/3d46303861d5336c3ebdea3a20883a1cb77f4f3a66a2fb5e6494d3a0ab878bd1\">3d46303861d5336c3ebdea3a20883a1cb77f4f3a66a2fb5e6494d3a0ab878bd1</a>",
+				Description: "Pegout transaction has not been found in the mempool for more than 40 minutes. Pegout: http://ton/-1:158d5e8b193ca234bcde7ce9b5769b8230b7287b086a7d0b9bb606d670fc2dd8. Bitcoin TX: http://btc/3d46303861d5336c3ebdea3a20883a1cb77f4f3a66a2fb5e6494d3a0ab878bd1",
 				Err:         nil,
 			},
 		},

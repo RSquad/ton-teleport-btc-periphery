@@ -32,7 +32,7 @@ func TestAlertContractBalance(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_WARNING,
-				Description: "The test_balance contract (<a href=\"http://ton/0:0fb5045f7c7ad70131e8918305420ba9ba7c317d37b631a8a7d4560552dfbc78\">0:0fb5045f7c7ad70131e8918305420ba9ba7c317d37b631a8a7d4560552dfbc78</a>) has a low balance: 1.000000000 TON.",
+				Description: "The test_balance contract (http://ton/0:0fb5045f7c7ad70131e8918305420ba9ba7c317d37b631a8a7d4560552dfbc78) has a low balance: 1.000000000 TON.",
 				Err:         nil,
 			},
 		},
@@ -45,7 +45,7 @@ func TestAlertContractBalance(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_CRITICAL,
-				Description: "The test_balance contract (<a href=\"http://ton/0:0fb5045f7c7ad70131e8918305420ba9ba7c317d37b631a8a7d4560552dfbc78\">0:0fb5045f7c7ad70131e8918305420ba9ba7c317d37b631a8a7d4560552dfbc78</a>) has a low balance: 0.333333333 TON.",
+				Description: "The test_balance contract (http://ton/0:0fb5045f7c7ad70131e8918305420ba9ba7c317d37b631a8a7d4560552dfbc78) has a low balance: 0.333333333 TON.",
 				Err:         nil,
 			},
 		},
