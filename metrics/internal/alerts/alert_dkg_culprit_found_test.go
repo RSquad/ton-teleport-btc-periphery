@@ -78,7 +78,7 @@ func TestAlertDkgCulpritFound(t *testing.T) {
 						},
 					}, nil
 				},
-				DkgBeforeRestartDbFn: func(t time.Time) (*coordinator.DKG, error) {
+				DkgUntilDbFn: func(t time.Time) (*coordinator.DKG, error) {
 					counters := make(coordinator.DKGClaimcounters)
 					counters[1] = 7
 
@@ -145,7 +145,7 @@ func TestAlertDkgCulpritFound(t *testing.T) {
 						},
 					}, nil
 				},
-				DkgBeforeRestartDbFn: func(t time.Time) (*coordinator.DKG, error) {
+				DkgUntilDbFn: func(t time.Time) (*coordinator.DKG, error) {
 					counters := make(coordinator.DKGClaimcounters)
 					counters[1] = 7
 					counters[3] = 4

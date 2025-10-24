@@ -24,9 +24,14 @@ func (alert *AlertTotalServiceFee) Check(dataSource AlertDataSource) (Severity, 
 	description := "OK"
 
 	if severity > SEVERITY_OK {
+		limit := 3000
+		if severity == SEVERITY_CRITICAL {
+			limit = 0
+		}
+
 		description = fmt.Sprintf(
-			"Total service fee %d is less than 3000 satoshi",
-			teleportContractStorage.TotalServiceFee,
+			"Total service fee is less than %d satoshi",
+			limit,
 		)
 	}
 

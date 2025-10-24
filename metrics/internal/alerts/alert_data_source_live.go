@@ -81,12 +81,12 @@ func (dataSource *AlertDataSourceLive) DkgDB() (*coordinator.DKG, error) {
 	return dataSource.dataSourceDB.Dkg()
 }
 
-func (dataSource *AlertDataSourceLive) PrevDkgDB() (*coordinator.DKG, error) {
-	return dataSource.dataSourceDB.PrevDkg()
+func (dataSource *AlertDataSourceLive) DkgUntilDB(until time.Time) (*coordinator.DKG, error) {
+	return dataSource.dataSourceDB.DkgUntil(until)
 }
 
-func (dataSource *AlertDataSourceLive) DkgBeforeRestartDB(t time.Time) (*coordinator.DKG, error) {
-	return dataSource.dataSourceDB.DkgBeforeRestart(t)
+func (dataSource *AlertDataSourceLive) PrevDkgDB() (*coordinator.DKG, error) {
+	return dataSource.dataSourceDB.PrevDkg()
 }
 
 func (dataSource *AlertDataSourceLive) PegoutDB(address *address.Address) (*data_models.Pegout, error) {
