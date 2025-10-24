@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
+	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/config"
 )
 
 func BytesToBTCHash(b []byte) *chainhash.Hash {
@@ -58,4 +59,34 @@ func JoinToStr[K ~string](keys []K) string {
 		strs[i] = string(k)
 	}
 	return strings.Join(strs, ",")
+}
+
+func BtcExplorerLink(address string) string {
+	cfg := config.GetGlobalRuntimeConfig()
+	explorerUrl := "http://btc"
+
+	if cfg != nil {
+		explorerUrl = cfg.BtcExplorer()
+	}
+
+	return fmt.Sprintf(
+		"%s/%s",
+		explorerUrl,
+		address,
+	)
+}
+
+func TonExplorerLink(address string) string {
+	cfg := config.GetGlobalRuntimeConfig()
+	explorerUrl := "http://ton"
+
+	if cfg != nil {
+		explorerUrl = cfg.TonExplorer()
+	}
+
+	return fmt.Sprintf(
+		"%s/%s",
+		explorerUrl,
+		address,
+	)
 }

@@ -64,7 +64,7 @@ func (apiHandler JsonApiHandler) ServeHTTP(w http.ResponseWriter, r *http.Reques
 		case "plots_summary":
 			payload, err = apiHandler.metricsManager.PlotsSummaryJson()
 		case "dkg_status":
-			payload, err = apiHandler.metricsManager.DkgStatusJson(r.Context())
+			payload, err = apiHandler.metricsManager.DkgStatusJson()
 		case "alerts":
 			payload, err = apiHandler.alertsManager.GetInfoJson()
 		case "system_info":

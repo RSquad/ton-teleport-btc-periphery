@@ -8,7 +8,7 @@ import (
 type AlertState struct {
 	Name         string
 	Severity     Severity
-	Labels       Labels
+	Description  Description
 	LastErr      error
 	Enforced     bool
 	LastUpdateTs time.Time
@@ -18,7 +18,7 @@ type AlertState struct {
 func NewAlertState(
 	name string,
 	severity Severity,
-	labels Labels,
+	description Description,
 	lastErr error,
 	enforced bool,
 	values Values,
@@ -26,7 +26,7 @@ func NewAlertState(
 	return &AlertState{
 		Name:         name,
 		Severity:     severity,
-		Labels:       labels,
+		Description:  description,
 		LastErr:      lastErr,
 		Enforced:     enforced,
 		LastUpdateTs: time.Now(),
@@ -35,12 +35,6 @@ func NewAlertState(
 }
 
 func (state AlertState) DeepCopy() AlertState {
-	var labelsCopy Labels
-	if state.Labels != nil {
-		labelsCopy = make(Labels, len(state.Labels))
-		maps.Copy(labelsCopy, state.Labels)
-	}
-
 	var valuesCopy Values
 	if state.Values != nil {
 		valuesCopy = make(Values, len(state.Values))
@@ -50,7 +44,7 @@ func (state AlertState) DeepCopy() AlertState {
 	return AlertState{
 		Name:         state.Name,
 		Severity:     state.Severity,
-		Labels:       labelsCopy,
+		Description:  state.Description,
 		LastErr:      state.LastErr,
 		Enforced:     state.Enforced,
 		LastUpdateTs: state.LastUpdateTs,

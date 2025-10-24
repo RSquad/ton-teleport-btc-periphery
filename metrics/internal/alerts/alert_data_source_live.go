@@ -19,21 +19,18 @@ import (
 )
 
 type AlertDataSourceLive struct {
-	dataSourceDB        *data_sources.DataSourceDB
-	bitcoinClient       *bitcoin.Client
-	globalRuntimeConfig *config.GlobalRuntimeConfig
+	dataSourceDB  *data_sources.DataSourceDB
+	bitcoinClient *bitcoin.Client
 }
 
 func NewAlertDataSourceLive(
 	db *sql.DB,
 	bitcoinClient *bitcoin.Client,
-	globalRuntimeConfig *config.GlobalRuntimeConfig,
 	contractAddrs map[string]*address.Address,
 ) AlertDataSource {
 	dataSource := AlertDataSourceLive{
-		dataSourceDB:        data_sources.NewDataSourceDB(db),
-		bitcoinClient:       bitcoinClient,
-		globalRuntimeConfig: globalRuntimeConfig,
+		dataSourceDB:  data_sources.NewDataSourceDB(db),
+		bitcoinClient: bitcoinClient,
 	}
 
 	return &dataSource
@@ -84,12 +81,12 @@ func (dataSource *AlertDataSourceLive) DkgDB() (*coordinator.DKG, error) {
 	return dataSource.dataSourceDB.Dkg()
 }
 
-func (dataSource *AlertDataSourceLive) PrevDkgDB() (*coordinator.DKG, error) {
-	return dataSource.dataSourceDB.PrevDkg()
+func (dataSource *AlertDataSourceLive) DkgUntilDB(until time.Time) (*coordinator.DKG, error) {
+	return dataSource.dataSourceDB.DkgUntil(until)
 }
 
-func (dataSource *AlertDataSourceLive) DkgBeforeRestartDB(t time.Time) (*coordinator.DKG, error) {
-	return dataSource.dataSourceDB.DkgBeforeRestart(t)
+func (dataSource *AlertDataSourceLive) PrevDkgDB() (*coordinator.DKG, error) {
+	return dataSource.dataSourceDB.PrevDkg()
 }
 
 func (dataSource *AlertDataSourceLive) PegoutDB(address *address.Address) (*data_models.Pegout, error) {
@@ -121,7 +118,7 @@ func (dataSource *AlertDataSourceLive) BtcGetMempoolEntry(txHash string) (*btcjs
 }
 
 func (dataSource *AlertDataSourceLive) TonMaxMainValidators(ctx context.Context) (int, error) {
-	return dataSource.globalRuntimeConfig.TonMaxMainValidators(ctx)
+	return config.GetGlobalRuntimeConfig().TonMaxMainValidators(ctx)
 }
 
 func (dataSource *AlertDataSourceLive) ActualContractBalance(name string) (int64, error) {

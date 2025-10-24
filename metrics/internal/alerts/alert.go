@@ -2,9 +2,11 @@ package alerts
 
 import "fmt"
 
-type Severity int
-type Labels map[string]string
-type Values map[string]any
+type (
+	Severity    int
+	Description string
+	Values      map[string]any
+)
 
 const (
 	SEVERITY_UNKNOWN  Severity = -1
@@ -15,8 +17,7 @@ const (
 )
 
 type Alert interface {
-	Check(dataSource AlertDataSource) (Severity, Labels, Values, error)
-	NewLabels() Labels
+	Check(dataSource AlertDataSource) (Severity, Description, Values, error)
 }
 
 func StrToSeverity(s string) (Severity, error) {
@@ -38,4 +39,19 @@ func StrToSeverity(s string) (Severity, error) {
 	}
 
 	return severity, nil
+}
+
+var severityToString = map[Severity]string{
+	SEVERITY_UNKNOWN:  "UNKNOWN",
+	SEVERITY_OK:       "OK",
+	SEVERITY_INFO:     "INFO",
+	SEVERITY_WARNING:  "WARNING",
+	SEVERITY_CRITICAL: "CRITICAL",
+}
+
+func (s Severity) String() string {
+	if v, ok := severityToString[s]; ok {
+		return v
+	}
+	return severityToString[SEVERITY_UNKNOWN]
 }

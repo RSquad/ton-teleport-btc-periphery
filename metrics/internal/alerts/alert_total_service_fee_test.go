@@ -17,18 +17,26 @@ func TestAlertTotalServiceFee(t *testing.T) {
 					}, nil
 				},
 			}),
-			Expect: TestResWant{Severity: SEVERITY_OK, Labels: nil, Err: nil},
+			Expect: TestResWant{
+				Severity:    SEVERITY_OK,
+				Description: "OK",
+				Err:         nil,
+			},
 		},
 		{
-			Name: "SEVERITY_WARNING (TotalServiceFee = 3000)",
+			Name: "SEVERITY_WARNING (TotalServiceFee = 2999)",
 			DataSource: NewAlertDataSourceTesting(AlertDataSourceTestingConfig{
 				TeleportContractStorageDbFn: func() (*teleportcontract.Storage, error) {
 					return &teleportcontract.Storage{
-						TotalServiceFee: 3000,
+						TotalServiceFee: 2999,
 					}, nil
 				},
 			}),
-			Expect: TestResWant{Severity: SEVERITY_WARNING, Labels: nil, Err: nil},
+			Expect: TestResWant{
+				Severity:    SEVERITY_WARNING,
+				Description: "Total service fee is less than 3000 satoshi",
+				Err:         nil,
+			},
 		},
 		{
 			Name: "SEVERITY_CRITICAL (TotalServiceFee = 0)",
@@ -39,7 +47,11 @@ func TestAlertTotalServiceFee(t *testing.T) {
 					}, nil
 				},
 			}),
-			Expect: TestResWant{Severity: SEVERITY_CRITICAL, Labels: nil, Err: nil},
+			Expect: TestResWant{
+				Severity:    SEVERITY_CRITICAL,
+				Description: "Total service fee is less than 0 satoshi",
+				Err:         nil,
+			},
 		},
 		{
 			Name: "SEVERITY_CRITICAL (TotalServiceFee = -100)",
@@ -50,7 +62,11 @@ func TestAlertTotalServiceFee(t *testing.T) {
 					}, nil
 				},
 			}),
-			Expect: TestResWant{Severity: SEVERITY_CRITICAL, Labels: nil, Err: nil},
+			Expect: TestResWant{
+				Severity:    SEVERITY_CRITICAL,
+				Description: "Total service fee is less than 0 satoshi",
+				Err:         nil,
+			},
 		},
 	}
 

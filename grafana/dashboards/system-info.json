@@ -18,7 +18,7 @@
     "editable": true,
     "fiscalYearStartMonth": 0,
     "graphTooltip": 0,
-    "id": 10,
+    "id": 13,
     "links": [],
     "panels": [
         {
@@ -138,15 +138,20 @@
                                 "value": [
                                     {
                                         "options": {
-                                            "false": {
+                                            "0": {
                                                 "color": "dark-red",
                                                 "index": 1,
                                                 "text": "No"
                                             },
-                                            "true": {
+                                            "1": {
                                                 "color": "dark-green",
                                                 "index": 0,
                                                 "text": "Yes"
+                                            },
+                                            "-1": {
+                                                "color": "transparent",
+                                                "index": 2,
+                                                "text": "No active pegout"
                                             }
                                         },
                                         "type": "value"
@@ -164,19 +169,19 @@
                             {
                                 "id": "thresholds",
                                 "value": {
-                                    "mode": "percentage",
+                                    "mode": "absolute",
                                     "steps": [
                                         {
                                             "color": "dark-red",
                                             "value": null
                                         },
                                         {
-                                            "color": "dark-yellow",
-                                            "value": 60
+                                            "color": "dark-orange",
+                                            "value": 50
                                         },
                                         {
                                             "color": "dark-yellow",
-                                            "value": 70
+                                            "value": 75
                                         },
                                         {
                                             "color": "dark-green",
@@ -184,6 +189,21 @@
                                         }
                                     ]
                                 }
+                            },
+                            {
+                                "id": "mappings",
+                                "value": [
+                                    {
+                                        "options": {
+                                            "-1": {
+                                                "color": "transparent",
+                                                "index": 0,
+                                                "text": "No active pegout"
+                                            }
+                                        },
+                                        "type": "value"
+                                    }
+                                ]
                             }
                         ]
                     },
@@ -2084,8 +2104,7 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "dark-red",
-                                "value": null
+                                "color": "dark-red"
                             },
                             {
                                 "color": "semi-dark-yellow",
@@ -2287,8 +2306,7 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "dark-red",
-                                "value": null
+                                "color": "dark-red"
                             },
                             {
                                 "color": "semi-dark-yellow",
@@ -2492,8 +2510,7 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "dark-red",
-                                "value": null
+                                "color": "dark-red"
                             },
                             {
                                 "color": "semi-dark-yellow",
@@ -2699,8 +2716,7 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "dark-red",
-                                "value": null
+                                "color": "dark-red"
                             },
                             {
                                 "color": "semi-dark-yellow",

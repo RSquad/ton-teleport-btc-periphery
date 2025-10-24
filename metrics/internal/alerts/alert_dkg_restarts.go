@@ -1,6 +1,7 @@
 package alerts
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
@@ -18,29 +19,23 @@ func NewAlertDkgRestarts() Alert {
 	}
 }
 
-func (alert *AlertDkgRestarts) NewLabels() Labels {
-	return Labels{}
-}
-
-func (alert *AlertDkgRestarts) Check(dataSource AlertDataSource) (Severity, Labels, Values, error) {
-	labels := alert.NewLabels()
-
+func (alert *AlertDkgRestarts) Check(dataSource AlertDataSource) (Severity, Description, Values, error) {
 	// Get DKG
 	dkg, err := dataSource.DkgDB()
 	if err != nil {
-		return SEVERITY_UNKNOWN, labels, alert.MakeValues(), err
+		return SEVERITY_CRITICAL, "", alert.MakeValues(), err
 	}
 
 	if dkg == nil {
 		alert.dkgUntil = time.Unix(0, 0)
 		alert.restartsCounter = 0
-		return SEVERITY_OK, labels, alert.MakeValues(), nil
+		return SEVERITY_OK, "OK", alert.MakeValues(), nil
 	}
 
 	if dkg.State == coordinator.DKGStateFinished {
 		alert.dkgUntil = time.Unix(0, 0)
 		alert.restartsCounter = 0
-		return SEVERITY_OK, labels, alert.MakeValues(), nil
+		return SEVERITY_OK, "OK", alert.MakeValues(), nil
 	}
 
 	// Check for restart
@@ -54,8 +49,16 @@ func (alert *AlertDkgRestarts) Check(dataSource AlertDataSource) (Severity, Labe
 
 	// Calulate severity
 	severity := alert.GetSeverity()
+	description := "OK"
 
-	return severity, labels, alert.MakeValues(), nil
+	if severity > SEVERITY_OK {
+		description = fmt.Sprintf(
+			"The DKG was restarted %d times",
+			alert.restartsCounter,
+		)
+	}
+
+	return severity, Description(description), alert.MakeValues(), nil
 }
 
 func (alert *AlertDkgRestarts) GetSeverity() Severity {

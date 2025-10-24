@@ -27,10 +27,9 @@ func (systemInfo *MetricsSystemInfo) SystemInfoJson(
 	dataSourceDB *data_sources.DataSourceDB,
 	alertManager *alerts.AlertManager,
 	contractAddrs map[string]*address.Address,
-	globalRuntimeConfig *config.GlobalRuntimeConfig,
 	bitcoinClient *bitcoin.Client,
 ) (string, error) {
-	sysDkgInfo, dkgStatus, err := systemInfo.SysDkgInfo(dataSourceDB, alertManager, contractAddrs, globalRuntimeConfig)
+	sysDkgInfo, dkgStatus, err := systemInfo.SysDkgInfo(dataSourceDB, alertManager, contractAddrs)
 	if err != nil {
 		return "", err
 	}
@@ -75,7 +74,6 @@ func (systemInfo *MetricsSystemInfo) SysDkgInfo(
 	dataSourceDB *data_sources.DataSourceDB,
 	alertManager *alerts.AlertManager,
 	contractAddrs map[string]*address.Address,
-	globalRuntimeConfig *config.GlobalRuntimeConfig,
 ) (*SysDkgInfo, *DkgStatus, error) {
 	dkg, err := dataSourceDB.Dkg()
 	if err != nil {
@@ -95,7 +93,7 @@ func (systemInfo *MetricsSystemInfo) SysDkgInfo(
 	}
 
 	// DkgStatus
-	dkgStatus, err := systemInfo.DkgStatus(dataSourceDB, globalRuntimeConfig)
+	dkgStatus, err := systemInfo.DkgStatus(dataSourceDB)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -408,7 +406,6 @@ func (systemInfo *MetricsSystemInfo) TeleportInfo(
 
 func (systemInfo *MetricsSystemInfo) DkgStatus(
 	dataSourceDB *data_sources.DataSourceDB,
-	globalRuntimeConfig *config.GlobalRuntimeConfig,
 ) (*DkgStatus, error) {
 	dkg, err := dataSourceDB.Dkg()
 	if err != nil {
@@ -449,7 +446,7 @@ func (systemInfo *MetricsSystemInfo) DkgStatus(
 		}
 
 		if !coordinatorContractData.StandaloneMode {
-			maxValidators, err := globalRuntimeConfig.TonMaxMainValidators(context.Background()) // TODO: replace with user defined ctx
+			maxValidators, err := config.GetGlobalRuntimeConfig().TonMaxMainValidators(context.Background())
 			if err != nil {
 				return nil, err
 			}
@@ -482,7 +479,6 @@ func (systemInfo *MetricsSystemInfo) DkgStatus(
 		}
 
 		info.ValidatorsCountEvicted = len(info.ValidatorsIdxEvicted)
-
 		return &info, nil
 	}
 

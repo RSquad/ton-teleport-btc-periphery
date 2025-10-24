@@ -52,6 +52,78 @@ func (writer *WriterDB) PrepareDB() error {
 		return err
 	}
 
+	// dkg_until_ts
+	_, err = writer.db.Exec(`ALTER TABLE metrics_data ADD COLUMN IF NOT EXISTS dkg_until_ts timestamptz`)
+	if err != nil {
+		return err
+	}
+
+	//
+	_, err = writer.db.Exec(`CREATE OR REPLACE FUNCTION safe_timestamptz(in_text text)
+			RETURNS timestamptz
+			LANGUAGE plpgsql STABLE PARALLEL SAFE AS $$
+			BEGIN
+				IF in_text IS NULL OR in_text = '' THEN
+					RETURN NULL;
+				END IF;
+
+				RETURN in_text::timestamptz;
+			EXCEPTION WHEN others THEN
+				RETURN NULL;
+			END;
+			$$;`)
+	if err != nil {
+		return err
+	}
+
+	//
+	_, err = writer.db.Exec(`CREATE OR REPLACE FUNCTION metrics_data_set_dkg_until_ts()
+			RETURNS trigger
+			LANGUAGE plpgsql AS $$
+			BEGIN
+				NEW.dkg_until_ts := safe_timestamptz(NEW.payload->>'Until');
+				RETURN NEW;
+			END;
+			$$;`)
+	if err != nil {
+		return err
+	}
+
+	//
+	_, err = writer.db.Exec(`DO $$
+			BEGIN
+				BEGIN
+					EXECUTE $ddl$
+						CREATE TRIGGER  metrics_data_dkg_until_ts_trg
+						BEFORE INSERT OR UPDATE OF payload
+						ON metrics_data
+						FOR EACH ROW
+						EXECUTE FUNCTION metrics_data_set_dkg_until_ts();
+					$ddl$;
+				EXCEPTION WHEN duplicate_object THEN
+					-- trigger already exists: do nothing
+				END;
+			END$$`)
+	if err != nil {
+		return err
+	}
+
+	//
+	_, err = writer.db.Exec(`CREATE INDEX CONCURRENTLY IF NOT EXISTS metrics_data_t1_dkg_until_id_desc_idx
+  ON metrics_data (dkg_until_ts, id DESC)
+  WHERE type_id = 1 AND dkg_until_ts IS NOT NULL`)
+	if err != nil {
+		return err
+	}
+
+	//
+	_, err = writer.db.Exec(`CREATE INDEX CONCURRENTLY IF NOT EXISTS metrics_data_t0_dkg_until_id_desc_idx
+  ON metrics_data (dkg_until_ts, id DESC)
+  WHERE type_id = 0 AND dkg_until_ts IS NOT NULL`)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
