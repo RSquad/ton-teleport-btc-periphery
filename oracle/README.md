@@ -4,7 +4,17 @@ The Oracle component is responsible for participating in the Distributed Key Gen
 
 ## Overview
 
-The Oracle uses the FROST (Flexible Round-Optimized Schnorr Threshold) signature scheme to participate in a threshold signing process. It communicates with the TON blockchain to monitor and respond to DKG and signing requests from the Coordinator contract.
+BTC Teleport Oracle is a lightweight add‑on that runs alongside a TON validator to enable Teleport functionality. Written in Go, it communicates only with the TON blockchain through the local lite-api and the validator‑engine-api. It makes no outbound network calls to external APIs, services, or nodes. Because it interacts with the validator through already presented apis, it does not modify or affect the validator's consensus logic.
+
+Cross‑chain data delivery is separated from oracle operation. The transfer of information from Bitcoin is performed by an independent, permissionless component that anyone can run, and all data it provides is finalized directly on the TON blockchain. The oracle handles burn processing, and those actions are also settled on TON.
+
+A dedicated on‑chain smart‑contract system (a Bitcoin light client implemented on TON), verifies that information coming from Bitcoin is correct. This design enables oracles to deterministically produce signatures for Bitcoin‑side operations while observing only TON on‑chain events, without trusting any external feeders or networks. These signatures are persisted in a dedicated TON smart contract for durability and auditability. Applying the signatures to execute fund movements on Bitcoin is performed by the same permissionless component described above.
+
+The oracle keeps a small additional set of cryptographic keys. By default, these keys are included in the data automatically backed up by MTC. The software requires minimal hardware resources, significantly less than a TON node, so validators do not need any extra capacity.
+
+Under normal conditions the Oracle interacts with Teleport’s Coordinator contract via external messages only, so it does not impose additional expenses on validators.
+
+The Oracle uses the FROST (Flexible Round-Optimized Schnorr Threshold) signature scheme to generate a threshold signature for bitcoin transaction.
 
 ## Build Requirements
 
