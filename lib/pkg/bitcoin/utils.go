@@ -60,9 +60,9 @@ func TonAddrToBytesForTapLeaf(addr *address.Address) []byte {
 	return append(addr.Data(), suffix)
 }
 
-func TxContainsOutWithAddr(tx *btcjson.TxRawResult, addr string) (bool, *btcjson.Vout) {
+func TxContainsOutWithScript(tx *btcjson.TxRawResult, script []byte) (bool, *btcjson.Vout) {
 	for _, vout := range tx.Vout {
-		if vout.ScriptPubKey.Address == addr {
+		if vout.ScriptPubKey.Hex == hex.EncodeToString(script) {
 			return true, &vout
 		}
 	}
