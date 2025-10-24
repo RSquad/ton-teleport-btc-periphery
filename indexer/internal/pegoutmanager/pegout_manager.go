@@ -131,6 +131,7 @@ func (pm *PegoutManager) executeSigningPegoutsCycle() (err error) {
 
 	block, err := pm.tonClient.API.CurrentMasterchainInfo(pm.ctx)
 	if err != nil {
+		logFailedGetMasterchainInfo(err)
 		return fmt.Errorf("failed to get current masterchain info for signing cycle: %w", err)
 	}
 

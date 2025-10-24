@@ -38,11 +38,11 @@ func NewEventService(
 
 func (es *EventService) Work(ctx context.Context) (err error) {
 	es.logStartWork()
-	defer es.logFinishWork(err)
+	defer es.logFinishWork(ctx.Err())
 
 	teleportContractStorage, err := es.teleportContract.GetStorage(nil)
 	if err != nil {
-		return err
+		return ctx.Err()
 	}
 
 	rawEventChan := make(chan *ton.RawEvent, 64)

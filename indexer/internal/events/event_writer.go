@@ -3,7 +3,6 @@ package events
 import (
 	"context"
 	"encoding/hex"
-	"log"
 
 	ent "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated/pegin"
@@ -51,7 +50,7 @@ func (ew *EventWriter) write(fn func(tx *ent.Tx) error) error {
 func (ew *EventWriter) Write(tonTx *ent.TonTx, event ton.EventInterface) error {
 	err := ew.writeEvent(tonTx, event)
 	if err != nil {
-		return err
+		return ew.ctx.Err()
 	}
 
 	ew.logEventWritten(event)
@@ -70,7 +69,7 @@ func (ew *EventWriter) writeEvent(tonTx *ent.TonTx, event ton.EventInterface) er
 	case *coordinator.DKGCompletedEvent:
 		return ew.writeInternalKey(tonTx, event)
 	}
-	return ew.formatUnknownEventError(event)
+	return nil
 }
 
 func (ew *EventWriter) writeMint(tonTx *ent.TonTx, event *teleportcontract.MintEvent) error {
@@ -80,14 +79,14 @@ func (ew *EventWriter) writeMint(tonTx *ent.TonTx, event *teleportcontract.MintE
 		Only(ew.ctx)
 
 	if existingPegin != nil {
-		log.Printf(
-			"updating mint status to SUCCESS (mintid=%d, txhash=%x)",
-			existingPegin.Edges.Mint.ID, event.GetRaw().TxHash,
-		)
+		ew.logMintEventUpdateStatus(existingPegin.Edges.Mint, event)
 		_, err := ew.repo.Mint.UpdateOne(existingPegin.Edges.Mint).
 			SetStatus("SUCCESS").
 			SetTonTx(tonTx).
 			Save(ew.ctx)
+		if err != nil {
+			logMintUpdateError(err, event, existingPegin.Edges.Mint)
+		}
 		return err
 	}
 
@@ -99,6 +98,7 @@ func (ew *EventWriter) writeMint(tonTx *ent.TonTx, event *teleportcontract.MintE
 			SetTonTx(tonTx).
 			Save(ew.ctx)
 		if err != nil {
+			logMintCreateError(err, event, tonTx)
 			return err
 		}
 
@@ -107,6 +107,9 @@ func (ew *EventWriter) writeMint(tonTx *ent.TonTx, event *teleportcontract.MintE
 			SetBitcoinTxID(event.BitcoinTxID.String()).
 			SetMint(mint).
 			Save(ew.ctx)
+		if err != nil {
+			logPeginCreateError(err, event, mint)
+		}
 		return err
 	})
 }
@@ -123,6 +126,9 @@ func (ew *EventWriter) writeBurn(tonTx *ent.TonTx, event *teleportcontract.BurnE
 			SetTonTx(tonTx).
 			SetPegout(pegout).
 			Save(ew.ctx)
+		if err != nil {
+			logBurnCreateError(err, event, pegout)
+		}
 		return err
 	})
 }
@@ -140,6 +146,9 @@ func (ew *EventWriter) writeReinit(tonTx *ent.TonTx, event *teleportcontract.Rei
 			SetTonTx(tonTx).
 			SetPegout(pegout).
 			Save(ew.ctx)
+		if err != nil {
+			logReinitCreateError(err, event, pegout.Edges.Reinit)
+		}
 		return err
 	})
 }
@@ -150,5 +159,8 @@ func (ew *EventWriter) writeInternalKey(tonTx *ent.TonTx, event *coordinator.DKG
 		SetKey(hex.EncodeToString(event.Key)).
 		SetTonTx(tonTx).
 		Save(ew.ctx)
+	if err != nil {
+		logInternalKeyCreateError(err, event)
+	}
 	return err
 }

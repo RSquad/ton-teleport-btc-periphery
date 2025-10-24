@@ -44,20 +44,27 @@ type App struct {
 func main() {
 	log.SetFlags(0)
 
+	if err := logger.Init("", logger.DebugLevel, 0, 0, 0); err != nil {
+		log.Fatalf("failed to initialize logger: %v", err)
+	}
+
 	app, err := initialize()
 	if err != nil {
-		log.Fatalf("failed to initialize: %v", err)
+		logger.Log.Fatal().
+			Str("component", "main").
+			Err(err).
+			Msg("Failed to initialize")
 	}
 
 	if err := run(app); err != nil {
-		log.Fatalf("stopped with error: %v", err)
+		logger.Log.Fatal().
+			Str("component", "main").
+			Err(err).
+			Msg("Stopped with error")
 	}
 }
 
 func initialize() (*App, error) {
-	if err := logger.Init("", logger.DebugLevel, 0, 0, 0); err != nil {
-		return nil, fmt.Errorf("failed to initialize logger: %w", err)
-	}
 
 	logger.Log.Info().
 		Str("component", "main").
@@ -138,7 +145,10 @@ func initialize() (*App, error) {
 		migrate.WithDropIndex(true),
 		migrate.WithDropColumn(true),
 	); err != nil {
-		log.Fatalf("failed creating repos schema: %v", err)
+		logger.Log.Fatal().
+			Str("component", "main").
+			Err(err).
+			Msg("failed creating repos schema")
 	}
 
 	// Mint service
@@ -233,6 +243,8 @@ func run(app *App) error {
 
 	wg.Wait()
 
-	log.Println("shutdown complete")
+	logger.Log.Info().
+		Str("component", "main").
+		Msg("shutdown complete")
 	return nil
 }
