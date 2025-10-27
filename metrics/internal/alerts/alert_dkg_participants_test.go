@@ -96,7 +96,7 @@ func TestAlertDkgParticipants(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_WARNING,
-				Description: "The number of DKG participants is 8 of 10 (80%)",
+				Description: "The number of DKG participants is 8 of 10 (80%). Steps to resolve: https://github.com/RSquad/teleport-runbooks/blob/master/alerts/DKGParticipants.md",
 				Err:         nil,
 			},
 		},
@@ -126,7 +126,7 @@ func TestAlertDkgParticipants(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_CRITICAL,
-				Description: "The number of DKG participants is 5 of 10 (50%)",
+				Description: "The number of DKG participants is 5 of 10 (50%). Steps to resolve: https://github.com/RSquad/teleport-runbooks/blob/master/alerts/DKGParticipants.md",
 				Err:         nil,
 			},
 		},
@@ -156,7 +156,7 @@ func TestAlertDkgParticipants(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_CRITICAL,
-				Description: "The number of DKG participants is 5 of 10 (50%)",
+				Description: "The number of DKG participants is 5 of 10 (50%). Steps to resolve: https://github.com/RSquad/teleport-runbooks/blob/master/alerts/DKGParticipants.md",
 				Err:         nil,
 			},
 		},

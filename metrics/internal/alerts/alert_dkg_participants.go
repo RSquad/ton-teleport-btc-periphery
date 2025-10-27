@@ -68,12 +68,20 @@ func (alert *AlertDkgParticipants) Check(dataSource AlertDataSource) (Severity, 
 	// Calulate severity
 	alert.severity = alert.GetSeverity(percentage)
 	alert.description = Description(fmt.Sprintf(
-		"The number of DKG participants is %d of %d (%d%%). Steps to resolve: %s",
+		"The number of DKG participants is %d of %d (%d%%)",
 		count-evictedCount,
 		count,
 		percentage,
-		mutils.RunbookLink("DkgParticipants"),
 	))
+	if alert.severity > SEVERITY_OK {
+		alert.description = Description(fmt.Sprintf(
+			"The number of DKG participants is %d of %d (%d%%). Steps to resolve: %s",
+			count-evictedCount,
+			count,
+			percentage,
+			mutils.RunbookLink("DKGParticipants"),
+		))
+	}
 
 	return alert.severity, alert.description, nil, nil
 }
