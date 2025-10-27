@@ -77,7 +77,7 @@ func (alert *AlertCpfpLength) Check(dataSource AlertDataSource) (Severity, Descr
 			chainSize,
 			mutils.TonExplorerLink((*address.Address)(pegout.Addr).StringRaw()),
 			mutils.BtcExplorerLink(hex.EncodeToString(pegout.BitcoinTxId)),
-			mutils.RunbookLink("CPFPLength"),
+			mutils.RunbookLink("PegoutCPFP"),
 		))
 	}
 
