@@ -26,4 +26,5 @@ type EnvConfig struct {
 	PProfHttpEnable                  string `env:"METRICS_PPROF_HTTP_ENABLE"`
 	TonExplorer                      string `env:"TON_EXPLORER"`
 	BtcExplorer                      string `env:"BTC_EXPLORER"`
+	Runbook                          string `env:"RUNBOOK"`
 }

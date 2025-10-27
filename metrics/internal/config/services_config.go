@@ -33,6 +33,7 @@ type ServicesConfig struct {
 	PProfHttpEnable                  bool
 	TonExplorer                      string
 	BtcExplorer                      string
+	Runbook                          string
 }
 
 func NewServicesConfig(config *EnvConfig) (*ServicesConfig, error) {
