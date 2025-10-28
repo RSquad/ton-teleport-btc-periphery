@@ -91,6 +91,10 @@ func (alert *AlertPegoutSigningDuration) Check(dataSource AlertDataSource) (Seve
 		return SEVERITY_UNKNOWN, "", nil, err
 	}
 
+	if pegout == nil {
+		return SEVERITY_UNKNOWN, "", nil, fmt.Errorf("pegout not found: %s", unsignedPegout.PegoutAddress.String())
+	}
+
 	description := "OK"
 
 	if alert.severity > SEVERITY_OK {

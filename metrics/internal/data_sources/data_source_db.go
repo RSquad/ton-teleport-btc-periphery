@@ -214,6 +214,10 @@ func (dataSource *DataSourceDB) Pegout(address *address.Address) (*data_models.P
 		return nil, err
 	}
 
+	if jsonData == nil {
+		return nil, nil
+	}
+
 	pegout, err := data_models.DeserializePegoutDB(jsonData)
 	if err != nil {
 		return nil, err

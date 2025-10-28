@@ -8,8 +8,7 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/mutils"
 )
 
-type AlertPegoutCommintments struct {
-}
+type AlertPegoutCommintments struct{}
 
 func NewAlertPegoutCommintments() Alert {
 	return &AlertPegoutCommintments{}
@@ -31,6 +30,10 @@ func (alert *AlertPegoutCommintments) Check(dataSource AlertDataSource) (Severit
 	pegout, err := dataSource.PegoutDB(unsignedPegout.PegoutAddress)
 	if err != nil {
 		return SEVERITY_UNKNOWN, "", nil, err
+	}
+
+	if pegout == nil {
+		return SEVERITY_UNKNOWN, "", nil, fmt.Errorf("pegout not found: %s", unsignedPegout.PegoutAddress.String())
 	}
 
 	// Wait until the signing stage starts

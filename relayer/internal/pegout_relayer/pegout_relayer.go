@@ -59,7 +59,7 @@ func (c *PegoutRelayer) Relay() error {
 
 	blockHash, err := c.bitcoinClient.GetBlockHashByTxID(teleportContractStorage.LastPegoutTxID)
 	if err != nil {
-		return fmt.Errorf("[PegoutRelayer] failed to get last pegout tx block hash: %w", err)
+		return fmt.Errorf("[PegoutRelayer] failed to get last pegout tx block hash: %w. LastPegoutTxID: '%s'", err, teleportContractStorage.LastPegoutTxID.String())
 	}
 
 	blockHeight, err := c.bitcoinClient.GetBlockHeightByHash(blockHash)
