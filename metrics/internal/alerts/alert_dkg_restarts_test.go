@@ -53,7 +53,7 @@ func TestAlertDkgRestarts(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_WARNING,
-				Description: "The DKG was restarted 2 times. Steps to resolve: https://github.com/RSquad/teleport-runbooks/blob/master/alerts/DKGRestarts.md",
+				Description: "The DKG was restarted 2 times. Steps to resolve: http://runbook/DKGRestarts.md",
 				Err:         nil,
 			},
 		},
@@ -69,7 +69,7 @@ func TestAlertDkgRestarts(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_WARNING,
-				Description: "The DKG was restarted 3 times. Steps to resolve: https://github.com/RSquad/teleport-runbooks/blob/master/alerts/DKGRestarts.md",
+				Description: "The DKG was restarted 3 times. Steps to resolve: http://runbook/DKGRestarts.md",
 				Err:         nil,
 			},
 		},
@@ -85,7 +85,7 @@ func TestAlertDkgRestarts(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_WARNING,
-				Description: "The DKG was restarted 4 times. Steps to resolve: https://github.com/RSquad/teleport-runbooks/blob/master/alerts/DKGRestarts.md",
+				Description: "The DKG was restarted 4 times. Steps to resolve: http://runbook/DKGRestarts.md",
 				Err:         nil,
 			},
 		},
@@ -101,7 +101,7 @@ func TestAlertDkgRestarts(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_CRITICAL,
-				Description: "The DKG was restarted 5 times. Steps to resolve: https://github.com/RSquad/teleport-runbooks/blob/master/alerts/DKGRestarts.md",
+				Description: "The DKG was restarted 5 times. Steps to resolve: http://runbook/DKGRestarts.md",
 				Err:         nil,
 			},
 		},
@@ -117,7 +117,7 @@ func TestAlertDkgRestarts(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_CRITICAL,
-				Description: "The DKG was restarted 6 times. Steps to resolve: https://github.com/RSquad/teleport-runbooks/blob/master/alerts/DKGRestarts.md",
+				Description: "The DKG was restarted 6 times. Steps to resolve: http://runbook/DKGRestarts.md",
 				Err:         nil,
 			},
 		},

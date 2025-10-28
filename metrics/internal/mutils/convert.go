@@ -93,7 +93,7 @@ func TonExplorerLink(address string) string {
 
 func RunbookLink(alertName string) string {
 	cfg := config.GetGlobalRuntimeConfig()
-	runbookUrl := "https://github.com/RSquad/teleport-runbooks/blob/master/alerts"
+	runbookUrl := "http://runbook"
 
 	if cfg != nil {
 		runbookUrl = cfg.RunbookUrl()
