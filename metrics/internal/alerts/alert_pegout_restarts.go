@@ -40,6 +40,10 @@ func (alert *AlertPegoutRestarts) Check(dataSource AlertDataSource) (Severity, D
 		return SEVERITY_CRITICAL, "", alert.MakeValues(), err
 	}
 
+	if pegout == nil {
+		return SEVERITY_UNKNOWN, "", nil, fmt.Errorf("pegout not found: %s", unsignedPegout.PegoutAddress.String())
+	}
+
 	// Check if pegout is new: current is null or new PegoutAddress
 	if (alert.currentUnsignedPegout == nil) ||
 		(!alert.currentUnsignedPegout.PegoutAddress.Equals(unsignedPegout.PegoutAddress)) ||
