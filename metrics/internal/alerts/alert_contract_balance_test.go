@@ -32,7 +32,7 @@ func TestAlertContractBalance(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_WARNING,
-				Description: "The test_balance contract (http://ton/0:0fb5045f7c7ad70131e8918305420ba9ba7c317d37b631a8a7d4560552dfbc78) has a low balance: 1.000000000 TON. Steps to resolve: https://github.com/RSquad/teleport-runbooks/blob/master/alerts/ContractBalances.md",
+				Description: "The test_balance contract (http://ton/0:0fb5045f7c7ad70131e8918305420ba9ba7c317d37b631a8a7d4560552dfbc78) has a low balance: 1.000000000 TON. Steps to resolve: http://runbook/ContractBalances.md",
 				Err:         nil,
 			},
 		},
@@ -45,7 +45,7 @@ func TestAlertContractBalance(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_CRITICAL,
-				Description: "The test_balance contract (http://ton/0:0fb5045f7c7ad70131e8918305420ba9ba7c317d37b631a8a7d4560552dfbc78) has a low balance: 0.333333333 TON. Steps to resolve: https://github.com/RSquad/teleport-runbooks/blob/master/alerts/ContractBalances.md",
+				Description: "The test_balance contract (http://ton/0:0fb5045f7c7ad70131e8918305420ba9ba7c317d37b631a8a7d4560552dfbc78) has a low balance: 0.333333333 TON. Steps to resolve: http://runbook/ContractBalances.md",
 				Err:         nil,
 			},
 		},

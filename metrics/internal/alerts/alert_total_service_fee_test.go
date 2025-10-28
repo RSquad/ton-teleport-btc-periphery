@@ -34,7 +34,7 @@ func TestAlertTotalServiceFee(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_WARNING,
-				Description: "Total service fee is less than 3000 satoshi. Steps to resolve: https://github.com/RSquad/teleport-runbooks/blob/master/alerts/TotalServiceFee.md",
+				Description: "Total service fee is less than 3000 satoshi. Steps to resolve: http://runbook/TotalServiceFee.md",
 				Err:         nil,
 			},
 		},
@@ -49,7 +49,7 @@ func TestAlertTotalServiceFee(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_CRITICAL,
-				Description: "Total service fee is less than 0 satoshi. Steps to resolve: https://github.com/RSquad/teleport-runbooks/blob/master/alerts/TotalServiceFee.md",
+				Description: "Total service fee is less than 0 satoshi. Steps to resolve: http://runbook/TotalServiceFee.md",
 				Err:         nil,
 			},
 		},
@@ -64,7 +64,7 @@ func TestAlertTotalServiceFee(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_CRITICAL,
-				Description: "Total service fee is less than 0 satoshi. Steps to resolve: https://github.com/RSquad/teleport-runbooks/blob/master/alerts/TotalServiceFee.md",
+				Description: "Total service fee is less than 0 satoshi. Steps to resolve: http://runbook/TotalServiceFee.md",
 				Err:         nil,
 			},
 		},
