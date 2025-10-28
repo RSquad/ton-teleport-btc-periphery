@@ -219,6 +219,7 @@ func NewServicesConfig(config *EnvConfig) (*ServicesConfig, error) {
 		PProfHttpEnable:                  pprofHttpEnable,
 		TonExplorer:                      config.TonExplorer,
 		BtcExplorer:                      config.BtcExplorer,
+		Runbook:                          config.Runbook,
 	}
 
 	return servicesConfig, nil
