@@ -103,7 +103,7 @@ func TestAlertDkgCulpritFound(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_CRITICAL,
-				Description: "DKG culprit found. Culprit ids: [1]. Not evicted ids: [].",
+				Description: "DKG culprit found. Culprit ids: [1]. Not evicted ids: []. Steps to resolve: https://github.com/RSquad/teleport-runbooks/blob/master/alerts/DKGCulprit.md",
 				Err:         nil,
 			},
 		},
@@ -127,7 +127,7 @@ func TestAlertDkgCulpritFound(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_CRITICAL,
-				Description: "DKG culprit found. Culprit ids: [1]. Not evicted ids: [].",
+				Description: "DKG culprit found. Culprit ids: [1]. Not evicted ids: []. Steps to resolve: https://github.com/RSquad/teleport-runbooks/blob/master/alerts/DKGCulprit.md",
 				Err:         nil,
 			},
 		},
@@ -172,7 +172,7 @@ func TestAlertDkgCulpritFound(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_CRITICAL,
-				Description: "DKG culprit found. Culprit ids: [1]. Not evicted ids: [3,4].",
+				Description: "DKG culprit found. Culprit ids: [1]. Not evicted ids: [3,4]. Steps to resolve: https://github.com/RSquad/teleport-runbooks/blob/master/alerts/DKGCulprit.md",
 				Err:         nil,
 			},
 		},
@@ -193,7 +193,7 @@ func TestAlertDkgCulpritFound(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_CRITICAL,
-				Description: "DKG culprit found. Culprit ids: [1]. Not evicted ids: [3,4].",
+				Description: "DKG culprit found. Culprit ids: [1]. Not evicted ids: [3,4]. Steps to resolve: https://github.com/RSquad/teleport-runbooks/blob/master/alerts/DKGCulprit.md",
 				Err:         nil,
 			},
 		},

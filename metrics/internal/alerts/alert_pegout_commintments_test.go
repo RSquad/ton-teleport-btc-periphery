@@ -98,7 +98,7 @@ func TestAlertPegoutCommintments(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_INFO,
-				Description: "The number of pegout commitments is 9 of 10 (90%). Pegout: http://ton/0:0fb5045f7c7ad70131e8918305420ba9ba7c317d37b631a8a7d4560552dfbc78. Bitcoin TX: http://btc/f7df2a86684e500a3c6c7ca785b8500e4e3c89d1751edf86b6deb68e761a329b",
+				Description: "The number of pegout commitments is 9 of 10 (90%). Pegout: http://ton/0:0fb5045f7c7ad70131e8918305420ba9ba7c317d37b631a8a7d4560552dfbc78. Bitcoin TX: http://btc/f7df2a86684e500a3c6c7ca785b8500e4e3c89d1751edf86b6deb68e761a329b. Steps to resolve: https://github.com/RSquad/teleport-runbooks/blob/master/alerts/PegoutCommitments.md",
 				Err:         nil,
 			},
 		},
@@ -126,7 +126,7 @@ func TestAlertPegoutCommintments(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_WARNING,
-				Description: "The number of pegout commitments is 8 of 10 (80%). Pegout: http://ton/0:0fb5045f7c7ad70131e8918305420ba9ba7c317d37b631a8a7d4560552dfbc78. Bitcoin TX: http://btc/f7df2a86684e500a3c6c7ca785b8500e4e3c89d1751edf86b6deb68e761a329b",
+				Description: "The number of pegout commitments is 8 of 10 (80%). Pegout: http://ton/0:0fb5045f7c7ad70131e8918305420ba9ba7c317d37b631a8a7d4560552dfbc78. Bitcoin TX: http://btc/f7df2a86684e500a3c6c7ca785b8500e4e3c89d1751edf86b6deb68e761a329b. Steps to resolve: https://github.com/RSquad/teleport-runbooks/blob/master/alerts/PegoutCommitments.md",
 				Err:         nil,
 			},
 		},
@@ -154,7 +154,7 @@ func TestAlertPegoutCommintments(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_CRITICAL,
-				Description: "The number of pegout commitments is 7 of 10 (70%). Pegout: http://ton/0:0fb5045f7c7ad70131e8918305420ba9ba7c317d37b631a8a7d4560552dfbc78. Bitcoin TX: http://btc/f7df2a86684e500a3c6c7ca785b8500e4e3c89d1751edf86b6deb68e761a329b",
+				Description: "The number of pegout commitments is 7 of 10 (70%). Pegout: http://ton/0:0fb5045f7c7ad70131e8918305420ba9ba7c317d37b631a8a7d4560552dfbc78. Bitcoin TX: http://btc/f7df2a86684e500a3c6c7ca785b8500e4e3c89d1751edf86b6deb68e761a329b. Steps to resolve: https://github.com/RSquad/teleport-runbooks/blob/master/alerts/PegoutCommitments.md",
 				Err:         nil,
 			},
 		},
@@ -182,7 +182,7 @@ func TestAlertPegoutCommintments(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_CRITICAL,
-				Description: "The number of pegout commitments is 6 of 10 (60%). Pegout: http://ton/0:0fb5045f7c7ad70131e8918305420ba9ba7c317d37b631a8a7d4560552dfbc78. Bitcoin TX: http://btc/f7df2a86684e500a3c6c7ca785b8500e4e3c89d1751edf86b6deb68e761a329b",
+				Description: "The number of pegout commitments is 6 of 10 (60%). Pegout: http://ton/0:0fb5045f7c7ad70131e8918305420ba9ba7c317d37b631a8a7d4560552dfbc78. Bitcoin TX: http://btc/f7df2a86684e500a3c6c7ca785b8500e4e3c89d1751edf86b6deb68e761a329b. Steps to resolve: https://github.com/RSquad/teleport-runbooks/blob/master/alerts/PegoutCommitments.md",
 				Err:         nil,
 			},
 		},

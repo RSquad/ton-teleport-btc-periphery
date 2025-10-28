@@ -57,12 +57,13 @@ func (alert *AlertPegoutSigners) Check(dataSource AlertDataSource) (Severity, De
 		}
 
 		description = fmt.Sprintf(
-			"Number of validators allowed to sign pegout is %d of %d (%d%%). Pegout: %s. Bitcoin TX: %s",
+			"Number of validators allowed to sign pegout is %d of %d (%d%%). Pegout: %s. Bitcoin TX: %s. Steps to resolve: %s",
 			signersAllowedCount,
 			maxSigners,
 			signersAllowedPercentage,
 			mutils.TonExplorerLink(unsignedPegout.PegoutAddress.StringRaw()),
 			mutils.BtcExplorerLink(bitcoinTxId),
+			mutils.RunbookLink("PegoutSigners"),
 		)
 	}
 

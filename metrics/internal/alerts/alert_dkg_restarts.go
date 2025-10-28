@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
+	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/mutils"
 )
 
 type AlertDkgRestarts struct {
@@ -53,8 +54,9 @@ func (alert *AlertDkgRestarts) Check(dataSource AlertDataSource) (Severity, Desc
 
 	if severity > SEVERITY_OK {
 		description = fmt.Sprintf(
-			"The DKG was restarted %d times",
+			"The DKG was restarted %d times. Steps to resolve: %s",
 			alert.restartsCounter,
+			mutils.RunbookLink("DKGRestarts"),
 		)
 	}
 

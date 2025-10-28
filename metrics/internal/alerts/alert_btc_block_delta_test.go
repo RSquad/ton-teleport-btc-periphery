@@ -91,7 +91,7 @@ func TestAlertBtcBlockDelta(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_WARNING,
-				Description: "There is a block-height delta of 2 between the BitcoinClient contract (height 100: 95 blocks + 5 confirmations) and the Bitcoin network (height 102).",
+				Description: "There is a block-height delta of 2 between the BitcoinClient contract (height 100: 95 blocks + 5 confirmations) and the Bitcoin network (height 102). Steps to resolve: https://github.com/RSquad/teleport-runbooks/blob/master/alerts/BtcBlockDelta.md",
 				Err:         nil,
 			},
 		},
@@ -114,7 +114,7 @@ func TestAlertBtcBlockDelta(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_CRITICAL,
-				Description: "There is a block-height delta of 3 between the BitcoinClient contract (height 100: 95 blocks + 5 confirmations) and the Bitcoin network (height 103).",
+				Description: "There is a block-height delta of 3 between the BitcoinClient contract (height 100: 95 blocks + 5 confirmations) and the Bitcoin network (height 103). Steps to resolve: https://github.com/RSquad/teleport-runbooks/blob/master/alerts/BtcBlockDelta.md",
 				Err:         nil,
 			},
 		},
@@ -137,7 +137,7 @@ func TestAlertBtcBlockDelta(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_CRITICAL,
-				Description: "There is a block-height delta of 4 between the BitcoinClient contract (height 100: 95 blocks + 5 confirmations) and the Bitcoin network (height 104).",
+				Description: "There is a block-height delta of 4 between the BitcoinClient contract (height 100: 95 blocks + 5 confirmations) and the Bitcoin network (height 104). Steps to resolve: https://github.com/RSquad/teleport-runbooks/blob/master/alerts/BtcBlockDelta.md",
 				Err:         nil,
 			},
 		},
@@ -160,7 +160,7 @@ func TestAlertBtcBlockDelta(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_WARNING,
-				Description: "There is a block-height delta of 2 between the BitcoinClient contract (height 102: 97 blocks + 5 confirmations) and the Bitcoin network (height 104).",
+				Description: "There is a block-height delta of 2 between the BitcoinClient contract (height 102: 97 blocks + 5 confirmations) and the Bitcoin network (height 104). Steps to resolve: https://github.com/RSquad/teleport-runbooks/blob/master/alerts/BtcBlockDelta.md",
 				Err:         nil,
 			},
 		},
@@ -183,7 +183,7 @@ func TestAlertBtcBlockDelta(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_WARNING,
-				Description: "There is a block-height delta of 2 between the BitcoinClient contract (height 102: 97 blocks + 5 confirmations) and the Bitcoin network (height 104).",
+				Description: "There is a block-height delta of 2 between the BitcoinClient contract (height 102: 97 blocks + 5 confirmations) and the Bitcoin network (height 104). Steps to resolve: https://github.com/RSquad/teleport-runbooks/blob/master/alerts/BtcBlockDelta.md",
 				Err:         nil,
 			},
 		},

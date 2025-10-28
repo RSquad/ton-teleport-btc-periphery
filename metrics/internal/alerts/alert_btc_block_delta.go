@@ -3,6 +3,8 @@ package alerts
 import (
 	"fmt"
 	"time"
+
+	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/mutils"
 )
 
 type AlertBtcBlockDelta struct {
@@ -65,12 +67,13 @@ func (alert *AlertBtcBlockDelta) Check(dataSource AlertDataSource) (Severity, De
 	if alert.severity > SEVERITY_OK {
 		alert.description = Description(
 			fmt.Sprintf(
-				"There is a block-height delta of %d between the BitcoinClient contract (height %d: %d blocks + %d confirmations) and the Bitcoin network (height %d).",
+				"There is a block-height delta of %d between the BitcoinClient contract (height %d: %d blocks + %d confirmations) and the Bitcoin network (height %d). Steps to resolve: %s",
 				delta,
 				blockHeightContract,
 				storage.LastConfirmedBlockHeight,
 				storage.ConfirmationsNeeded,
 				blockHeightBtcNetwork,
+				mutils.RunbookLink("BtcBlockDelta"),
 			),
 		)
 	}
