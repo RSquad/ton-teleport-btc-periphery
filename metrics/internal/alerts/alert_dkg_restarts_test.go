@@ -10,7 +10,7 @@ import (
 )
 
 func TestAlertDkgRestarts(t *testing.T) {
-	runbookUrl := mutils.CreateShortLink("link", "http://runbook/DKGRestarts.md")
+	runbookUrl := mutils.CreateHTMLHyperlink("link", "http://runbook/DKGRestarts.md")
 	tests := []TestDesc{
 		{
 			Name: "SEVERITY_OK (new DKG)",

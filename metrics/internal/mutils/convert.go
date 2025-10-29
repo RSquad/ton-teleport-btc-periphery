@@ -62,7 +62,7 @@ func JoinToStr[K ~string](keys []K) string {
 	return strings.Join(strs, ",")
 }
 
-func CreateShortLink(text, url string) string {
+func CreateHTMLHyperlink(text, url string) string {
 	escapedText := html.EscapeString(text)
 	escapedURL := html.EscapeString(url)
 
@@ -77,7 +77,7 @@ func BtcExplorerLink(address string) string {
 		explorerUrl = cfg.BtcExplorer()
 	}
 
-	return CreateShortLink("link",
+	return CreateHTMLHyperlink("link",
 		fmt.Sprintf(
 			"%s/%s",
 			explorerUrl,
@@ -94,7 +94,7 @@ func TonExplorerLink(address string) string {
 		explorerUrl = cfg.TonExplorer()
 	}
 
-	return CreateShortLink("link",
+	return CreateHTMLHyperlink("link",
 		fmt.Sprintf(
 			"%s/%s",
 			explorerUrl,
@@ -111,7 +111,7 @@ func RunbookLink(alertName string) string {
 		runbookUrl = cfg.RunbookUrl()
 	}
 
-	return CreateShortLink("link",
+	return CreateHTMLHyperlink("link",
 		fmt.Sprintf(
 			"%s/%s.md",
 			runbookUrl,

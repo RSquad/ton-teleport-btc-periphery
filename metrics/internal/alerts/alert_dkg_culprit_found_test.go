@@ -11,7 +11,7 @@ import (
 )
 
 func TestAlertDkgCulpritFound(t *testing.T) {
-	runbookUrl := mutils.CreateShortLink("link", "http://runbook/DKGCulprit.md")
+	runbookUrl := mutils.CreateHTMLHyperlink("link", "http://runbook/DKGCulprit.md")
 	tests := []TestDesc{
 		{
 			Name: "SEVERITY_OK: No DKG",

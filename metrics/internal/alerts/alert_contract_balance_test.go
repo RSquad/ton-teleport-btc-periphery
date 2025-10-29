@@ -9,8 +9,8 @@ import (
 )
 
 func TestAlertContractBalance(t *testing.T) {
-	runbookUrl := mutils.CreateShortLink("link", "http://runbook/ContractBalances.md")
-	tonUrl := mutils.CreateShortLink("link", "http://ton/0:0fb5045f7c7ad70131e8918305420ba9ba7c317d37b631a8a7d4560552dfbc78")
+	runbookUrl := mutils.CreateHTMLHyperlink("link", "http://runbook/ContractBalances.md")
+	tonUrl := mutils.CreateHTMLHyperlink("link", "http://ton/0:0fb5045f7c7ad70131e8918305420ba9ba7c317d37b631a8a7d4560552dfbc78")
 	contractAddress, _ := address.ParseAddr("EQAPtQRffHrXATHokYMFQgupunwxfTe2Main1FYFUt-8eHn-")
 
 	tests := []TestDesc{

@@ -11,7 +11,7 @@ import (
 
 func TestAlertBtcBlockDelta(t *testing.T) {
 	blockHashStr := "00000000000000000000000000000000ffaaff0099887766554433221100ddcc"
-	runbookUrl := mutils.CreateShortLink("link", "http://runbook/BtcBlockDelta.md")
+	runbookUrl := mutils.CreateHTMLHyperlink("link", "http://runbook/BtcBlockDelta.md")
 	blockHash, err := chainhash.NewHashFromStr(blockHashStr)
 	if err != nil {
 		t.Fatalf("%v", err)

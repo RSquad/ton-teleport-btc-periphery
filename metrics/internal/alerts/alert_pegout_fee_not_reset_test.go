@@ -16,9 +16,9 @@ func TestAlertPegoutFeeNotReset(t *testing.T) {
 	pegoutAddress, _ := address.ParseAddr("EQAPtQRffHrXATHokYMFQgupunwxfTe2Main1FYFUt-8eHn-")
 	bitcoin_tx_id, _ := hex.DecodeString("f7df2a86684e500a3c6c7ca785b8500e4e3c89d1751edf86b6deb68e761a329b")
 
-	tonUrl := mutils.CreateShortLink("link", "http://ton/0:0fb5045f7c7ad70131e8918305420ba9ba7c317d37b631a8a7d4560552dfbc78")
-	btcUrl := mutils.CreateShortLink("link", "http://btc/f7df2a86684e500a3c6c7ca785b8500e4e3c89d1751edf86b6deb68e761a329b")
-	runbookUrl := mutils.CreateShortLink("link", "http://runbook/PegoutFeeNotReset.md")
+	tonUrl := mutils.CreateHTMLHyperlink("link", "http://ton/0:0fb5045f7c7ad70131e8918305420ba9ba7c317d37b631a8a7d4560552dfbc78")
+	btcUrl := mutils.CreateHTMLHyperlink("link", "http://btc/f7df2a86684e500a3c6c7ca785b8500e4e3c89d1751edf86b6deb68e761a329b")
+	runbookUrl := mutils.CreateHTMLHyperlink("link", "http://runbook/PegoutFeeNotReset.md")
 
 	tests := []TestDesc{
 		{

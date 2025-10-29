@@ -9,7 +9,7 @@ import (
 )
 
 func TestAlertTotalServiceFee(t *testing.T) {
-	runbookUrl := mutils.CreateShortLink("link", "http://runbook/TotalServiceFee.md")
+	runbookUrl := mutils.CreateHTMLHyperlink("link", "http://runbook/TotalServiceFee.md")
 	tests := []TestDesc{
 		{
 			Name: "SEVERITY_OK (TotalServiceFee = 4000)",

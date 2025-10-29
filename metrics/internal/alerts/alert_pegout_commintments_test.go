@@ -19,9 +19,9 @@ func TestAlertPegoutCommintments(t *testing.T) {
 	bitcoin_tx_id_1, _ := hex.DecodeString("f7df2a86684e500a3c6c7ca785b8500e4e3c89d1751edf86b6deb68e761a329b")
 	bitcoin_tx_id_2, _ := hex.DecodeString("3d46303861d5336c3ebdea3a20883a1cb77f4f3a66a2fb5e6494d3a0ab878bd1")
 
-	tonUrl := mutils.CreateShortLink("link", "http://ton/0:0fb5045f7c7ad70131e8918305420ba9ba7c317d37b631a8a7d4560552dfbc78")
-	btcUrl := mutils.CreateShortLink("link", "http://btc/f7df2a86684e500a3c6c7ca785b8500e4e3c89d1751edf86b6deb68e761a329b")
-	runbookUrl := mutils.CreateShortLink("link", "http://runbook/PegoutCommitments.md")
+	tonUrl := mutils.CreateHTMLHyperlink("link", "http://ton/0:0fb5045f7c7ad70131e8918305420ba9ba7c317d37b631a8a7d4560552dfbc78")
+	btcUrl := mutils.CreateHTMLHyperlink("link", "http://btc/f7df2a86684e500a3c6c7ca785b8500e4e3c89d1751edf86b6deb68e761a329b")
+	runbookUrl := mutils.CreateHTMLHyperlink("link", "http://runbook/PegoutCommitments.md")
 
 	tests := []TestDesc{
 		{

@@ -11,7 +11,7 @@ import (
 )
 
 func TestAlertDkgParticipants(t *testing.T) {
-	runbookUrl := mutils.CreateShortLink("link", "http://runbook/DKGParticipants.md")
+	runbookUrl := mutils.CreateHTMLHyperlink("link", "http://runbook/DKGParticipants.md")
 	tests := []TestDesc{
 		{
 			Name: "SEVERITY_OK (DKG with 100% participants)",
