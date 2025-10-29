@@ -2,13 +2,16 @@ package alerts
 
 import (
 	"context"
+	"fmt"
 	"math/big"
 	"testing"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
+	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/mutils"
 )
 
 func TestAlertDkgParticipants(t *testing.T) {
+	runbookUrl := mutils.CreateShortLink("link", "http://runbook/DKGParticipants.md")
 	tests := []TestDesc{
 		{
 			Name: "SEVERITY_OK (DKG with 100% participants)",
@@ -96,7 +99,7 @@ func TestAlertDkgParticipants(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_WARNING,
-				Description: "The number of DKG participants is 8 of 10 (80%). Steps to resolve: http://runbook/DKGParticipants.md",
+				Description: Description(fmt.Sprintf("The number of DKG participants is 8 of 10 (80%%). Runbook url: %s", runbookUrl)),
 				Err:         nil,
 			},
 		},
@@ -126,7 +129,7 @@ func TestAlertDkgParticipants(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_CRITICAL,
-				Description: "The number of DKG participants is 5 of 10 (50%). Steps to resolve: http://runbook/DKGParticipants.md",
+				Description: Description(fmt.Sprintf("The number of DKG participants is 5 of 10 (50%%). Runbook url: %s", runbookUrl)),
 				Err:         nil,
 			},
 		},
@@ -156,7 +159,7 @@ func TestAlertDkgParticipants(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_CRITICAL,
-				Description: "The number of DKG participants is 5 of 10 (50%). Steps to resolve: http://runbook/DKGParticipants.md",
+				Description: Description(fmt.Sprintf("The number of DKG participants is 5 of 10 (50%%). Runbook url: %s", runbookUrl)),
 				Err:         nil,
 			},
 		},

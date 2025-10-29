@@ -2,17 +2,21 @@ package alerts
 
 import (
 	"encoding/hex"
+	"fmt"
 	"testing"
 
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/data_models"
+	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/mutils"
 	"github.com/xssnick/tonutils-go/address"
 )
 
 func TestAlertCpfpLength(t *testing.T) {
 	pegoutAddress, _ := address.ParseAddr("EQAPtQRffHrXATHokYMFQgupunwxfTe2Main1FYFUt-8eHn-")
 	bitcoin_tx_id, _ := hex.DecodeString("f7df2a86684e500a3c6c7ca785b8500e4e3c89d1751edf86b6deb68e761a329b")
-
+	runbookUrl := mutils.CreateShortLink("link", "http://runbook/PegoutCPFP.md")
+	tonUrl := mutils.CreateShortLink("link", "http://ton/0:0fb5045f7c7ad70131e8918305420ba9ba7c317d37b631a8a7d4560552dfbc78")
+	btcUrl := mutils.CreateShortLink("link", "http://btc/f7df2a86684e500a3c6c7ca785b8500e4e3c89d1751edf86b6deb68e761a329b")
 	tests := []TestDesc{
 		{
 			Name: "SEVERITY_OK (no pegouts)",
@@ -95,7 +99,7 @@ func TestAlertCpfpLength(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_WARNING,
-				Description: "The CPFP chain length is 10. Pegout: http://ton/0:0fb5045f7c7ad70131e8918305420ba9ba7c317d37b631a8a7d4560552dfbc78. Bitcoin TX: http://btc/f7df2a86684e500a3c6c7ca785b8500e4e3c89d1751edf86b6deb68e761a329b. Steps to resolve: http://runbook/PegoutCPFP.md",
+				Description: Description(fmt.Sprintf("The CPFP chain length is 10. Pegout: %s. Bitcoin TX: %s. Runbook url: %s", tonUrl, btcUrl, runbookUrl)),
 				Err:         nil,
 			},
 		},
@@ -117,7 +121,7 @@ func TestAlertCpfpLength(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_WARNING,
-				Description: "The CPFP chain length is 15. Pegout: http://ton/0:0fb5045f7c7ad70131e8918305420ba9ba7c317d37b631a8a7d4560552dfbc78. Bitcoin TX: http://btc/f7df2a86684e500a3c6c7ca785b8500e4e3c89d1751edf86b6deb68e761a329b. Steps to resolve: http://runbook/PegoutCPFP.md",
+				Description: Description(fmt.Sprintf("The CPFP chain length is 15. Pegout: %s. Bitcoin TX: %s. Runbook url: %s", tonUrl, btcUrl, runbookUrl)),
 				Err:         nil,
 			},
 		},
@@ -139,7 +143,7 @@ func TestAlertCpfpLength(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_WARNING,
-				Description: "The CPFP chain length is 15. Pegout: http://ton/0:0fb5045f7c7ad70131e8918305420ba9ba7c317d37b631a8a7d4560552dfbc78. Bitcoin TX: http://btc/f7df2a86684e500a3c6c7ca785b8500e4e3c89d1751edf86b6deb68e761a329b. Steps to resolve: http://runbook/PegoutCPFP.md",
+				Description: Description(fmt.Sprintf("The CPFP chain length is 15. Pegout: %s. Bitcoin TX: %s. Runbook url: %s", tonUrl, btcUrl, runbookUrl)),
 				Err:         nil,
 			},
 		},
@@ -161,7 +165,7 @@ func TestAlertCpfpLength(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_CRITICAL,
-				Description: "The CPFP chain length is 20. Pegout: http://ton/0:0fb5045f7c7ad70131e8918305420ba9ba7c317d37b631a8a7d4560552dfbc78. Bitcoin TX: http://btc/f7df2a86684e500a3c6c7ca785b8500e4e3c89d1751edf86b6deb68e761a329b. Steps to resolve: http://runbook/PegoutCPFP.md",
+				Description: Description(fmt.Sprintf("The CPFP chain length is 20. Pegout: %s. Bitcoin TX: %s. Runbook url: %s", tonUrl, btcUrl, runbookUrl)),
 				Err:         nil,
 			},
 		},
@@ -183,7 +187,7 @@ func TestAlertCpfpLength(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_CRITICAL,
-				Description: "The CPFP chain length is 20. Pegout: http://ton/0:0fb5045f7c7ad70131e8918305420ba9ba7c317d37b631a8a7d4560552dfbc78. Bitcoin TX: http://btc/f7df2a86684e500a3c6c7ca785b8500e4e3c89d1751edf86b6deb68e761a329b. Steps to resolve: http://runbook/PegoutCPFP.md",
+				Description: Description(fmt.Sprintf("The CPFP chain length is 20. Pegout: %s. Bitcoin TX: %s. Runbook url: %s", tonUrl, btcUrl, runbookUrl)),
 				Err:         nil,
 			},
 		},

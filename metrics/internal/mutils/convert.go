@@ -3,6 +3,7 @@ package mutils
 import (
 	"bytes"
 	"fmt"
+	"html"
 	"slices"
 	"strings"
 
@@ -61,6 +62,13 @@ func JoinToStr[K ~string](keys []K) string {
 	return strings.Join(strs, ",")
 }
 
+func CreateShortLink(text, url string) string {
+	escapedText := html.EscapeString(text)
+	escapedURL := html.EscapeString(url)
+
+	return fmt.Sprintf("<a href=\"%s\">%s</a>", escapedURL, escapedText)
+}
+
 func BtcExplorerLink(address string) string {
 	cfg := config.GetGlobalRuntimeConfig()
 	explorerUrl := "http://btc"
@@ -69,10 +77,12 @@ func BtcExplorerLink(address string) string {
 		explorerUrl = cfg.BtcExplorer()
 	}
 
-	return fmt.Sprintf(
-		"%s/%s",
-		explorerUrl,
-		address,
+	return CreateShortLink("link",
+		fmt.Sprintf(
+			"%s/%s",
+			explorerUrl,
+			address,
+		),
 	)
 }
 
@@ -84,10 +94,12 @@ func TonExplorerLink(address string) string {
 		explorerUrl = cfg.TonExplorer()
 	}
 
-	return fmt.Sprintf(
-		"%s/%s",
-		explorerUrl,
-		address,
+	return CreateShortLink("link",
+		fmt.Sprintf(
+			"%s/%s",
+			explorerUrl,
+			address,
+		),
 	)
 }
 
@@ -99,9 +111,11 @@ func RunbookLink(alertName string) string {
 		runbookUrl = cfg.RunbookUrl()
 	}
 
-	return fmt.Sprintf(
-		"%s/%s.md",
-		runbookUrl,
-		alertName,
+	return CreateShortLink("link",
+		fmt.Sprintf(
+			"%s/%s.md",
+			runbookUrl,
+			alertName,
+		),
 	)
 }

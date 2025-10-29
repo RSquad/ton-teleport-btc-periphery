@@ -1,14 +1,17 @@
 package alerts
 
 import (
+	"fmt"
 	"math/big"
 	"testing"
 	"time"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
+	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/mutils"
 )
 
 func TestAlertDkgCulpritFound(t *testing.T) {
+	runbookUrl := mutils.CreateShortLink("link", "http://runbook/DKGCulprit.md")
 	tests := []TestDesc{
 		{
 			Name: "SEVERITY_OK: No DKG",
@@ -103,7 +106,7 @@ func TestAlertDkgCulpritFound(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_CRITICAL,
-				Description: "DKG culprit found. Culprit ids: [1]. Not evicted ids: []. Steps to resolve: http://runbook/DKGCulprit.md",
+				Description: Description(fmt.Sprintf("DKG culprit found. Culprit ids: [1]. Not evicted ids: []. Runbook url: %s", runbookUrl)),
 				Err:         nil,
 			},
 		},
@@ -127,7 +130,7 @@ func TestAlertDkgCulpritFound(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_CRITICAL,
-				Description: "DKG culprit found. Culprit ids: [1]. Not evicted ids: []. Steps to resolve: http://runbook/DKGCulprit.md",
+				Description: Description(fmt.Sprintf("DKG culprit found. Culprit ids: [1]. Not evicted ids: []. Runbook url: %s", runbookUrl)),
 				Err:         nil,
 			},
 		},
@@ -172,7 +175,7 @@ func TestAlertDkgCulpritFound(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_CRITICAL,
-				Description: "DKG culprit found. Culprit ids: [1]. Not evicted ids: [3,4]. Steps to resolve: http://runbook/DKGCulprit.md",
+				Description: Description(fmt.Sprintf("DKG culprit found. Culprit ids: [1]. Not evicted ids: [3,4]. Runbook url: %s", runbookUrl)),
 				Err:         nil,
 			},
 		},
@@ -193,7 +196,7 @@ func TestAlertDkgCulpritFound(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_CRITICAL,
-				Description: "DKG culprit found. Culprit ids: [1]. Not evicted ids: [3,4]. Steps to resolve: http://runbook/DKGCulprit.md",
+				Description: Description(fmt.Sprintf("DKG culprit found. Culprit ids: [1]. Not evicted ids: [3,4]. Runbook url: %s", runbookUrl)),
 				Err:         nil,
 			},
 		},

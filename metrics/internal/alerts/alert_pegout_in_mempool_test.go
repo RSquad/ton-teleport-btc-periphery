@@ -8,6 +8,7 @@ import (
 	"github.com/btcsuite/btcd/btcjson"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/data_models"
+	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/mutils"
 	"github.com/xssnick/tonutils-go/address"
 )
 
@@ -19,6 +20,12 @@ func TestAlertPegoutInMempool(t *testing.T) {
 
 	bitcoin_tx_id_1, _ := hex.DecodeString("f7df2a86684e500a3c6c7ca785b8500e4e3c89d1751edf86b6deb68e761a329b")
 	bitcoin_tx_id_2, _ := hex.DecodeString("3d46303861d5336c3ebdea3a20883a1cb77f4f3a66a2fb5e6494d3a0ab878bd1")
+
+	tonUrl1 := mutils.CreateShortLink("link", "http://ton/0:0fb5045f7c7ad70131e8918305420ba9ba7c317d37b631a8a7d4560552dfbc78")
+	tonUrl2 := mutils.CreateShortLink("link", "http://ton/-1:158d5e8b193ca234bcde7ce9b5769b8230b7287b086a7d0b9bb606d670fc2dd8")
+	btcUrl1 := mutils.CreateShortLink("link", "http://btc/f7df2a86684e500a3c6c7ca785b8500e4e3c89d1751edf86b6deb68e761a329b")
+	btcUrl2 := mutils.CreateShortLink("link", "http://btc/3d46303861d5336c3ebdea3a20883a1cb77f4f3a66a2fb5e6494d3a0ab878bd1")
+	runbookUrl := mutils.CreateShortLink("link", "http://runbook/PegoutInMempool.md")
 
 	pegouts := []*data_models.Pegout{
 		{
@@ -109,7 +116,7 @@ func TestAlertPegoutInMempool(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_WARNING,
-				Description: "Pegout transaction has not been found in the mempool for more than 10 minutes. Pegout: http://ton/0:0fb5045f7c7ad70131e8918305420ba9ba7c317d37b631a8a7d4560552dfbc78. Bitcoin TX: http://btc/f7df2a86684e500a3c6c7ca785b8500e4e3c89d1751edf86b6deb68e761a329b. Steps to resolve: http://runbook/PegoutInMempool.md",
+				Description: Description(fmt.Sprintf("Pegout transaction has not been found in the mempool for more than 10 minutes. Pegout: %s. Bitcoin TX: %s. Runbook url: %s", tonUrl1, btcUrl1, runbookUrl)),
 				Err:         nil,
 			},
 		},
@@ -175,7 +182,7 @@ func TestAlertPegoutInMempool(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_WARNING,
-				Description: "Pegout transaction has not been found in the mempool for more than 10 minutes. Pegout: http://ton/-1:158d5e8b193ca234bcde7ce9b5769b8230b7287b086a7d0b9bb606d670fc2dd8. Bitcoin TX: http://btc/3d46303861d5336c3ebdea3a20883a1cb77f4f3a66a2fb5e6494d3a0ab878bd1. Steps to resolve: http://runbook/PegoutInMempool.md",
+				Description: Description(fmt.Sprintf("Pegout transaction has not been found in the mempool for more than 10 minutes. Pegout: %s. Bitcoin TX: %s. Runbook url: %s", tonUrl2, btcUrl2, runbookUrl)),
 				Err:         nil,
 			},
 		},
@@ -197,7 +204,7 @@ func TestAlertPegoutInMempool(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_CRITICAL,
-				Description: "Pegout transaction has not been found in the mempool for more than 40 minutes. Pegout: http://ton/-1:158d5e8b193ca234bcde7ce9b5769b8230b7287b086a7d0b9bb606d670fc2dd8. Bitcoin TX: http://btc/3d46303861d5336c3ebdea3a20883a1cb77f4f3a66a2fb5e6494d3a0ab878bd1. Steps to resolve: http://runbook/PegoutInMempool.md",
+				Description: Description(fmt.Sprintf("Pegout transaction has not been found in the mempool for more than 40 minutes. Pegout: %s. Bitcoin TX: %s. Runbook url: %s", tonUrl2, btcUrl2, runbookUrl)),
 				Err:         nil,
 			},
 		},

@@ -54,7 +54,7 @@ func (alert *AlertDkgRestarts) Check(dataSource AlertDataSource) (Severity, Desc
 
 	if severity > SEVERITY_OK {
 		description = fmt.Sprintf(
-			"The DKG was restarted %d times. Steps to resolve: %s",
+			"The DKG was restarted %d times. Runbook url: %s",
 			alert.restartsCounter,
 			mutils.RunbookLink("DKGRestarts"),
 		)

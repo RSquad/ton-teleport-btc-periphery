@@ -1,13 +1,16 @@
 package alerts
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
+	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/mutils"
 )
 
 func TestAlertDkgRestarts(t *testing.T) {
+	runbookUrl := mutils.CreateShortLink("link", "http://runbook/DKGRestarts.md")
 	tests := []TestDesc{
 		{
 			Name: "SEVERITY_OK (new DKG)",
@@ -53,7 +56,7 @@ func TestAlertDkgRestarts(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_WARNING,
-				Description: "The DKG was restarted 2 times. Steps to resolve: http://runbook/DKGRestarts.md",
+				Description: Description(fmt.Sprintf("The DKG was restarted 2 times. Runbook url: %s", runbookUrl)),
 				Err:         nil,
 			},
 		},
@@ -69,7 +72,7 @@ func TestAlertDkgRestarts(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_WARNING,
-				Description: "The DKG was restarted 3 times. Steps to resolve: http://runbook/DKGRestarts.md",
+				Description: Description(fmt.Sprintf("The DKG was restarted 3 times. Runbook url: %s", runbookUrl)),
 				Err:         nil,
 			},
 		},
@@ -85,7 +88,7 @@ func TestAlertDkgRestarts(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_WARNING,
-				Description: "The DKG was restarted 4 times. Steps to resolve: http://runbook/DKGRestarts.md",
+				Description: Description(fmt.Sprintf("The DKG was restarted 4 times. Runbook url: %s", runbookUrl)),
 				Err:         nil,
 			},
 		},
@@ -101,7 +104,7 @@ func TestAlertDkgRestarts(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_CRITICAL,
-				Description: "The DKG was restarted 5 times. Steps to resolve: http://runbook/DKGRestarts.md",
+				Description: Description(fmt.Sprintf("The DKG was restarted 5 times. Runbook url: %s", runbookUrl)),
 				Err:         nil,
 			},
 		},
@@ -117,7 +120,7 @@ func TestAlertDkgRestarts(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_CRITICAL,
-				Description: "The DKG was restarted 6 times. Steps to resolve: http://runbook/DKGRestarts.md",
+				Description: Description(fmt.Sprintf("The DKG was restarted 6 times. Runbook url: %s", runbookUrl)),
 				Err:         nil,
 			},
 		},

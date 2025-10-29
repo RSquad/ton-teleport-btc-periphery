@@ -57,7 +57,7 @@ func (alert *AlertPegoutSigners) Check(dataSource AlertDataSource) (Severity, De
 		}
 
 		description = fmt.Sprintf(
-			"Number of validators allowed to sign pegout is %d of %d (%d%%). Pegout: %s. Bitcoin TX: %s. Steps to resolve: %s",
+			"Number of validators allowed to sign pegout is %d of %d (%d%%). Pegout: %s. Bitcoin TX: %s. Runbook url: %s",
 			signersAllowedCount,
 			maxSigners,
 			signersAllowedPercentage,

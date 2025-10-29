@@ -104,7 +104,7 @@ func (alert *AlertPegoutSigningDuration) Check(dataSource AlertDataSource) (Seve
 		}
 
 		description = fmt.Sprintf(
-			"Pegout transaction was not signed within %d minutes. Pegout: %s. Bitcoin TX: %s. Steps to resolve: %s",
+			"Pegout transaction was not signed within %d minutes. Pegout: %s. Bitcoin TX: %s. Runbook url: %s",
 			duration/time.Minute,
 			mutils.TonExplorerLink(unsignedPegout.PegoutAddress.StringRaw()),
 			mutils.BtcExplorerLink(bitcoinTxId),

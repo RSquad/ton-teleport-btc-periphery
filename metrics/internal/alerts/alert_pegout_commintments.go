@@ -69,7 +69,7 @@ func (alert *AlertPegoutCommintments) Check(dataSource AlertDataSource) (Severit
 		}
 
 		description = fmt.Sprintf(
-			"The number of pegout commitments is %d of %d (%d%%). Pegout: %s. Bitcoin TX: %s. Steps to resolve: %s",
+			"The number of pegout commitments is %d of %d (%d%%). Pegout: %s. Bitcoin TX: %s. Runbook url: %s",
 			commitmentsCount,
 			maxSigners,
 			commitmentsPercentage,
