@@ -37,7 +37,7 @@ func (alert *AlertContractBalance) Check(dataSource AlertDataSource) (Severity, 
 
 	if severity > SEVERITY_OK {
 		description = fmt.Sprintf(
-			"The %s contract (%s) has a low balance: %s TON. Steps to resolve: %s",
+			"The %s contract (%s) has a low balance: %s TON.\nRunbook url: %s",
 			alert.BalanceName,
 			mutils.TonExplorerLink(alert.Addr.StringRaw()),
 			mutils.NanoIntToString(balance),

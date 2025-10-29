@@ -1,14 +1,17 @@
 package alerts
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/data_models"
+	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/mutils"
 )
 
 func TestAlertBtcBlockDelta(t *testing.T) {
 	blockHashStr := "00000000000000000000000000000000ffaaff0099887766554433221100ddcc"
+	runbookUrl := mutils.CreateHTMLHyperlink("link", "http://runbook/BtcBlockDelta.md")
 	blockHash, err := chainhash.NewHashFromStr(blockHashStr)
 	if err != nil {
 		t.Fatalf("%v", err)
@@ -91,7 +94,7 @@ func TestAlertBtcBlockDelta(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_WARNING,
-				Description: "There is a block-height delta of 2 between the BitcoinClient contract (height 100: 95 blocks + 5 confirmations) and the Bitcoin network (height 102). Steps to resolve: http://runbook/BtcBlockDelta.md",
+				Description: Description(fmt.Sprintf("There is a block-height delta of 2 between the BitcoinClient contract (height 100: 95 blocks + 5 confirmations) and the Bitcoin network (height 102).\nRunbook url: %s", runbookUrl)),
 				Err:         nil,
 			},
 		},
@@ -114,7 +117,7 @@ func TestAlertBtcBlockDelta(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_CRITICAL,
-				Description: "There is a block-height delta of 3 between the BitcoinClient contract (height 100: 95 blocks + 5 confirmations) and the Bitcoin network (height 103). Steps to resolve: http://runbook/BtcBlockDelta.md",
+				Description: Description(fmt.Sprintf("There is a block-height delta of 3 between the BitcoinClient contract (height 100: 95 blocks + 5 confirmations) and the Bitcoin network (height 103).\nRunbook url: %s", runbookUrl)),
 				Err:         nil,
 			},
 		},
@@ -137,7 +140,7 @@ func TestAlertBtcBlockDelta(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_CRITICAL,
-				Description: "There is a block-height delta of 4 between the BitcoinClient contract (height 100: 95 blocks + 5 confirmations) and the Bitcoin network (height 104). Steps to resolve: http://runbook/BtcBlockDelta.md",
+				Description: Description(fmt.Sprintf("There is a block-height delta of 4 between the BitcoinClient contract (height 100: 95 blocks + 5 confirmations) and the Bitcoin network (height 104).\nRunbook url: %s", runbookUrl)),
 				Err:         nil,
 			},
 		},
@@ -160,7 +163,7 @@ func TestAlertBtcBlockDelta(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_WARNING,
-				Description: "There is a block-height delta of 2 between the BitcoinClient contract (height 102: 97 blocks + 5 confirmations) and the Bitcoin network (height 104). Steps to resolve: http://runbook/BtcBlockDelta.md",
+				Description: Description(fmt.Sprintf("There is a block-height delta of 2 between the BitcoinClient contract (height 102: 97 blocks + 5 confirmations) and the Bitcoin network (height 104).\nRunbook url: %s", runbookUrl)),
 				Err:         nil,
 			},
 		},
@@ -183,7 +186,7 @@ func TestAlertBtcBlockDelta(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_WARNING,
-				Description: "There is a block-height delta of 2 between the BitcoinClient contract (height 102: 97 blocks + 5 confirmations) and the Bitcoin network (height 104). Steps to resolve: http://runbook/BtcBlockDelta.md",
+				Description: Description(fmt.Sprintf("There is a block-height delta of 2 between the BitcoinClient contract (height 102: 97 blocks + 5 confirmations) and the Bitcoin network (height 104).\nRunbook url: %s", runbookUrl)),
 				Err:         nil,
 			},
 		},
