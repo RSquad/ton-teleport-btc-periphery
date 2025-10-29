@@ -90,7 +90,7 @@ func (alert *AlertDkgCulpritFound) Check(dataSource AlertDataSource) (Severity, 
 		culpritIdsStr := mutils.ExtractMapKeysConv(alert.CulpritIds, strconv.Itoa)
 
 		alert.Description = Description(fmt.Sprintf(
-			"DKG culprit found. Culprit ids: [%s]. Not evicted ids: [%s]. Runbook url: %s",
+			"DKG culprit found. Culprit ids: [%s]. Not evicted ids: [%s].\nRunbook url: %s",
 			strings.Join(culpritIdsStr, ","),
 			strings.Join(listOfNotEvicted, ","),
 			mutils.RunbookLink("DKGCulprit"),

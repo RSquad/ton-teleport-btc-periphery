@@ -104,7 +104,7 @@ func TestAlertPegoutCommintments(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_INFO,
-				Description: Description(fmt.Sprintf("The number of pegout commitments is 9 of 10 (90%%). Pegout: %s. Bitcoin TX: %s. Runbook url: %s", tonUrl, btcUrl, runbookUrl)),
+				Description: Description(fmt.Sprintf("The number of pegout commitments is 9 of 10 (90%%).\nPegout: %s.\nBitcoin TX: %s.\nRunbook url: %s", tonUrl, btcUrl, runbookUrl)),
 				Err:         nil,
 			},
 		},
@@ -132,7 +132,7 @@ func TestAlertPegoutCommintments(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_WARNING,
-				Description: Description(fmt.Sprintf("The number of pegout commitments is 8 of 10 (80%%). Pegout: %s. Bitcoin TX: %s. Runbook url: %s", tonUrl, btcUrl, runbookUrl)),
+				Description: Description(fmt.Sprintf("The number of pegout commitments is 8 of 10 (80%%).\nPegout: %s.\nBitcoin TX: %s.\nRunbook url: %s", tonUrl, btcUrl, runbookUrl)),
 				Err:         nil,
 			},
 		},
@@ -160,7 +160,7 @@ func TestAlertPegoutCommintments(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_CRITICAL,
-				Description: Description(fmt.Sprintf("The number of pegout commitments is 7 of 10 (70%%). Pegout: %s. Bitcoin TX: %s. Runbook url: %s", tonUrl, btcUrl, runbookUrl)),
+				Description: Description(fmt.Sprintf("The number of pegout commitments is 7 of 10 (70%%).\nPegout: %s.\nBitcoin TX: %s.\nRunbook url: %s", tonUrl, btcUrl, runbookUrl)),
 				Err:         nil,
 			},
 		},
@@ -188,7 +188,7 @@ func TestAlertPegoutCommintments(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_CRITICAL,
-				Description: Description(fmt.Sprintf("The number of pegout commitments is 6 of 10 (60%%). Pegout: %s. Bitcoin TX: %s. Runbook url: %s", tonUrl, btcUrl, runbookUrl)),
+				Description: Description(fmt.Sprintf("The number of pegout commitments is 6 of 10 (60%%).\nPegout: %s.\nBitcoin TX: %s.\nRunbook url: %s", tonUrl, btcUrl, runbookUrl)),
 				Err:         nil,
 			},
 		},

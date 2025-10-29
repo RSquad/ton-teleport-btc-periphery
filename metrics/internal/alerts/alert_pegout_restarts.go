@@ -75,7 +75,7 @@ func (alert *AlertPegoutRestarts) Check(dataSource AlertDataSource) (Severity, D
 		}
 
 		description = fmt.Sprintf(
-			"The pegout signing was restarted %d times. Pegout: %s. Bitcoin TX: %s. Runbook url: %s",
+			"The pegout signing was restarted %d times.\nPegout: %s.\nBitcoin TX: %s.\nRunbook url: %s",
 			alert.restartsCounter,
 			mutils.TonExplorerLink(unsignedPegout.PegoutAddress.StringRaw()),
 			mutils.BtcExplorerLink(bitcoinTxId),

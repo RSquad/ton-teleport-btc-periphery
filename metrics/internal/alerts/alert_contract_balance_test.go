@@ -36,7 +36,7 @@ func TestAlertContractBalance(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_WARNING,
-				Description: Description(fmt.Sprintf("The test_balance contract (%s) has a low balance: 1.000000000 TON. Runbook url: %s", tonUrl, runbookUrl)),
+				Description: Description(fmt.Sprintf("The test_balance contract (%s) has a low balance: 1.000000000 TON.\nRunbook url: %s", tonUrl, runbookUrl)),
 				Err:         nil,
 			},
 		},
@@ -49,7 +49,7 @@ func TestAlertContractBalance(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_CRITICAL,
-				Description: Description(fmt.Sprintf("The test_balance contract (%s) has a low balance: 0.333333333 TON. Runbook url: %s", tonUrl, runbookUrl)),
+				Description: Description(fmt.Sprintf("The test_balance contract (%s) has a low balance: 0.333333333 TON.\nRunbook url: %s", tonUrl, runbookUrl)),
 				Err:         nil,
 			},
 		},

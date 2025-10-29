@@ -75,7 +75,7 @@ func (alert *AlertDkgParticipants) Check(dataSource AlertDataSource) (Severity, 
 	))
 	if alert.severity > SEVERITY_OK {
 		alert.description = Description(fmt.Sprintf(
-			"The number of DKG participants is %d of %d (%d%%). Runbook url: %s",
+			"The number of DKG participants is %d of %d (%d%%).\nRunbook url: %s",
 			count-evictedCount,
 			count,
 			percentage,

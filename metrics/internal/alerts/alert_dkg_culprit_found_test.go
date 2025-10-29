@@ -106,7 +106,7 @@ func TestAlertDkgCulpritFound(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_CRITICAL,
-				Description: Description(fmt.Sprintf("DKG culprit found. Culprit ids: [1]. Not evicted ids: []. Runbook url: %s", runbookUrl)),
+				Description: Description(fmt.Sprintf("DKG culprit found. Culprit ids: [1]. Not evicted ids: [].\nRunbook url: %s", runbookUrl)),
 				Err:         nil,
 			},
 		},
@@ -130,7 +130,7 @@ func TestAlertDkgCulpritFound(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_CRITICAL,
-				Description: Description(fmt.Sprintf("DKG culprit found. Culprit ids: [1]. Not evicted ids: []. Runbook url: %s", runbookUrl)),
+				Description: Description(fmt.Sprintf("DKG culprit found. Culprit ids: [1]. Not evicted ids: [].\nRunbook url: %s", runbookUrl)),
 				Err:         nil,
 			},
 		},
@@ -175,7 +175,7 @@ func TestAlertDkgCulpritFound(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_CRITICAL,
-				Description: Description(fmt.Sprintf("DKG culprit found. Culprit ids: [1]. Not evicted ids: [3,4]. Runbook url: %s", runbookUrl)),
+				Description: Description(fmt.Sprintf("DKG culprit found. Culprit ids: [1]. Not evicted ids: [3,4].\nRunbook url: %s", runbookUrl)),
 				Err:         nil,
 			},
 		},
@@ -196,7 +196,7 @@ func TestAlertDkgCulpritFound(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_CRITICAL,
-				Description: Description(fmt.Sprintf("DKG culprit found. Culprit ids: [1]. Not evicted ids: [3,4]. Runbook url: %s", runbookUrl)),
+				Description: Description(fmt.Sprintf("DKG culprit found. Culprit ids: [1]. Not evicted ids: [3,4].\nRunbook url: %s", runbookUrl)),
 				Err:         nil,
 			},
 		},

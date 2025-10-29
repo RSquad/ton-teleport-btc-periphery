@@ -99,7 +99,7 @@ func TestAlertCpfpLength(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_WARNING,
-				Description: Description(fmt.Sprintf("The CPFP chain length is 10. Pegout: %s. Bitcoin TX: %s. Runbook url: %s", tonUrl, btcUrl, runbookUrl)),
+				Description: Description(fmt.Sprintf("The CPFP chain length is 10.\nPegout: %s.\nBitcoin TX: %s.\nRunbook url: %s", tonUrl, btcUrl, runbookUrl)),
 				Err:         nil,
 			},
 		},
@@ -121,7 +121,7 @@ func TestAlertCpfpLength(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_WARNING,
-				Description: Description(fmt.Sprintf("The CPFP chain length is 15. Pegout: %s. Bitcoin TX: %s. Runbook url: %s", tonUrl, btcUrl, runbookUrl)),
+				Description: Description(fmt.Sprintf("The CPFP chain length is 15.\nPegout: %s.\nBitcoin TX: %s.\nRunbook url: %s", tonUrl, btcUrl, runbookUrl)),
 				Err:         nil,
 			},
 		},
@@ -143,7 +143,7 @@ func TestAlertCpfpLength(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_WARNING,
-				Description: Description(fmt.Sprintf("The CPFP chain length is 15. Pegout: %s. Bitcoin TX: %s. Runbook url: %s", tonUrl, btcUrl, runbookUrl)),
+				Description: Description(fmt.Sprintf("The CPFP chain length is 15.\nPegout: %s.\nBitcoin TX: %s.\nRunbook url: %s", tonUrl, btcUrl, runbookUrl)),
 				Err:         nil,
 			},
 		},
@@ -165,7 +165,7 @@ func TestAlertCpfpLength(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_CRITICAL,
-				Description: Description(fmt.Sprintf("The CPFP chain length is 20. Pegout: %s. Bitcoin TX: %s. Runbook url: %s", tonUrl, btcUrl, runbookUrl)),
+				Description: Description(fmt.Sprintf("The CPFP chain length is 20.\nPegout: %s.\nBitcoin TX: %s.\nRunbook url: %s", tonUrl, btcUrl, runbookUrl)),
 				Err:         nil,
 			},
 		},
@@ -187,7 +187,7 @@ func TestAlertCpfpLength(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_CRITICAL,
-				Description: Description(fmt.Sprintf("The CPFP chain length is 20. Pegout: %s. Bitcoin TX: %s. Runbook url: %s", tonUrl, btcUrl, runbookUrl)),
+				Description: Description(fmt.Sprintf("The CPFP chain length is 20.\nPegout: %s.\nBitcoin TX: %s.\nRunbook url: %s", tonUrl, btcUrl, runbookUrl)),
 				Err:         nil,
 			},
 		},

@@ -56,7 +56,7 @@ func TestAlertDkgRestarts(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_WARNING,
-				Description: Description(fmt.Sprintf("The DKG was restarted 2 times. Runbook url: %s", runbookUrl)),
+				Description: Description(fmt.Sprintf("The DKG was restarted 2 times.\nRunbook url: %s", runbookUrl)),
 				Err:         nil,
 			},
 		},
@@ -72,7 +72,7 @@ func TestAlertDkgRestarts(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_WARNING,
-				Description: Description(fmt.Sprintf("The DKG was restarted 3 times. Runbook url: %s", runbookUrl)),
+				Description: Description(fmt.Sprintf("The DKG was restarted 3 times.\nRunbook url: %s", runbookUrl)),
 				Err:         nil,
 			},
 		},
@@ -88,7 +88,7 @@ func TestAlertDkgRestarts(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_WARNING,
-				Description: Description(fmt.Sprintf("The DKG was restarted 4 times. Runbook url: %s", runbookUrl)),
+				Description: Description(fmt.Sprintf("The DKG was restarted 4 times.\nRunbook url: %s", runbookUrl)),
 				Err:         nil,
 			},
 		},
@@ -104,7 +104,7 @@ func TestAlertDkgRestarts(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_CRITICAL,
-				Description: Description(fmt.Sprintf("The DKG was restarted 5 times. Runbook url: %s", runbookUrl)),
+				Description: Description(fmt.Sprintf("The DKG was restarted 5 times.\nRunbook url: %s", runbookUrl)),
 				Err:         nil,
 			},
 		},
@@ -120,7 +120,7 @@ func TestAlertDkgRestarts(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_CRITICAL,
-				Description: Description(fmt.Sprintf("The DKG was restarted 6 times. Runbook url: %s", runbookUrl)),
+				Description: Description(fmt.Sprintf("The DKG was restarted 6 times.\nRunbook url: %s", runbookUrl)),
 				Err:         nil,
 			},
 		},
