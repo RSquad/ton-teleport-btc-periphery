@@ -123,7 +123,7 @@ func TestAlertPegoutSigningDuration(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_CRITICAL,
-				Description: Description(fmt.Sprintf("Pegout transaction was not signed within 22 minutes.\nPegout: %s.\nBitcoin TX: %s.\nRunbook url: %s", tonUrl, btcUrl, runbookUrl)),
+				Description: Description(fmt.Sprintf("Pegout transaction was not signed within 22 minutes.\n<b>Pegout:</b> %s.\n<b>Bitcoin TX:</b> %s.\n<b>Runbook url:</b> %s", tonUrl, btcUrl, runbookUrl)),
 				Err:         nil,
 			},
 		},
@@ -147,7 +147,7 @@ func TestAlertPegoutSigningDuration(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_CRITICAL,
-				Description: Description(fmt.Sprintf("Pegout transaction was not signed within 22 minutes.\nPegout: %s.\nBitcoin TX: %s.\nRunbook url: %s", tonUrl, btcUrl, runbookUrl)),
+				Description: Description(fmt.Sprintf("Pegout transaction was not signed within 22 minutes.\n<b>Pegout:</b> %s.\n<b>Bitcoin TX:</b> %s.\n<b>Runbook url:</b> %s", tonUrl, btcUrl, runbookUrl)),
 				Err:         nil,
 			},
 		},

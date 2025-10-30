@@ -99,7 +99,7 @@ func TestAlertDkgParticipants(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_WARNING,
-				Description: Description(fmt.Sprintf("The number of DKG participants is 8 of 10 (80%%).\nRunbook url: %s", runbookUrl)),
+				Description: Description(fmt.Sprintf("The number of DKG participants is 8 of 10 (80%%).\n<b>Runbook url:</b> %s", runbookUrl)),
 				Err:         nil,
 			},
 		},
@@ -129,7 +129,7 @@ func TestAlertDkgParticipants(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_CRITICAL,
-				Description: Description(fmt.Sprintf("The number of DKG participants is 5 of 10 (50%%).\nRunbook url: %s", runbookUrl)),
+				Description: Description(fmt.Sprintf("The number of DKG participants is 5 of 10 (50%%).\n<b>Runbook url:</b> %s", runbookUrl)),
 				Err:         nil,
 			},
 		},
@@ -159,7 +159,7 @@ func TestAlertDkgParticipants(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_CRITICAL,
-				Description: Description(fmt.Sprintf("The number of DKG participants is 5 of 10 (50%%).\nRunbook url: %s", runbookUrl)),
+				Description: Description(fmt.Sprintf("The number of DKG participants is 5 of 10 (50%%).\n<b>Runbook url:</b> %s", runbookUrl)),
 				Err:         nil,
 			},
 		},

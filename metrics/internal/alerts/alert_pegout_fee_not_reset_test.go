@@ -120,7 +120,7 @@ func TestAlertPegoutFeeNotReset(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_CRITICAL,
-				Description: Description(fmt.Sprintf("Pegout transaction already has 1 (pegoutBlockHeight 1234567, lastConfirmedBlockHeight 1234568) confirmations but the fee has not been reset (nextSvb = 123).\nPegout: %s.\nBitcoin TX: %s.\nRunbook url: %s", tonUrl, btcUrl, runbookUrl)),
+				Description: Description(fmt.Sprintf("Pegout transaction already has 1 (pegoutBlockHeight 1234567, lastConfirmedBlockHeight 1234568) confirmations but the fee has not been reset (nextSvb = 123).\n<b>Pegout:</b> %s.\n<b>Bitcoin TX:</b> %s.\n<b>Runbook url:</b> %s", tonUrl, btcUrl, runbookUrl)),
 				Err:         nil,
 			},
 		},
