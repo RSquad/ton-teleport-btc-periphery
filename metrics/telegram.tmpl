@@ -27,7 +27,7 @@
 <b>Summary: </b>{{ .Annotations.summary }}
 {{ end -}}
 {{ if .Annotations.description -}}
-<b>Description: </b>{{ .Annotations.description }}
+<b>Description: </b>{{ safeHtml .Annotations.description }}
 {{ end -}}
 {{ end -}}
 {{ end -}}
