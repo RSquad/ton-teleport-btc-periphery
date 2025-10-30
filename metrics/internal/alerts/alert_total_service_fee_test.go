@@ -37,7 +37,7 @@ func TestAlertTotalServiceFee(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_WARNING,
-				Description: Description(fmt.Sprintf("Total service fee is less than 3000 satoshi.\n<b>Runbook url:</b> %s", runbookUrl)),
+				Description: Description(fmt.Sprintf("Total service fee is less than 3000 satoshi.\nRunbook url: %s", runbookUrl)),
 				Err:         nil,
 			},
 		},
@@ -52,7 +52,7 @@ func TestAlertTotalServiceFee(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_CRITICAL,
-				Description: Description(fmt.Sprintf("Total service fee is less than 0 satoshi.\n<b>Runbook url:</b> %s", runbookUrl)),
+				Description: Description(fmt.Sprintf("Total service fee is less than 0 satoshi.\nRunbook url: %s", runbookUrl)),
 				Err:         nil,
 			},
 		},
@@ -67,7 +67,7 @@ func TestAlertTotalServiceFee(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_CRITICAL,
-				Description: Description(fmt.Sprintf("Total service fee is less than 0 satoshi.\n<b>Runbook url:</b> %s", runbookUrl)),
+				Description: Description(fmt.Sprintf("Total service fee is less than 0 satoshi.\nRunbook url: %s", runbookUrl)),
 				Err:         nil,
 			},
 		},

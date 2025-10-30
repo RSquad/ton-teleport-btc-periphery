@@ -116,7 +116,7 @@ func TestAlertPegoutInMempool(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_WARNING,
-				Description: Description(fmt.Sprintf("Pegout transaction has not been found in the mempool for more than 10 minutes.\n<b>Pegout:</b> %s.\n<b>Bitcoin TX:</b> %s.\n<b>Runbook url:</b> %s", tonUrl1, btcUrl1, runbookUrl)),
+				Description: Description(fmt.Sprintf("Pegout transaction has not been found in the mempool for more than 10 minutes.\nPegout: %s.\nBitcoin TX: %s.\nRunbook url: %s", tonUrl1, btcUrl1, runbookUrl)),
 				Err:         nil,
 			},
 		},
@@ -182,7 +182,7 @@ func TestAlertPegoutInMempool(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_WARNING,
-				Description: Description(fmt.Sprintf("Pegout transaction has not been found in the mempool for more than 10 minutes.\n<b>Pegout:</b> %s.\n<b>Bitcoin TX:</b> %s.\n<b>Runbook url:</b> %s", tonUrl2, btcUrl2, runbookUrl)),
+				Description: Description(fmt.Sprintf("Pegout transaction has not been found in the mempool for more than 10 minutes.\nPegout: %s.\nBitcoin TX: %s.\nRunbook url: %s", tonUrl2, btcUrl2, runbookUrl)),
 				Err:         nil,
 			},
 		},
@@ -204,7 +204,7 @@ func TestAlertPegoutInMempool(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_CRITICAL,
-				Description: Description(fmt.Sprintf("Pegout transaction has not been found in the mempool for more than 40 minutes.\n<b>Pegout:</b> %s.\n<b>Bitcoin TX:</b> %s.\n<b>Runbook url:</b> %s", tonUrl2, btcUrl2, runbookUrl)),
+				Description: Description(fmt.Sprintf("Pegout transaction has not been found in the mempool for more than 40 minutes.\nPegout: %s.\nBitcoin TX: %s.\nRunbook url: %s", tonUrl2, btcUrl2, runbookUrl)),
 				Err:         nil,
 			},
 		},
