@@ -73,7 +73,7 @@ func (alert *AlertCpfpLength) Check(dataSource AlertDataSource) (Severity, Descr
 
 	if alert.severity > SEVERITY_OK {
 		alert.description = Description(fmt.Sprintf(
-			"The CPFP chain length is %d.\nPegout: %s.\nBitcoin TX: %s.\nRunbook url: %s",
+			"The CPFP chain length is %d.\n<b>Pegout:</b> %s.\n<b>Bitcoin TX:</b> %s.\n<b>Runbook url:</b> %s",
 			chainSize,
 			mutils.TonExplorerLink((*address.Address)(pegout.Addr).StringRaw()),
 			mutils.BtcExplorerLink(hex.EncodeToString(pegout.BitcoinTxId)),

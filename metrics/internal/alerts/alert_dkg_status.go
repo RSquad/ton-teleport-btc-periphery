@@ -27,7 +27,7 @@ func (alert *AlertDkgStatus) Check(dataSource AlertDataSource) (Severity, Descri
 	}
 
 	description := fmt.Sprintf(
-		"The DKG status has changed to %s. Until: %s\nRunbook url: %s",
+		"The DKG status has changed to %s. Until: %s\n<b>Runbook url:</b> %s",
 		dkg.State.String(),
 		dkg.Until.Format(time.RFC3339),
 		mutils.RunbookLink("DKGStatus"),
