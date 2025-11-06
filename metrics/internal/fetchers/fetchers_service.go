@@ -23,6 +23,7 @@ type FetcherService struct {
 	fetcherContractBitcoinClient     *FetcherContractBitcoinClient
 	fetcherContractTeleport          *FetcherContractTeleport
 	fetcherContractCoordinator       *FetcherContractCoordinator
+	fetcherEventCollector            *ton.RawEventCollector
 	fetcherEventsContractCoordinator *FetcherEventsContractCoordinator
 	fetcherBitcoinNetwork            *FetcherBitcoinNetwork
 }
@@ -67,6 +68,7 @@ func NewService(
 
 	// Fetcher: Contract Coordinator Events
 	rawEventChan := make(chan *ton.RawEvent, 64)
+	fetcherEventCollector := ton.NewRawEventCollector(tonClient, coordinatorContract.GetAddr(), rawEventChan)
 	fetcherContractCoordinatorEvents := NewFetcherEventsContractCoordinator(
 		rawEventChan,
 		writerDbChan,
@@ -85,6 +87,7 @@ func NewService(
 		fetcherContractBitcoinClient:     fetcherContractBitcoinClient,
 		fetcherContractTeleport:          fetcherContractTeleport,
 		fetcherContractCoordinator:       fetcherContractCoordinator,
+		fetcherEventCollector:            fetcherEventCollector,
 		fetcherEventsContractCoordinator: fetcherContractCoordinatorEvents,
 		fetcherBitcoinNetwork:            fetcherBitcoinNetwork,
 	}, nil
@@ -139,6 +142,14 @@ func (s *FetcherService) Work(ctx context.Context) {
 		wg.Add(1)
 		go func() {
 			s.fetcherContractCoordinator.Work(ctx, &wg)
+		}()
+	}
+
+	// Fetcher ContractCoordinatorEvents
+	if s.fetcherEventCollector != nil {
+		wg.Add(1)
+		go func() {
+			s.fetcherEventCollector.Work(ctx)
 		}()
 	}
 
