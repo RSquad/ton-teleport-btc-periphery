@@ -227,14 +227,15 @@ func parsePegoutSigningRestartedEvent(s *cell.Slice, raw *ton.RawEvent) (*Pegout
 	pegoutId := s.MustLoadBigUInt(64)
 	reason := s.MustLoadBigUInt(8)
 	pegout := s.MustLoadRef()
+	claims, err := NewDKGClaimcounters(s.MustLoadDict(16))
+	claimsMask := s.MustLoadBigUInt(256)
+	s = s.MustLoadRef()
 	commitmentMask := s.MustLoadBigUInt(256)
 	sharesMask := s.MustLoadBigUInt(256)
 	signatureMask := s.MustLoadBigUInt(256)
-	claims, err := NewDKGClaimcounters(s.MustLoadDict(16))
 	if err != nil {
 		return nil, err
 	}
-	claimsMask := s.MustLoadBigUInt(256)
 
 	return &PegoutSigningRestartedEvent{
 		pegoutId, reason, pegout, commitmentMask, sharesMask, signatureMask, claims, claimsMask,
