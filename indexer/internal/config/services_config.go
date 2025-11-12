@@ -3,6 +3,8 @@ package config
 import (
 	"fmt"
 	"strconv"
+	"sync"
+	"time"
 
 	"github.com/xssnick/tonutils-go/address"
 )
@@ -17,6 +19,22 @@ type ServicesConfig struct {
 	DatabaseMaxIdleConn     int
 	CoordinatorContractAddr *address.Address
 	PProfHttpEnable         bool
+	ServerTimeout           time.Duration
+}
+
+var (
+	globalConfig     *ServicesConfig
+	globalConfigOnce sync.Once
+)
+
+func initGlobalConfig(cfg *ServicesConfig) {
+	globalConfigOnce.Do(func() {
+		globalConfig = cfg
+	})
+}
+
+func Get() *ServicesConfig {
+	return globalConfig
 }
 
 func NewServicesConfig(envConfig *EnvConfig) (*ServicesConfig, error) {
@@ -64,8 +82,10 @@ func NewServicesConfig(envConfig *EnvConfig) (*ServicesConfig, error) {
 		DatabaseMaxIdleConn:     databaseMaxIdleConn,
 		CoordinatorContractAddr: coordinatorContractAddr,
 		PProfHttpEnable:         pprofHttpEnable,
+		ServerTimeout:           envConfig.ServerTimeout,
 	}
 
+	initGlobalConfig(cfg)
 	return cfg, nil
 }
 
