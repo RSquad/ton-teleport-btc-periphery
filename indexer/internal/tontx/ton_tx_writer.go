@@ -6,6 +6,7 @@ import (
 
 	ent "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated/tontx"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton"
 )
 
@@ -27,12 +28,16 @@ func NewTonTxWriter(
 func (ew *TonTxWriter) Write(
 	rawEvent *ton.RawEvent,
 ) (*ent.TonTx, error) {
-	tonTx, err := ew.repo.TonTx.Query().Where(tontx.Hash(fmt.Sprintf("%x", rawEvent.TxHash))).First(ew.ctx)
+	hash := fmt.Sprintf("%x", rawEvent.TxHash)
+	logger.Log.Debug().Str("component", "TonTxWriter").Str("tx_hash", hash).Msg("query")
+	tonTx, err := ew.repo.TonTx.Query().Where(tontx.Hash(hash)).First(ew.ctx)
 	if ent.IsNotFound(err) {
 		return ew.repo.TonTx.Create().
-			SetHash(fmt.Sprintf("%x", rawEvent.TxHash)).
+			SetHash(hash).
 			SetCreatedAt(rawEvent.TxUtime).
 			Save(ew.ctx)
+	} else {
+		logger.Log.Warn().Str("component", "TonTxWriter").Str("tx_hash", hash).Msg("already exists")
 	}
 	return tonTx, err
 }
