@@ -2,6 +2,7 @@ package tonclient
 
 import (
 	"context"
+	"time"
 
 	"github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/tlb"
@@ -19,13 +20,14 @@ func NewTxCollector(
 	tonClient *TonClient,
 	addr *address.Address,
 	outChan chan<- *tlb.Transaction,
+	serverTimeout time.Duration,
 ) (*TxCollector, error) {
 	acc, err := tonClient.FetchAcc(addr, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	txFetcher := NewTxFetcher(tonClient, addr, acc.LastTxLT, acc.LastTxHash, 64, outChan)
+	txFetcher := NewTxFetcher(tonClient, addr, acc.LastTxLT, acc.LastTxHash, 16, outChan, serverTimeout)
 	txSubscriber := NewTxSubscriber(tonClient, addr, acc.LastTxLT, outChan)
 
 	return &TxCollector{
@@ -38,7 +40,9 @@ func NewTxCollector(
 
 func (tc *TxCollector) Work(ctx context.Context) (err error) {
 	tc.logStartWork()
-	defer tc.logFinishWork(err)
+	defer func() {
+		tc.logFinishWork(err)
+	}()
 
 	g, ctx := errgroup.WithContext(ctx)
 

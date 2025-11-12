@@ -2,7 +2,9 @@ package ton
 
 import (
 	"context"
+	"time"
 
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
 	"github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/tlb"
@@ -27,12 +29,15 @@ func NewRawEventCollector(
 	}
 }
 
-func (ec *RawEventCollector) Work(ctx context.Context) (err error) {
+func (ec *RawEventCollector) Work(ctx context.Context, serverTimeout time.Duration) (err error) {
 	ec.logStartWork()
-	defer ec.logFinishWork(err)
+	defer func() {
+		ec.logFinishWork(err)
+	}()
 
 	txChan := make(chan *tlb.Transaction, 128)
-	txCollector, err := tonclient.NewTxCollector(ec.tonClient, ec.addr, txChan)
+	defer close(txChan)
+	txCollector, err := tonclient.NewTxCollector(ec.tonClient, ec.addr, txChan, serverTimeout)
 	if err != nil {
 		return err
 	}
@@ -41,14 +46,32 @@ func (ec *RawEventCollector) Work(ctx context.Context) (err error) {
 	g, ctx := errgroup.WithContext(ctx)
 
 	g.Go(func() error {
-		return txCollector.Work(ctx)
+		err := txCollector.Work(ctx)
+		if err != nil {
+			logger.Log.Debug().
+				Str("component", "RawEventCollector").
+				Err(err).
+				Msg("txCollector finished")
+		}
+		return err
 	})
 
 	g.Go(func() error {
-		return eventFilter.Work(ctx)
+		err := eventFilter.Work(ctx)
+		if err != nil {
+			logger.Log.Debug().
+				Str("component", "RawEventCollector").
+				Err(err).
+				Msg("eventFilter finished")
+		}
+		return err
 	})
 
 	if werr := g.Wait(); werr != nil {
+		logger.Log.Debug().
+			Str("component", "RawEventCollector").
+			Err(werr).
+			Msg("errgroup.Wait returned error")
 		return werr
 	}
 
