@@ -20,12 +20,12 @@ import (
 
 type AlertDataSourceLive struct {
 	dataSourceDB  *data_sources.DataSourceDB
-	bitcoinClient *bitcoin.Client
+	bitcoinClient bitcoin.ClientInterface
 }
 
 func NewAlertDataSourceLive(
 	db *sql.DB,
-	bitcoinClient *bitcoin.Client,
+	bitcoinClient bitcoin.ClientInterface,
 	contractAddrs map[string]*address.Address,
 ) AlertDataSource {
 	dataSource := AlertDataSourceLive{
@@ -114,7 +114,7 @@ func (dataSource *AlertDataSourceLive) BtcGetCpfpLength(hash *chainhash.Hash) (i
 }
 
 func (dataSource *AlertDataSourceLive) BtcGetMempoolEntry(txHash string) (*btcjson.GetMempoolEntryResult, error) {
-	return dataSource.bitcoinClient.RPCClient.GetMempoolEntry(txHash)
+	return dataSource.bitcoinClient.GetRPCClient().GetMempoolEntry(txHash)
 }
 
 func (dataSource *AlertDataSourceLive) TonMaxMainValidators(ctx context.Context) (int, error) {

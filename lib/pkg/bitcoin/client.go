@@ -113,6 +113,15 @@ func NewClient(url string, user string, pass string) (*Client, error) {
 	}, nil
 }
 
+func (c *Client) GetRPCClient() *rpcclient.Client {
+	return c.RPCClient
+}
+
+// GetHTTPClient returns the underlying HTTP client
+func (c *Client) GetHTTPClient() *http.Client {
+	return c.httpClient
+}
+
 func (c *Client) GetBlockHeightByHash(hash *chainhash.Hash) (int64, error) {
 	params := []interface{}{hash.String(), 1} // Verbosity 1 for block header
 	rawResult, err := c.sendRequest("getblock", params)
