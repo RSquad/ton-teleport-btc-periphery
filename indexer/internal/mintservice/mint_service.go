@@ -3,14 +3,16 @@ package mintservice
 import (
 	"context"
 	"fmt"
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/bitcoinclientcontract"
 	"sync"
 	"time"
+
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/bitcoinclientcontract"
 
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	ent "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated"
 	internalkeymodel "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated/internalkey"
 	mintmodel "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated/mint"
+	entpegin "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated/pegin"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/pegincontract"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/teleportcontract"
@@ -358,9 +360,51 @@ func (ms *MintService) waitConfirmations(ctx context.Context, bitcoinTxID *chain
 			confirmations := lastConfirmedBlockHeight - bitcoinTXBlockHeight
 
 			if confirmations >= ms.confirmationsNeeded {
-				//make processing
+				_, err := ms.fetchTransactionInfo(ctx, bitcoinTxID, bitcoinTXBlockHash)
+				if err != nil {
+					return fmt.Errorf("failed to fetch transaction info: %w", err)
+				}
 				return nil
 			}
 		}
 	}
+}
+
+func (ms *MintService) fetchTransactionInfo(ctx context.Context, bitcoinTxID *chainhash.Hash, blockHash *chainhash.Hash) (transactionInfo *TransactionInfo, err error) {
+	txProof, err := ms.bitcoinClient.GetTxProof(bitcoinTxID, blockHash)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get tx proof: %w", err)
+	}
+
+	txVerbose, err := ms.bitcoinClient.GetRawTransactionVerbose(bitcoinTxID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get tx verbose: %w", err)
+	}
+	txHex := txVerbose.Hex
+
+	repo := ent.FromContext(ctx)
+
+	existingPegin, err := repo.Pegin.
+		Query().
+		Where(entpegin.BitcoinTxIDEQ(bitcoinTxID.String())).
+		Only(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get pegin: %w", err)
+	}
+
+	return &TransactionInfo{
+		TxProof:      txProof,
+		TxHex:        txHex,
+		RecoveryKey:  existingPegin.RecoveryKey,
+		ReceiverAddr: existingPegin.ReceiverAddr,
+		BlockHash:    blockHash.String(),
+	}, nil
+}
+
+type TransactionInfo struct {
+	TxProof      string
+	BlockHash    string
+	TxHex        string
+	RecoveryKey  string
+	ReceiverAddr string
 }
