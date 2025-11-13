@@ -8,15 +8,17 @@ import (
 )
 
 type ServicesConfig struct {
-	BitcoinRpcHost          string
-	BitcoinRpcUser          string
-	BitcoinRpcPass          string
-	TonConfigUrl            string
-	DatabaseUrl             string
-	DatabaseMaxConn         int
-	DatabaseMaxIdleConn     int
-	CoordinatorContractAddr *address.Address
-	PProfHttpEnable         bool
+	BitcoinRpcHost            string
+	BitcoinRpcUser            string
+	BitcoinRpcPass            string
+	TonConfigUrl              string
+	DatabaseUrl               string
+	DatabaseMaxConn           int
+	DatabaseMaxIdleConn       int
+	CoordinatorContractAddr   *address.Address
+	PProfHttpEnable           bool
+	BitcoinClientContractAddr *address.Address
+	IndexerWalletV4Secret     string
 }
 
 func NewServicesConfig(envConfig *EnvConfig) (*ServicesConfig, error) {
@@ -45,6 +47,11 @@ func NewServicesConfig(envConfig *EnvConfig) (*ServicesConfig, error) {
 		return nil, fmt.Errorf("parsing the Coordinator Contract address '%s' failed", envConfig.CoordinatorContractAddr)
 	}
 
+	BitcoinClientContractAddr, err := address.ParseAddr(envConfig.BitcoinClientContractAddr)
+	if err != nil {
+		return nil, fmt.Errorf("parsing the Bitcoin Client Contract address '%s' failed", envConfig.CoordinatorContractAddr)
+	}
+
 	if len(envConfig.PProfHttpEnable) > 0 {
 		value, err := ParseBool(envConfig.PProfHttpEnable, "PProfHttpEnable")
 		if err != nil {
@@ -55,15 +62,17 @@ func NewServicesConfig(envConfig *EnvConfig) (*ServicesConfig, error) {
 	}
 
 	cfg := &ServicesConfig{
-		BitcoinRpcHost:          envConfig.BitcoinRpcHost,
-		BitcoinRpcUser:          envConfig.BitcoinRpcUser,
-		BitcoinRpcPass:          envConfig.BitcoinRpcPass,
-		TonConfigUrl:            envConfig.TonConfigUrl,
-		DatabaseUrl:             envConfig.DatabaseUrl,
-		DatabaseMaxConn:         databaseMaxConn,
-		DatabaseMaxIdleConn:     databaseMaxIdleConn,
-		CoordinatorContractAddr: coordinatorContractAddr,
-		PProfHttpEnable:         pprofHttpEnable,
+		BitcoinRpcHost:            envConfig.BitcoinRpcHost,
+		BitcoinRpcUser:            envConfig.BitcoinRpcUser,
+		BitcoinRpcPass:            envConfig.BitcoinRpcPass,
+		TonConfigUrl:              envConfig.TonConfigUrl,
+		DatabaseUrl:               envConfig.DatabaseUrl,
+		DatabaseMaxConn:           databaseMaxConn,
+		DatabaseMaxIdleConn:       databaseMaxIdleConn,
+		CoordinatorContractAddr:   coordinatorContractAddr,
+		PProfHttpEnable:           pprofHttpEnable,
+		BitcoinClientContractAddr: BitcoinClientContractAddr,
+		IndexerWalletV4Secret:     envConfig.IndexerWalletV4Secret,
 	}
 
 	return cfg, nil

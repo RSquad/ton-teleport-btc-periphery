@@ -3,6 +3,7 @@ package mintservice
 import (
 	"context"
 	"fmt"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/bitcoinclientcontract"
 	"sync"
 	"time"
 
@@ -25,10 +26,12 @@ const (
 )
 
 type MintService struct {
-	repo             *ent.Client
-	bitcoinClient    *bitcoin.Client
-	tonClient        *tonclient.TonClient
-	teleportContract *teleportcontract.TeleportContract
+	repo                  *ent.Client
+	bitcoinClient         *bitcoin.Client
+	tonClient             *tonclient.TonClient
+	teleportContract      *teleportcontract.TeleportContract
+	BitcoinClientContract *bitcoinclientcontract.BitcoinClientContract
+	confirmationsNeeded   int64
 }
 
 func New(
@@ -36,13 +39,21 @@ func New(
 	bitcoinClient *bitcoin.Client,
 	tonClient *tonclient.TonClient,
 	teleportContract *teleportcontract.TeleportContract,
-) *MintService {
-	return &MintService{
-		repo:             repo,
-		bitcoinClient:    bitcoinClient,
-		tonClient:        tonClient,
-		teleportContract: teleportContract,
+	bitcoinClientContract *bitcoinclientcontract.BitcoinClientContract,
+) (*MintService, error) {
+	confirmationsNeeded, err := bitcoinClientContract.GetConfirmationsNeeded()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get number confirmations needed: %w", err)
 	}
+
+	return &MintService{
+		repo:                  repo,
+		bitcoinClient:         bitcoinClient,
+		tonClient:             tonClient,
+		teleportContract:      teleportContract,
+		confirmationsNeeded:   confirmationsNeeded,
+		BitcoinClientContract: bitcoinClientContract,
+	}, nil
 }
 
 func (ms *MintService) Work(ctx context.Context) error {
@@ -231,6 +242,10 @@ func (ms *MintService) handlePendingMint(
 		return fmt.Errorf(errCalcBitcoinTxID, err)
 	}
 
+	if err = ms.waitConfirmations(ctx, bitcoinTxID); err != nil {
+		return fmt.Errorf("failed when waiting confirmations: %w", err)
+	}
+
 	peginContract, err := pegincontract.NewFromStateInit(
 		ctx,
 		&pegincontract.StateInit{
@@ -308,4 +323,44 @@ func (ms *MintService) updateMintStatus(ctx context.Context, mintID int, status 
 	}
 	logMintStatusUpdated(mintID, status)
 	return nil
+}
+
+func (ms *MintService) waitConfirmations(ctx context.Context, bitcoinTxID *chainhash.Hash) error {
+	ticker := time.NewTicker(15 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return fmt.Errorf("context canceled while waiting for confirmations: %w", ctx.Err())
+
+		case <-ticker.C:
+			bitcoinTXBlockHash, err := ms.bitcoinClient.GetBlockHashByTxID(bitcoinTxID)
+			if err != nil {
+				return fmt.Errorf("failed to get block hash by tx ID: %w", err)
+			}
+
+			bitcoinTXBlockHeight, err := ms.bitcoinClient.GetBlockHeightByHash(bitcoinTXBlockHash)
+			if err != nil {
+				return fmt.Errorf("failed to get block height: %w", err)
+			}
+
+			lastConfirmedBlockHash, err := ms.BitcoinClientContract.GetLastConfirmedBlockHash()
+			if err != nil {
+				return fmt.Errorf("failed to get last confirmed block hash: %w", err)
+			}
+
+			lastConfirmedBlockHeight, err := ms.bitcoinClient.GetBlockHeightByHash(lastConfirmedBlockHash)
+			if err != nil {
+				return fmt.Errorf("failed to get last confirmed block height: %w", err)
+			}
+
+			confirmations := lastConfirmedBlockHeight - bitcoinTXBlockHeight
+
+			if confirmations >= ms.confirmationsNeeded {
+				//make processing
+				return nil
+			}
+		}
+	}
 }

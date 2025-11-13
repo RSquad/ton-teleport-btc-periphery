@@ -3,7 +3,9 @@ package main
 import (
 	"context"
 	"database/sql"
+	"encoding/hex"
 	"fmt"
+	jwv4r2contract "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/jw_v4r2_contract"
 	"log"
 	"sync"
 	"time"
@@ -36,6 +38,7 @@ type App struct {
 	EventService          *events.EventService
 	CoordinatorContract   coordinator.Coordinator
 	BitcoinClientContract *bitcoinclientcontract.BitcoinClientContract
+	JWV4R2Contract        *jwv4r2contract.JWV4R2Contract
 	PegoutManager         *pegoutmanager.PegoutManager
 	MintService           *mintservice.MintService
 	HttpService           *httpservice.HttpService
@@ -141,13 +144,38 @@ func initialize() (*App, error) {
 		log.Fatalf("failed creating repos schema: %v", err)
 	}
 
+	jwV4R2Secret, err := hex.DecodeString(cfg.IndexerWalletV4Secret)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode jwv4r2 secret: %w", err)
+	}
+
+	jwV4R2Contract, err := jwv4r2contract.NewJWV4R2Contract(
+		tonClient.API,
+		jwV4R2Secret,
+		context.Background(),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create jwv4r2 contract: %w", err)
+	}
+
+	bitcoinClientContract := bitcoinclientcontract.NewBitcoinClientContract(
+		cfg.BitcoinClientContractAddr,
+		tonClient,
+		jwV4R2Contract,
+		context.Background(),
+	)
+
 	// Mint service
-	mintService := mintservice.New(
+	mintService, err := mintservice.New(
 		repo,
 		bitcoinClient,
 		tonClient,
 		teleportContract,
+		bitcoinClientContract,
 	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create mint service: %w", err)
+	}
 
 	// Pegout manager
 	pegoutManager, err := pegoutmanager.New(
@@ -183,14 +211,16 @@ func initialize() (*App, error) {
 		Msg("initialized")
 
 	return &App{
-		Repo:                repo,
-		TonClient:           tonClient,
-		BitcoinClient:       bitcoinClient,
-		CoordinatorContract: coordinatorContract,
-		PegoutManager:       pegoutManager,
-		MintService:         mintService,
-		EventService:        eventService,
-		HttpService:         httpService,
+		Repo:                  repo,
+		TonClient:             tonClient,
+		BitcoinClient:         bitcoinClient,
+		CoordinatorContract:   coordinatorContract,
+		PegoutManager:         pegoutManager,
+		MintService:           mintService,
+		EventService:          eventService,
+		HttpService:           httpService,
+		BitcoinClientContract: bitcoinClientContract,
+		JWV4R2Contract:        jwV4R2Contract,
 	}, nil
 }
 
