@@ -5,7 +5,9 @@ import (
 	"context"
 	"encoding/binary"
 	"encoding/hex"
+	"fmt"
 	"math/big"
+	"math/rand/v2"
 
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/wire"
@@ -24,6 +26,7 @@ import (
 
 const (
 	opCodeConfirmPegoutTx            = 0xbd0eaf09
+	opCodeTeleportTransferBtc        = 0x3f781d24
 	storageIndexId                   = 0
 	storageIndexBlockCode            = 1
 	storageIndexDeposits             = 2
@@ -123,34 +126,10 @@ func (c *TeleportContract) SendPegoutProof(
 	blockHashUInt := new(big.Int).SetBytes(blockHash.CloneBytes())
 	txIDUInt := new(big.Int).SetBytes(txID.CloneBytes())
 
-	const txCountLen = 4
-	txCount := make([]byte, txCountLen)
-	binary.LittleEndian.PutUint32(txCount, merkleBlock.Transactions)
-
-	hashesCountBuf := new(bytes.Buffer)
-	if err := wire.WriteVarInt(hashesCountBuf, 0, uint64(len(merkleBlock.Hashes))); err != nil {
-		return nil, nil, err
+	proofCell, err := c.buildProofCell(merkleBlock)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to build proof cell: %w", err)
 	}
-	hashesCount := hashesCountBuf.Bytes()
-
-	hashesBuilder := cell.BeginCell()
-	c.storeHashesToCell(merkleBlock.Hashes, hashesBuilder)
-	hashesCell := hashesBuilder.EndCell()
-
-	flagsLenBuf := new(bytes.Buffer)
-	if err := wire.WriteVarInt(flagsLenBuf, 0, uint64(len(merkleBlock.Flags))); err != nil {
-		return nil, nil, err
-	}
-	flagsLen := flagsLenBuf.Bytes()
-
-	flagsCell := cell.BeginCell().MustStoreBinarySnake(merkleBlock.Flags).EndCell()
-
-	proofCell := cell.BeginCell().
-		MustStoreSlice(txCount, txCountLen*8).
-		MustStoreSlice(hashesCount, uint(len(hashesCount))*8).
-		MustStoreRef(hashesCell).
-		MustStoreSlice(flagsLen, uint(len(flagsLen))*8).
-		MustStoreRef(flagsCell).EndCell()
 
 	payload := cell.BeginCell().
 		MustStoreUInt(opCodeConfirmPegoutTx, 32).
@@ -158,6 +137,52 @@ func (c *TeleportContract) SendPegoutProof(
 		MustStoreBigUInt(txIDUInt, 256).MustStoreRef(proofCell).EndCell()
 
 	message := wallet.SimpleMessage(c.Addr, tlb.MustFromTON("0.1"), payload)
+
+	return c.sender.SendWaitTransaction(c.ctx, message)
+}
+
+func (c *TeleportContract) SendDeposit(
+	ctx context.Context,
+	bitcoinTxID *chainhash.Hash,
+	blockHash *chainhash.Hash,
+	receiverAddressStr string,
+	indexerAddressStr string,
+	recoveryKey string,
+	txHex string,
+	txProof []byte,
+) (*tlb.Transaction, *tonutils.BlockIDExt, error) {
+	blockHashUInt := new(big.Int).SetBytes(blockHash.CloneBytes())
+	destAddress := address.MustParseAddr(receiverAddressStr)
+	indexerAddress := address.MustParseAddr(indexerAddressStr)
+	queryId := rand.Uint64()
+
+	decodedTxProof, err := c.decodeTxProof(txProof)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to decode tx proof: %w", err)
+	}
+
+	proofCell, err := c.buildProofCell(decodedTxProof)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to build proof cell: %w", err)
+	}
+
+	recoveryKeyBytes, err := hex.DecodeString(recoveryKey)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to decode recovery key: %w", err)
+	}
+
+	sendDepositBodyCell := cell.BeginCell().
+		MustStoreUInt(opCodeTeleportTransferBtc, 32).
+		MustStoreUInt(queryId, 64).
+		MustStoreUInt(blockHashUInt.Uint64(), 256).
+		MustStoreRef(c.serializeTransaction(txHex)).
+		MustStoreRef(proofCell).
+		MustStoreMaybeRef(cell.BeginCell().MustStoreBinarySnake(recoveryKeyBytes).EndCell()).
+		MustStoreAddr(destAddress).
+		MustStoreAddr(indexerAddress).
+		EndCell()
+
+	message := wallet.SimpleMessage(c.Addr, tlb.MustFromTON("0.1"), sendDepositBodyCell)
 
 	return c.sender.SendWaitTransaction(c.ctx, message)
 }
@@ -380,4 +405,189 @@ func loadUTXOset(utxoSetCell *cell.Cell) (map[string]UTXOData, error) {
 	}
 
 	return *utxoSet, nil
+}
+
+func (c *TeleportContract) decodeTxProof(txProof []byte) (*wire.MsgMerkleBlock, error) {
+	var merkleBlock wire.MsgMerkleBlock
+	buf := bytes.NewBuffer(txProof)
+	err := merkleBlock.BtcDecode(buf, wire.ProtocolVersion, wire.BaseEncoding)
+	if err != nil {
+		return nil, err
+	}
+
+	return &merkleBlock, nil
+}
+
+func (c *TeleportContract) serializeTransaction(txHex string) *cell.Cell {
+	offset := 0
+	flags := uint8(0)
+	txbuilder := cell.BeginCell()
+	txbuffer, err := hex.DecodeString(txHex)
+	if err != nil {
+		panic("Invalid hex string: " + err.Error())
+	}
+
+	versionBuf := txbuffer[offset : offset+4]
+	offset += 4
+	txbuilder.MustStoreSlice(versionBuf, 32)
+
+	txInBuf := readTxIn(txbuffer, &offset)
+
+	// Check if there are no inputs but witness marker (2 bytes = 0001)
+	if len(txInBuf) == 1 && txInBuf[0] == 0 {
+		flags = txbuffer[offset]
+		if flags != 0 {
+			offset += 1
+			// Store dummy + flags: 0001
+			txbuilder.MustStoreSlice(txbuffer[offset-2:offset], 16)
+			txInBuf = readTxIn(txbuffer, &offset)
+		}
+	}
+
+	txOutBuf := readTxOut(txbuffer, &offset)
+
+	txbuilder.MustStoreRef(splitBufferToCells(txInBuf))
+	txbuilder.MustStoreRef(splitBufferToCells(txOutBuf))
+
+	if flags&1 != 0 {
+		flags ^= 1
+		witnessStart := offset
+		inCount, _ := readCompactSize(txInBuf, 0)
+		for txin := uint64(0); txin < inCount; txin++ {
+			witnessCount, size := readCompactSize(txbuffer, offset)
+			offset += size
+			for i := uint64(0); i < witnessCount; i++ {
+				witnessLen, size := readCompactSize(txbuffer, offset)
+				offset += size
+				offset += int(witnessLen)
+			}
+		}
+		witnessEnd := offset
+		witnessBuf := txbuffer[witnessStart:witnessEnd]
+		txbuilder.MustStoreRef(splitBufferToCells(witnessBuf))
+	}
+
+	locktimeBuf := txbuffer[offset : offset+4]
+	offset += 4
+	txbuilder.MustStoreSlice(locktimeBuf, 32)
+
+	if len(txbuffer) != offset {
+		panic("Invalid transaction parsing")
+	}
+
+	return txbuilder.EndCell()
+}
+
+func readTxIn(txbuffer []byte, offset *int) []byte {
+	start := *offset
+	inCount, size := readCompactSize(txbuffer, *offset)
+	*offset += size
+
+	for i := uint64(0); i < inCount; i++ {
+		*offset += 36 // prev_hash (32) + prev_index (4)
+		scriptLen, size := readCompactSize(txbuffer, *offset)
+		*offset += size
+		*offset += int(scriptLen) // script
+		*offset += 4              // sequence
+	}
+
+	return txbuffer[start:*offset]
+}
+
+func readTxOut(txbuffer []byte, offset *int) []byte {
+	start := *offset
+	outCount, size := readCompactSize(txbuffer, *offset)
+	*offset += size
+
+	for i := uint64(0); i < outCount; i++ {
+		*offset += 8 // value (8 bytes)
+		scriptLen, size := readCompactSize(txbuffer, *offset)
+		*offset += size
+		*offset += int(scriptLen) // script
+	}
+
+	return txbuffer[start:*offset]
+}
+
+func readCompactSize(buffer []byte, offset int) (uint64, int) {
+	if buffer[offset] < 0xfd {
+		return uint64(buffer[offset]), 1
+	} else if buffer[offset] == 0xfd {
+		return uint64(binary.LittleEndian.Uint16(buffer[offset+1 : offset+3])), 3
+	} else if buffer[offset] == 0xfe {
+		return uint64(binary.LittleEndian.Uint32(buffer[offset+1 : offset+5])), 5
+	} else {
+		return binary.LittleEndian.Uint64(buffer[offset+1 : offset+9]), 9
+	}
+}
+
+func splitBufferToCells(buffer []byte, splitSize ...int) *cell.Cell {
+	sz := 1 // default splitSize
+	if len(splitSize) > 0 && splitSize[0] > 0 {
+		sz = splitSize[0]
+	}
+	if sz > 127 {
+		sz = 127
+	}
+
+	cellCapacity := (127 / sz) * sz
+	cellsCount := (len(buffer) + cellCapacity - 1) / cellCapacity // ceil division
+
+	if cellsCount <= 1 {
+		return cell.BeginCell().MustStoreSlice(buffer, uint(len(buffer)*8)).EndCell()
+	}
+
+	cells := make([]*cell.Builder, cellsCount)
+	offset := 0
+
+	// Create cells for all chunks except last
+	for i := 0; i < cellsCount-1; i++ {
+		chunk := buffer[offset : offset+cellCapacity]
+		cells[i] = cell.BeginCell().MustStoreSlice(chunk, uint(len(chunk)*8))
+		offset += cellCapacity
+	}
+
+	// Last cell with remaining data
+	remaining := buffer[offset:]
+	cells[cellsCount-1] = cell.BeginCell().MustStoreSlice(remaining, uint(len(remaining)*8))
+
+	// Link cells in reverse order (last to first)
+	for i := cellsCount - 1; i >= 1; i-- {
+		cells[i-1].MustStoreRef(cells[i].EndCell())
+	}
+
+	return cells[0].EndCell()
+}
+
+func (c *TeleportContract) buildProofCell(merkleBlock *wire.MsgMerkleBlock) (*cell.Cell, error) {
+	const txCountLen = 4
+	txCount := make([]byte, txCountLen)
+	binary.LittleEndian.PutUint32(txCount, merkleBlock.Transactions)
+
+	hashesCountBuf := new(bytes.Buffer)
+	if err := wire.WriteVarInt(hashesCountBuf, 0, uint64(len(merkleBlock.Hashes))); err != nil {
+		return nil, fmt.Errorf("failed to write hashes count: %w", err)
+	}
+	hashesCount := hashesCountBuf.Bytes()
+
+	hashesBuilder := cell.BeginCell()
+	c.storeHashesToCell(merkleBlock.Hashes, hashesBuilder)
+	hashesCell := hashesBuilder.EndCell()
+
+	flagsLenBuf := new(bytes.Buffer)
+	if err := wire.WriteVarInt(flagsLenBuf, 0, uint64(len(merkleBlock.Flags))); err != nil {
+		return nil, fmt.Errorf("failed to write flags count: %w", err)
+	}
+	flagsLen := flagsLenBuf.Bytes()
+
+	flagsCell := cell.BeginCell().MustStoreBinarySnake(merkleBlock.Flags).EndCell()
+
+	proofCell := cell.BeginCell().
+		MustStoreSlice(txCount, txCountLen*8).
+		MustStoreSlice(hashesCount, uint(len(hashesCount))*8).
+		MustStoreRef(hashesCell).
+		MustStoreSlice(flagsLen, uint(len(flagsLen))*8).
+		MustStoreRef(flagsCell).EndCell()
+
+	return proofCell, nil
 }
