@@ -245,6 +245,8 @@ func (ms *MintService) handlePendingMint(
 		return fmt.Errorf(errCalcBitcoinTxID, err)
 	}
 
+	fmt.Println("lalalala: ", bitcoinTxID.String())
+
 	if err = ms.waitConfirmations(ctx, bitcoinTxID); err != nil {
 		return fmt.Errorf("failed when waiting confirmations: %w", err)
 	}
@@ -329,7 +331,9 @@ func (ms *MintService) updateMintStatus(ctx context.Context, mintID int, status 
 }
 
 func (ms *MintService) waitConfirmations(ctx context.Context, bitcoinTxID *chainhash.Hash) error {
-	ticker := time.NewTicker(15 * time.Second)
+	logWaitConfirmationsStarted(bitcoinTxID.String(), ms.confirmationsNeeded)
+
+	ticker := time.NewTicker(5 * time.Second)
 	defer ticker.Stop()
 
 	for {
@@ -360,15 +364,21 @@ func (ms *MintService) waitConfirmations(ctx context.Context, bitcoinTxID *chain
 
 			confirmations := lastConfirmedBlockHeight - bitcoinTXBlockHeight
 
+			logConfirmationsCheck(bitcoinTxID.String(), confirmations, ms.confirmationsNeeded)
+
 			if confirmations >= ms.confirmationsNeeded {
+				logConfirmationsReached(bitcoinTxID.String(), confirmations)
 				receiverAddress, recoveryKey, txHex, txProof, err := ms.fetchTransactionInfo(ctx, bitcoinTxID, bitcoinTXBlockHash)
 				if err != nil {
 					return fmt.Errorf("failed to fetch transaction info: %w", err)
 				}
-				_, _, err = ms.teleportContract.SendDeposit(ctx, bitcoinTxID, bitcoinTXBlockHash, receiverAddress, ms.BitcoinClientContract.Addr.String(), recoveryKey, txHex, txProof)
+
+				logSendDepositStarted(bitcoinTxID.String(), receiverAddress)
+				depositTxHash, _, err := ms.teleportContract.SendDeposit(ctx, bitcoinTxID, bitcoinTXBlockHash, receiverAddress, ms.BitcoinClientContract.Addr.String(), recoveryKey, txHex, txProof)
 				if err != nil {
 					return fmt.Errorf("failed to send deposit: %w", err)
 				}
+				logSendDepositCompleted(bitcoinTxID.String(), depositTxHash.String())
 
 				return nil
 			}
@@ -387,6 +397,8 @@ func (ms *MintService) fetchTransactionInfo(
 	txProof []byte,
 	err error,
 ) {
+	logFetchTransactionInfoStarted(bitcoinTxID.String())
+
 	txProofStr, err := ms.bitcoinClient.GetTxProof(bitcoinTxID, blockHash)
 	if err != nil {
 		return "", "", "", nil, fmt.Errorf("failed to get tx proof: %w", err)
@@ -411,5 +423,6 @@ func (ms *MintService) fetchTransactionInfo(
 		return "", "", "", nil, fmt.Errorf("failed to get pegin: %w", err)
 	}
 
+	logFetchTransactionInfoCompleted(bitcoinTxID.String(), existingPegin.ReceiverAddr)
 	return existingPegin.ReceiverAddr, existingPegin.RecoveryKey, txHex, txProof, nil
 }
