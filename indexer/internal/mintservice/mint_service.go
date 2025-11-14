@@ -33,8 +33,8 @@ type MintService struct {
 	bitcoinClient         *bitcoin.Client
 	tonClient             *tonclient.TonClient
 	teleportContract      *teleportcontract.TeleportContract
-	BitcoinClientContract *bitcoinclientcontract.BitcoinClientContract
-	confirmationsNeeded   int64
+	bitcoinClientContract *bitcoinclientcontract.BitcoinClientContract
+	ConfirmationsNeeded   int64
 }
 
 func New(
@@ -54,8 +54,8 @@ func New(
 		bitcoinClient:         bitcoinClient,
 		tonClient:             tonClient,
 		teleportContract:      teleportContract,
-		confirmationsNeeded:   confirmationsNeeded,
-		BitcoinClientContract: bitcoinClientContract,
+		ConfirmationsNeeded:   confirmationsNeeded,
+		bitcoinClientContract: bitcoinClientContract,
 	}, nil
 }
 
@@ -331,7 +331,7 @@ func (ms *MintService) updateMintStatus(ctx context.Context, mintID int, status 
 }
 
 func (ms *MintService) waitConfirmations(ctx context.Context, bitcoinTxID *chainhash.Hash) error {
-	logWaitConfirmationsStarted(bitcoinTxID.String(), ms.confirmationsNeeded)
+	logWaitConfirmationsStarted(bitcoinTxID.String(), ms.ConfirmationsNeeded)
 
 	ticker := time.NewTicker(5 * time.Second)
 	defer ticker.Stop()
@@ -352,7 +352,7 @@ func (ms *MintService) waitConfirmations(ctx context.Context, bitcoinTxID *chain
 				return fmt.Errorf("failed to get block height: %w", err)
 			}
 
-			lastConfirmedBlockHash, err := ms.BitcoinClientContract.GetLastConfirmedBlockHash()
+			lastConfirmedBlockHash, err := ms.bitcoinClientContract.GetLastConfirmedBlockHash()
 			if err != nil {
 				return fmt.Errorf("failed to get last confirmed block hash: %w", err)
 			}
@@ -364,9 +364,9 @@ func (ms *MintService) waitConfirmations(ctx context.Context, bitcoinTxID *chain
 
 			confirmations := lastConfirmedBlockHeight - bitcoinTXBlockHeight
 
-			logConfirmationsCheck(bitcoinTxID.String(), confirmations, ms.confirmationsNeeded)
+			logConfirmationsCheck(bitcoinTxID.String(), confirmations, ms.ConfirmationsNeeded)
 
-			if confirmations >= ms.confirmationsNeeded {
+			if confirmations >= ms.ConfirmationsNeeded {
 				logConfirmationsReached(bitcoinTxID.String(), confirmations)
 				receiverAddress, recoveryKey, txHex, txProof, err := ms.fetchTransactionInfo(ctx, bitcoinTxID, bitcoinTXBlockHash)
 				if err != nil {
@@ -374,7 +374,7 @@ func (ms *MintService) waitConfirmations(ctx context.Context, bitcoinTxID *chain
 				}
 
 				logSendDepositStarted(bitcoinTxID.String(), receiverAddress)
-				depositTxHash, _, err := ms.teleportContract.SendDeposit(ctx, bitcoinTxID, bitcoinTXBlockHash, receiverAddress, ms.BitcoinClientContract.Addr.String(), recoveryKey, txHex, txProof)
+				depositTxHash, _, err := ms.teleportContract.SendDeposit(ctx, bitcoinTxID, bitcoinTXBlockHash, receiverAddress, ms.bitcoinClientContract.Addr.String(), recoveryKey, txHex, txProof)
 				if err != nil {
 					return fmt.Errorf("failed to send deposit: %w", err)
 				}
