@@ -68,9 +68,7 @@ func (ed *EventDispatcher) handleEvent(rawEvent *ton.RawEvent) error {
 	}
 
 	tonTx, err := ed.tonTxWriter.Write(rawEvent)
-
-	ok, err := ed.handleTonTxWriteError(err)
-	if !ok {
+	if err != nil {
 		return err
 	}
 
