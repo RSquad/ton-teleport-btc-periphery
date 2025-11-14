@@ -152,7 +152,7 @@ func (c *TeleportContract) SendDeposit(
 	txProof []byte,
 ) (*tlb.Transaction, *tonutils.BlockIDExt, error) {
 	blockHashUInt := new(big.Int).SetBytes(blockHash.CloneBytes())
-	destAddress := address.MustParseAddr(receiverAddressStr)
+	destAddress := address.MustParseRawAddr(receiverAddressStr)
 	indexerAddress := address.MustParseAddr(indexerAddressStr)
 	queryId := rand.Uint64()
 
@@ -182,7 +182,7 @@ func (c *TeleportContract) SendDeposit(
 		MustStoreAddr(indexerAddress).
 		EndCell()
 
-	message := wallet.SimpleMessage(c.Addr, tlb.MustFromTON("0.1"), sendDepositBodyCell)
+	message := wallet.SimpleMessage(c.Addr, tlb.MustFromTON("1"), sendDepositBodyCell)
 
 	return c.sender.SendWaitTransaction(c.ctx, message)
 }
@@ -429,13 +429,13 @@ func (c *TeleportContract) serializeTransaction(txHex string) *cell.Cell {
 
 	versionBuf := txbuffer[offset : offset+4]
 	offset += 4
-	txbuilder.MustStoreSlice(versionBuf, 32)
+	txbuilder.MustStoreUInt(uint64(binary.LittleEndian.Uint32(versionBuf)), 32)
 
 	txInBuf := readTxIn(txbuffer, &offset)
 
 	// Check if there are no inputs but witness marker (2 bytes = 0001)
 	if len(txInBuf) == 1 && txInBuf[0] == 0 {
-		flags = txbuffer[offset]
+		flags = uint8(txbuffer[offset : offset+1][0])
 		if flags != 0 {
 			offset += 1
 			// Store dummy + flags: 0001
@@ -510,15 +510,18 @@ func readTxOut(txbuffer []byte, offset *int) []byte {
 }
 
 func readCompactSize(buffer []byte, offset int) (uint64, int) {
-	if buffer[offset] < 0xfd {
-		return uint64(buffer[offset]), 1
-	} else if buffer[offset] == 0xfd {
-		return uint64(binary.LittleEndian.Uint16(buffer[offset+1 : offset+3])), 3
-	} else if buffer[offset] == 0xfe {
-		return uint64(binary.LittleEndian.Uint32(buffer[offset+1 : offset+5])), 5
-	} else {
-		return binary.LittleEndian.Uint64(buffer[offset+1 : offset+9]), 9
+	sizeBytes := 1
+	value := uint8(buffer[offset])
+	if value < 0xfd {
+		return uint64(value), sizeBytes
+	} else if value == 0xfd {
+		return uint64(binary.LittleEndian.Uint16(buffer[offset+1 : offset+3])), sizeBytes + 2
+	} else if value == 0xfe {
+		return uint64(binary.LittleEndian.Uint32(buffer[offset+1 : offset+5])), sizeBytes + 4
+	} else if value == 0xff {
+		return binary.LittleEndian.Uint64(buffer[offset+1 : offset+9]), sizeBytes + 8
 	}
+	return uint64(value), sizeBytes
 }
 
 func splitBufferToCells(buffer []byte, splitSize ...int) *cell.Cell {
