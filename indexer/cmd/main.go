@@ -6,7 +6,10 @@ import (
 	"encoding/hex"
 	"fmt"
 	"log"
+	"os"
+	"os/signal"
 	"sync"
+	"syscall"
 	"time"
 
 	jwv4r2contract "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/jw_v4r2_contract"
@@ -56,6 +59,31 @@ func main() {
 	if err := run(app); err != nil {
 		log.Fatalf("stopped with error: %v", err)
 	}
+}
+
+func openDB(connectionUrl string, maxOpenConns int, maxIdleConns int) (*ent.Client, error) {
+	db, err := sql.Open("postgres", connectionUrl)
+	if err != nil {
+		return nil, err
+	}
+
+	db.SetMaxOpenConns(maxOpenConns)
+	db.SetMaxIdleConns(maxIdleConns)
+	db.SetConnMaxLifetime(1 * time.Minute)
+	db.SetConnMaxIdleTime(1 * time.Minute)
+
+	drv := entsql.OpenDB(dialect.Postgres, db)
+	repo := ent.NewClient(ent.Driver(drv))
+
+	if err := repo.Schema.Create(
+		context.Background(),
+		migrate.WithGlobalUniqueID(true),
+		migrate.WithDropIndex(true),
+		migrate.WithDropColumn(true),
+	); err != nil {
+		return nil, fmt.Errorf("failed creating repos schema: %w", err)
+	}
+	return repo, nil
 }
 
 func initialize() (*App, error) {
@@ -132,31 +160,9 @@ func initialize() (*App, error) {
 		context.Background(),
 	)
 
-	// Open DB connection
-	var dbConnPoolGraphql *sql.DB = nil
-	{
-		dbConnPoolGraphql, err = sql.Open("postgres", cfg.DatabaseUrl)
-		if err != nil {
-			return nil, err
-		}
-
-		// Setup DB pooling (graphql)
-		dbConnPoolGraphql.SetMaxOpenConns(cfg.DatabaseMaxConn)
-		dbConnPoolGraphql.SetMaxIdleConns(cfg.DatabaseMaxIdleConn)
-		dbConnPoolGraphql.SetConnMaxLifetime(1 * time.Minute)
-		dbConnPoolGraphql.SetConnMaxIdleTime(1 * time.Minute)
-	}
-
-	drv := entsql.OpenDB(dialect.Postgres, dbConnPoolGraphql)
-	repo := ent.NewClient(ent.Driver(drv))
-
-	if err := repo.Schema.Create(
-		context.Background(),
-		migrate.WithGlobalUniqueID(true),
-		migrate.WithDropIndex(true),
-		migrate.WithDropColumn(true),
-	); err != nil {
-		log.Fatalf("failed creating repos schema: %v", err)
+	repo, err := openDB(cfg.DatabaseUrl, cfg.DatabaseMaxConn, cfg.DatabaseMaxIdleConn)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open database: %w", err)
 	}
 
 	bitcoinClientContract := bitcoinclientcontract.NewBitcoinClientContract(
@@ -228,13 +234,31 @@ func initialize() (*App, error) {
 func run(app *App) error {
 	defer app.Repo.Close()
 
+	// Create context that will be cancelled on SIGTERM/SIGINT
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// Set up signal handling
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+
+	// Start a goroutine to cancel context when signal is received
+	go func() {
+		sig := <-sigChan
+		logger.Log.Info().
+			Str("component", "main").
+			Str("signal", sig.String()).
+			Msg("received shutdown signal, initiating graceful shutdown")
+		cancel()
+	}()
+
 	var wg sync.WaitGroup
 
 	if app.EventService != nil {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			app.EventService.Work(context.Background())
+			app.EventService.Work(ctx)
 		}()
 	}
 
@@ -250,7 +274,7 @@ func run(app *App) error {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			app.MintService.Work(context.Background())
+			app.MintService.Work(ctx)
 		}()
 	}
 
@@ -258,12 +282,14 @@ func run(app *App) error {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			app.HttpService.Work(context.Background())
+			app.HttpService.Work(ctx)
 		}()
 	}
 
 	wg.Wait()
 
-	log.Println("shutdown complete")
+	logger.Log.Info().
+		Str("component", "main").
+		Msg("shutdown complete")
 	return nil
 }

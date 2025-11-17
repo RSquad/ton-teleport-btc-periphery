@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/tontx"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton"
 	"golang.org/x/sync/errgroup"
 )
@@ -30,21 +31,31 @@ func NewEventDispatcher(
 	}
 }
 
-func (ed *EventDispatcher) Work(ctx context.Context) error {
+func (ed *EventDispatcher) Work(ctx context.Context) (err error) {
+	logger.Log.Info().Str("component", "EventDispatcher").Msg("started")
+	defer func() {
+		logger.Log.Info().Str("component", "EventDispatcher").Err(err).Msg("finished")
+	}()
 	g, ctx := errgroup.WithContext(ctx)
 	g.SetLimit(64)
 
 	for {
 		select {
 		case <-ctx.Done():
+			g.Wait()
 			return ctx.Err()
 		case rawEvent, ok := <-ed.inChan:
+			// if channel is closed, wait for all goroutines to finish
 			if !ok {
+				logger.Log.Debug().Str("component", "EventDispatcher").Msg("event channel closed")
 				return g.Wait()
 			}
 
 			g.Go(func() error {
-				return ed.handleEvent(rawEvent)
+				if err := ed.handleEvent(rawEvent); err != nil {
+					logger.Log.Error().Str("component", "EventDispatcher").Err(err).Msg("event handler failed")
+				}
+				return nil
 			})
 		}
 	}
@@ -57,9 +68,7 @@ func (ed *EventDispatcher) handleEvent(rawEvent *ton.RawEvent) error {
 	}
 
 	tonTx, err := ed.tonTxWriter.Write(rawEvent)
-
-	ok, err := ed.handleTonTxWriteError(err)
-	if !ok {
+	if err != nil {
 		return err
 	}
 
