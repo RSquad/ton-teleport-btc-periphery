@@ -2,7 +2,9 @@ package tonclient
 
 import (
 	"context"
+	"time"
 
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 	"github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/tlb"
 )
@@ -30,7 +32,9 @@ func NewTxSubscriber(
 
 func (ts *TxSubscriber) Work(ctx context.Context) (err error) {
 	ts.logStartWork()
-	defer ts.logFinishWork(err)
+	defer func() {
+		ts.logFinishWork(err)
+	}()
 
 	subChan := make(chan *tlb.Transaction)
 	go ts.tonClient.API.SubscribeOnTransactions(ctx, ts.addr, ts.lt, subChan)
@@ -44,7 +48,22 @@ func (ts *TxSubscriber) Work(ctx context.Context) (err error) {
 				return nil
 			}
 			ts.logTxReceived(tx)
-			ts.outChan <- tx
+			if err := ts.writeToChannel(ctx, tx); err != nil {
+				return err
+			}
+		}
+	}
+}
+
+func (ts *TxSubscriber) writeToChannel(ctx context.Context, tx *tlb.Transaction) error {
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case ts.outChan <- tx:
+			return nil
+		case <-time.After(5 * time.Second):
+			logger.Log.Debug().Str("component", "TxSubscriber").Msg("channel is full, retrying...")
 		}
 	}
 }

@@ -1,12 +1,15 @@
 package alerts
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/teleportcontract"
+	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/mutils"
 )
 
 func TestAlertTotalServiceFee(t *testing.T) {
+	runbookUrl := mutils.CreateHTMLHyperlink("link", "http://runbook/TotalServiceFee.md")
 	tests := []TestDesc{
 		{
 			Name: "SEVERITY_OK (TotalServiceFee = 4000)",
@@ -34,7 +37,7 @@ func TestAlertTotalServiceFee(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_WARNING,
-				Description: "Total service fee is less than 3000 satoshi",
+				Description: Description(fmt.Sprintf("Total service fee is less than 3000 satoshi.\nRunbook url: %s", runbookUrl)),
 				Err:         nil,
 			},
 		},
@@ -49,7 +52,7 @@ func TestAlertTotalServiceFee(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_CRITICAL,
-				Description: "Total service fee is less than 0 satoshi",
+				Description: Description(fmt.Sprintf("Total service fee is less than 0 satoshi.\nRunbook url: %s", runbookUrl)),
 				Err:         nil,
 			},
 		},
@@ -64,7 +67,7 @@ func TestAlertTotalServiceFee(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_CRITICAL,
-				Description: "Total service fee is less than 0 satoshi",
+				Description: Description(fmt.Sprintf("Total service fee is less than 0 satoshi.\nRunbook url: %s", runbookUrl)),
 				Err:         nil,
 			},
 		},

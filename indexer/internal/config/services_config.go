@@ -3,6 +3,8 @@ package config
 import (
 	"fmt"
 	"strconv"
+	"sync"
+	"time"
 
 	"github.com/xssnick/tonutils-go/address"
 )
@@ -17,6 +19,7 @@ type ServicesConfig struct {
 	DatabaseMaxIdleConn       int
 	CoordinatorContractAddr   *address.Address
 	PProfHttpEnable           bool
+  ServerTimeout           time.Duration
 	BitcoinClientContractAddr *address.Address
 	IndexerWalletV4Secret     string
 }
@@ -71,10 +74,12 @@ func NewServicesConfig(envConfig *EnvConfig) (*ServicesConfig, error) {
 		DatabaseMaxIdleConn:       databaseMaxIdleConn,
 		CoordinatorContractAddr:   coordinatorContractAddr,
 		PProfHttpEnable:           pprofHttpEnable,
+    ServerTimeout:           envConfig.ServerTimeout,
 		BitcoinClientContractAddr: BitcoinClientContractAddr,
 		IndexerWalletV4Secret:     envConfig.IndexerWalletV4Secret,
 	}
 
+	initGlobalConfig(cfg)
 	return cfg, nil
 }
 

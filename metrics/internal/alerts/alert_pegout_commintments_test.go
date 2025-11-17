@@ -2,11 +2,13 @@ package alerts
 
 import (
 	"encoding/hex"
+	"fmt"
 	"math/big"
 	"testing"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/data_models"
+	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/mutils"
 	"github.com/xssnick/tonutils-go/address"
 )
 
@@ -16,6 +18,10 @@ func TestAlertPegoutCommintments(t *testing.T) {
 
 	bitcoin_tx_id_1, _ := hex.DecodeString("f7df2a86684e500a3c6c7ca785b8500e4e3c89d1751edf86b6deb68e761a329b")
 	bitcoin_tx_id_2, _ := hex.DecodeString("3d46303861d5336c3ebdea3a20883a1cb77f4f3a66a2fb5e6494d3a0ab878bd1")
+
+	tonUrl := mutils.CreateHTMLHyperlink("link", "http://ton/0:0fb5045f7c7ad70131e8918305420ba9ba7c317d37b631a8a7d4560552dfbc78")
+	btcUrl := mutils.CreateHTMLHyperlink("link", "http://btc/f7df2a86684e500a3c6c7ca785b8500e4e3c89d1751edf86b6deb68e761a329b")
+	runbookUrl := mutils.CreateHTMLHyperlink("link", "http://runbook/PegoutCommitments.md")
 
 	tests := []TestDesc{
 		{
@@ -98,7 +104,7 @@ func TestAlertPegoutCommintments(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_INFO,
-				Description: "The number of pegout commitments is 9 of 10 (90%). Pegout: http://ton/0:0fb5045f7c7ad70131e8918305420ba9ba7c317d37b631a8a7d4560552dfbc78. Bitcoin TX: http://btc/f7df2a86684e500a3c6c7ca785b8500e4e3c89d1751edf86b6deb68e761a329b",
+				Description: Description(fmt.Sprintf("The number of pegout commitments is 9 of 10 (90%%).\nPegout: %s.\nBitcoin TX: %s.\nRunbook url: %s", tonUrl, btcUrl, runbookUrl)),
 				Err:         nil,
 			},
 		},
@@ -126,7 +132,7 @@ func TestAlertPegoutCommintments(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_WARNING,
-				Description: "The number of pegout commitments is 8 of 10 (80%). Pegout: http://ton/0:0fb5045f7c7ad70131e8918305420ba9ba7c317d37b631a8a7d4560552dfbc78. Bitcoin TX: http://btc/f7df2a86684e500a3c6c7ca785b8500e4e3c89d1751edf86b6deb68e761a329b",
+				Description: Description(fmt.Sprintf("The number of pegout commitments is 8 of 10 (80%%).\nPegout: %s.\nBitcoin TX: %s.\nRunbook url: %s", tonUrl, btcUrl, runbookUrl)),
 				Err:         nil,
 			},
 		},
@@ -154,7 +160,7 @@ func TestAlertPegoutCommintments(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_CRITICAL,
-				Description: "The number of pegout commitments is 7 of 10 (70%). Pegout: http://ton/0:0fb5045f7c7ad70131e8918305420ba9ba7c317d37b631a8a7d4560552dfbc78. Bitcoin TX: http://btc/f7df2a86684e500a3c6c7ca785b8500e4e3c89d1751edf86b6deb68e761a329b",
+				Description: Description(fmt.Sprintf("The number of pegout commitments is 7 of 10 (70%%).\nPegout: %s.\nBitcoin TX: %s.\nRunbook url: %s", tonUrl, btcUrl, runbookUrl)),
 				Err:         nil,
 			},
 		},
@@ -182,7 +188,7 @@ func TestAlertPegoutCommintments(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_CRITICAL,
-				Description: "The number of pegout commitments is 6 of 10 (60%). Pegout: http://ton/0:0fb5045f7c7ad70131e8918305420ba9ba7c317d37b631a8a7d4560552dfbc78. Bitcoin TX: http://btc/f7df2a86684e500a3c6c7ca785b8500e4e3c89d1751edf86b6deb68e761a329b",
+				Description: Description(fmt.Sprintf("The number of pegout commitments is 6 of 10 (60%%).\nPegout: %s.\nBitcoin TX: %s.\nRunbook url: %s", tonUrl, btcUrl, runbookUrl)),
 				Err:         nil,
 			},
 		},

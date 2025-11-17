@@ -2,7 +2,9 @@ package events
 
 import (
 	"context"
+	"sync"
 
+	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/config"
 	ent "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/pegout"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/tontx"
@@ -38,7 +40,9 @@ func NewEventService(
 
 func (es *EventService) Work(ctx context.Context) (err error) {
 	es.logStartWork()
-	defer es.logFinishWork(err)
+	defer func() {
+		es.logFinishWork(err)
+	}()
 
 	teleportContractStorage, err := es.teleportContract.GetStorage(nil)
 	if err != nil {
@@ -46,6 +50,7 @@ func (es *EventService) Work(ctx context.Context) (err error) {
 	}
 
 	rawEventChan := make(chan *ton.RawEvent, 64)
+	defer close(rawEventChan)
 	teleportContractRawEventCollector := es.createRawEventCollector(es.teleportContract.GetAddr(), rawEventChan)
 	coordinatorContractRawEventCollector := es.createRawEventCollector(es.coordinatorContract.GetAddr(), rawEventChan)
 
@@ -55,42 +60,35 @@ func (es *EventService) Work(ctx context.Context) (err error) {
 
 	dispatcher := es.createEventDispatcher(rawEventChan, tonTxWriter, eventWriter)
 
-	for {
-		logger.Log.Info().
-			Str("component", "EventService").
-			Msg("Run workers")
+	logger.Log.Info().
+		Str("component", "EventService").
+		Msg("run event workers")
 
-		done := make(chan struct{})
-		ctx, cancel := context.WithCancel(ctx)
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		teleportContractRawEventCollector.Work(ctx, config.Get().ServerTimeout)
+	}()
 
-		go func() {
-			defer func() { done <- struct{}{} }()
-			teleportContractRawEventCollector.Work(ctx)
-		}()
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		coordinatorContractRawEventCollector.Work(ctx, config.Get().ServerTimeout)
+	}()
 
-		go func() {
-			defer func() { done <- struct{}{} }()
-			coordinatorContractRawEventCollector.Work(ctx)
-		}()
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		dispatcher.Work(ctx)
+	}()
 
-		go func() {
-			defer func() { done <- struct{}{} }()
-			dispatcher.Work(ctx)
-		}()
+	wg.Wait()
 
-		// Wait for one of the three routines
-		<-done
-
-		cancel()
-
-		// Wait for other two routines
-		<-done
-		<-done
-
-		logger.Log.Info().
-			Str("component", "EventService").
-			Msg("Restart workers")
-	}
+	logger.Log.Info().
+		Str("component", "EventService").
+		Msg("event workers finished")
+	return nil
 }
 
 func (es *EventService) createRawEventCollector(
