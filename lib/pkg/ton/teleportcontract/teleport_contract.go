@@ -141,9 +141,30 @@ func (c *TeleportContract) SendPegoutProof(
 	return c.sender.SendWaitTransaction(c.ctx, message)
 }
 
+func (c *TeleportContract) CheckContractBalance(ctx context.Context) error {
+	block, err := c.TonClient.API.CurrentMasterchainInfo(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get current masterchain info: %w", err)
+	}
+
+	acc, err := c.TonClient.API.GetAccount(ctx, block, c.Addr)
+	if err != nil {
+		return fmt.Errorf("GetAccount: %w", err)
+	}
+
+	balanceNano := acc.State.Balance.Nano()
+
+	TONInNano := int64(1_000_000_000)
+
+	if balanceNano.Int64() < TONInNano {
+		return fmt.Errorf("not enough balance")
+	}
+
+	return nil
+}
+
 func (c *TeleportContract) SendDeposit(
 	ctx context.Context,
-	bitcoinTxID *chainhash.Hash,
 	blockHash *chainhash.Hash,
 	receiverAddressStr string,
 	indexerAddressStr string,
@@ -151,6 +172,10 @@ func (c *TeleportContract) SendDeposit(
 	txHex string,
 	txProof []byte,
 ) (*tlb.Transaction, *tonutils.BlockIDExt, error) {
+	if err := c.CheckContractBalance(ctx); err != nil {
+		return nil, nil, fmt.Errorf("not enough money to send deposit: %w", err)
+	}
+
 	blockHashUInt := new(big.Int).SetBytes(blockHash.CloneBytes())
 	destAddress := address.MustParseRawAddr(receiverAddressStr)
 	indexerAddress := address.MustParseAddr(indexerAddressStr)
@@ -423,6 +448,7 @@ func (c *TeleportContract) decodeTxProof(txProof []byte) (*wire.MsgMerkleBlock, 
 	return &merkleBlock, nil
 }
 
+// serialize transaction func repeats the logic from ts code (https://github.com/RSquad/ton-teleport-btc/blob/d8cc9f0f845fc996fc2a9cf6756a504c4432ee54/utils/serialize.ts#L8)
 func (c *TeleportContract) serializeTransaction(txHex string) (*cell.Cell, error) {
 	offset := 0
 	flags := uint8(0)
