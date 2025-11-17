@@ -179,7 +179,7 @@ func (c *TeleportContract) SendDeposit(
 	sendDepositBodyCell := cell.BeginCell().
 		MustStoreUInt(opCodeTeleportTransferBtc, 32).
 		MustStoreUInt(queryId, 64).
-		MustStoreUInt(blockHashUInt.Uint64(), 256).
+		MustStoreSlice(blockHashUInt.Bytes(), 256).
 		MustStoreRef(serializedTransaction).
 		MustStoreRef(proofCell).
 		MustStoreMaybeRef(cell.BeginCell().MustStoreBinarySnake(recoveryKeyBytes).EndCell()).

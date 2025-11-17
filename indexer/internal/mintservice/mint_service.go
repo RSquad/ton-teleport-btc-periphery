@@ -269,6 +269,8 @@ func (ms *MintService) handlePendingMint(
 	}
 
 	if peginState.IsActive {
+
+		fmt.Println("tx status success ")
 		return ms.updateMintStatus(ctx, mint.ID, mintmodel.StatusSuccess)
 	}
 
@@ -328,7 +330,7 @@ func (ms *MintService) updateMintStatus(ctx context.Context, mintID int, status 
 }
 
 func (ms *MintService) waitConfirmations(ctx context.Context, bitcoinTxID *chainhash.Hash) error {
-	ticker := time.NewTicker(5 * time.Second)
+	ticker := time.NewTicker(30 * time.Second)
 	defer ticker.Stop()
 
 	for {
@@ -357,12 +359,7 @@ func (ms *MintService) waitConfirmations(ctx context.Context, bitcoinTxID *chain
 				return fmt.Errorf("failed to get block height: %w", err)
 			}
 
-			confirmations := lastConfirmedBlockHeight - bitcoinTXBlockHeight
-
-			logConfirmationsCheck(bitcoinTxID.String(), confirmations, ms.confirmationsNeeded)
-
-			if confirmations >= ms.confirmationsNeeded {
-				logConfirmationsReached(bitcoinTxID.String(), confirmations)
+			if bitcoinTXBlockHeight <= lastConfirmedBlockHeight {
 				receiverAddress, recoveryKey, txHex, txProof, err := ms.fetchTransactionInfo(ctx, bitcoinTxID, bitcoinTXBlockHash)
 				if err != nil {
 					return fmt.Errorf("failed to fetch transaction info: %w", err)
