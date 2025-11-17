@@ -110,11 +110,25 @@ func initialize() (*App, error) {
 		return nil, fmt.Errorf("FetcherContractCoordinator: failed to retrieve storage cell, error: %v", err)
 	}
 
+	jwV4R2Secret, err := hex.DecodeString(cfg.IndexerWalletV4Secret)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode jwv4r2 secret: %w", err)
+	}
+
+	jwV4R2Contract, err := jwv4r2contract.NewJWV4R2Contract(
+		tonClient.API,
+		jwV4R2Secret,
+		context.Background(),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create jwv4r2 contract: %w", err)
+	}
+
 	// Teleport contract
 	teleportContract := teleportcontract.New(
 		coordinatorContractStorage.TeleportAddr,
 		tonClient,
-		nil,
+		jwV4R2Contract,
 		context.Background(),
 	)
 
@@ -143,20 +157,6 @@ func initialize() (*App, error) {
 		migrate.WithDropColumn(true),
 	); err != nil {
 		log.Fatalf("failed creating repos schema: %v", err)
-	}
-
-	jwV4R2Secret, err := hex.DecodeString(cfg.IndexerWalletV4Secret)
-	if err != nil {
-		return nil, fmt.Errorf("failed to decode jwv4r2 secret: %w", err)
-	}
-
-	jwV4R2Contract, err := jwv4r2contract.NewJWV4R2Contract(
-		tonClient.API,
-		jwV4R2Secret,
-		context.Background(),
-	)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create jwv4r2 contract: %w", err)
 	}
 
 	bitcoinClientContract := bitcoinclientcontract.NewBitcoinClientContract(

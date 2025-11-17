@@ -18,7 +18,6 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/pegincontract"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/teleportcontract"
 	tonclient "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
 	"github.com/xssnick/tonutils-go/ton"
 	"github.com/xssnick/tonutils-go/tvm/cell"
 )
@@ -34,7 +33,7 @@ type MintService struct {
 	tonClient             *tonclient.TonClient
 	teleportContract      *teleportcontract.TeleportContract
 	bitcoinClientContract *bitcoinclientcontract.BitcoinClientContract
-	ConfirmationsNeeded   int64
+	confirmationsNeeded   int64
 }
 
 func New(
@@ -54,7 +53,7 @@ func New(
 		bitcoinClient:         bitcoinClient,
 		tonClient:             tonClient,
 		teleportContract:      teleportContract,
-		ConfirmationsNeeded:   confirmationsNeeded,
+		confirmationsNeeded:   confirmationsNeeded,
 		bitcoinClientContract: bitcoinClientContract,
 	}, nil
 }
@@ -240,12 +239,10 @@ func (ms *MintService) handlePendingMint(
 	block *ton.BlockIDExt,
 	latestInternalKey *ent.InternalKey,
 ) error {
-	bitcoinTxID, err := chainhash.NewHash(utils.MustHexToBytes(mint.Edges.Pegin.BitcoinTxID, 32))
+	bitcoinTxID, err := chainhash.NewHashFromStr(mint.Edges.Pegin.BitcoinTxID)
 	if err != nil {
 		return fmt.Errorf(errCalcBitcoinTxID, err)
 	}
-
-	fmt.Println("lalalala: ", bitcoinTxID.String())
 
 	if err = ms.waitConfirmations(ctx, bitcoinTxID); err != nil {
 		return fmt.Errorf("failed when waiting confirmations: %w", err)
@@ -331,8 +328,6 @@ func (ms *MintService) updateMintStatus(ctx context.Context, mintID int, status 
 }
 
 func (ms *MintService) waitConfirmations(ctx context.Context, bitcoinTxID *chainhash.Hash) error {
-	logWaitConfirmationsStarted(bitcoinTxID.String(), ms.ConfirmationsNeeded)
-
 	ticker := time.NewTicker(5 * time.Second)
 	defer ticker.Stop()
 
@@ -342,16 +337,6 @@ func (ms *MintService) waitConfirmations(ctx context.Context, bitcoinTxID *chain
 			return fmt.Errorf("context canceled while waiting for confirmations: %w", ctx.Err())
 
 		case <-ticker.C:
-			bitcoinTXBlockHash, err := ms.bitcoinClient.GetBlockHashByTxID(bitcoinTxID)
-			if err != nil {
-				return fmt.Errorf("failed to get block hash by tx ID: %w", err)
-			}
-
-			bitcoinTXBlockHeight, err := ms.bitcoinClient.GetBlockHeightByHash(bitcoinTXBlockHash)
-			if err != nil {
-				return fmt.Errorf("failed to get block height: %w", err)
-			}
-
 			lastConfirmedBlockHash, err := ms.bitcoinClientContract.GetLastConfirmedBlockHash()
 			if err != nil {
 				return fmt.Errorf("failed to get last confirmed block hash: %w", err)
@@ -362,11 +347,21 @@ func (ms *MintService) waitConfirmations(ctx context.Context, bitcoinTxID *chain
 				return fmt.Errorf("failed to get last confirmed block height: %w", err)
 			}
 
+			bitcoinTXBlockHash, err := ms.bitcoinClient.GetBlockHashByTxID(bitcoinTxID)
+			if err != nil {
+				return fmt.Errorf("failed to get block hash by tx ID: %w", err)
+			}
+
+			bitcoinTXBlockHeight, err := ms.bitcoinClient.GetBlockHeightByHash(bitcoinTXBlockHash)
+			if err != nil {
+				return fmt.Errorf("failed to get block height: %w", err)
+			}
+
 			confirmations := lastConfirmedBlockHeight - bitcoinTXBlockHeight
 
-			logConfirmationsCheck(bitcoinTxID.String(), confirmations, ms.ConfirmationsNeeded)
+			logConfirmationsCheck(bitcoinTxID.String(), confirmations, ms.confirmationsNeeded)
 
-			if confirmations >= ms.ConfirmationsNeeded {
+			if confirmations >= ms.confirmationsNeeded {
 				logConfirmationsReached(bitcoinTxID.String(), confirmations)
 				receiverAddress, recoveryKey, txHex, txProof, err := ms.fetchTransactionInfo(ctx, bitcoinTxID, bitcoinTXBlockHash)
 				if err != nil {
@@ -397,8 +392,6 @@ func (ms *MintService) fetchTransactionInfo(
 	txProof []byte,
 	err error,
 ) {
-	logFetchTransactionInfoStarted(bitcoinTxID.String())
-
 	txProofStr, err := ms.bitcoinClient.GetTxProof(bitcoinTxID, blockHash)
 	if err != nil {
 		return "", "", "", nil, fmt.Errorf("failed to get tx proof: %w", err)
@@ -423,6 +416,5 @@ func (ms *MintService) fetchTransactionInfo(
 		return "", "", "", nil, fmt.Errorf("failed to get pegin: %w", err)
 	}
 
-	logFetchTransactionInfoCompleted(bitcoinTxID.String(), existingPegin.ReceiverAddr)
 	return existingPegin.ReceiverAddr, existingPegin.RecoveryKey, txHex, txProof, nil
 }

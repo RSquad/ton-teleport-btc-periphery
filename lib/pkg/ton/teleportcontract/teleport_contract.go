@@ -171,11 +171,16 @@ func (c *TeleportContract) SendDeposit(
 		return nil, nil, fmt.Errorf("failed to decode recovery key: %w", err)
 	}
 
+	serializedTransaction, err := c.serializeTransaction(txHex)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to serialize transaction: %w", err)
+	}
+
 	sendDepositBodyCell := cell.BeginCell().
 		MustStoreUInt(opCodeTeleportTransferBtc, 32).
 		MustStoreUInt(queryId, 64).
 		MustStoreUInt(blockHashUInt.Uint64(), 256).
-		MustStoreRef(c.serializeTransaction(txHex)).
+		MustStoreRef(serializedTransaction).
 		MustStoreRef(proofCell).
 		MustStoreMaybeRef(cell.BeginCell().MustStoreBinarySnake(recoveryKeyBytes).EndCell()).
 		MustStoreAddr(destAddress).
@@ -418,24 +423,23 @@ func (c *TeleportContract) decodeTxProof(txProof []byte) (*wire.MsgMerkleBlock, 
 	return &merkleBlock, nil
 }
 
-func (c *TeleportContract) serializeTransaction(txHex string) *cell.Cell {
+func (c *TeleportContract) serializeTransaction(txHex string) (*cell.Cell, error) {
 	offset := 0
 	flags := uint8(0)
 	txbuilder := cell.BeginCell()
 	txbuffer, err := hex.DecodeString(txHex)
 	if err != nil {
-		panic("Invalid hex string: " + err.Error())
+		return nil, fmt.Errorf("failed to decode transaction: %w", err)
 	}
 
 	versionBuf := txbuffer[offset : offset+4]
 	offset += 4
-	txbuilder.MustStoreUInt(uint64(binary.LittleEndian.Uint32(versionBuf)), 32)
+	txbuilder.MustStoreSlice(versionBuf, 32)
 
 	txInBuf := readTxIn(txbuffer, &offset)
 
-	// Check if there are no inputs but witness marker (2 bytes = 0001)
 	if len(txInBuf) == 1 && txInBuf[0] == 0 {
-		flags = uint8(txbuffer[offset : offset+1][0])
+		flags = txbuffer[offset]
 		if flags != 0 {
 			offset += 1
 			// Store dummy + flags: 0001
@@ -453,9 +457,11 @@ func (c *TeleportContract) serializeTransaction(txHex string) *cell.Cell {
 		flags ^= 1
 		witnessStart := offset
 		inCount, _ := readCompactSize(txInBuf, 0)
+
 		for txin := uint64(0); txin < inCount; txin++ {
 			witnessCount, size := readCompactSize(txbuffer, offset)
 			offset += size
+
 			for i := uint64(0); i < witnessCount; i++ {
 				witnessLen, size := readCompactSize(txbuffer, offset)
 				offset += size
@@ -472,10 +478,10 @@ func (c *TeleportContract) serializeTransaction(txHex string) *cell.Cell {
 	txbuilder.MustStoreSlice(locktimeBuf, 32)
 
 	if len(txbuffer) != offset {
-		panic("Invalid transaction parsing")
+		return nil, fmt.Errorf("failed to parse transaction: %w", err)
 	}
 
-	return txbuilder.EndCell()
+	return txbuilder.EndCell(), nil
 }
 
 func readTxIn(txbuffer []byte, offset *int) []byte {
@@ -510,18 +516,19 @@ func readTxOut(txbuffer []byte, offset *int) []byte {
 }
 
 func readCompactSize(buffer []byte, offset int) (uint64, int) {
-	sizeBytes := 1
-	value := uint8(buffer[offset])
-	if value < 0xfd {
-		return uint64(value), sizeBytes
-	} else if value == 0xfd {
-		return uint64(binary.LittleEndian.Uint16(buffer[offset+1 : offset+3])), sizeBytes + 2
-	} else if value == 0xfe {
-		return uint64(binary.LittleEndian.Uint32(buffer[offset+1 : offset+5])), sizeBytes + 4
-	} else if value == 0xff {
-		return binary.LittleEndian.Uint64(buffer[offset+1 : offset+9]), sizeBytes + 8
+	size := 1
+	v := buffer[offset]
+
+	switch v {
+	case 0xfd:
+		return uint64(binary.LittleEndian.Uint16(buffer[offset+1 : offset+3])), size + 2
+	case 0xfe:
+		return uint64(binary.LittleEndian.Uint32(buffer[offset+1 : offset+5])), size + 4
+	case 0xff:
+		return binary.LittleEndian.Uint64(buffer[offset+1 : offset+9]), size + 8
+	default:
+		return uint64(v), size
 	}
-	return uint64(value), sizeBytes
 }
 
 func splitBufferToCells(buffer []byte, splitSize ...int) *cell.Cell {
@@ -534,7 +541,11 @@ func splitBufferToCells(buffer []byte, splitSize ...int) *cell.Cell {
 	}
 
 	cellCapacity := (127 / sz) * sz
-	cellsCount := (len(buffer) + cellCapacity - 1) / cellCapacity // ceil division
+	if cellCapacity == 0 {
+		cellCapacity = 127
+	}
+
+	cellsCount := (len(buffer) + cellCapacity - 1) / cellCapacity
 
 	if cellsCount <= 1 {
 		return cell.BeginCell().MustStoreSlice(buffer, uint(len(buffer)*8)).EndCell()
