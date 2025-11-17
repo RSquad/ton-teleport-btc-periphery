@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"strconv"
+	"sync"
 
 	"github.com/xssnick/tonutils-go/address"
 )
@@ -19,6 +20,21 @@ type ServicesConfig struct {
 	PProfHttpEnable           bool
 	BitcoinClientContractAddr *address.Address
 	IndexerWalletV4Secret     string
+}
+
+var (
+	globalConfig     *ServicesConfig
+	globalConfigOnce sync.Once
+)
+
+func initGlobalConfig(cfg *ServicesConfig) {
+	globalConfigOnce.Do(func() {
+		globalConfig = cfg
+	})
+}
+
+func Get() *ServicesConfig {
+	return globalConfig
 }
 
 func NewServicesConfig(envConfig *EnvConfig) (*ServicesConfig, error) {

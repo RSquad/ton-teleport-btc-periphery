@@ -217,14 +217,6 @@ func logMintStatusUpdated(mintID int, status mintmodel.Status) {
 	logger.Log.Info().Str("component", "MintService").Int("mint_id", mintID).Str("new_status", string(status)).Msg("Mint status updated")
 }
 
-func logWaitConfirmationsStarted(bitcoinTxID string, confirmationsNeeded int64) {
-	logger.Log.Info().
-		Str("component", "MintService").
-		Str("bitcoin_tx_id", bitcoinTxID).
-		Int64("confirmations_needed", confirmationsNeeded).
-		Msg("Started waiting for Bitcoin confirmations")
-}
-
 func logConfirmationsCheck(bitcoinTxID string, currentConfirmations int64, confirmationsNeeded int64) {
 	logger.Log.Debug().
 		Str("component", "MintService").
@@ -240,21 +232,6 @@ func logConfirmationsReached(bitcoinTxID string, confirmations int64) {
 		Str("bitcoin_tx_id", bitcoinTxID).
 		Int64("confirmations", confirmations).
 		Msg("Required confirmations reached, proceeding with deposit")
-}
-
-func logFetchTransactionInfoStarted(bitcoinTxID string) {
-	logger.Log.Debug().
-		Str("component", "MintService").
-		Str("bitcoin_tx_id", bitcoinTxID).
-		Msg("Fetching transaction info for deposit")
-}
-
-func logFetchTransactionInfoCompleted(bitcoinTxID string, receiverAddress string) {
-	logger.Log.Debug().
-		Str("component", "MintService").
-		Str("bitcoin_tx_id", bitcoinTxID).
-		Str("receiver_address", receiverAddress).
-		Msg("Transaction info fetched successfully")
 }
 
 func logSendDepositStarted(bitcoinTxID string, receiverAddress string) {
