@@ -1,6 +1,10 @@
 package alerts
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/mutils"
+)
 
 type AlertTotalServiceFee struct{}
 
@@ -30,8 +34,9 @@ func (alert *AlertTotalServiceFee) Check(dataSource AlertDataSource) (Severity, 
 		}
 
 		description = fmt.Sprintf(
-			"Total service fee is less than %d satoshi",
+			"Total service fee is less than %d satoshi.\nRunbook url: %s",
 			limit,
+			mutils.RunbookLink("TotalServiceFee"),
 		)
 	}
 

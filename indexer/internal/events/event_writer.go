@@ -3,11 +3,14 @@ package events
 import (
 	"context"
 	"encoding/hex"
+	"fmt"
 	"log"
 
 	ent "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated/pegin"
+	pegout_query "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated/pegout"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/pegout"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/teleportcontract"
@@ -74,6 +77,12 @@ func (ew *EventWriter) writeEvent(tonTx *ent.TonTx, event ton.EventInterface) er
 }
 
 func (ew *EventWriter) writeMint(tonTx *ent.TonTx, event *teleportcontract.MintEvent) error {
+	tonTxHash := fmt.Sprintf("%x", event.GetRaw().TxHash)
+	logger.Log.Debug().
+		Str("component", "EventWriter").
+		Str("tx_ton", tonTxHash).
+		Str("tx_bitcoin", event.BitcoinTxID.String()).
+		Msg("write mint")
 	existingPegin, _ := ew.repo.Pegin.Query().
 		Where(pegin.BitcoinTxIDEQ(event.BitcoinTxID.String())).
 		WithMint().
@@ -99,7 +108,7 @@ func (ew *EventWriter) writeMint(tonTx *ent.TonTx, event *teleportcontract.MintE
 			SetTonTx(tonTx).
 			Save(ew.ctx)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to create mint record: %w", err)
 		}
 
 		_, err = tx.Pegin.Create().
@@ -107,15 +116,33 @@ func (ew *EventWriter) writeMint(tonTx *ent.TonTx, event *teleportcontract.MintE
 			SetBitcoinTxID(event.BitcoinTxID.String()).
 			SetMint(mint).
 			Save(ew.ctx)
-		return err
+		if err != nil {
+			return fmt.Errorf("failed to create pegin record: %w", err)
+		}
+		return nil
 	})
 }
 
 func (ew *EventWriter) writeBurn(tonTx *ent.TonTx, event *teleportcontract.BurnEvent) error {
+	addr := utils.AddrToRawString(event.GetPegoutAddr())
+	tonTxHash := fmt.Sprintf("%x", event.GetRaw().TxHash)
+	logger.Log.Debug().Str("component", "EventWriter").
+		Str("tx_ton", tonTxHash).
+		Str("pegout_addr", addr).
+		Msg("write burn")
+
+	existed, _ := ew.repo.Pegout.Query().Where(pegout_query.AddrEQ(addr)).First(ew.ctx)
+	if existed != nil {
+		logger.Log.Warn().Str("component", "EventWriter").
+			Str("tx_ton", tonTxHash).
+			Str("pegout_addr", addr).
+			Msg("pegout already exists")
+		return nil
+	}
 	return ew.write(func(tx *ent.Tx) error {
 		pegout, err := ew.pegoutWriter.WriteFromEvent(event, tx)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to create pegout record: %w", err)
 		}
 		_, err = tx.Burn.Create().
 			SetSenderAddr(utils.AddrToRawString(event.SenderAddr)).
@@ -123,15 +150,33 @@ func (ew *EventWriter) writeBurn(tonTx *ent.TonTx, event *teleportcontract.BurnE
 			SetTonTx(tonTx).
 			SetPegout(pegout).
 			Save(ew.ctx)
-		return err
+		if err != nil {
+			return fmt.Errorf("failed to create burn record: %w", err)
+		}
+		return nil
 	})
 }
 
 func (ew *EventWriter) writeReinit(tonTx *ent.TonTx, event *teleportcontract.ReinitEvent) error {
+	addr := utils.AddrToRawString(event.GetPegoutAddr())
+	tonTxHash := fmt.Sprintf("%x", event.GetRaw().TxHash)
+	logger.Log.Debug().Str("component", "EventWriter").
+		Str("tx_ton", tonTxHash).
+		Str("pegout_addr", addr).
+		Msg("write autopegout")
+
+	existed, _ := ew.repo.Pegout.Query().Where(pegout_query.AddrEQ(addr)).First(ew.ctx)
+	if existed != nil {
+		logger.Log.Warn().Str("component", "EventWriter").
+			Str("tx_ton", tonTxHash).
+			Str("pegout_addr", addr).
+			Msg("pegout already exists")
+		return nil
+	}
 	return ew.write(func(tx *ent.Tx) error {
 		pegout, err := ew.pegoutWriter.WriteFromEvent(event, tx)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to create autopegout record: %w", err)
 		}
 
 		_, err = tx.Reinit.Create().
@@ -140,11 +185,18 @@ func (ew *EventWriter) writeReinit(tonTx *ent.TonTx, event *teleportcontract.Rei
 			SetTonTx(tonTx).
 			SetPegout(pegout).
 			Save(ew.ctx)
-		return err
+		if err != nil {
+			return fmt.Errorf("failed to create reinit record: %w", err)
+		}
+		return nil
 	})
 }
 
 func (ew *EventWriter) writeInternalKey(tonTx *ent.TonTx, event *coordinator.DKGCompletedEvent) error {
+	logger.Log.Debug().Str("component", "EventWriter").
+		Str("internal_key", fmt.Sprintf("%x", event.Key)).
+		Msg("write internal key")
+
 	_, err := ew.repo.InternalKey.Create().
 		SetCompletedAt(event.CompletedAt).
 		SetKey(hex.EncodeToString(event.Key)).

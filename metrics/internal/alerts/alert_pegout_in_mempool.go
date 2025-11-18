@@ -109,10 +109,11 @@ func (alert *AlertPegoutInMempool) Check(dataSource AlertDataSource) (Severity, 
 		}
 
 		description = fmt.Sprintf(
-			"Pegout transaction has not been found in the mempool for more than %d minutes. Pegout: %s. Bitcoin TX: %s",
+			"Pegout transaction has not been found in the mempool for more than %d minutes.\nPegout: %s.\nBitcoin TX: %s.\nRunbook url: %s",
 			timeout,
 			mutils.TonExplorerLink((*address.Address)(alert.pegoutToCheck.Addr).StringRaw()),
 			mutils.BtcExplorerLink(hex.EncodeToString(alert.pegoutToCheck.BitcoinTxId)),
+			mutils.RunbookLink("PegoutInMempool"),
 		)
 	}
 

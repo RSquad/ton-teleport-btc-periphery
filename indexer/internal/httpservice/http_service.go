@@ -80,13 +80,35 @@ func (s *HttpService) Work(ctx context.Context) {
 
 	handlerWithCORS := c.Handler(mux)
 
+	httpServer := &http.Server{
+		Addr:    ":3000",
+		Handler: handlerWithCORS,
+	}
+
+	// Start server in a goroutine
+	go func() {
+		logger.Log.Info().
+			Str("component", "HttpServer").
+			Msg("listening on :3000")
+		if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			logger.Log.Error().
+				Str("component", "HttpServer").
+				Err(err).
+				Msg("http server error")
+		}
+	}()
+
+	// Wait for context cancellation
+	<-ctx.Done()
+
+	// Gracefully shutdown the server
 	logger.Log.Info().
-		Str("component", "main").
-		Msg("listening on :3000")
-	if err := http.ListenAndServe(":3000", handlerWithCORS); err != nil {
+		Str("component", "HttpServer").
+		Msg("shutting down http server")
+	if err := httpServer.Shutdown(context.Background()); err != nil {
 		logger.Log.Error().
-			Str("component", "main").
+			Str("component", "HttpServer").
 			Err(err).
-			Msg("http server terminated")
+			Msg("error during http server shutdown")
 	}
 }
