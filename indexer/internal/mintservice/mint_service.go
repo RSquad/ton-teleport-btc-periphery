@@ -16,6 +16,7 @@ import (
 	mintmodel "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated/mint"
 	entpegin "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated/pegin"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
+	jwv4r2contract "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/jw_v4r2_contract"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/pegincontract"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/teleportcontract"
 	tonclient "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
@@ -34,6 +35,7 @@ type MintService struct {
 	tonClient             *tonclient.TonClient
 	teleportContract      *teleportcontract.TeleportContract
 	bitcoinClientContract *bitcoinclientcontract.BitcoinClientContract
+	tonWallet             *jwv4r2contract.JWV4R2Contract
 	confirmationsNeeded   int64
 	confirmedMints        chan *ent.Mint
 	mu                    sync.Mutex
@@ -45,6 +47,7 @@ func New(
 	tonClient *tonclient.TonClient,
 	teleportContract *teleportcontract.TeleportContract,
 	bitcoinClientContract *bitcoinclientcontract.BitcoinClientContract,
+	tonWallet *jwv4r2contract.JWV4R2Contract,
 ) (*MintService, error) {
 	confirmationsNeeded, err := bitcoinClientContract.GetConfirmationsNeeded()
 	if err != nil {
@@ -58,6 +61,7 @@ func New(
 		teleportContract:      teleportContract,
 		confirmationsNeeded:   confirmationsNeeded,
 		bitcoinClientContract: bitcoinClientContract,
+		tonWallet:             tonWallet,
 		confirmedMints:        make(chan *ent.Mint, 32),
 		mu:                    sync.Mutex{},
 	}, nil
@@ -528,7 +532,7 @@ func (ms *MintService) sendDeposit(ctx context.Context, bitcoinTxID *chainhash.H
 	}
 
 	ms.mu.Lock()
-	depositTxHash, _, err := ms.teleportContract.SendDeposit(ctx, bitcoinTXBlockHash, receiverAddress, ms.bitcoinClientContract.Addr.String(), recoveryKey, txHex, txProof)
+	depositTxHash, _, err := ms.teleportContract.SendDeposit(ctx, bitcoinTXBlockHash, receiverAddress, ms.tonWallet.Address().String(), recoveryKey, txHex, txProof)
 	if err != nil {
 		ms.mu.Unlock()
 		return fmt.Errorf("failed to send deposit: %w", err)

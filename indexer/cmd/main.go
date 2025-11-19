@@ -179,6 +179,7 @@ func initialize() (*App, error) {
 		tonClient,
 		teleportContract,
 		bitcoinClientContract,
+		jwV4R2Contract,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create mint service: %w", err)
