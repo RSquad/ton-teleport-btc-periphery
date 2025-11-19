@@ -141,82 +141,6 @@ func (c *TeleportContract) SendPegoutProof(
 	return c.sender.SendWaitTransaction(c.ctx, message)
 }
 
-func (c *TeleportContract) CheckContractBalance(ctx context.Context) error {
-	block, err := c.TonClient.API.CurrentMasterchainInfo(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to get current masterchain info: %w", err)
-	}
-
-	acc, err := c.TonClient.API.GetAccount(ctx, block, c.Addr)
-	if err != nil {
-		return fmt.Errorf("GetAccount: %w", err)
-	}
-
-	balanceNano := acc.State.Balance.Nano()
-
-	TONInNano := int64(1_000_000_000)
-
-	if balanceNano.Int64() < TONInNano {
-		return fmt.Errorf("not enough balance")
-	}
-
-	return nil
-}
-
-func (c *TeleportContract) SendDeposit(
-	ctx context.Context,
-	blockHash *chainhash.Hash,
-	receiverAddressStr string,
-	indexerAddressStr string,
-	recoveryKey string,
-	txHex string,
-	txProof []byte,
-) (*tlb.Transaction, *tonutils.BlockIDExt, error) {
-	if err := c.CheckContractBalance(ctx); err != nil {
-		return nil, nil, fmt.Errorf("not enough money to send deposit: %w", err)
-	}
-
-	blockHashUInt := new(big.Int).SetBytes(blockHash.CloneBytes())
-	destAddress := address.MustParseRawAddr(receiverAddressStr)
-	indexerAddress := address.MustParseAddr(indexerAddressStr)
-	queryId := rand.Uint64()
-
-	decodedTxProof, err := c.decodeTxProof(txProof)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to decode tx proof: %w", err)
-	}
-
-	proofCell, err := c.buildProofCell(decodedTxProof)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to build proof cell: %w", err)
-	}
-
-	recoveryKeyBytes, err := hex.DecodeString(recoveryKey)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to decode recovery key: %w", err)
-	}
-
-	serializedTransaction, err := c.serializeTransaction(txHex)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to serialize transaction: %w", err)
-	}
-
-	sendDepositBodyCell := cell.BeginCell().
-		MustStoreUInt(opCodeTeleportTransferBtc, 32).
-		MustStoreUInt(queryId, 64).
-		MustStoreSlice(blockHashUInt.Bytes(), 256).
-		MustStoreRef(serializedTransaction).
-		MustStoreRef(proofCell).
-		MustStoreMaybeRef(cell.BeginCell().MustStoreBinarySnake(recoveryKeyBytes).EndCell()).
-		MustStoreAddr(destAddress).
-		MustStoreAddr(indexerAddress).
-		EndCell()
-
-	message := wallet.SimpleMessage(c.Addr, tlb.MustFromTON("1"), sendDepositBodyCell)
-
-	return c.sender.SendWaitTransaction(c.ctx, message)
-}
-
 func (c *TeleportContract) GetAutoPegoutFee(block *tonutils.BlockIDExt) (*big.Int, error) {
 	if block == nil {
 		var err error
@@ -479,4 +403,80 @@ func (c *TeleportContract) buildProofCell(merkleBlock *wire.MsgMerkleBlock) (*ce
 		MustStoreRef(flagsCell).EndCell()
 
 	return proofCell, nil
+}
+
+func (c *TeleportContract) CheckContractBalance(ctx context.Context) error {
+	block, err := c.TonClient.API.CurrentMasterchainInfo(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get current masterchain info: %w", err)
+	}
+
+	acc, err := c.TonClient.API.GetAccount(ctx, block, c.Addr)
+	if err != nil {
+		return fmt.Errorf("GetAccount: %w", err)
+	}
+
+	balanceNano := acc.State.Balance.Nano()
+
+	TONInNano := int64(1_000_000_000)
+
+	if balanceNano.Int64() < TONInNano {
+		return fmt.Errorf("not enough balance")
+	}
+
+	return nil
+}
+
+func (c *TeleportContract) SendDeposit(
+	ctx context.Context,
+	blockHash *chainhash.Hash,
+	receiverAddressStr string,
+	indexerAddressStr string,
+	recoveryKey string,
+	txHex string,
+	txProof []byte,
+) (*tlb.Transaction, *tonutils.BlockIDExt, error) {
+	if err := c.CheckContractBalance(ctx); err != nil {
+		return nil, nil, fmt.Errorf("not enough money to send deposit: %w", err)
+	}
+
+	blockHashUInt := new(big.Int).SetBytes(blockHash.CloneBytes())
+	destAddress := address.MustParseRawAddr(receiverAddressStr)
+	indexerAddress := address.MustParseAddr(indexerAddressStr)
+	queryId := rand.Uint64()
+
+	decodedTxProof, err := c.decodeTxProof(txProof)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to decode tx proof: %w", err)
+	}
+
+	proofCell, err := c.buildProofCell(decodedTxProof)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to build proof cell: %w", err)
+	}
+
+	recoveryKeyBytes, err := hex.DecodeString(recoveryKey)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to decode recovery key: %w", err)
+	}
+
+	serializedTransaction, err := c.serializeTransaction(txHex)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to serialize transaction: %w", err)
+	}
+
+	sendDepositBodyCell := cell.BeginCell().
+		MustStoreUInt(opCodeTeleportTransferBtc, 32).
+		MustStoreUInt(queryId, 64).
+		MustStoreSlice(blockHashUInt.Bytes(), 256).
+		MustStoreRef(serializedTransaction).
+		MustStoreRef(proofCell).
+		MustStoreMaybeRef(cell.BeginCell().MustStoreBinarySnake(recoveryKeyBytes).EndCell()).
+		MustStoreAddr(destAddress).
+		MustStoreAddr(indexerAddress).
+		EndCell()
+
+	message := wallet.SimpleMessage(c.Addr, tlb.MustFromTON("1"), sendDepositBodyCell)
+
+	return c.sender.SendWaitTransaction(c.ctx, message)
 }
