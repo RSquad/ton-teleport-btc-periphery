@@ -36,6 +36,7 @@ type MintService struct {
 	bitcoinClientContract *bitcoinclientcontract.BitcoinClientContract
 	confirmationsNeeded   int64
 	confirmedMints        chan *ent.Mint
+	mu                    sync.Mutex
 }
 
 func New(
@@ -58,6 +59,7 @@ func New(
 		confirmationsNeeded:   confirmationsNeeded,
 		bitcoinClientContract: bitcoinClientContract,
 		confirmedMints:        make(chan *ent.Mint, 32),
+		mu:                    sync.Mutex{},
 	}, nil
 }
 
@@ -519,10 +521,13 @@ func (ms *MintService) sendDeposit(ctx context.Context, bitcoinTxID *chainhash.H
 		return fmt.Errorf("failed to fetch transaction info: %w", err)
 	}
 
+	ms.mu.Lock()
 	depositTxHash, _, err := ms.teleportContract.SendDeposit(ctx, bitcoinTXBlockHash, receiverAddress, ms.bitcoinClientContract.Addr.String(), recoveryKey, txHex, txProof)
 	if err != nil {
+		ms.mu.Unlock()
 		return fmt.Errorf("failed to send deposit: %w", err)
 	}
+	ms.mu.Unlock()
 	ms.logSendDepositCompleted(bitcoinTxID.String(), depositTxHash.String())
 
 	return nil
