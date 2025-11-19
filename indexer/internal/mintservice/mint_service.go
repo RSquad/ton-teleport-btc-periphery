@@ -370,7 +370,7 @@ func (ms *MintService) handleUnconfirmedMint(
 		return fmt.Errorf("failed to wait for confirmations: %w", err)
 	}
 
-	if !confirmationsAchieved {
+	if !confirmationsAchieved || len(ms.confirmedMints) == cap(ms.confirmedMints) {
 		return nil
 	}
 
@@ -385,8 +385,14 @@ func (ms *MintService) handleUnconfirmedMint(
 		}
 
 		if isPeginContractActive {
-			ms.confirmedMints <- mint
-			return nil
+			select {
+			case ms.confirmedMints <- mint:
+				return nil
+			case <-ctx.Done():
+				return fmt.Errorf("failed to push mint to channel: %w", ctx.Err())
+			case <-time.After(5 * time.Second):
+				return fmt.Errorf("timeout: channel stuck, unable to write mint to channel")
+			}
 		}
 		time.Sleep(time.Duration(i+1) * time.Second)
 	}
