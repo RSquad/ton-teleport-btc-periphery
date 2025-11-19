@@ -122,6 +122,24 @@ func (ms *MintService) logFinishRefundWork(err error) {
 	}
 }
 
+func (ms *MintService) logStartUnconfirmedWork() {
+	logger.Log.Info().
+		Str("component", "MintService").
+		Str("process", "Processing unconfirmed mints").
+		Msg("Start worker for processing unconfirmed mints")
+}
+
+func (ms *MintService) logFinishUnconfirmedWork(err error) {
+	event := logger.Log.Info().
+		Str("component", "MintService").
+		Str("process", "Processing unconfirmed mints")
+	if err != nil {
+		event.Err(err).Msg("Processing unconfirmed mints finished with error")
+	} else {
+		event.Msg("Processing unconfirmed mints worker finished")
+	}
+}
+
 func logStartProcessingRefundMints() {
 	logger.Log.Debug().
 		Str("component", "MintService").
@@ -217,15 +235,11 @@ func logMintStatusUpdated(mintID int, status mintmodel.Status) {
 	logger.Log.Info().Str("component", "MintService").Int("mint_id", mintID).Str("new_status", string(status)).Msg("Mint status updated")
 }
 
-func logSendDepositStarted(bitcoinTxID string, receiverAddress string) {
-	logger.Log.Info().
-		Str("component", "MintService").
-		Str("bitcoin_tx_id", bitcoinTxID).
-		Str("receiver_address", receiverAddress).
-		Msg("Sending deposit transaction to Teleport contract")
+func logFailedProcessUnconfirmedMint(err error, mintID int) {
+	logger.Log.Error().Err(err).Str("component", "MintService").Str("process", "ProcessingUnconfirmedMints").Int("mint_id", mintID).Msg("Failed to process unconfirmed mint")
 }
 
-func logSendDepositCompleted(bitcoinTxID string, txHash string) {
+func (ms *MintService) logSendDepositCompleted(bitcoinTxID string, txHash string) {
 	logger.Log.Info().
 		Str("component", "MintService").
 		Str("bitcoin_tx_id", bitcoinTxID).
