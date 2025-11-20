@@ -21,7 +21,6 @@ type ServicesConfig struct {
 	PProfHttpEnable           bool
 	ServerTimeout             time.Duration
 	BitcoinClientContractAddr *address.Address
-	IndexerWalletV4Secret     string
 	HighLoadWalletV3Seed      string
 }
 
@@ -92,7 +91,6 @@ func NewServicesConfig(envConfig *EnvConfig) (*ServicesConfig, error) {
 		PProfHttpEnable:           pprofHttpEnable,
 		ServerTimeout:             envConfig.ServerTimeout,
 		BitcoinClientContractAddr: BitcoinClientContractAddr,
-		IndexerWalletV4Secret:     envConfig.IndexerWalletV4Secret,
 		HighLoadWalletV3Seed:      envConfig.HighLoadWalletV3Secret,
 	}
 

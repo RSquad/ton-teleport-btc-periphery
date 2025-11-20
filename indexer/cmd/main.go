@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"database/sql"
-	"encoding/hex"
 	"fmt"
 	"log"
 	"os"
@@ -13,7 +12,6 @@ import (
 	"syscall"
 	"time"
 
-	jwv4r2contract "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/jw_v4r2_contract"
 	"github.com/xssnick/tonutils-go/ton/wallet"
 
 	"entgo.io/ent/dialect"
@@ -44,7 +42,6 @@ type App struct {
 	EventService          *events.EventService
 	CoordinatorContract   coordinator.Coordinator
 	BitcoinClientContract *bitcoinclientcontract.BitcoinClientContract
-	JWV4R2Contract        *jwv4r2contract.JWV4R2Contract
 	PegoutManager         *pegoutmanager.PegoutManager
 	MintService           *mintservice.MintService
 	HttpService           *httpservice.HttpService
@@ -140,20 +137,6 @@ func initialize() (*App, error) {
 		return nil, fmt.Errorf("FetcherContractCoordinator: failed to retrieve storage cell, error: %v", err)
 	}
 
-	jwV4R2Secret, err := hex.DecodeString(cfg.IndexerWalletV4Secret)
-	if err != nil {
-		return nil, fmt.Errorf("failed to decode jwv4r2 secret: %w", err)
-	}
-
-	jwV4R2Contract, err := jwv4r2contract.NewJWV4R2Contract(
-		tonClient.API,
-		jwV4R2Secret,
-		context.Background(),
-	)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create jwv4r2 contract: %w", err)
-	}
-
 	highloadWalletV3, err := wallet.FromSeed(tonClient.API, strings.Split(cfg.HighLoadWalletV3Seed, " "), wallet.ConfigHighloadV3{
 		MessageTTL: 60 * 5,
 		MessageBuilder: func(ctx context.Context, subWalletId uint32) (id uint32, createdAt int64, err error) {
@@ -177,7 +160,7 @@ func initialize() (*App, error) {
 	teleportContract := teleportcontract.New(
 		coordinatorContractStorage.TeleportAddr,
 		tonClient,
-		jwV4R2Contract,
+		nil,
 		highloadWalletV3,
 		context.Background(),
 	)
@@ -190,7 +173,7 @@ func initialize() (*App, error) {
 	bitcoinClientContract := bitcoinclientcontract.NewBitcoinClientContract(
 		cfg.BitcoinClientContractAddr,
 		tonClient,
-		jwV4R2Contract,
+		nil,
 		context.Background(),
 	)
 
@@ -250,7 +233,6 @@ func initialize() (*App, error) {
 		EventService:          eventService,
 		HttpService:           httpService,
 		BitcoinClientContract: bitcoinClientContract,
-		JWV4R2Contract:        jwV4R2Contract,
 	}, nil
 }
 
