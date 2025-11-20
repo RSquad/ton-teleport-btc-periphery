@@ -52,9 +52,11 @@ const (
 
 type TeleportContract struct {
 	ton.Contract
-	TonClient *tonclient.TonClient
-	sender    *jwv4r2contract.JWV4R2Contract
-	ctx       context.Context
+	TonClient        *tonclient.TonClient
+	sender           *jwv4r2contract.JWV4R2Contract
+	highLoadWallet   *wallet.Wallet
+	enqueuerMessages *EnqueuerMessages
+	ctx              context.Context
 }
 
 type Storage struct {
@@ -109,9 +111,11 @@ func New(
 	addr *address.Address,
 	tonClient *tonclient.TonClient,
 	sender *jwv4r2contract.JWV4R2Contract,
+	highLoadWallet *wallet.Wallet,
 	ctx context.Context,
 ) *TeleportContract {
-	return &TeleportContract{ton.Contract{Addr: addr}, tonClient, sender, ctx}
+	enqueuerMessages := NewEnqueuerMessages(highLoadWallet, tonClient)
+	return &TeleportContract{ton.Contract{Addr: addr}, tonClient, sender, highLoadWallet, enqueuerMessages, ctx}
 }
 
 func (c *TeleportContract) SendPegoutProof(
@@ -435,9 +439,9 @@ func (c *TeleportContract) SendDeposit(
 	recoveryKey string,
 	txHex string,
 	txProof []byte,
-) (*tlb.Transaction, *tonutils.BlockIDExt, error) {
+) (<-chan SendResult, error) {
 	if err := c.CheckContractBalance(ctx); err != nil {
-		return nil, nil, fmt.Errorf("not enough money to send deposit: %w", err)
+		return nil, fmt.Errorf("not enough money to send deposit: %w", err)
 	}
 
 	blockHashUInt := new(big.Int).SetBytes(blockHash.CloneBytes())
@@ -447,22 +451,22 @@ func (c *TeleportContract) SendDeposit(
 
 	decodedTxProof, err := c.decodeTxProof(txProof)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to decode tx proof: %w", err)
+		return nil, fmt.Errorf("failed to decode tx proof: %w", err)
 	}
 
 	proofCell, err := c.buildProofCell(decodedTxProof)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to build proof cell: %w", err)
+		return nil, fmt.Errorf("failed to build proof cell: %w", err)
 	}
 
 	recoveryKeyBytes, err := hex.DecodeString(recoveryKey)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to decode recovery key: %w", err)
+		return nil, fmt.Errorf("failed to decode recovery key: %w", err)
 	}
 
 	serializedTransaction, err := c.serializeTransaction(txHex)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to serialize transaction: %w", err)
+		return nil, fmt.Errorf("failed to serialize transaction: %w", err)
 	}
 
 	sendDepositBodyCell := cell.BeginCell().
@@ -478,5 +482,7 @@ func (c *TeleportContract) SendDeposit(
 
 	message := wallet.SimpleMessage(c.Addr, tlb.MustFromTON("1"), sendDepositBodyCell)
 
-	return c.sender.SendWaitTransaction(c.ctx, message)
+	size := len(sendDepositBodyCell.ToBOC())
+
+	return c.enqueuerMessages.EnqueueMessage(message, size)
 }

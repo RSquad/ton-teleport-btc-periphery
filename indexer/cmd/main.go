@@ -8,11 +8,13 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
 
 	jwv4r2contract "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/jw_v4r2_contract"
+	"github.com/xssnick/tonutils-go/ton/wallet"
 
 	"entgo.io/ent/dialect"
 
@@ -152,11 +154,31 @@ func initialize() (*App, error) {
 		return nil, fmt.Errorf("failed to create jwv4r2 contract: %w", err)
 	}
 
+	highloadWalletV3, err := wallet.FromSeed(tonClient.API, strings.Split(cfg.HighLoadWalletV3Seed, " "), wallet.ConfigHighloadV3{
+		MessageTTL: 60 * 5,
+		MessageBuilder: func(ctx context.Context, subWalletId uint32) (id uint32, createdAt int64, err error) {
+			// Due to specific of externals emulation on liteserver,
+			// we need to take something less than or equals to block time, as message creation time,
+			// otherwise external message will be rejected, because time will be > than emulation time
+			// hope it will be fixed in the next LS versions
+			createdAt = time.Now().Unix() - 30
+
+			// example query id which will allow you to send 1 tx per second
+			// but you better to implement your own iterator in database, then you can send unlimited
+			// but make sure id is less than 1 << 23, when it is higher start from 0 again
+			return uint32(createdAt % (1 << 23)), createdAt, nil
+		},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create highload wallet v3: %w", err)
+	}
+
 	// Teleport contract
 	teleportContract := teleportcontract.New(
 		coordinatorContractStorage.TeleportAddr,
 		tonClient,
 		jwV4R2Contract,
+		highloadWalletV3,
 		context.Background(),
 	)
 
@@ -179,7 +201,7 @@ func initialize() (*App, error) {
 		tonClient,
 		teleportContract,
 		bitcoinClientContract,
-		jwV4R2Contract,
+		highloadWalletV3.Address().String(),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create mint service: %w", err)

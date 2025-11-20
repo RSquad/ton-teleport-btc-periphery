@@ -119,6 +119,7 @@ func initialize() (*App, error) {
 		cfg.TeleportContractAddr,
 		tonClient,
 		nil,
+		nil,
 		ctx,
 	)
 

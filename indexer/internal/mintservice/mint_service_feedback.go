@@ -246,3 +246,41 @@ func (ms *MintService) logSendDepositCompleted(bitcoinTxID string, txHash string
 		Str("deposit_tx_hash", txHash).
 		Msg("Deposit transaction sent successfully")
 }
+
+func (ms *MintService) logSendDepositFailed(bitcoinTxID string, err error) {
+	logger.Log.Error().
+		Str("component", "MintService").
+		Str("bitcoin_tx_id", bitcoinTxID).
+		Err(err).
+		Msg("Deposit transaction failed")
+}
+
+func (ms *MintService) logDepositContextCancelled(mintID int, err error) {
+	logger.Log.Warn().
+		Str("component", "MintService").
+		Int("mint_id", mintID).
+		Err(err).
+		Msg("Deposit monitoring stopped due to context cancellation")
+}
+
+func (ms *MintService) logPeginActivationCheckFailed(mintID int, err error) {
+	logger.Log.Error().
+		Str("component", "MintService").
+		Int("mint_id", mintID).
+		Err(err).
+		Msg("Failed to check if pegin contract is active")
+}
+
+func (ms *MintService) logConfirmedMintChannelBlocked(mintID int) {
+	logger.Log.Error().
+		Str("component", "MintService").
+		Int("mint_id", mintID).
+		Msg("Confirmed mint channel blocked, unable to write mint")
+}
+
+func (ms *MintService) logPeginActivationTimeout(mintID int) {
+	logger.Log.Warn().
+		Str("component", "MintService").
+		Int("mint_id", mintID).
+		Msg("Pegin contract is not active after timeout")
+}

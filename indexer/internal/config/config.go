@@ -17,4 +17,5 @@ type EnvConfig struct {
 	ServerTimeout             time.Duration `env:"LITE_SERVER_TIMEOUT" envDefault:"15s"`
 	BitcoinClientContractAddr string        `env:"COMMON_TON_CONTRACT_BITCLIENT_ADDR,required"`
 	IndexerWalletV4Secret     string        `env:"INDEXER_WALLET_V4_SECRET,required"`
+	HighLoadWalletV3Secret    string        `env:"HIGH_LOAD_WALLET_V3_SEED,required"`
 }

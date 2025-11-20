@@ -22,6 +22,7 @@ type ServicesConfig struct {
 	ServerTimeout             time.Duration
 	BitcoinClientContractAddr *address.Address
 	IndexerWalletV4Secret     string
+	HighLoadWalletV3Seed      string
 }
 
 var (
@@ -92,6 +93,7 @@ func NewServicesConfig(envConfig *EnvConfig) (*ServicesConfig, error) {
 		ServerTimeout:             envConfig.ServerTimeout,
 		BitcoinClientContractAddr: BitcoinClientContractAddr,
 		IndexerWalletV4Secret:     envConfig.IndexerWalletV4Secret,
+		HighLoadWalletV3Seed:      envConfig.HighLoadWalletV3Secret,
 	}
 
 	initGlobalConfig(cfg)

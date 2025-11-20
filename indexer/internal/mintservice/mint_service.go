@@ -16,7 +16,6 @@ import (
 	mintmodel "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated/mint"
 	entpegin "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated/pegin"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
-	jwv4r2contract "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/jw_v4r2_contract"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/pegincontract"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/teleportcontract"
 	tonclient "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
@@ -35,7 +34,7 @@ type MintService struct {
 	tonClient             *tonclient.TonClient
 	teleportContract      *teleportcontract.TeleportContract
 	bitcoinClientContract *bitcoinclientcontract.BitcoinClientContract
-	tonWallet             *jwv4r2contract.JWV4R2Contract
+	indexerWalletAddress  string
 	confirmationsNeeded   int64
 	confirmedMints        chan *ent.Mint
 	mu                    sync.Mutex
@@ -47,7 +46,7 @@ func New(
 	tonClient *tonclient.TonClient,
 	teleportContract *teleportcontract.TeleportContract,
 	bitcoinClientContract *bitcoinclientcontract.BitcoinClientContract,
-	tonWallet *jwv4r2contract.JWV4R2Contract,
+	indexerWalletAddress string,
 ) (*MintService, error) {
 	confirmationsNeeded, err := bitcoinClientContract.GetConfirmationsNeeded()
 	if err != nil {
@@ -61,7 +60,7 @@ func New(
 		teleportContract:      teleportContract,
 		confirmationsNeeded:   confirmationsNeeded,
 		bitcoinClientContract: bitcoinClientContract,
-		tonWallet:             tonWallet,
+		indexerWalletAddress:  indexerWalletAddress,
 		confirmedMints:        make(chan *ent.Mint, 32),
 		mu:                    sync.Mutex{},
 	}, nil
@@ -378,29 +377,14 @@ func (ms *MintService) handleUnconfirmedMint(
 		return nil
 	}
 
-	err = ms.sendDeposit(ctx, bitcoinTxID, bitcoinTXBlockHash)
+	resultCh, err := ms.sendDeposit(ctx, bitcoinTxID, bitcoinTXBlockHash)
 	if err != nil {
 		return fmt.Errorf("failed to send deposit: %w", err)
 	}
-	for i := 0; i < 10; i++ {
-		isPeginContractActive, err := ms.isPeginContractActive(ctx, peginContractCode, block, bitcoinTxID)
-		if err != nil {
-			return fmt.Errorf("failed to check if pegin contract is active: %w", err)
-		}
 
-		if isPeginContractActive {
-			select {
-			case ms.confirmedMints <- mint:
-				return nil
-			case <-ctx.Done():
-				return fmt.Errorf("failed to push mint to channel: %w", ctx.Err())
-			case <-time.After(5 * time.Second):
-				return fmt.Errorf("timeout: channel stuck, unable to write mint to channel")
-			}
-		}
-		time.Sleep(time.Duration(i+1) * time.Second)
-	}
-	return fmt.Errorf("pegin contract is not active after 10 seconds")
+	ms.waitForDepositAndActivation(ctx, mint, peginContractCode, block, bitcoinTxID, resultCh)
+
+	return nil
 }
 
 func (ms *MintService) handlePendingMint(
@@ -525,22 +509,75 @@ func (ms *MintService) areConfirmationsAchieved(bitcoinTxID *chainhash.Hash) (bo
 	return false, nil, nil
 }
 
-func (ms *MintService) sendDeposit(ctx context.Context, bitcoinTxID *chainhash.Hash, bitcoinTXBlockHash *chainhash.Hash) error {
+func (ms *MintService) sendDeposit(ctx context.Context, bitcoinTxID *chainhash.Hash, bitcoinTXBlockHash *chainhash.Hash) (<-chan teleportcontract.SendResult, error) {
 	receiverAddress, recoveryKey, txHex, txProof, err := ms.fetchTransactionInfo(ctx, bitcoinTxID, bitcoinTXBlockHash)
 	if err != nil {
-		return fmt.Errorf("failed to fetch transaction info: %w", err)
+		return nil, fmt.Errorf("failed to fetch transaction info: %w", err)
 	}
 
 	ms.mu.Lock()
-	depositTxHash, _, err := ms.teleportContract.SendDeposit(ctx, bitcoinTXBlockHash, receiverAddress, ms.tonWallet.Address().String(), recoveryKey, txHex, txProof)
-	if err != nil {
-		ms.mu.Unlock()
-		return fmt.Errorf("failed to send deposit: %w", err)
-	}
+	resultCh, err := ms.teleportContract.SendDeposit(ctx, bitcoinTXBlockHash, receiverAddress, ms.indexerWalletAddress, recoveryKey, txHex, txProof)
 	ms.mu.Unlock()
-	ms.logSendDepositCompleted(bitcoinTxID.String(), depositTxHash.String())
+	if err != nil {
+		return nil, fmt.Errorf("failed to send deposit: %w", err)
+	}
 
-	return nil
+	return resultCh, nil
+}
+
+func (ms *MintService) waitForDepositAndActivation(
+	ctx context.Context,
+	mint *ent.Mint,
+	peginContractCode *cell.Cell,
+	block *ton.BlockIDExt,
+	bitcoinTxID *chainhash.Hash,
+	resultCh <-chan teleportcontract.SendResult,
+) {
+	select {
+	case <-ctx.Done():
+		ms.logDepositContextCancelled(mint.ID, ctx.Err())
+		return
+	case result := <-resultCh:
+		if result.Err != nil {
+			ms.logSendDepositFailed(bitcoinTxID.String(), result.Err)
+			return
+		}
+
+		ms.logSendDepositCompleted(bitcoinTxID.String(), hex.EncodeToString(result.TxHash))
+	}
+
+	for i := 0; i < 10; i++ {
+		select {
+		case <-ctx.Done():
+			ms.logDepositContextCancelled(mint.ID, ctx.Err())
+			return
+		default:
+		}
+
+		isPeginContractActive, err := ms.isPeginContractActive(ctx, peginContractCode, block, bitcoinTxID)
+		if err != nil {
+			ms.logPeginActivationCheckFailed(mint.ID, err)
+			time.Sleep(time.Duration(i+1) * time.Second)
+			continue
+		}
+
+		if isPeginContractActive {
+			select {
+			case ms.confirmedMints <- mint:
+				return
+			case <-ctx.Done():
+				ms.logDepositContextCancelled(mint.ID, ctx.Err())
+				return
+			case <-time.After(5 * time.Second):
+				ms.logConfirmedMintChannelBlocked(mint.ID)
+				return
+			}
+		}
+
+		time.Sleep(time.Duration(i+1) * time.Second)
+	}
+
+	ms.logPeginActivationTimeout(mint.ID)
 }
 
 func (ms *MintService) fetchTransactionInfo(
