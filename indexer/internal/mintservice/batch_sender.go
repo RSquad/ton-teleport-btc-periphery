@@ -43,9 +43,12 @@ func (b *BatchSender) Send() ([]*MessageWithTxHash, error) {
 			return nil, fmt.Errorf("failed to get message size: %w", err)
 		}
 		if batchSize+size > 64*1024 {
-			err = b.CheckBalance(context.Background(), len(batch))
+			possibleMessagesNumber, err := b.CheckBalance(context.Background(), len(batch))
 			if err != nil {
-				return nil, fmt.Errorf("failed to check balance: %w", err)
+				if possibleMessagesNumber > 0 {
+					b.highLoadWallet.SendManyWaitTxHash(context.Background(), batch[:possibleMessagesNumber])
+					return sendedMessages, err
+				}
 			}
 			b.highLoadWallet.SendManyWaitTxHash(context.Background(), batch)
 			time.Sleep(1000 * time.Millisecond)
@@ -59,8 +62,12 @@ func (b *BatchSender) Send() ([]*MessageWithTxHash, error) {
 			break
 		}
 	}
-	err := b.CheckBalance(context.Background(), len(batch))
+	possibleMessagesNumber, err := b.CheckBalance(context.Background(), len(batch))
 	if err != nil {
+		if possibleMessagesNumber > 0 {
+			b.highLoadWallet.SendManyWaitTxHash(context.Background(), batch[:possibleMessagesNumber])
+			return sendedMessages, err
+		}
 		return nil, fmt.Errorf("failed to check balance: %w", err)
 	}
 	b.highLoadWallet.SendManyWaitTxHash(context.Background(), batch)
@@ -77,15 +84,15 @@ func (b *BatchSender) messageSize(message *wallet.Message) (int, error) {
 	return len(cell.ToBOC()) + 1, nil
 }
 
-func (b *BatchSender) CheckBalance(ctx context.Context, messagesNumber int) error {
+func (b *BatchSender) CheckBalance(ctx context.Context, messagesNumber int) (int, error) {
 	block, err := b.tonClient.API.CurrentMasterchainInfo(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to get current masterchain info: %w", err)
+		return 0, fmt.Errorf("failed to get current masterchain info: %w", err)
 	}
 
 	acc, err := b.tonClient.API.GetAccount(ctx, block, b.highLoadWallet.Address())
 	if err != nil {
-		return fmt.Errorf("GetAccount: %w", err)
+		return 0, fmt.Errorf("GetAccount: %w", err)
 	}
 
 	balanceNano := acc.State.Balance.Nano()
@@ -93,8 +100,8 @@ func (b *BatchSender) CheckBalance(ctx context.Context, messagesNumber int) erro
 	TONInNano := int64(1_000_000_000)
 
 	if balanceNano.Int64() < TONInNano*int64(messagesNumber) {
-		return fmt.Errorf("not enough balance: %d < %d", balanceNano.Int64(), TONInNano*int64(messagesNumber))
+		return int(balanceNano.Int64() / TONInNano), fmt.Errorf("not enough balance: %d < %d", balanceNano.Int64(), TONInNano*int64(messagesNumber))
 	}
 
-	return nil
+	return messagesNumber, nil
 }
