@@ -164,6 +164,7 @@ func initialize() (*App, error) {
 		"bitclient":   cfg.BitcoinClientContractAddr,
 		"minter":      cfg.JettonMinterContractAddr,
 		"relayer":     cfg.RelayerWalletAddr,
+		"indexer":     cfg.IndexerWalletAddr,
 	}
 
 	// Fetcher service
