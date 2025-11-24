@@ -34,7 +34,7 @@ func (alert *AlertTotalServiceFee) Check(dataSource AlertDataSource) (Severity, 
 		}
 
 		description = fmt.Sprintf(
-			"Total service fee is less than %d satoshi.\nRunbook url: %s",
+			"Total service fee is less than %d satoshi.\n<b>Runbook url:</b> %s",
 			limit,
 			mutils.RunbookLink("TotalServiceFee"),
 		)
