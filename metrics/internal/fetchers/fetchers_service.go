@@ -7,6 +7,7 @@ import (
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/bitcoinclientcontract"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/teleportcontract"
@@ -16,13 +17,15 @@ import (
 )
 
 type FetcherService struct {
-	writerDB                     *WriterDB
-	fetcherDKG                   *FetcherDKG
-	fetcherContractBalances      []*FetcherContractBalance
-	fetcherContractBitcoinClient *FetcherContractBitcoinClient
-	fetcherContractTeleport      *FetcherContractTeleport
-	fetcherContractCoordinator   *FetcherContractCoordinator
-	fetcherBitcoinNetwork        *FetcherBitcoinNetwork
+	writerDB                         *WriterDB
+	fetcherDKG                       *FetcherDKG
+	fetcherContractBalances          []*FetcherContractBalance
+	fetcherContractBitcoinClient     *FetcherContractBitcoinClient
+	fetcherContractTeleport          *FetcherContractTeleport
+	fetcherContractCoordinator       *FetcherContractCoordinator
+	fetcherEventCollector            *ton.RawEventCollector
+	fetcherEventsContractCoordinator *FetcherEventsContractCoordinator
+	fetcherBitcoinNetwork            *FetcherBitcoinNetwork
 }
 
 func NewService(
@@ -63,17 +66,30 @@ func NewService(
 	// Fetcher: ContractCoordinator
 	fetcherContractCoordinator := NewFetcherContractCoordinator(writerDbChan, coordinatorContract, int64(cfg.CoordinatorContractFetchPeriod))
 
+	// Fetcher: Contract Coordinator Events
+	rawEventChan := make(chan *ton.RawEvent, 64)
+	fetcherEventCollector := ton.NewRawEventCollector(tonClient, coordinatorContract.GetAddr(), rawEventChan)
+	fetcherContractCoordinatorEvents := NewFetcherEventsContractCoordinator(
+		rawEventChan,
+		writerDbChan,
+		coordinatorContract,
+		int64(cfg.CoordinatorContractFetchPeriod),
+		coordinator.NewEventParser(),
+	)
+
 	// Fetcher: BitcoinNetwork
 	fetcherBitcoinNetwork := NewFetcherBitcoinNetwork(writerDbChan, db, bitcoinClient, int64(cfg.BitcoinNetworkFetchPeriod))
 
 	return &FetcherService{
-		writerDB:                     writerDB,
-		fetcherDKG:                   fetcherDKG,
-		fetcherContractBalances:      fetcherContractBalances,
-		fetcherContractBitcoinClient: fetcherContractBitcoinClient,
-		fetcherContractTeleport:      fetcherContractTeleport,
-		fetcherContractCoordinator:   fetcherContractCoordinator,
-		fetcherBitcoinNetwork:        fetcherBitcoinNetwork,
+		writerDB:                         writerDB,
+		fetcherDKG:                       fetcherDKG,
+		fetcherContractBalances:          fetcherContractBalances,
+		fetcherContractBitcoinClient:     fetcherContractBitcoinClient,
+		fetcherContractTeleport:          fetcherContractTeleport,
+		fetcherContractCoordinator:       fetcherContractCoordinator,
+		fetcherEventCollector:            fetcherEventCollector,
+		fetcherEventsContractCoordinator: fetcherContractCoordinatorEvents,
+		fetcherBitcoinNetwork:            fetcherBitcoinNetwork,
 	}, nil
 }
 
@@ -126,6 +142,22 @@ func (s *FetcherService) Work(ctx context.Context) {
 		wg.Add(1)
 		go func() {
 			s.fetcherContractCoordinator.Work(ctx, &wg)
+		}()
+	}
+
+	// Fetcher ContractCoordinatorEvents
+	if s.fetcherEventCollector != nil {
+		wg.Add(1)
+		go func() {
+			s.fetcherEventCollector.Work(ctx)
+		}()
+	}
+
+	// Fetcher ContractCoordinatorEvents
+	if s.fetcherEventsContractCoordinator != nil {
+		wg.Add(1)
+		go func() {
+			s.fetcherEventsContractCoordinator.Work(ctx, &wg)
 		}()
 	}
 
