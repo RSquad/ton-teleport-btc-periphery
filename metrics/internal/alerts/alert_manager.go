@@ -8,6 +8,7 @@ import (
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/watchdog"
+	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/config"
 	"github.com/xssnick/tonutils-go/address"
 )
 
@@ -27,8 +28,9 @@ func NewAlertManager(
 	dataSource AlertDataSource,
 	alertDispatcher AlertDispatcher,
 	contractAddrs map[string]*address.Address,
+	config *config.ServicesConfig,
 ) (*AlertManager, error) {
-	alertFactory := NewAlertFactory(contractAddrs)
+	alertFactory := NewAlertFactory(contractAddrs, config)
 
 	// Setup watchdog
 	watchdog.Global().Watch("AlertManager", time.Duration(300)*time.Second)
@@ -72,7 +74,6 @@ func (manager *AlertManager) CheckAll() {
 
 		if state == nil { // State is not enforced
 			severity, description, values, err := alert.Check(manager.dataSource)
-
 			if err != nil {
 				description = Description(err.Error())
 			}

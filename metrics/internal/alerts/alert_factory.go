@@ -3,6 +3,7 @@ package alerts
 import (
 	"fmt"
 
+	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/config"
 	"github.com/xssnick/tonutils-go/address"
 )
 
@@ -12,12 +13,12 @@ type AlertFactory struct {
 	Factories map[string]AlertFactoryFn
 }
 
-func NewAlertFactory(contractAddrs map[string]*address.Address) *AlertFactory {
+func NewAlertFactory(contractAddrs map[string]*address.Address, config *config.ServicesConfig) *AlertFactory {
 	factories := make(map[string]AlertFactoryFn)
 
 	// alert_btc_block_delta
 	factories["alert_btc_block_delta"] = func() Alert {
-		return NewAlertBtcBlockDelta()
+		return NewAlertBtcBlockDelta(config)
 	}
 
 	// alert_contract_balance_*
