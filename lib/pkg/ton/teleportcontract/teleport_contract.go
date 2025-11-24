@@ -52,11 +52,9 @@ const (
 
 type TeleportContract struct {
 	ton.Contract
-	TonClient        *tonclient.TonClient
-	sender           *jwv4r2contract.JWV4R2Contract
-	highLoadWallet   *wallet.Wallet
-	enqueuerMessages *EnqueuerMessages
-	ctx              context.Context
+	TonClient *tonclient.TonClient
+	sender    *jwv4r2contract.JWV4R2Contract
+	ctx       context.Context
 }
 
 type Storage struct {
@@ -111,11 +109,9 @@ func New(
 	addr *address.Address,
 	tonClient *tonclient.TonClient,
 	sender *jwv4r2contract.JWV4R2Contract,
-	highLoadWallet *wallet.Wallet,
 	ctx context.Context,
 ) *TeleportContract {
-	enqueuerMessages := NewEnqueuerMessages(highLoadWallet, tonClient)
-	return &TeleportContract{ton.Contract{Addr: addr}, tonClient, sender, highLoadWallet, enqueuerMessages, ctx}
+	return &TeleportContract{ton.Contract{Addr: addr}, tonClient, sender, ctx}
 }
 
 func (c *TeleportContract) SendPegoutProof(
@@ -409,29 +405,7 @@ func (c *TeleportContract) buildProofCell(merkleBlock *wire.MsgMerkleBlock) (*ce
 	return proofCell, nil
 }
 
-func (c *TeleportContract) CheckContractBalance(ctx context.Context) error {
-	block, err := c.TonClient.API.CurrentMasterchainInfo(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to get current masterchain info: %w", err)
-	}
-
-	acc, err := c.TonClient.API.GetAccount(ctx, block, c.Addr)
-	if err != nil {
-		return fmt.Errorf("GetAccount: %w", err)
-	}
-
-	balanceNano := acc.State.Balance.Nano()
-
-	TONInNano := int64(1_000_000_000)
-
-	if balanceNano.Int64() < TONInNano {
-		return fmt.Errorf("not enough balance")
-	}
-
-	return nil
-}
-
-func (c *TeleportContract) SendDeposit(
+func (c *TeleportContract) BuildSendDepositMessage(
 	ctx context.Context,
 	blockHash *chainhash.Hash,
 	receiverAddressStr string,
@@ -439,11 +413,7 @@ func (c *TeleportContract) SendDeposit(
 	recoveryKey string,
 	txHex string,
 	txProof []byte,
-) (<-chan SendResult, error) {
-	if err := c.CheckContractBalance(ctx); err != nil {
-		return nil, fmt.Errorf("not enough money to send deposit: %w", err)
-	}
-
+) (*wallet.Message, error) {
 	blockHashUInt := new(big.Int).SetBytes(blockHash.CloneBytes())
 	destAddress := address.MustParseRawAddr(receiverAddressStr)
 	indexerAddress := address.MustParseAddr(indexerAddressStr)
@@ -464,7 +434,7 @@ func (c *TeleportContract) SendDeposit(
 		return nil, fmt.Errorf("failed to decode recovery key: %w", err)
 	}
 
-	serializedTransaction, err := c.serializeTransaction(txHex)
+	serializedTransaction, err := utils.SerializeTransaction(txHex)
 	if err != nil {
 		return nil, fmt.Errorf("failed to serialize transaction: %w", err)
 	}
@@ -482,7 +452,5 @@ func (c *TeleportContract) SendDeposit(
 
 	message := wallet.SimpleMessage(c.Addr, tlb.MustFromTON("1"), sendDepositBodyCell)
 
-	size := len(sendDepositBodyCell.ToBOC())
-
-	return c.enqueuerMessages.EnqueueMessage(message, size)
+	return message, nil
 }

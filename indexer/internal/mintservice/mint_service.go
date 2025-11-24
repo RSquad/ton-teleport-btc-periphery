@@ -34,10 +34,9 @@ type MintService struct {
 	tonClient             *tonclient.TonClient
 	teleportContract      *teleportcontract.TeleportContract
 	bitcoinClientContract *bitcoinclientcontract.BitcoinClientContract
+	batchSender           *BatchSender
 	indexerWalletAddress  string
 	confirmationsNeeded   int64
-	confirmedMints        chan *ent.Mint
-	mu                    sync.Mutex
 }
 
 func New(
@@ -46,6 +45,7 @@ func New(
 	tonClient *tonclient.TonClient,
 	teleportContract *teleportcontract.TeleportContract,
 	bitcoinClientContract *bitcoinclientcontract.BitcoinClientContract,
+	batchSender *BatchSender,
 	indexerWalletAddress string,
 ) (*MintService, error) {
 	confirmationsNeeded, err := bitcoinClientContract.GetConfirmationsNeeded()
@@ -61,8 +61,7 @@ func New(
 		confirmationsNeeded:   confirmationsNeeded,
 		bitcoinClientContract: bitcoinClientContract,
 		indexerWalletAddress:  indexerWalletAddress,
-		confirmedMints:        make(chan *ent.Mint, 32),
-		mu:                    sync.Mutex{},
+		batchSender:           batchSender,
 	}, nil
 }
 
@@ -70,9 +69,8 @@ func (ms *MintService) Work(ctx context.Context) error {
 	ms.logStartWork()
 
 	var wg sync.WaitGroup
-	wg.Add(3)
+	wg.Add(2)
 
-	go ms.continuouslyProcessUnconfirmedMints(ctx, &wg)
 	go ms.continuouslyProcessPendingMints(ctx, &wg)
 	go ms.continuouslyProcessRefundMints(ctx, &wg)
 
@@ -83,30 +81,6 @@ func (ms *MintService) Work(ctx context.Context) error {
 	ms.logFinishWork(ctx.Err())
 
 	return ctx.Err()
-}
-
-func (ms *MintService) continuouslyProcessUnconfirmedMints(ctx context.Context, wg *sync.WaitGroup) {
-	defer wg.Done()
-	ms.logStartUnconfirmedWork()
-
-	var err error
-	defer func() { ms.logFinishUnconfirmedWork(err) }()
-
-	ticker := time.NewTicker(defaultLoopInterval + 1*time.Second)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ctx.Done():
-			err = ctx.Err()
-			return
-		case <-ticker.C:
-			cycleErr := ms.executeUnconfirmedMintsCycle(ctx)
-			if cycleErr != nil {
-				logPendingCycleError(cycleErr)
-			}
-		}
-	}
 }
 
 func (ms *MintService) continuouslyProcessPendingMints(ctx context.Context, wg *sync.WaitGroup) {
@@ -166,6 +140,16 @@ func (ms *MintService) executePendingMintsCycle(ctx context.Context) (err error)
 		return fmt.Errorf(teleportcontract.ErrGetStorage, err)
 	}
 
+	lastConfirmedBlockHash, err := ms.bitcoinClientContract.GetLastConfirmedBlockHash()
+	if err != nil {
+		return fmt.Errorf("failed to get last confirmed block hash: %w", err)
+	}
+
+	lastConfirmedBlockHeight, err := ms.bitcoinClient.GetBlockHeightByHash(lastConfirmedBlockHash)
+	if err != nil {
+		return fmt.Errorf("failed to get last confirmed block height: %w", err)
+	}
+
 	latestInternalKey, err := ms.repo.InternalKey.Query().
 		Order(ent.Desc(internalkeymodel.FieldCompletedAt)).
 		First(ctx)
@@ -186,79 +170,38 @@ func (ms *MintService) executePendingMintsCycle(ctx context.Context) (err error)
 		go func(m *ent.Mint, idx int) {
 			defer wg.Done()
 			defer func() { <-sem }()
-			err := ms.handlePendingMint(ctx, m, teleportStorage.PeginContractCode, block, latestInternalKey)
+			pending, err := ms.handlePendingMint(ctx, m, teleportStorage.PeginContractCode, block, latestInternalKey)
 			if err != nil {
 				logFailedProcessPendingMint(err, m.ID)
 			}
+			if pending {
+				err = ms.handleUnconfirmedMint(ctx, m, lastConfirmedBlockHeight)
+				if err != nil {
+					logFailedProcessUnconfirmedMint(err, m.ID)
+				}
+			}
+
 			logPendingMintsProcessingProgress(idx+1, len(mints))
 		}(mint, i)
 	}
 
-	go func() {
-		for mint := range ms.confirmedMints {
-			wg.Add(1)
-			err := ms.handlePendingMint(ctx, mint, teleportStorage.PeginContractCode, block, latestInternalKey)
-			if err != nil {
-				logFailedProcessPendingMint(err, mint.ID)
-			}
-			wg.Done()
-		}
-	}()
-
 	wg.Wait()
-	return nil
-}
 
-func (ms *MintService) executeUnconfirmedMintsCycle(ctx context.Context) (err error) {
-	start := time.Now()
-	var processedCount int
-	defer func() {
-		logFinishProcessingPendingMints(time.Since(start), err, processedCount)
-	}()
-	logStartProcessingPendingMints()
-
-	mints, err := ms.repo.Mint.Query().
-		Where(mintmodel.StatusEQ(mintmodel.StatusPending)).
-		WithPegin().
-		All(ctx)
+	sendedMessagesData, err := ms.batchSender.Send()
 	if err != nil {
-		return fmt.Errorf(errQueryPendingMints, err)
+		return fmt.Errorf("failed to send messages: %w", err)
 	}
+	logSendedMessages(len(sendedMessagesData))
 
-	if len(mints) == 0 {
-		logNoPendingMints()
-		return nil
-	}
-	logPendingMintsReceived(len(mints))
-	processedCount = len(mints)
-
-	block, err := ms.tonClient.API.CurrentMasterchainInfo(ctx)
-	if err != nil {
-		return fmt.Errorf(tonclient.ErrGetCurrentMasterchainInfo, err)
-	}
-
-	teleportStorage, err := ms.teleportContract.GetStorage(block)
-	if err != nil {
-		return fmt.Errorf(teleportcontract.ErrGetStorage, err)
-	}
-
-	var wg sync.WaitGroup
-	sem := make(chan struct{}, semaphoreLimit)
-
-	for i, mint := range mints {
+	for i, message := range sendedMessagesData {
 		wg.Add(1)
-		sem <- struct{}{}
-		go func(m *ent.Mint, idx int) {
+		go func(mes *MessageWithTxHash, idx int) {
 			defer wg.Done()
-			defer func() { <-sem }()
-			err := ms.handleUnconfirmedMint(ctx, m, teleportStorage.PeginContractCode, block)
-			if err != nil {
-				logFailedProcessUnconfirmedMint(err, m.ID)
-			}
-		}(mint, i)
+			ms.waitForDepositAndActivation(ctx, message.Mint, teleportStorage.PeginContractCode, message.TxHash, latestInternalKey)
+		}(message, i)
 	}
-
 	wg.Wait()
+
 	return nil
 }
 
@@ -360,29 +303,39 @@ func (ms *MintService) isPeginContractActive(ctx context.Context, peginContractC
 func (ms *MintService) handleUnconfirmedMint(
 	ctx context.Context,
 	mint *ent.Mint,
-	peginContractCode *cell.Cell,
-	block *ton.BlockIDExt,
+	lastConfirmedBlockHeight int64,
 ) error {
 	bitcoinTxID, err := chainhash.NewHashFromStr(mint.Edges.Pegin.BitcoinTxID)
 	if err != nil {
 		return fmt.Errorf(errCalcBitcoinTxID, err)
 	}
 
-	confirmationsAchieved, bitcoinTXBlockHash, err := ms.areConfirmationsAchieved(bitcoinTxID)
+	confirmationsAchieved, bitcoinTXBlockHash, err := ms.areConfirmationsAchieved(bitcoinTxID, lastConfirmedBlockHeight)
 	if err != nil {
 		return fmt.Errorf("failed to wait for confirmations: %w", err)
 	}
 
-	if !confirmationsAchieved || len(ms.confirmedMints) == cap(ms.confirmedMints) {
+	if !confirmationsAchieved {
 		return nil
 	}
 
-	resultCh, err := ms.sendDeposit(ctx, bitcoinTxID, bitcoinTXBlockHash)
+	receiverAddress, recoveryKey, txHex, txProof, err := ms.fetchTransactionInfo(ctx, bitcoinTxID, bitcoinTXBlockHash)
+	if err != nil {
+		return fmt.Errorf("failed to fetch transaction info: %w", err)
+	}
+
+	message, err := ms.teleportContract.BuildSendDepositMessage(ctx, bitcoinTXBlockHash, receiverAddress, ms.indexerWalletAddress, recoveryKey, txHex, txProof)
 	if err != nil {
 		return fmt.Errorf("failed to send deposit: %w", err)
 	}
 
-	ms.waitForDepositAndActivation(ctx, mint, peginContractCode, block, bitcoinTxID, resultCh)
+	messageData := &MessageWithTxHash{
+		Mint:    mint,
+		Message: message,
+		TxHash:  bitcoinTXBlockHash,
+	}
+
+	ms.batchSender.messagesForSending <- messageData
 
 	return nil
 }
@@ -393,10 +346,10 @@ func (ms *MintService) handlePendingMint(
 	peginContractCode *cell.Cell,
 	block *ton.BlockIDExt,
 	latestInternalKey *ent.InternalKey,
-) error {
+) (bool, error) {
 	bitcoinTxID, err := chainhash.NewHashFromStr(mint.Edges.Pegin.BitcoinTxID)
 	if err != nil {
-		return fmt.Errorf(errCalcBitcoinTxID, err)
+		return false, fmt.Errorf(errCalcBitcoinTxID, err)
 	}
 
 	peginContract, err := pegincontract.NewFromStateInit(
@@ -411,20 +364,20 @@ func (ms *MintService) handlePendingMint(
 		ms.tonClient,
 	)
 	if err != nil {
-		return fmt.Errorf(errCreatePeginContractFromStateInit, err)
+		return false, fmt.Errorf(errCreatePeginContractFromStateInit, err)
 	}
 
 	peginState, err := ms.tonClient.API.GetAccount(ctx, block, peginContract.Addr)
 	if err != nil {
-		return fmt.Errorf(errGetPeginContractAccountState, err)
+		return false, fmt.Errorf(errGetPeginContractAccountState, err)
 	}
 
 	if peginState.IsActive {
-		return ms.updateMintStatus(ctx, mint.ID, mintmodel.StatusSuccess)
+		return false, ms.updateMintStatus(ctx, mint.ID, mintmodel.StatusSuccess)
 	}
 
 	if latestInternalKey == nil {
-		return ms.updateMintStatus(ctx, mint.ID, mintmodel.StatusRefund)
+		return false, ms.updateMintStatus(ctx, mint.ID, mintmodel.StatusRefund)
 	}
 
 	internalKey, err := ms.repo.InternalKey.Query().
@@ -433,16 +386,16 @@ func (ms *MintService) handlePendingMint(
 	if err != nil {
 		if ent.IsNotFound(err) {
 			logPendingMintPeginInternalKeyNotFound(err, mint.ID, mint.Edges.Pegin.InternalKey)
-			return ms.updateMintStatus(ctx, mint.ID, mintmodel.StatusRefund)
+			return false, ms.updateMintStatus(ctx, mint.ID, mintmodel.StatusRefund)
 		}
-		return fmt.Errorf(errQueryInternalKey, err)
+		return false, fmt.Errorf(errQueryInternalKey, err)
 	}
 
 	if !internalKey.CompletedAt.Equal(latestInternalKey.CompletedAt) {
-		return ms.updateMintStatus(ctx, mint.ID, mintmodel.StatusRefund)
+		return false, ms.updateMintStatus(ctx, mint.ID, mintmodel.StatusRefund)
 	}
 
-	return nil
+	return true, nil
 }
 
 func (ms *MintService) handleRefundMint(ctx context.Context, mint *ent.Mint) error {
@@ -478,17 +431,7 @@ func (ms *MintService) updateMintStatus(ctx context.Context, mintID int, status 
 	return nil
 }
 
-func (ms *MintService) areConfirmationsAchieved(bitcoinTxID *chainhash.Hash) (bool, *chainhash.Hash, error) {
-	lastConfirmedBlockHash, err := ms.bitcoinClientContract.GetLastConfirmedBlockHash()
-	if err != nil {
-		return false, nil, fmt.Errorf("failed to get last confirmed block hash: %w", err)
-	}
-
-	lastConfirmedBlockHeight, err := ms.bitcoinClient.GetBlockHeightByHash(lastConfirmedBlockHash)
-	if err != nil {
-		return false, nil, fmt.Errorf("failed to get last confirmed block height: %w", err)
-	}
-
+func (ms *MintService) areConfirmationsAchieved(bitcoinTxID *chainhash.Hash, lastConfirmedBlockHeight int64) (bool, *chainhash.Hash, error) {
 	bitcoinTXBlockHash, err := ms.bitcoinClient.GetBlockHashByTxID(bitcoinTxID)
 	if err != nil {
 		if strings.Contains(err.Error(), "not yet mined or blockhash not available") {
@@ -509,49 +452,26 @@ func (ms *MintService) areConfirmationsAchieved(bitcoinTxID *chainhash.Hash) (bo
 	return false, nil, nil
 }
 
-func (ms *MintService) sendDeposit(ctx context.Context, bitcoinTxID *chainhash.Hash, bitcoinTXBlockHash *chainhash.Hash) (<-chan teleportcontract.SendResult, error) {
-	receiverAddress, recoveryKey, txHex, txProof, err := ms.fetchTransactionInfo(ctx, bitcoinTxID, bitcoinTXBlockHash)
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch transaction info: %w", err)
-	}
-
-	ms.mu.Lock()
-	resultCh, err := ms.teleportContract.SendDeposit(ctx, bitcoinTXBlockHash, receiverAddress, ms.indexerWalletAddress, recoveryKey, txHex, txProof)
-	ms.mu.Unlock()
-	if err != nil {
-		return nil, fmt.Errorf("failed to send deposit: %w", err)
-	}
-
-	return resultCh, nil
-}
-
 func (ms *MintService) waitForDepositAndActivation(
 	ctx context.Context,
 	mint *ent.Mint,
 	peginContractCode *cell.Cell,
-	block *ton.BlockIDExt,
 	bitcoinTxID *chainhash.Hash,
-	resultCh <-chan teleportcontract.SendResult,
+	latestInternalKey *ent.InternalKey,
 ) {
-	select {
-	case <-ctx.Done():
-		ms.logDepositContextCancelled(mint.ID, ctx.Err())
-		return
-	case result := <-resultCh:
-		if result.Err != nil {
-			ms.logSendDepositFailed(bitcoinTxID.String(), result.Err)
-			return
-		}
-
-		ms.logSendDepositCompleted(bitcoinTxID.String(), hex.EncodeToString(result.TxHash))
-	}
-
 	for i := 0; i < 10; i++ {
 		select {
 		case <-ctx.Done():
 			ms.logDepositContextCancelled(mint.ID, ctx.Err())
 			return
 		default:
+		}
+
+		block, err := ms.tonClient.API.CurrentMasterchainInfo(ctx)
+		if err != nil {
+			ms.logPeginActivationCheckFailed(mint.ID, err)
+			time.Sleep(time.Duration(i+1) * time.Second)
+			continue
 		}
 
 		isPeginContractActive, err := ms.isPeginContractActive(ctx, peginContractCode, block, bitcoinTxID)
@@ -562,16 +482,8 @@ func (ms *MintService) waitForDepositAndActivation(
 		}
 
 		if isPeginContractActive {
-			select {
-			case ms.confirmedMints <- mint:
-				return
-			case <-ctx.Done():
-				ms.logDepositContextCancelled(mint.ID, ctx.Err())
-				return
-			case <-time.After(5 * time.Second):
-				ms.logConfirmedMintChannelBlocked(mint.ID)
-				return
-			}
+			ms.handlePendingMint(ctx, mint, peginContractCode, block, latestInternalKey)
+			return
 		}
 
 		time.Sleep(time.Duration(i+1) * time.Second)

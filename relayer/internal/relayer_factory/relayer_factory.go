@@ -64,7 +64,6 @@ func (c *RelayerFactory) CreateRelayer(
 			teleportContractAddr,
 			c.tonClient,
 			sender,
-			nil,
 			context.Background(),
 		)
 		return pegoutrelayer.NewPegoutRelayer(c.bitcoinClient, teleportContract, bitcoinClientContract)

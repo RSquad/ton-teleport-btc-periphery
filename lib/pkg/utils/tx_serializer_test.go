@@ -1,4 +1,4 @@
-package teleportcontract
+package utils
 
 import (
 	"encoding/hex"
@@ -11,7 +11,6 @@ type testCase struct {
 }
 
 func TestSerializeTransactionBOC(t *testing.T) {
-	c := &TeleportContract{}
 	//expectedBoc is a result of executing serializeTransaction function in ts code (https://github.com/RSquad/ton-teleport-btc/blob/d8cc9f0f845fc996fc2a9cf6756a504c4432ee54/utils/serialize.ts#L8)
 	tests := []testCase{
 		{
@@ -37,7 +36,7 @@ func TestSerializeTransactionBOC(t *testing.T) {
 	}
 
 	for i, tt := range tests {
-		cell, err := c.serializeTransaction(tt.txHex)
+		cell, err := SerializeTransaction(tt.txHex)
 		if err != nil {
 			t.Fatalf("case %d: serialize error: %v", i, err)
 		}
@@ -53,10 +52,8 @@ func TestSerializeTransactionBOC(t *testing.T) {
 }
 
 func TestSerializeTransactionBOC_InvalidHex(t *testing.T) {
-	c := &TeleportContract{}
-
 	// Test case with invalid hex - should return error
-	_, err := c.serializeTransaction("invalid_hex_string")
+	_, err := SerializeTransaction("invalid_hex_string")
 	if err == nil {
 		t.Error("expected error for invalid hex string, but got nil")
 	}

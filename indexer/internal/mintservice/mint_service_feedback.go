@@ -122,24 +122,6 @@ func (ms *MintService) logFinishRefundWork(err error) {
 	}
 }
 
-func (ms *MintService) logStartUnconfirmedWork() {
-	logger.Log.Info().
-		Str("component", "MintService").
-		Str("process", "Processing unconfirmed mints").
-		Msg("Start worker for processing unconfirmed mints")
-}
-
-func (ms *MintService) logFinishUnconfirmedWork(err error) {
-	event := logger.Log.Info().
-		Str("component", "MintService").
-		Str("process", "Processing unconfirmed mints")
-	if err != nil {
-		event.Err(err).Msg("Processing unconfirmed mints finished with error")
-	} else {
-		event.Msg("Processing unconfirmed mints worker finished")
-	}
-}
-
 func logStartProcessingRefundMints() {
 	logger.Log.Debug().
 		Str("component", "MintService").
@@ -239,22 +221,6 @@ func logFailedProcessUnconfirmedMint(err error, mintID int) {
 	logger.Log.Error().Err(err).Str("component", "MintService").Str("process", "ProcessingUnconfirmedMints").Int("mint_id", mintID).Msg("Failed to process unconfirmed mint")
 }
 
-func (ms *MintService) logSendDepositCompleted(bitcoinTxID string, txHash string) {
-	logger.Log.Info().
-		Str("component", "MintService").
-		Str("bitcoin_tx_id", bitcoinTxID).
-		Str("deposit_tx_hash", txHash).
-		Msg("Deposit transaction sent successfully")
-}
-
-func (ms *MintService) logSendDepositFailed(bitcoinTxID string, err error) {
-	logger.Log.Error().
-		Str("component", "MintService").
-		Str("bitcoin_tx_id", bitcoinTxID).
-		Err(err).
-		Msg("Deposit transaction failed")
-}
-
 func (ms *MintService) logDepositContextCancelled(mintID int, err error) {
 	logger.Log.Warn().
 		Str("component", "MintService").
@@ -271,16 +237,13 @@ func (ms *MintService) logPeginActivationCheckFailed(mintID int, err error) {
 		Msg("Failed to check if pegin contract is active")
 }
 
-func (ms *MintService) logConfirmedMintChannelBlocked(mintID int) {
-	logger.Log.Error().
-		Str("component", "MintService").
-		Int("mint_id", mintID).
-		Msg("Confirmed mint channel blocked, unable to write mint")
-}
-
 func (ms *MintService) logPeginActivationTimeout(mintID int) {
 	logger.Log.Warn().
 		Str("component", "MintService").
 		Int("mint_id", mintID).
 		Msg("Pegin contract is not active after timeout")
+}
+
+func logSendedMessages(count int) {
+	logger.Log.Info().Str("component", "MintService").Int("count", count).Msg("Sended messages")
 }

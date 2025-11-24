@@ -1,4 +1,4 @@
-package teleportcontract
+package utils
 
 import (
 	"encoding/binary"
@@ -9,7 +9,7 @@ import (
 )
 
 // serialize transaction func repeats the logic from ts code (https://github.com/RSquad/ton-teleport-btc/blob/d8cc9f0f845fc996fc2a9cf6756a504c4432ee54/utils/serialize.ts#L8)
-func (c *TeleportContract) serializeTransaction(txHex string) (*cell.Cell, error) {
+func SerializeTransaction(txHex string) (*cell.Cell, error) {
 	offset := 0
 	flags := uint8(0)
 	txbuilder := cell.BeginCell()
