@@ -72,7 +72,7 @@ func (alert *AlertBtcBlockDelta) Check(dataSource AlertDataSource) (Severity, De
 	if alert.severity > SEVERITY_OK {
 		alert.description = Description(
 			fmt.Sprintf(
-				"There is a block-height delta of %d between the BitcoinClient contract (height %d: %d blocks + %d confirmations) and the Bitcoin network (height %d).\nRunbook url: %s",
+				"There is a block-height delta of %d between the BitcoinClient contract (height %d: %d blocks + %d confirmations) and the Bitcoin network (height %d).\n<b>Runbook url:</b> %s",
 				delta,
 				blockHeightContract,
 				storage.LastConfirmedBlockHeight,
