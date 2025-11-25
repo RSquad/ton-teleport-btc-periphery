@@ -216,3 +216,48 @@ func logFailedUpdateMintStatus(err error, mintID int, status mintmodel.Status) {
 func logMintStatusUpdated(mintID int, status mintmodel.Status) {
 	logger.Log.Info().Str("component", "MintService").Int("mint_id", mintID).Str("new_status", string(status)).Msg("Mint status updated")
 }
+
+func logFailedProcessUnconfirmedMint(err error, mintID int) {
+	logger.Log.Error().Err(err).Str("component", "MintService").Str("process", "ProcessingUnconfirmedMints").Int("mint_id", mintID).Msg("Failed to process unconfirmed mint")
+}
+
+func (ms *MintService) logDepositContextCancelled(mintID int, err error) {
+	logger.Log.Warn().
+		Str("component", "MintService").
+		Int("mint_id", mintID).
+		Err(err).
+		Msg("Deposit monitoring stopped due to context cancellation")
+}
+
+func (ms *MintService) logPeginActivationCheckFailed(mintID int, attemptCount int, err error) {
+	logger.Log.Error().
+		Str("component", "MintService").
+		Int("mint_id", mintID).
+		Int("attempt_count", attemptCount).
+		Err(err).
+		Msg("Failed to check if pegin contract is active")
+}
+
+func (ms *MintService) logFailedHandlePendingMint(mintID int, attemptCount int, err error) {
+	logger.Log.Error().
+		Str("component", "MintService").
+		Int("mint_id", mintID).
+		Int("attempt_count", attemptCount).
+		Err(err).
+		Msg("Failed to handle pending mint")
+}
+
+func (ms *MintService) logPeginActivationTimeout(mintID int) {
+	logger.Log.Trace().
+		Str("component", "MintService").
+		Int("mint_id", mintID).
+		Msg("Pegin contract is not active after timeout")
+}
+
+func logSentMessages(count int) {
+	logger.Log.Info().Str("component", "MintService").Int("count", count).Msg("Sent messages")
+}
+
+func logFailedCastMessageToMessageWithTxHash(err error, idx int) {
+	logger.Log.Error().Err(err).Str("component", "MintService").Int("idx", idx).Msg("Failed to cast message to MessageWithTxHash")
+}
