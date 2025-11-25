@@ -21,6 +21,7 @@ type ServicesConfig struct {
 	BitcoinClientContractAddr        *address.Address
 	JettonMinterContractAddr         *address.Address
 	RelayerWalletAddr                *address.Address
+	IndexerWalletAddr                *address.Address
 	WriterDbChainSize                int
 	DkgFetchPeriod                   int
 	BitcoinClientContractFetchPeriod int
@@ -105,6 +106,11 @@ func NewServicesConfig(config *EnvConfig) (*ServicesConfig, error) {
 	relayerWalletAddr, err := address.ParseAddr(config.RelayerWalletAddr)
 	if err != nil {
 		return nil, fmt.Errorf("parsing the Relayer Wallet address '%s' failed", config.RelayerWalletAddr)
+	}
+
+	indexerWalletAddr, err := address.ParseAddr(config.IndexerWalletAddr)
+	if err != nil {
+		return nil, fmt.Errorf("parsing the Indexer Wallet address '%s' failed", config.IndexerWalletAddr)
 	}
 
 	if len(config.WriterDbChainSize) > 0 {
@@ -229,6 +235,7 @@ func NewServicesConfig(config *EnvConfig) (*ServicesConfig, error) {
 		BitcoinClientContractAddr:        bitcoinClientContractAddr,
 		JettonMinterContractAddr:         jettonMinterContractAddr,
 		RelayerWalletAddr:                relayerWalletAddr,
+		IndexerWalletAddr:                indexerWalletAddr,
 		WriterDbChainSize:                writerDbChainSize,
 		DkgFetchPeriod:                   dkgFetchPeriod,
 		BitcoinClientContractFetchPeriod: bitcoinClientContractFetchPeriod,
@@ -258,6 +265,7 @@ CoordinatorContractAddr: %s
 BitcoinClientContractAddr: %s
 JettonMinterContractAddr: %s
 RelayerWalletAddr: %s
+IndexerWalletAddr: %s
 DatabaseMaxConn: %d
 DatabaseMaxIdleConn: %d
 HttpPort: %d
@@ -281,6 +289,7 @@ AlertBtcBlockDeltaHeightCrit: %d
 		config.BitcoinClientContractAddr,
 		config.JettonMinterContractAddr,
 		config.RelayerWalletAddr,
+		config.IndexerWalletAddr,
 		config.DatabaseMaxConn,
 		config.DatabaseMaxIdleConn,
 		config.HttpPort,

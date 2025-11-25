@@ -10,6 +10,7 @@ type EnvConfig struct {
 	BitcoinClientContractAddr        string `env:"COMMON_TON_CONTRACT_BITCLIENT_ADDR,required"`
 	JettonMinterContractAddr         string `env:"COMMON_TON_CONTRACT_MINTER_ADDR,required"`
 	RelayerWalletAddr                string `env:"COMMON_TON_RELAYER_WALLET_ADDR,required"`
+	IndexerWalletAddr                string `env:"COMMON_TON_INDEXER_WALLET_ADDR,required"`
 	DatabaseUrl                      string `env:"METRICS_DATABASE_URL,required"`
 	DatabaseMaxConn                  string `env:"METRICS_DATABASE_MAX_CONN"`
 	DatabaseMaxIdleConn              string `env:"METRICS_DATABASE_MAX_IDLE_CONN"`
