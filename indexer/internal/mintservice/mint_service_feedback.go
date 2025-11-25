@@ -229,12 +229,22 @@ func (ms *MintService) logDepositContextCancelled(mintID int, err error) {
 		Msg("Deposit monitoring stopped due to context cancellation")
 }
 
-func (ms *MintService) logPeginActivationCheckFailed(mintID int, err error) {
+func (ms *MintService) logPeginActivationCheckFailed(mintID int, attemptCount int, err error) {
 	logger.Log.Error().
 		Str("component", "MintService").
 		Int("mint_id", mintID).
+		Int("attempt_count", attemptCount).
 		Err(err).
 		Msg("Failed to check if pegin contract is active")
+}
+
+func (ms *MintService) logFailedHandlePendingMint(mintID int, attemptCount int, err error) {
+	logger.Log.Error().
+		Str("component", "MintService").
+		Int("mint_id", mintID).
+		Int("attempt_count", attemptCount).
+		Err(err).
+		Msg("Failed to handle pending mint")
 }
 
 func (ms *MintService) logPeginActivationTimeout(mintID int) {
@@ -246,4 +256,8 @@ func (ms *MintService) logPeginActivationTimeout(mintID int) {
 
 func logSendedMessages(count int) {
 	logger.Log.Info().Str("component", "MintService").Int("count", count).Msg("Sended messages")
+}
+
+func logFailedCastMessageToMessageWithTxHash(err error, idx int) {
+	logger.Log.Error().Err(err).Str("component", "MintService").Int("idx", idx).Msg("Failed to cast message to MessageWithTxHash")
 }

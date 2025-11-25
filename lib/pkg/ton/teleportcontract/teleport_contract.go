@@ -7,7 +7,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"math/big"
-	"math/rand/v2"
 
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/wire"
@@ -413,11 +412,11 @@ func (c *TeleportContract) BuildSendDepositMessage(
 	recoveryKey string,
 	txHex string,
 	txProof []byte,
+	queryId uint64,
 ) (*wallet.Message, error) {
 	blockHashUInt := new(big.Int).SetBytes(blockHash.CloneBytes())
 	destAddress := address.MustParseRawAddr(receiverAddressStr)
 	indexerAddress := address.MustParseAddr(indexerAddressStr)
-	queryId := rand.Uint64()
 
 	decodedTxProof, err := c.decodeTxProof(txProof)
 	if err != nil {

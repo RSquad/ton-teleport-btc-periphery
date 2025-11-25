@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
+	"math/rand/v2"
 	"strings"
 	"sync"
 	"time"
@@ -20,6 +21,7 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/teleportcontract"
 	tonclient "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
 	"github.com/xssnick/tonutils-go/ton"
+	"github.com/xssnick/tonutils-go/ton/wallet"
 	"github.com/xssnick/tonutils-go/tvm/cell"
 )
 
@@ -195,9 +197,14 @@ func (ms *MintService) executePendingMintsCycle(ctx context.Context) (err error)
 
 	for i, message := range sendedMessagesData {
 		wg.Add(1)
-		go func(mes *MessageWithTxHash, idx int) {
+		go func(mes Message, idx int) {
 			defer wg.Done()
-			ms.waitForDepositAndActivation(ctx, message.Mint, teleportStorage.PeginContractCode, message.TxHash, latestInternalKey)
+			msgWithHash, ok := mes.(*MessageWithTxHash)
+			if !ok {
+				logFailedCastMessageToMessageWithTxHash(err, idx)
+				return
+			}
+			ms.waitForDeposit(ctx, msgWithHash.Mint, teleportStorage.PeginContractCode, msgWithHash.TxHash, latestInternalKey)
 		}(message, i)
 	}
 	wg.Wait()
@@ -324,7 +331,9 @@ func (ms *MintService) handleUnconfirmedMint(
 		return fmt.Errorf("failed to fetch transaction info: %w", err)
 	}
 
-	message, err := ms.teleportContract.BuildSendDepositMessage(ctx, bitcoinTXBlockHash, receiverAddress, ms.indexerWalletAddress, recoveryKey, txHex, txProof)
+	queryId := rand.Uint64()
+
+	message, err := ms.teleportContract.BuildSendDepositMessage(ctx, bitcoinTXBlockHash, receiverAddress, ms.indexerWalletAddress, recoveryKey, txHex, txProof, queryId)
 	if err != nil {
 		return fmt.Errorf("failed to send deposit: %w", err)
 	}
@@ -335,7 +344,7 @@ func (ms *MintService) handleUnconfirmedMint(
 		TxHash:  bitcoinTXBlockHash,
 	}
 
-	ms.batchSender.messagesForSending <- messageData
+	ms.batchSender.EnqueueMessage(messageData)
 
 	return nil
 }
@@ -452,41 +461,47 @@ func (ms *MintService) areConfirmationsAchieved(bitcoinTxID *chainhash.Hash, las
 	return false, nil, nil
 }
 
-func (ms *MintService) waitForDepositAndActivation(
+func (ms *MintService) waitForDeposit(
 	ctx context.Context,
 	mint *ent.Mint,
 	peginContractCode *cell.Cell,
 	bitcoinTxID *chainhash.Hash,
 	latestInternalKey *ent.InternalKey,
 ) {
+	ticker := time.NewTicker(time.Second)
+	defer ticker.Stop()
+
 	for i := 0; i < 10; i++ {
+		waitDuration := time.Duration(i+1) * time.Second
+		ticker.Reset(waitDuration)
+
 		select {
 		case <-ctx.Done():
 			ms.logDepositContextCancelled(mint.ID, ctx.Err())
 			return
-		default:
+		case <-ticker.C:
 		}
 
 		block, err := ms.tonClient.API.CurrentMasterchainInfo(ctx)
 		if err != nil {
-			ms.logPeginActivationCheckFailed(mint.ID, err)
-			time.Sleep(time.Duration(i+1) * time.Second)
+			ms.logPeginActivationCheckFailed(mint.ID, i, err)
 			continue
 		}
 
 		isPeginContractActive, err := ms.isPeginContractActive(ctx, peginContractCode, block, bitcoinTxID)
 		if err != nil {
-			ms.logPeginActivationCheckFailed(mint.ID, err)
-			time.Sleep(time.Duration(i+1) * time.Second)
+			ms.logPeginActivationCheckFailed(mint.ID, i, err)
 			continue
 		}
 
 		if isPeginContractActive {
-			ms.handlePendingMint(ctx, mint, peginContractCode, block, latestInternalKey)
+			_, err = ms.handlePendingMint(ctx, mint, peginContractCode, block, latestInternalKey)
+			if err != nil {
+				ms.logFailedHandlePendingMint(mint.ID, i, err)
+				continue
+			}
 			return
 		}
-
-		time.Sleep(time.Duration(i+1) * time.Second)
 	}
 
 	ms.logPeginActivationTimeout(mint.ID)
@@ -528,4 +543,14 @@ func (ms *MintService) fetchTransactionInfo(
 	}
 
 	return existingPegin.ReceiverAddr, existingPegin.RecoveryKey, txHex, txProof, nil
+}
+
+type MessageWithTxHash struct {
+	Mint    *ent.Mint
+	Message *wallet.Message
+	TxHash  *chainhash.Hash
+}
+
+func (m *MessageWithTxHash) GetMessage() *wallet.Message {
+	return m.Message
 }

@@ -5,8 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/btcsuite/btcd/chaincfg/chainhash"
-	ent "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 	tonclient "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
 	"github.com/xssnick/tonutils-go/tlb"
 	"github.com/xssnick/tonutils-go/ton/wallet"
@@ -15,64 +14,68 @@ import (
 type BatchSender struct {
 	tonClient          *tonclient.TonClient
 	highLoadWallet     *wallet.Wallet
-	messagesForSending chan *MessageWithTxHash
+	messagesForSending chan Message
 }
 
 func NewBatchSender(highLoadWallet *wallet.Wallet, tonClient *tonclient.TonClient) *BatchSender {
 	batchSender := &BatchSender{
 		highLoadWallet:     highLoadWallet,
 		tonClient:          tonClient,
-		messagesForSending: make(chan *MessageWithTxHash, 100),
+		messagesForSending: make(chan Message, 100),
 	}
 	return batchSender
 }
 
-type MessageWithTxHash struct {
-	Mint    *ent.Mint
-	Message *wallet.Message
-	TxHash  *chainhash.Hash
+type Message interface {
+	GetMessage() *wallet.Message
 }
 
-func (b *BatchSender) Send() ([]*MessageWithTxHash, error) {
-	batchSize := 0
+// max messages size per transaction for highload wallet is 64KB
+const maxBatchSize = 64 * 1024
+
+func (b *BatchSender) Send() ([]Message, error) {
+	capacityCount, err := b.GetMessageCapacity(context.Background())
+	if err != nil {
+		return nil, fmt.Errorf("failed to get message capacity: %w", err)
+	}
+	capacitySize := maxBatchSize
+	offset := 0
+	sendedMessages := make([]Message, 0)
 	batch := make([]*wallet.Message, 0)
-	sendedMessages := make([]*MessageWithTxHash, 0)
+
 	for message := range b.messagesForSending {
-		size, err := b.messageSize(message.Message)
+		msg := message.GetMessage()
+		size, err := b.messageSize(msg)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get message size: %w", err)
-		}
-		if batchSize+size > 64*1024 {
-			possibleMessagesNumber, err := b.CheckBalance(context.Background(), len(batch))
-			if err != nil {
-				if possibleMessagesNumber > 0 {
-					b.highLoadWallet.SendManyWaitTxHash(context.Background(), batch[:possibleMessagesNumber])
-					return sendedMessages, err
-				}
-			}
-			b.highLoadWallet.SendManyWaitTxHash(context.Background(), batch)
-			time.Sleep(1000 * time.Millisecond)
-			batch = make([]*wallet.Message, 0)
-			batchSize = 0
+			logger.Log.Error().Err(err).
+				Str("component", "BatchSender").
+				Msg("failed to get message size for message")
 			continue
 		}
-		batch = append(batch, message.Message)
-		sendedMessages = append(sendedMessages, message)
+		capacityCount -= 1
+		capacitySize -= size
+		if capacitySize <= 0 || capacityCount <= 0 {
+			b.highLoadWallet.SendManyWaitTxHash(context.Background(), batch[offset:])
+			time.Sleep(1000 * time.Millisecond)
+			offset = len(batch)
+			capacitySize = maxBatchSize
+		} else {
+			batch = append(batch, msg)
+			sendedMessages = append(sendedMessages, message)
+		}
+
 		if len(b.messagesForSending) == 0 {
 			break
 		}
 	}
-	possibleMessagesNumber, err := b.CheckBalance(context.Background(), len(batch))
-	if err != nil {
-		if possibleMessagesNumber > 0 {
-			b.highLoadWallet.SendManyWaitTxHash(context.Background(), batch[:possibleMessagesNumber])
-			return sendedMessages, err
-		}
-		return nil, fmt.Errorf("failed to check balance: %w", err)
-	}
+
 	b.highLoadWallet.SendManyWaitTxHash(context.Background(), batch)
 
 	return sendedMessages, nil
+}
+
+func (b *BatchSender) EnqueueMessage(message Message) {
+	b.messagesForSending <- message
 }
 
 func (b *BatchSender) messageSize(message *wallet.Message) (int, error) {
@@ -81,10 +84,11 @@ func (b *BatchSender) messageSize(message *wallet.Message) (int, error) {
 		return 0, err
 	}
 
+	// +1 is a send_mode byte
 	return len(cell.ToBOC()) + 1, nil
 }
 
-func (b *BatchSender) CheckBalance(ctx context.Context, messagesNumber int) (int, error) {
+func (b *BatchSender) GetMessageCapacity(ctx context.Context) (int, error) {
 	block, err := b.tonClient.API.CurrentMasterchainInfo(ctx)
 	if err != nil {
 		return 0, fmt.Errorf("failed to get current masterchain info: %w", err)
@@ -99,9 +103,15 @@ func (b *BatchSender) CheckBalance(ctx context.Context, messagesNumber int) (int
 
 	TONInNano := int64(1_000_000_000)
 
-	if balanceNano.Int64() < TONInNano*int64(messagesNumber) {
-		return int(balanceNano.Int64() / TONInNano), fmt.Errorf("not enough balance: %d < %d", balanceNano.Int64(), TONInNano*int64(messagesNumber))
+	// 1 Ton is reserved for gas and storage
+	messageCapacity := int((balanceNano.Int64() - TONInNano) / TONInNano)
+
+	if messageCapacity < 10 {
+		logger.Log.Warn().
+			Str("component", "BatchSender").
+			Int("message_capacity", messageCapacity).
+			Msg("please refill balance")
 	}
 
-	return messagesNumber, nil
+	return messageCapacity, nil
 }
