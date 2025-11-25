@@ -10,16 +10,18 @@ import (
 )
 
 type ServicesConfig struct {
-	BitcoinRpcHost          string
-	BitcoinRpcUser          string
-	BitcoinRpcPass          string
-	TonConfigUrl            string
-	DatabaseUrl             string
-	DatabaseMaxConn         int
-	DatabaseMaxIdleConn     int
-	CoordinatorContractAddr *address.Address
-	PProfHttpEnable         bool
-	ServerTimeout           time.Duration
+	BitcoinRpcHost            string
+	BitcoinRpcUser            string
+	BitcoinRpcPass            string
+	TonConfigUrl              string
+	DatabaseUrl               string
+	DatabaseMaxConn           int
+	DatabaseMaxIdleConn       int
+	CoordinatorContractAddr   *address.Address
+	PProfHttpEnable           bool
+	ServerTimeout             time.Duration
+	BitcoinClientContractAddr *address.Address
+	HighLoadWalletV3Seed      string
 }
 
 var (
@@ -63,6 +65,11 @@ func NewServicesConfig(envConfig *EnvConfig) (*ServicesConfig, error) {
 		return nil, fmt.Errorf("parsing the Coordinator Contract address '%s' failed", envConfig.CoordinatorContractAddr)
 	}
 
+	BitcoinClientContractAddr, err := address.ParseAddr(envConfig.BitcoinClientContractAddr)
+	if err != nil {
+		return nil, fmt.Errorf("parsing the Bitcoin Client Contract address '%s' failed", envConfig.CoordinatorContractAddr)
+	}
+
 	if len(envConfig.PProfHttpEnable) > 0 {
 		value, err := ParseBool(envConfig.PProfHttpEnable, "PProfHttpEnable")
 		if err != nil {
@@ -73,16 +80,18 @@ func NewServicesConfig(envConfig *EnvConfig) (*ServicesConfig, error) {
 	}
 
 	cfg := &ServicesConfig{
-		BitcoinRpcHost:          envConfig.BitcoinRpcHost,
-		BitcoinRpcUser:          envConfig.BitcoinRpcUser,
-		BitcoinRpcPass:          envConfig.BitcoinRpcPass,
-		TonConfigUrl:            envConfig.TonConfigUrl,
-		DatabaseUrl:             envConfig.DatabaseUrl,
-		DatabaseMaxConn:         databaseMaxConn,
-		DatabaseMaxIdleConn:     databaseMaxIdleConn,
-		CoordinatorContractAddr: coordinatorContractAddr,
-		PProfHttpEnable:         pprofHttpEnable,
-		ServerTimeout:           envConfig.ServerTimeout,
+		BitcoinRpcHost:            envConfig.BitcoinRpcHost,
+		BitcoinRpcUser:            envConfig.BitcoinRpcUser,
+		BitcoinRpcPass:            envConfig.BitcoinRpcPass,
+		TonConfigUrl:              envConfig.TonConfigUrl,
+		DatabaseUrl:               envConfig.DatabaseUrl,
+		DatabaseMaxConn:           databaseMaxConn,
+		DatabaseMaxIdleConn:       databaseMaxIdleConn,
+		CoordinatorContractAddr:   coordinatorContractAddr,
+		PProfHttpEnable:           pprofHttpEnable,
+		ServerTimeout:             envConfig.ServerTimeout,
+		BitcoinClientContractAddr: BitcoinClientContractAddr,
+		HighLoadWalletV3Seed:      envConfig.HighLoadWalletV3Secret,
 	}
 
 	initGlobalConfig(cfg)
