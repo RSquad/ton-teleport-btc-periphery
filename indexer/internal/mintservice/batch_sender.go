@@ -21,7 +21,7 @@ func NewBatchSender(highLoadWallet *wallet.Wallet, tonClient *tonclient.TonClien
 	batchSender := &BatchSender{
 		highLoadWallet:     highLoadWallet,
 		tonClient:          tonClient,
-		messagesForSending: make(chan Message, 100),
+		messagesForSending: make(chan Message, 32),
 	}
 	return batchSender
 }
@@ -38,9 +38,14 @@ func (b *BatchSender) Send() ([]Message, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to get message capacity: %w", err)
 	}
+
+	if len(b.messagesForSending) == 0 {
+		return nil, nil
+	}
+
 	capacitySize := maxBatchSize
 	offset := 0
-	sendedMessages := make([]Message, 0)
+	sentMessages := make([]Message, 0)
 	batch := make([]*wallet.Message, 0)
 
 	for message := range b.messagesForSending {
@@ -61,7 +66,7 @@ func (b *BatchSender) Send() ([]Message, error) {
 			capacitySize = maxBatchSize
 		} else {
 			batch = append(batch, msg)
-			sendedMessages = append(sendedMessages, message)
+			sentMessages = append(sentMessages, message)
 		}
 
 		if len(b.messagesForSending) == 0 {
@@ -69,9 +74,10 @@ func (b *BatchSender) Send() ([]Message, error) {
 		}
 	}
 
-	b.highLoadWallet.SendManyWaitTxHash(context.Background(), batch)
-
-	return sendedMessages, nil
+	if len(batch[offset:]) > 0 {
+		b.highLoadWallet.SendManyWaitTxHash(context.Background(), batch[offset:])
+	}
+	return sentMessages, nil
 }
 
 func (b *BatchSender) EnqueueMessage(message Message) {
@@ -110,7 +116,7 @@ func (b *BatchSender) GetMessageCapacity(ctx context.Context) (int, error) {
 		logger.Log.Warn().
 			Str("component", "BatchSender").
 			Int("message_capacity", messageCapacity).
-			Msg("please refill balance")
+			Msg("wallet message capacity is too low")
 	}
 
 	return messageCapacity, nil

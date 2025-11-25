@@ -248,14 +248,14 @@ func (ms *MintService) logFailedHandlePendingMint(mintID int, attemptCount int, 
 }
 
 func (ms *MintService) logPeginActivationTimeout(mintID int) {
-	logger.Log.Warn().
+	logger.Log.Trace().
 		Str("component", "MintService").
 		Int("mint_id", mintID).
 		Msg("Pegin contract is not active after timeout")
 }
 
-func logSendedMessages(count int) {
-	logger.Log.Info().Str("component", "MintService").Int("count", count).Msg("Sended messages")
+func logSentMessages(count int) {
+	logger.Log.Info().Str("component", "MintService").Int("count", count).Msg("Sent messages")
 }
 
 func logFailedCastMessageToMessageWithTxHash(err error, idx int) {

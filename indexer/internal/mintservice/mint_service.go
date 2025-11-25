@@ -189,17 +189,17 @@ func (ms *MintService) executePendingMintsCycle(ctx context.Context) (err error)
 
 	wg.Wait()
 
-	sendedMessagesData, err := ms.batchSender.Send()
+	sentMessagesData, err := ms.batchSender.Send()
 	if err != nil {
 		return fmt.Errorf("failed to send messages: %w", err)
 	}
-	logSendedMessages(len(sendedMessagesData))
+	logSentMessages(len(sentMessagesData))
 
-	for i, message := range sendedMessagesData {
+	for i, message := range sentMessagesData {
 		wg.Add(1)
 		go func(mes Message, idx int) {
 			defer wg.Done()
-			msgWithHash, ok := mes.(*MessageWithTxHash)
+			msgWithHash, ok := mes.(*MintInfo)
 			if !ok {
 				logFailedCastMessageToMessageWithTxHash(err, idx)
 				return
@@ -338,7 +338,7 @@ func (ms *MintService) handleUnconfirmedMint(
 		return fmt.Errorf("failed to send deposit: %w", err)
 	}
 
-	messageData := &MessageWithTxHash{
+	messageData := &MintInfo{
 		Mint:    mint,
 		Message: message,
 		TxHash:  bitcoinTXBlockHash,
@@ -545,12 +545,12 @@ func (ms *MintService) fetchTransactionInfo(
 	return existingPegin.ReceiverAddr, existingPegin.RecoveryKey, txHex, txProof, nil
 }
 
-type MessageWithTxHash struct {
+type MintInfo struct {
 	Mint    *ent.Mint
 	Message *wallet.Message
 	TxHash  *chainhash.Hash
 }
 
-func (m *MessageWithTxHash) GetMessage() *wallet.Message {
+func (m *MintInfo) GetMessage() *wallet.Message {
 	return m.Message
 }
