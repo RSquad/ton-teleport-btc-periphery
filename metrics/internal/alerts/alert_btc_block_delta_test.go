@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
+	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/config"
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/data_models"
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/mutils"
 )
@@ -215,5 +216,9 @@ func TestAlertBtcBlockDelta(t *testing.T) {
 		},
 	}
 
-	DoAlertTests(t, tests, NewAlertBtcBlockDelta())
+	cfg := config.ServicesConfig{}
+	cfg.AlertBtcBlockDeltaHeightCrit = 3
+	cfg.AlertBtcBlockDeltaHeightWarn = 2
+
+	DoAlertTests(t, tests, NewAlertBtcBlockDelta(&cfg))
 }

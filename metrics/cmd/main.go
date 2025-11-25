@@ -187,6 +187,7 @@ func initialize() (*App, error) {
 		alerts.NewAlertDataSourceLive(dbConnPool, bitcoinClient, contractAddrs),
 		alerts.NewAlertDispatcherPrometheus(),
 		contractAddrs,
+		cfg,
 	)
 	if err != nil {
 		cancelFn()
