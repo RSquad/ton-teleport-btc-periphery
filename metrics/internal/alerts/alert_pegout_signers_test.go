@@ -74,7 +74,7 @@ func TestAlertPegoutSigners(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_INFO,
-				Description: Description(fmt.Sprintf("Number of validators allowed to sign pegout is 9 of 10 (90%%).\nPegout: %s.\nBitcoin TX: %s.\nRunbook url: %s", tonUrl1, btcUrl1, runbookUrl)),
+				Description: Description(fmt.Sprintf("Number of validators allowed to sign pegout is 9 of 10 (90%%).\n<b>Pegout:</b> %s.\n<b>Bitcoin TX:</b> %s.\n<b>Runbook url:</b> %s", tonUrl1, btcUrl1, runbookUrl)),
 				Err:         nil,
 			},
 		},
@@ -100,7 +100,7 @@ func TestAlertPegoutSigners(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_WARNING,
-				Description: Description(fmt.Sprintf("Number of validators allowed to sign pegout is 8 of 10 (80%%).\nPegout: %s.\nBitcoin TX: %s.\nRunbook url: %s", tonUrl1, btcUrl1, runbookUrl)),
+				Description: Description(fmt.Sprintf("Number of validators allowed to sign pegout is 8 of 10 (80%%).\n<b>Pegout:</b> %s.\n<b>Bitcoin TX:</b> %s.\n<b>Runbook url:</b> %s", tonUrl1, btcUrl1, runbookUrl)),
 				Err:         nil,
 			},
 		},
@@ -126,7 +126,7 @@ func TestAlertPegoutSigners(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_CRITICAL,
-				Description: Description(fmt.Sprintf("Number of validators allowed to sign pegout is 7 of 10 (70%%).\nPegout: %s.\nBitcoin TX: %s.\nRunbook url: %s", tonUrl1, btcUrl1, runbookUrl)),
+				Description: Description(fmt.Sprintf("Number of validators allowed to sign pegout is 7 of 10 (70%%).\n<b>Pegout:</b> %s.\n<b>Bitcoin TX:</b> %s.\n<b>Runbook url:</b> %s", tonUrl1, btcUrl1, runbookUrl)),
 				Err:         nil,
 			},
 		},
@@ -152,7 +152,7 @@ func TestAlertPegoutSigners(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_CRITICAL,
-				Description: Description(fmt.Sprintf("Number of validators allowed to sign pegout is 6 of 10 (60%%).\nPegout: %s.\nBitcoin TX: %s.\nRunbook url: %s", tonUrl1, btcUrl1, runbookUrl)),
+				Description: Description(fmt.Sprintf("Number of validators allowed to sign pegout is 6 of 10 (60%%).\n<b>Pegout:</b> %s.\n<b>Bitcoin TX:</b> %s.\n<b>Runbook url:</b> %s", tonUrl1, btcUrl1, runbookUrl)),
 				Err:         nil,
 			},
 		},
@@ -178,7 +178,7 @@ func TestAlertPegoutSigners(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_CRITICAL,
-				Description: Description(fmt.Sprintf("Number of validators allowed to sign pegout is 6 of 10 (60%%).\nPegout: %s.\nBitcoin TX: %s.\nRunbook url: %s", tonUrl2, btcUrl2, runbookUrl)),
+				Description: Description(fmt.Sprintf("Number of validators allowed to sign pegout is 6 of 10 (60%%).\n<b>Pegout:</b> %s.\n<b>Bitcoin TX:</b> %s.\n<b>Runbook url:</b> %s", tonUrl2, btcUrl2, runbookUrl)),
 				Err:         nil,
 			},
 		},

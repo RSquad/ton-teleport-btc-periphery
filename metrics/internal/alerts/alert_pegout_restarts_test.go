@@ -84,7 +84,7 @@ func TestAlertPegoutRestarts(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_WARNING,
-				Description: Description(fmt.Sprintf("The pegout signing was restarted 1 times.\nPegout: %s.\nBitcoin TX: %s.\nRunbook url: %s", tonUrl, btcUrl, runbookUrl)),
+				Description: Description(fmt.Sprintf("The pegout signing was restarted 1 times.\n<b>Pegout:</b> %s.\n<b>Bitcoin TX:</b> %s.\n<b>Runbook url:</b> %s", tonUrl, btcUrl, runbookUrl)),
 				Err:         nil,
 			},
 		},
@@ -105,7 +105,7 @@ func TestAlertPegoutRestarts(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_WARNING,
-				Description: Description(fmt.Sprintf("The pegout signing was restarted 2 times.\nPegout: %s.\nBitcoin TX: %s.\nRunbook url: %s", tonUrl, btcUrl, runbookUrl)),
+				Description: Description(fmt.Sprintf("The pegout signing was restarted 2 times.\n<b>Pegout:</b> %s.\n<b>Bitcoin TX:</b> %s.\n<b>Runbook url:</b> %s", tonUrl, btcUrl, runbookUrl)),
 				Err:         nil,
 			},
 		},
@@ -126,7 +126,7 @@ func TestAlertPegoutRestarts(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_WARNING,
-				Description: Description(fmt.Sprintf("The pegout signing was restarted 3 times.\nPegout: %s.\nBitcoin TX: %s.\nRunbook url: %s", tonUrl, btcUrl, runbookUrl)),
+				Description: Description(fmt.Sprintf("The pegout signing was restarted 3 times.\n<b>Pegout:</b> %s.\n<b>Bitcoin TX:</b> %s.\n<b>Runbook url:</b> %s", tonUrl, btcUrl, runbookUrl)),
 				Err:         nil,
 			},
 		},
@@ -147,7 +147,7 @@ func TestAlertPegoutRestarts(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_WARNING,
-				Description: Description(fmt.Sprintf("The pegout signing was restarted 4 times.\nPegout: %s.\nBitcoin TX: %s.\nRunbook url: %s", tonUrl, btcUrl, runbookUrl)),
+				Description: Description(fmt.Sprintf("The pegout signing was restarted 4 times.\n<b>Pegout:</b> %s.\n<b>Bitcoin TX:</b> %s.\n<b>Runbook url:</b> %s", tonUrl, btcUrl, runbookUrl)),
 				Err:         nil,
 			},
 		},
@@ -168,7 +168,7 @@ func TestAlertPegoutRestarts(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_CRITICAL,
-				Description: Description(fmt.Sprintf("The pegout signing was restarted 5 times.\nPegout: %s.\nBitcoin TX: %s.\nRunbook url: %s", tonUrl, btcUrl, runbookUrl)),
+				Description: Description(fmt.Sprintf("The pegout signing was restarted 5 times.\n<b>Pegout:</b> %s.\n<b>Bitcoin TX:</b> %s.\n<b>Runbook url:</b> %s", tonUrl, btcUrl, runbookUrl)),
 				Err:         nil,
 			},
 		},
@@ -189,7 +189,7 @@ func TestAlertPegoutRestarts(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_CRITICAL,
-				Description: Description(fmt.Sprintf("The pegout signing was restarted 6 times.\nPegout: %s.\nBitcoin TX: %s.\nRunbook url: %s", tonUrl, btcUrl, runbookUrl)),
+				Description: Description(fmt.Sprintf("The pegout signing was restarted 6 times.\n<b>Pegout:</b> %s.\n<b>Bitcoin TX:</b> %s.\n<b>Runbook url:</b> %s", tonUrl, btcUrl, runbookUrl)),
 				Err:         nil,
 			},
 		},
