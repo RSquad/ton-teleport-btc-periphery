@@ -9,17 +9,15 @@ import (
 	"github.com/xssnick/tonutils-go/tvm/cell"
 )
 
-type EventId uint
-
 const (
-	eventIdDKGComplete            EventId = 0x453443a6
-	eventIdDKGStarted             EventId = 0x1ab2bd7f
-	eventIdDKGCompletedInfo       EventId = 0x4e062aa5
-	eventIdDKGRestarted           EventId = 0xf661074e
-	eventIdDKGRotated             EventId = 0x3f78a410
-	eventIdPegoutSigningStarted   EventId = 0xa19457a2
-	eventIdPegoutSigningCompleted EventId = 0x317d48b4
-	eventIdPegoutSigningRestarted EventId = 0x82280c5c
+	eventIdDKGComplete            = 0x453443a6
+	eventIdDKGStarted             = 0x1ab2bd7f
+	eventIdDKGCompletedInfo       = 0x4e062aa5
+	eventIdDKGRestarted           = 0xf661074e
+	eventIdDKGRotated             = 0x3f78a410
+	eventIdPegoutSigningStarted   = 0xa19457a2
+	eventIdPegoutSigningCompleted = 0x317d48b4
+	eventIdPegoutSigningRestarted = 0x82280c5c
 )
 
 type DKGCompletedEvent struct {
@@ -30,18 +28,20 @@ type DKGCompletedEvent struct {
 
 type DKGStartedEvent struct {
 	Raw *ton.RawEvent
+	Dkg *cell.Slice
 }
 
 type DKGCompletedInfoEvent struct {
 	Raw *ton.RawEvent
+	Dkg *cell.Slice
 }
 
 type DKGRestartedEvent struct {
-	Reason     *big.Int
+	Raw        *ton.RawEvent
+	Reason     uint8
 	NewDkg     *cell.Slice
 	Claims     DKGClaimcounters
 	ClaimsMask *big.Int
-	Raw        *ton.RawEvent
 }
 
 type DKGRotatedEvent struct {
@@ -49,57 +49,59 @@ type DKGRotatedEvent struct {
 }
 
 type PegoutSigningStartedEvent struct {
-	PegoutId *big.Int
 	Raw      *ton.RawEvent
+	PegoutId *big.Int
+	Pegout   *cell.Slice
 }
 
 type PegoutSigningCompletedEvent struct {
-	PegoutId *big.Int
 	Raw      *ton.RawEvent
+	PegoutId *big.Int
+	Pegout   *cell.Slice
 }
 
 type PegoutSigningRestartedEvent struct {
-	PegoutId       *big.Int
-	Reason         *big.Int
+	Raw            *ton.RawEvent
+	PegoutId       uint64
+	Reason         uint8
 	Pegout         *cell.Slice
 	CommitmentMask *big.Int
 	SharesMask     *big.Int
 	SignatureMask  *big.Int
 	Claims         DKGClaimcounters
 	ClaimsMask     *big.Int
-	Raw            *ton.RawEvent
 }
 
 func (m *DKGCompletedEvent) GetEventID() uint32 {
-	return uint32(eventIdDKGComplete)
+	return eventIdDKGComplete
 }
 
 func (m *DKGStartedEvent) GetEventID() uint32 {
-	return uint32(eventIdDKGStarted)
+	return eventIdDKGStarted
 }
 
 func (m *DKGCompletedInfoEvent) GetEventID() uint32 {
-	return uint32(eventIdDKGCompletedInfo)
+	return eventIdDKGCompletedInfo
 }
 
 func (m *DKGRestartedEvent) GetEventID() uint32 {
-	return uint32(eventIdDKGRestarted)
+	return eventIdDKGRestarted
 }
 
 func (m *DKGRotatedEvent) GetEventID() uint32 {
-	return uint32(eventIdDKGRotated)
+	return eventIdDKGRotated
 }
 
 func (m *PegoutSigningStartedEvent) GetEventID() uint32 {
-	return uint32(eventIdPegoutSigningStarted)
+	return eventIdPegoutSigningStarted
 }
 
 func (m *PegoutSigningCompletedEvent) GetEventID() uint32 {
-	return uint32(eventIdPegoutSigningCompleted)
+	return eventIdPegoutSigningCompleted
 }
 
 func (m *PegoutSigningRestartedEvent) GetEventID() uint32 {
-	return uint32(eventIdPegoutSigningRestarted)
+	return eventIdPegoutSigningRestarted
 }
 
 func (m *DKGCompletedEvent) GetRaw() *ton.RawEvent {
@@ -142,7 +144,7 @@ func NewEventParser() *EventParser {
 
 func (ep *EventParser) Parse(raw *ton.RawEvent) (ton.EventInterface, error) {
 	s := raw.Body.BeginParse()
-	eventId := EventId(s.MustLoadUInt(32))
+	eventId := s.MustLoadUInt(32)
 
 	switch eventId {
 	case eventIdDKGComplete:
@@ -162,7 +164,7 @@ func (ep *EventParser) Parse(raw *ton.RawEvent) (ton.EventInterface, error) {
 	case eventIdPegoutSigningRestarted:
 		return parsePegoutSigningRestartedEvent(s, raw)
 	default:
-		return nil, fmt.Errorf("unknown event type with id %x", uint32(eventId))
+		return nil, fmt.Errorf("unknown event type with id %x", eventId)
 	}
 }
 

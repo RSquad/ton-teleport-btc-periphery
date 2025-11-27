@@ -72,7 +72,7 @@ func (ep *EventParser) Parse(raw *ton.RawEvent) (ton.EventInterface, error) {
 	case eventIdReinit:
 		return ep.parseReinitEvent(s, raw)
 	default:
-		return nil, fmt.Errorf("unknown event type with id %x", uint32(eventId))
+		return nil, fmt.Errorf("unknown event type with id %x", eventId)
 	}
 }
 

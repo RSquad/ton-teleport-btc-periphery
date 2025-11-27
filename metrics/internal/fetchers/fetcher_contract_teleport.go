@@ -13,13 +13,13 @@ import (
 )
 
 type FetcherContractTeleport struct {
-	chDB             chan PayloadDB
+	chDB             chan MetricsPayloadDB
 	teleportContract *teleportcontract.TeleportContract
 	period           int64 // Fetch period (in seconds)
 }
 
 func NewFetcherContractTeleport(
-	chDB chan PayloadDB,
+	chDB chan MetricsPayloadDB,
 	teleportContract *teleportcontract.TeleportContract,
 	period int64,
 ) *FetcherContractTeleport {
@@ -72,7 +72,7 @@ func (fetcher *FetcherContractTeleport) Fetch() {
 		return
 	}
 
-	fetcher.chDB <- PayloadDB{
+	fetcher.chDB <- MetricsPayloadDB{
 		typeId:  PayloadTypeContractTeleport,
 		payload: string(jsonData),
 	}

@@ -2,64 +2,62 @@ package fetchers
 
 import (
 	"context"
-	"encoding/json"
-	"strings"
 	"sync"
 	"time"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton"
-	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/watchdog"
+	"github.com/xssnick/tonutils-go/address"
 )
 
 type FetcherEventsContractCoordinator struct {
-	inChan              chan *ton.RawEvent
-	chDB                chan PayloadDB
-	coordinatorContract coordinator.Coordinator
-	period              int64 // Fetch period (in seconds)
-	parser              ton.EventParserInterface
+	chDB               chan ton.EventInterface
+	parser             ton.EventParserInterface
+	tonClient          *tonclient.TonClient
+	coordinatorAddress *address.Address
 }
 
 func NewFetcherEventsContractCoordinator(
-	inChan chan *ton.RawEvent,
-	chDB chan PayloadDB,
-	coordinatorContract coordinator.Coordinator,
-	period int64,
+	chDB chan ton.EventInterface,
 	parser ton.EventParserInterface,
+	tonClient *tonclient.TonClient,
+	coordinatorAddress *address.Address,
 ) *FetcherEventsContractCoordinator {
 	return &FetcherEventsContractCoordinator{
-		inChan:              inChan,
-		chDB:                chDB,
-		coordinatorContract: coordinatorContract,
-		period:              period,
-		parser:              parser,
+		chDB:               chDB,
+		parser:             parser,
+		tonClient:          tonClient,
+		coordinatorAddress: coordinatorAddress,
 	}
 }
 
 func (fetcher *FetcherEventsContractCoordinator) Work(ctx context.Context, wg *sync.WaitGroup) {
 	defer wg.Done()
-
-	defer logger.Log.Info().Msg("FetcherEventsContractCoordinator: stopped")
 	logger.DefaultLogStartWork("FetcherEventsContractCoordinator: starting...")
+	defer logger.Log.Info().Msg("FetcherEventsContractCoordinator: stopped")
 
-	ticker := time.NewTicker(time.Duration(fetcher.period) * time.Second)
-	defer ticker.Stop()
+	rawEventChan := make(chan *ton.RawEvent, 64)
+	{
+		fetcherEventCollector := ton.NewRawEventCollector(fetcher.tonClient, fetcher.coordinatorAddress, rawEventChan)
 
-	// Setup watchdog
-	watchdog.Global().Watch("FetcherEventsContractCoordinator", time.Duration(fetcher.period*2)*time.Second)
-	defer watchdog.Global().Unwatch("FetcherEventsContractCoordinator")
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			fetcherEventCollector.Work(ctx, 10*time.Second) // TODO: move to config
+		}()
+	}
 
 	for {
 		select {
 		case <-ctx.Done():
 			logger.Log.Info().Msg("FetcherEventsContractCoordinator received shutdown signal...")
 			return
-		case <-ticker.C:
-			rawEvent, ok := <-fetcher.inChan
+		case rawEvent, ok := <-rawEventChan:
 			if !ok {
-				logger.Log.Error().Msg("FetcherEventsContractCoordinator: wait")
-				wg.Wait()
+				logger.Log.Info().Msg("FetcherEventsContractCoordinator: channel closed")
+				return
 			}
 			fetcher.Fetch(rawEvent)
 			watchdog.Global().Heartbeat("FetcherEventsContractCoordinator")
@@ -70,26 +68,12 @@ func (fetcher *FetcherEventsContractCoordinator) Work(ctx context.Context, wg *s
 func (fetcher *FetcherEventsContractCoordinator) Fetch(rawEvent *ton.RawEvent) {
 	event, err := fetcher.parser.Parse(rawEvent)
 	if err != nil {
-		if strings.Contains(err.Error(), "unknown event type") {
-			logger.Log.Error().Err(err).
-				Str("component", "FetcherEventsContractCoordinator").
-				Msg("failed to parse event")
-			return
-		}
-		return
-	}
-
-	jsonData, err := json.Marshal(event)
-	if err != nil {
 		logger.Log.Error().Err(err).
 			Str("component", "FetcherEventsContractCoordinator").
-			Msg("failed to serialize event->json")
+			Msg("failed to parse event")
 
 		return
 	}
 
-	fetcher.chDB <- PayloadDB{
-		typeId:  PayloadTypeContractCoordinatorEvents,
-		payload: string(jsonData),
-	}
+	fetcher.chDB <- event
 }

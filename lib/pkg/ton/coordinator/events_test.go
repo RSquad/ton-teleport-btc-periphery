@@ -14,7 +14,7 @@ func TestEventParser_Parse(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		eventID     EventId
+		eventID     uint32
 		buildBody   func() *cell.Cell
 		wantErr     bool
 		expectedErr string
@@ -177,7 +177,7 @@ func TestParseDKGStartedEvent(t *testing.T) {
 		t.Error("Raw event reference mismatch")
 	}
 
-	if result.GetEventID() != uint32(eventIdDKGStarted) {
+	if result.GetEventID() != eventIdDKGStarted {
 		t.Errorf("Expected event ID %x, got %x", eventIdDKGStarted, result.GetEventID())
 	}
 }
@@ -200,7 +200,7 @@ func TestParseDKGCompletedInfoEvent(t *testing.T) {
 		t.Error("Raw event reference mismatch")
 	}
 
-	if result.GetEventID() != uint32(eventIdDKGCompletedInfo) {
+	if result.GetEventID() != eventIdDKGCompletedInfo {
 		t.Errorf("Expected event ID %x, got %x", eventIdDKGCompletedInfo, result.GetEventID())
 	}
 }
@@ -318,7 +318,7 @@ func TestParseDKGRotatedEvent(t *testing.T) {
 		t.Error("Raw event reference mismatch")
 	}
 
-	if result.GetEventID() != uint32(eventIdDKGRotated) {
+	if result.GetEventID() != eventIdDKGRotated {
 		t.Errorf("Expected event ID %x, got %x", eventIdDKGRotated, result.GetEventID())
 	}
 }

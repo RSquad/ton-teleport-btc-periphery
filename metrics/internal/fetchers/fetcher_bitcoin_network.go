@@ -14,14 +14,14 @@ import (
 )
 
 type FetcherBitcoinNetwork struct {
-	chDB          chan PayloadDB
+	chDB          chan MetricsPayloadDB
 	db            *sql.DB
 	bitcoinClient *bitcoin.Client
 	period        int64 // Fetch period (in seconds)
 }
 
 func NewFetcherBitcoinNetwork(
-	chDB chan PayloadDB,
+	chDB chan MetricsPayloadDB,
 	db *sql.DB,
 	bitcoinClient *bitcoin.Client,
 	period int64,
@@ -83,7 +83,7 @@ func (fetcher *FetcherBitcoinNetwork) Fetch() {
 		return
 	}
 
-	fetcher.chDB <- PayloadDB{
+	fetcher.chDB <- MetricsPayloadDB{
 		typeId:  PayloadTypeBitcoinNetwork,
 		payload: string(jsonData),
 	}

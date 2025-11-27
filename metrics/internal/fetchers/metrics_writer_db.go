@@ -10,12 +10,12 @@ import (
 )
 
 type MetricsWriterDB struct {
-	ch chan PayloadDB
+	ch chan MetricsPayloadDB
 	db *sql.DB
 }
 
 func NewMetricsWriterDB(
-	ch chan PayloadDB,
+	ch chan MetricsPayloadDB,
 	db *sql.DB,
 ) (*MetricsWriterDB, error) {
 	// Create writer
@@ -147,13 +147,13 @@ func (writer *MetricsWriterDB) Work(ctx context.Context, wg *sync.WaitGroup) {
 
 			err := writer.Write(payload)
 			if err != nil {
-				logger.Log.Error().Msg(fmt.Sprintf("MetricsWriterDB: failed to retrieve CandidateBlockHashes, error: %v", err))
+				logger.Log.Error().Msg(fmt.Sprintf("MetricsWriterDB error: %v", err))
 			}
 		}
 	}
 }
 
-func (writer *MetricsWriterDB) Write(payload PayloadDB) error {
+func (writer *MetricsWriterDB) Write(payload MetricsPayloadDB) error {
 	_, err := writer.db.Exec(
 		`WITH last_record AS (
       SELECT md5(payload::text) AS payload_hash

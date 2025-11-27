@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"sync"
-	"time"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
@@ -25,7 +24,6 @@ type FetcherService struct {
 	fetcherContractBitcoinClient     *FetcherContractBitcoinClient
 	fetcherContractTeleport          *FetcherContractTeleport
 	fetcherContractCoordinator       *FetcherContractCoordinator
-	fetcherEventCollector            *ton.RawEventCollector
 	fetcherEventsContractCoordinator *FetcherEventsContractCoordinator
 	fetcherBitcoinNetwork            *FetcherBitcoinNetwork
 }
@@ -41,14 +39,14 @@ func NewService(
 	contractAddrs map[string]*address.Address,
 ) (*FetcherService, error) {
 	// Metrics Writer DB
-	metricsWriterDbChan := make(chan PayloadDB, cfg.WriterDbChainSize)
+	metricsWriterDbChan := make(chan MetricsPayloadDB, cfg.WriterDbChainSize)
 	metricsWriterDB, err := NewMetricsWriterDB(metricsWriterDbChan, db)
 	if err != nil {
 		return nil, err
 	}
 
 	// Events Writer DB
-	eventsWriterDbChan := make(chan PayloadDB, cfg.WriterDbChainSize)
+	eventsWriterDbChan := make(chan ton.EventInterface, cfg.WriterDbChainSize)
 	eventsWriterDB, err := NewEventsWriterDB(eventsWriterDbChan, db)
 	if err != nil {
 		return nil, err
@@ -76,14 +74,11 @@ func NewService(
 	fetcherContractCoordinator := NewFetcherContractCoordinator(metricsWriterDbChan, coordinatorContract, int64(cfg.CoordinatorContractFetchPeriod))
 
 	// Fetcher: Contract Coordinator Events
-	rawEventChan := make(chan *ton.RawEvent, 64)
-	fetcherEventCollector := ton.NewRawEventCollector(tonClient, coordinatorContract.GetAddr(), rawEventChan)
 	fetcherContractCoordinatorEvents := NewFetcherEventsContractCoordinator(
-		rawEventChan,
 		eventsWriterDbChan,
-		coordinatorContract,
-		int64(cfg.CoordinatorContractFetchPeriod),
 		coordinator.NewEventParser(),
+		tonClient,
+		coordinatorContract.GetAddr(),
 	)
 
 	// Fetcher: BitcoinNetwork
@@ -97,7 +92,6 @@ func NewService(
 		fetcherContractBitcoinClient:     fetcherContractBitcoinClient,
 		fetcherContractTeleport:          fetcherContractTeleport,
 		fetcherContractCoordinator:       fetcherContractCoordinator,
-		fetcherEventCollector:            fetcherEventCollector,
 		fetcherEventsContractCoordinator: fetcherContractCoordinatorEvents,
 		fetcherBitcoinNetwork:            fetcherBitcoinNetwork,
 	}, nil
@@ -109,10 +103,16 @@ func (s *FetcherService) Work(ctx context.Context) {
 
 	var wg sync.WaitGroup
 
-	// Writer DB
+	// Metrics Writer DB
 	wg.Add(1)
 	go func() {
-		s.writerDB.Work(ctx, &wg)
+		s.metricsWriterDB.Work(ctx, &wg)
+	}()
+
+	// Events Writer DB
+	wg.Add(1)
+	go func() {
+		s.eventsWriterDB.Work(ctx, &wg)
 	}()
 
 	// Fetcher DKG
@@ -152,14 +152,6 @@ func (s *FetcherService) Work(ctx context.Context) {
 		wg.Add(1)
 		go func() {
 			s.fetcherContractCoordinator.Work(ctx, &wg)
-		}()
-	}
-
-	// Fetcher ContractCoordinatorEvents
-	if s.fetcherEventCollector != nil {
-		wg.Add(1)
-		go func() {
-			s.fetcherEventCollector.Work(ctx, 10*time.Second) // TODO: move to config
 		}()
 	}
 

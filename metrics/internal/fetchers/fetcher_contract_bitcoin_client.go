@@ -15,7 +15,7 @@ import (
 )
 
 type FetcherContractBitcoinClient struct {
-	chDB                  chan PayloadDB
+	chDB                  chan MetricsPayloadDB
 	db                    *sql.DB
 	bitcoinClient         *bitcoin.Client
 	bitcoinClientContract *bitcoinclientcontract.BitcoinClientContract
@@ -23,7 +23,7 @@ type FetcherContractBitcoinClient struct {
 }
 
 func NewFetcherContractBitcoinClient(
-	chDB chan PayloadDB,
+	chDB chan MetricsPayloadDB,
 	db *sql.DB,
 	bitcoinClient *bitcoin.Client,
 	bitcoinClientContract *bitcoinclientcontract.BitcoinClientContract,
@@ -111,7 +111,7 @@ func (fetcher *FetcherContractBitcoinClient) Fetch() {
 		return
 	}
 
-	fetcher.chDB <- PayloadDB{
+	fetcher.chDB <- MetricsPayloadDB{
 		typeId:  PayloadTypeContractBitcoinClient,
 		payload: string(jsonData),
 	}

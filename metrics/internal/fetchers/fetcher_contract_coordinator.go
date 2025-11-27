@@ -13,13 +13,13 @@ import (
 )
 
 type FetcherContractCoordinator struct {
-	chDB                chan PayloadDB
+	chDB                chan MetricsPayloadDB
 	coordinatorContract coordinator.Coordinator
 	period              int64 // Fetch period (in seconds)
 }
 
 func NewFetcherContractCoordinator(
-	chDB chan PayloadDB,
+	chDB chan MetricsPayloadDB,
 	coordinatorContract coordinator.Coordinator,
 	period int64,
 ) *FetcherContractCoordinator {
@@ -74,7 +74,7 @@ func (fetcher *FetcherContractCoordinator) Fetch() {
 		return
 	}
 
-	fetcher.chDB <- PayloadDB{
+	fetcher.chDB <- MetricsPayloadDB{
 		typeId:  PayloadTypeContractCoordinator,
 		payload: string(jsonData),
 	}
