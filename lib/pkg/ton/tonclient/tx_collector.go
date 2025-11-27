@@ -16,6 +16,25 @@ type TxCollector struct {
 	txSubscriber *TxSubscriber
 }
 
+func newTxCollector(
+	tonClient *TonClient,
+	addr *address.Address,
+	outChan chan<- *tlb.Transaction,
+	serverTimeout time.Duration,
+	lastTxLT uint64,
+	lastTxHash []byte,
+) *TxCollector {
+	txFetcher := NewTxFetcher(tonClient, addr, lastTxLT, lastTxHash, 16, outChan, serverTimeout)
+	txSubscriber := NewTxSubscriber(tonClient, addr, lastTxLT, outChan)
+
+	return &TxCollector{
+		tonClient:    tonClient,
+		addr:         addr,
+		txFetcher:    txFetcher,
+		txSubscriber: txSubscriber,
+	}
+}
+
 func NewTxCollector(
 	tonClient *TonClient,
 	addr *address.Address,
@@ -27,15 +46,22 @@ func NewTxCollector(
 		return nil, err
 	}
 
-	txFetcher := NewTxFetcher(tonClient, addr, acc.LastTxLT, acc.LastTxHash, 16, outChan, serverTimeout)
-	txSubscriber := NewTxSubscriber(tonClient, addr, acc.LastTxLT, outChan)
+	return newTxCollector(tonClient, addr, outChan, serverTimeout, acc.LastTxLT, acc.LastTxHash), nil
+}
 
-	return &TxCollector{
-		tonClient:    tonClient,
-		addr:         addr,
-		txFetcher:    txFetcher,
-		txSubscriber: txSubscriber,
-	}, nil
+func NewTxCollectorLT(
+	tonClient *TonClient,
+	addr *address.Address,
+	outChan chan<- *tlb.Transaction,
+	serverTimeout time.Duration,
+	lastTxLT uint64,
+) (*TxCollector, error) {
+	acc, err := tonClient.FetchAcc(addr, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return newTxCollector(tonClient, addr, outChan, serverTimeout, lastTxLT, acc.LastTxHash), nil
 }
 
 func (tc *TxCollector) Work(ctx context.Context) (err error) {

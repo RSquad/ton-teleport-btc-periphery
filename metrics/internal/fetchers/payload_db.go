@@ -1,18 +1,22 @@
 package fetchers
 
-type PayloadTypeDB int
+type MetricsPayloadTypeDB int
 
 const (
-	PayloadTypeDKG                       PayloadTypeDB = iota
-	PayloadTypePrevDKG                   PayloadTypeDB = 1
-	PayloadTypeContractBitcoinClient     PayloadTypeDB = 2
-	PayloadTypeBitcoinNetwork            PayloadTypeDB = 3
-	PayloadTypeContractTeleport          PayloadTypeDB = 4
-	PayloadTypeContractCoordinator       PayloadTypeDB = 5
-	PayloadTypeContractCoordinatorEvents PayloadTypeDB = 6
+	PayloadTypeDKG                       MetricsPayloadTypeDB = iota
+	PayloadTypePrevDKG                   MetricsPayloadTypeDB = 1
+	PayloadTypeContractBitcoinClient     MetricsPayloadTypeDB = 2
+	PayloadTypeBitcoinNetwork            MetricsPayloadTypeDB = 3
+	PayloadTypeContractTeleport          MetricsPayloadTypeDB = 4
+	PayloadTypeContractCoordinator       MetricsPayloadTypeDB = 5
 )
 
-type PayloadDB struct {
-	typeId  PayloadTypeDB
+type MetricsPayloadDB struct {
+	typeId  MetricsPayloadTypeDB
+	payload string
+}
+
+type EventsPayloadDB struct {
+	typeId  ?
 	payload string
 }

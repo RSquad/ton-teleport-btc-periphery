@@ -9,15 +9,17 @@ import (
 	"github.com/xssnick/tonutils-go/tvm/cell"
 )
 
+type EventId uint
+
 const (
-	eventIdDKGComplete            = 0x453443a6
-	eventIdDKGStarted             = 0x1ab2bd7f
-	eventIdDKGCompletedInfo       = 0x4e062aa5
-	eventIdDKGRestarted           = 0xf661074e
-	eventIdDKGRotated             = 0x3f78a410
-	eventIdPegoutSigningStarted   = 0xa19457a2
-	eventIdPegoutSigningCompleted = 0x317d48b4
-	eventIdPegoutSigningRestarted = 0x82280c5c
+	eventIdDKGComplete            EventId = 0x453443a6
+	eventIdDKGStarted             EventId = 0x1ab2bd7f
+	eventIdDKGCompletedInfo       EventId = 0x4e062aa5
+	eventIdDKGRestarted           EventId = 0xf661074e
+	eventIdDKGRotated             EventId = 0x3f78a410
+	eventIdPegoutSigningStarted   EventId = 0xa19457a2
+	eventIdPegoutSigningCompleted EventId = 0x317d48b4
+	eventIdPegoutSigningRestarted EventId = 0x82280c5c
 )
 
 type DKGCompletedEvent struct {
@@ -69,35 +71,35 @@ type PegoutSigningRestartedEvent struct {
 }
 
 func (m *DKGCompletedEvent) GetEventID() uint32 {
-	return eventIdDKGComplete
+	return uint32(eventIdDKGComplete)
 }
 
 func (m *DKGStartedEvent) GetEventID() uint32 {
-	return eventIdDKGStarted
+	return uint32(eventIdDKGStarted)
 }
 
 func (m *DKGCompletedInfoEvent) GetEventID() uint32 {
-	return eventIdDKGCompletedInfo
+	return uint32(eventIdDKGCompletedInfo)
 }
 
 func (m *DKGRestartedEvent) GetEventID() uint32 {
-	return eventIdDKGRestarted
+	return uint32(eventIdDKGRestarted)
 }
 
 func (m *DKGRotatedEvent) GetEventID() uint32 {
-	return eventIdDKGRotated
+	return uint32(eventIdDKGRotated)
 }
 
 func (m *PegoutSigningStartedEvent) GetEventID() uint32 {
-	return eventIdPegoutSigningStarted
+	return uint32(eventIdPegoutSigningStarted)
 }
 
 func (m *PegoutSigningCompletedEvent) GetEventID() uint32 {
-	return eventIdPegoutSigningCompleted
+	return uint32(eventIdPegoutSigningCompleted)
 }
 
 func (m *PegoutSigningRestartedEvent) GetEventID() uint32 {
-	return eventIdPegoutSigningRestarted
+	return uint32(eventIdPegoutSigningRestarted)
 }
 
 func (m *DKGCompletedEvent) GetRaw() *ton.RawEvent {
@@ -140,7 +142,7 @@ func NewEventParser() *EventParser {
 
 func (ep *EventParser) Parse(raw *ton.RawEvent) (ton.EventInterface, error) {
 	s := raw.Body.BeginParse()
-	eventId := s.MustLoadUInt(32)
+	eventId := EventId(s.MustLoadUInt(32))
 
 	switch eventId {
 	case eventIdDKGComplete:
@@ -160,7 +162,7 @@ func (ep *EventParser) Parse(raw *ton.RawEvent) (ton.EventInterface, error) {
 	case eventIdPegoutSigningRestarted:
 		return parsePegoutSigningRestartedEvent(s, raw)
 	default:
-		return nil, fmt.Errorf("unknown event type with id %x", eventId)
+		return nil, fmt.Errorf("unknown event type with id %x", uint32(eventId))
 	}
 }
 
@@ -182,7 +184,6 @@ func parseDKGCompletedInfoEvent(raw *ton.RawEvent) (*DKGCompletedInfoEvent, erro
 	return &DKGCompletedInfoEvent{
 		raw,
 	}, nil
-
 }
 
 func parseDKGRestartedEvent(s *cell.Slice, raw *ton.RawEvent) (*DKGRestartedEvent, error) {
@@ -212,7 +213,6 @@ func parsePegoutSigningStartedEvent(s *cell.Slice, raw *ton.RawEvent) (*PegoutSi
 		pegoutId,
 		raw,
 	}, nil
-
 }
 
 func parsePegoutSigningCompletedEvent(s *cell.Slice, raw *ton.RawEvent) (*PegoutSigningCompletedEvent, error) {
@@ -222,8 +222,8 @@ func parsePegoutSigningCompletedEvent(s *cell.Slice, raw *ton.RawEvent) (*Pegout
 		raw,
 	}, nil
 }
-func parsePegoutSigningRestartedEvent(s *cell.Slice, raw *ton.RawEvent) (*PegoutSigningRestartedEvent, error) {
 
+func parsePegoutSigningRestartedEvent(s *cell.Slice, raw *ton.RawEvent) (*PegoutSigningRestartedEvent, error) {
 	pegoutId := s.MustLoadBigUInt(64)
 	reason := s.MustLoadBigUInt(8)
 	pegout := s.MustLoadRef()

@@ -14,7 +14,7 @@ func TestEventParser_Parse(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		eventID     uint32
+		eventID     EventId
 		buildBody   func() *cell.Cell
 		wantErr     bool
 		expectedErr string
@@ -24,7 +24,7 @@ func TestEventParser_Parse(t *testing.T) {
 			eventID: eventIdDKGComplete,
 			buildBody: func() *cell.Cell {
 				builder := cell.BeginCell()
-				builder.MustStoreUInt(eventIdDKGComplete, 32)
+				builder.MustStoreUInt(uint64(eventIdDKGComplete), 32)
 				builder.MustStoreUInt(uint64(time.Now().Unix()), 64)
 				builder.MustStoreSlice(make([]byte, 32), 256) // 256 bits = 32 bytes
 				return builder.EndCell()
@@ -36,7 +36,7 @@ func TestEventParser_Parse(t *testing.T) {
 			eventID: eventIdDKGStarted,
 			buildBody: func() *cell.Cell {
 				builder := cell.BeginCell()
-				builder.MustStoreUInt(eventIdDKGStarted, 32)
+				builder.MustStoreUInt(uint64(eventIdDKGStarted), 32)
 				return builder.EndCell()
 			},
 			wantErr: false,
@@ -50,7 +50,7 @@ func TestEventParser_Parse(t *testing.T) {
 				return builder.EndCell()
 			},
 			wantErr:     true,
-			expectedErr: "unknown event type with id 0x012345678",
+			expectedErr: "unknown event type with id 12345678",
 		},
 	}
 
@@ -83,7 +83,7 @@ func TestEventParser_Parse(t *testing.T) {
 				return
 			}
 
-			if result.GetEventID() != tt.eventID {
+			if result.GetEventID() != uint32(tt.eventID) {
 				t.Errorf("Expected event ID %x, got %x", tt.eventID, result.GetEventID())
 			}
 
@@ -163,7 +163,6 @@ func TestParseDKGStartedEvent(t *testing.T) {
 	rawEvent := &ton.RawEvent{}
 
 	result, err := parseDKGStartedEvent(rawEvent)
-
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 		return
@@ -178,7 +177,7 @@ func TestParseDKGStartedEvent(t *testing.T) {
 		t.Error("Raw event reference mismatch")
 	}
 
-	if result.GetEventID() != eventIdDKGStarted {
+	if result.GetEventID() != uint32(eventIdDKGStarted) {
 		t.Errorf("Expected event ID %x, got %x", eventIdDKGStarted, result.GetEventID())
 	}
 }
@@ -187,7 +186,6 @@ func TestParseDKGCompletedInfoEvent(t *testing.T) {
 	rawEvent := &ton.RawEvent{}
 
 	result, err := parseDKGCompletedInfoEvent(rawEvent)
-
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 		return
@@ -202,7 +200,7 @@ func TestParseDKGCompletedInfoEvent(t *testing.T) {
 		t.Error("Raw event reference mismatch")
 	}
 
-	if result.GetEventID() != eventIdDKGCompletedInfo {
+	if result.GetEventID() != uint32(eventIdDKGCompletedInfo) {
 		t.Errorf("Expected event ID %x, got %x", eventIdDKGCompletedInfo, result.GetEventID())
 	}
 }
@@ -306,7 +304,6 @@ func TestParseDKGRotatedEvent(t *testing.T) {
 	rawEvent := &ton.RawEvent{}
 
 	result, err := parseDKGRotatedEvent(rawEvent)
-
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 		return
@@ -321,7 +318,7 @@ func TestParseDKGRotatedEvent(t *testing.T) {
 		t.Error("Raw event reference mismatch")
 	}
 
-	if result.GetEventID() != eventIdDKGRotated {
+	if result.GetEventID() != uint32(eventIdDKGRotated) {
 		t.Errorf("Expected event ID %x, got %x", eventIdDKGRotated, result.GetEventID())
 	}
 }
@@ -358,7 +355,6 @@ func TestParsePegoutSigningStartedEvent(t *testing.T) {
 			rawEvent := &ton.RawEvent{}
 
 			result, err := parsePegoutSigningStartedEvent(slice, rawEvent)
-
 			if err != nil {
 				t.Errorf("Unexpected error: %v", err)
 				return
@@ -403,7 +399,6 @@ func TestParsePegoutSigningCompletedEvent(t *testing.T) {
 			rawEvent := &ton.RawEvent{}
 
 			result, err := parsePegoutSigningCompletedEvent(slice, rawEvent)
-
 			if err != nil {
 				t.Errorf("Unexpected error: %v", err)
 				return
