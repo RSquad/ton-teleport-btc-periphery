@@ -52,7 +52,7 @@ func (writer *EventsWriterDB) PrepareDB() error {
 	}
 
 	// Check index `events_tx_lt_idx`
-	_, err = writer.db.Exec(`CREATE INDEX IF NOT EXISTS events_tx_lt_idx ON events_data (tx_lt DESC)`)
+	_, err = writer.db.Exec(`CREATE INDEX IF NOT EXISTS events_event_id_tx_lt_idx ON events_data (event_id, tx_lt DESC)`)
 	if err != nil {
 		return err
 	}

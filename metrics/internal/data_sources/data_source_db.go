@@ -6,11 +6,13 @@ import (
 	"time"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/teleportcontract"
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/data_models"
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/fetchers"
 	"github.com/xssnick/tonutils-go/address"
+	"github.com/xssnick/tonutils-go/tvm/cell"
 )
 
 type DataSourceDB struct {
@@ -342,4 +344,95 @@ func (dataSource *DataSourceDB) selectAsJsonObj(query string, args ...interface{
 	}
 
 	return []byte(data), nil
+}
+
+func (dataSource *DataSourceDB) Events_Last_DkgStarted() (*coordinator.DKGStartedEvent, error) {
+	rawEvents, err := dataSource.selectAsTonEvents(
+		"SELECT * FROM public.events_data WHERE event_id=$1 ORDER BY tx_lt DESC LIMIT 1",
+		coordinator.EventIdDKGStarted,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(rawEvents) == 0 {
+		return nil, nil
+	}
+
+	raw := rawEvents[0]
+	s := raw.Body.BeginParse()
+	_, err = s.LoadUInt(32)
+	if err != nil {
+		return nil, err
+	}
+
+	return coordinator.ParseDKGStartedEvent(s, raw)
+}
+
+func (dataSource *DataSourceDB) Events_AllFrom_DkgRestart(fromTxLT uint64) ([]*coordinator.DKGRestartedEvent, error) {
+	//?
+	return nil, nil
+}
+
+func (dataSource *DataSourceDB) selectAsTonEvents(query string, args ...interface{}) ([]*ton.RawEvent, error) {
+	logger.Log.Debug().Str("component", "DataSourceDB").Msgf("SQL: '%s'. ARGS: %#v", query, args)
+
+	rows, err := dataSource.db.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var result []*ton.RawEvent
+
+	for rows.Next() {
+		var id int64
+		var createAt time.Time
+		var eventId int64
+		var addrStr string
+		var txHash []byte
+		var txLT int64
+		var txUTime time.Time
+		var body []byte
+
+		err := rows.Scan(
+			&id,
+			&createAt,
+			&eventId,
+			&addrStr,
+			&txHash,
+			&txLT,
+			&txUTime,
+			&body,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		addr, err := address.ParseRawAddr(addrStr)
+		if err != nil {
+			return nil, err
+		}
+
+		bodyCell, err := cell.FromBOC(body)
+		if err != nil {
+			return nil, err
+		}
+
+		ev := &ton.RawEvent{
+			Addr:    addr,
+			TxHash:  txHash,
+			TxLT:    uint64(txLT),
+			TxUtime: txUTime,
+			Body:    bodyCell,
+		}
+
+		result = append(result, ev)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return result, nil
 }

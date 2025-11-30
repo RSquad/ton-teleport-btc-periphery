@@ -1,5 +1,6 @@
 package alerts
 
+/*
 import (
 	"fmt"
 	"time"
@@ -81,3 +82,4 @@ func (alert *AlertDkgRestarts) MakeValues() Values {
 
 	return values
 }
+*/
