@@ -149,7 +149,6 @@ func (c *TeleportContract) GetAutoPegoutFee(block *tonutils.BlockIDExt) (*big.In
 		}
 	}
 	result, err := c.TonClient.API.RunGetMethod(c.ctx, block, c.Addr, "get_auto_pegout_fee")
-
 	if err != nil {
 		return nil, err
 	}
@@ -414,7 +413,6 @@ func (c *TeleportContract) BuildSendDepositMessage(
 	txProof []byte,
 	queryId uint64,
 ) (*wallet.Message, error) {
-	blockHashUInt := new(big.Int).SetBytes(blockHash.CloneBytes())
 	destAddress := address.MustParseRawAddr(receiverAddressStr)
 	indexerAddress := address.MustParseAddr(indexerAddressStr)
 
@@ -441,7 +439,7 @@ func (c *TeleportContract) BuildSendDepositMessage(
 	sendDepositBodyCell := cell.BeginCell().
 		MustStoreUInt(opCodeTeleportTransferBtc, 32).
 		MustStoreUInt(queryId, 64).
-		MustStoreSlice(blockHashUInt.Bytes(), 256).
+		MustStoreSlice(blockHash[:], 256).
 		MustStoreRef(serializedTransaction).
 		MustStoreRef(proofCell).
 		MustStoreMaybeRef(cell.BeginCell().MustStoreBinarySnake(recoveryKeyBytes).EndCell()).
