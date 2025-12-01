@@ -3,6 +3,7 @@ package fetchers
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"sync"
 
@@ -45,14 +46,14 @@ func (writer *EventsWriterDB) PrepareDB() error {
 			tx_hash   BYTEA NOT NULL,
 	    tx_lt     BIGINT NOT NULL,
 	    tx_utime  TIMESTAMPTZ NOT NULL,
-      body      BYTEA NOT NULL
+      body      JSONB NOT NULL
 		)`)
 	if err != nil {
 		return err
 	}
 
 	// Check index `events_tx_lt_idx`
-	_, err = writer.db.Exec(`CREATE INDEX IF NOT EXISTS events_event_id_tx_lt_idx ON events_data (event_id, tx_lt DESC)`)
+	_, err = writer.db.Exec(`CREATE UNIQUE INDEX IF NOT EXISTS events_event_id_tx_lt_idx ON events_data (event_id, tx_lt DESC, tx_hash)`)
 	if err != nil {
 		return err
 	}
@@ -87,14 +88,21 @@ func (writer *EventsWriterDB) Work(ctx context.Context, wg *sync.WaitGroup) {
 }
 
 func (writer *EventsWriterDB) Write(event ton.EventInterface) error {
-	_, err := writer.db.Exec(`
-    INSERT INTO events_data (event_id, addr, tx_hash, tx_lt, tx_utime, body) VALUES($1, $2, $3, $4, $5, $6)`,
+	jsonData, err := json.Marshal(event)
+	if err != nil {
+		return err
+	}
+
+	raw := event.GetRaw()
+
+	_, err = writer.db.Exec(`
+    INSERT INTO events_data (event_id, addr, tx_hash, tx_lt, tx_utime, body) VALUES($1, $2, $3, $4, $5, $6) ON CONFLICT (event_id, tx_lt, tx_hash) DO NOTHING`,
 		event.GetEventID(),
-		event.GetRaw().Addr.StringRaw(),
-		event.GetRaw().TxHash,
-		event.GetRaw().TxLT,
-		event.GetRaw().TxUtime,
-		event.GetRaw().Body.ToBOC(),
+		raw.Addr.StringRaw(),
+		raw.TxHash,
+		raw.TxLT,
+		raw.TxUtime,
+		string(jsonData),
 	)
 
 	return err

@@ -1,6 +1,7 @@
 package coordinator
 
 import (
+	"encoding/json"
 	"fmt"
 	"math/big"
 	"time"
@@ -21,51 +22,58 @@ const (
 	EventIdPegoutSigningRestarted = 0x82280c5c // 2183662684
 )
 
+type DkgRestartReason = int
+
+const (
+	DkgRestartTimeoutExpired   DkgRestartReason = 1
+	DkgRestartValidatorEvicted DkgRestartReason = 2
+)
+
 type DKGCompletedEvent struct {
-	Raw         *ton.RawEvent
+	Raw         *ton.RawEvent `json:"-"`
 	CompletedAt time.Time
 	Key         []byte
 }
 
 type DKGStartedEvent struct {
-	Raw *ton.RawEvent
-	Dkg *cell.Slice
+	Raw *ton.RawEvent `json:"-"`
+	Dkg *DKG
 }
 
 type DKGCompletedInfoEvent struct {
-	Raw *ton.RawEvent
-	Dkg *cell.Slice
+	Raw *ton.RawEvent `json:"-"`
+	Dkg *DKG
 }
 
 type DKGRestartedEvent struct {
-	Raw        *ton.RawEvent
-	Reason     uint8
-	NewDkg     *cell.Slice
+	Raw        *ton.RawEvent `json:"-"`
+	Reason     DkgRestartReason
+	NewDkg     *DKG
 	Claims     DKGClaimcounters
 	ClaimsMask *big.Int
 }
 
 type DKGRotatedEvent struct {
-	Raw *ton.RawEvent
+	Raw *ton.RawEvent `json:"-"`
 }
 
 type PegoutSigningStartedEvent struct {
-	Raw      *ton.RawEvent
+	Raw      *ton.RawEvent `json:"-"`
 	PegoutId uint64
-	Pegout   *cell.Slice
+	Pegout   *PegoutRecord
 }
 
 type PegoutSigningCompletedEvent struct {
-	Raw      *ton.RawEvent
+	Raw      *ton.RawEvent `json:"-"`
 	PegoutId uint64
-	Pegout   *cell.Slice
+	Pegout   *PegoutRecord
 }
 
 type PegoutSigningRestartedEvent struct {
-	Raw            *ton.RawEvent
+	Raw            *ton.RawEvent `json:"-"`
 	PegoutId       uint64
 	Reason         uint8
-	Pegout         *cell.Slice
+	Pegout         *PegoutRecord
 	CommitmentMask *big.Int
 	SharesMask     *big.Int
 	SignatureMask  *big.Int
@@ -137,6 +145,38 @@ func (m *PegoutSigningRestartedEvent) GetRaw() *ton.RawEvent {
 	return m.Raw
 }
 
+func (m *DKGCompletedEvent) SetRaw(raw *ton.RawEvent) {
+	m.Raw = raw
+}
+
+func (m *DKGStartedEvent) SetRaw(raw *ton.RawEvent) {
+	m.Raw = raw
+}
+
+func (m *DKGCompletedInfoEvent) SetRaw(raw *ton.RawEvent) {
+	m.Raw = raw
+}
+
+func (m *DKGRestartedEvent) SetRaw(raw *ton.RawEvent) {
+	m.Raw = raw
+}
+
+func (m *DKGRotatedEvent) SetRaw(raw *ton.RawEvent) {
+	m.Raw = raw
+}
+
+func (m *PegoutSigningStartedEvent) SetRaw(raw *ton.RawEvent) {
+	m.Raw = raw
+}
+
+func (m *PegoutSigningCompletedEvent) SetRaw(raw *ton.RawEvent) {
+	m.Raw = raw
+}
+
+func (m *PegoutSigningRestartedEvent) SetRaw(raw *ton.RawEvent) {
+	m.Raw = raw
+}
+
 type EventParser struct{}
 
 func NewEventParser() *EventParser {
@@ -172,6 +212,45 @@ func (ep *EventParser) Parse(raw *ton.RawEvent) (ton.EventInterface, error) {
 	}
 }
 
+func (ep *EventParser) ParseJson(jsonStr []byte, eventId uint64) (ton.EventInterface, error) {
+	switch eventId {
+	case EventIdDKGComplete:
+		var ev DKGCompletedEvent
+		err := json.Unmarshal(jsonStr, &ev)
+		return &ev, err
+	case EventIdDKGStarted:
+		var ev DKGStartedEvent
+		err := json.Unmarshal(jsonStr, &ev)
+		return &ev, err
+	case EventIdDKGCompletedInfo:
+		var ev DKGCompletedInfoEvent
+		err := json.Unmarshal(jsonStr, &ev)
+		return &ev, err
+	case EventIdDKGRestarted:
+		var ev DKGRestartedEvent
+		err := json.Unmarshal(jsonStr, &ev)
+		return &ev, err
+	case EventIdDKGRotated:
+		var ev DKGRotatedEvent
+		err := json.Unmarshal(jsonStr, &ev)
+		return &ev, err
+	case EventIdPegoutSigningStarted:
+		var ev PegoutSigningStartedEvent
+		err := json.Unmarshal(jsonStr, &ev)
+		return &ev, err
+	case EventIdPegoutSigningCompleted:
+		var ev PegoutSigningCompletedEvent
+		err := json.Unmarshal(jsonStr, &ev)
+		return &ev, err
+	case EventIdPegoutSigningRestarted:
+		var ev PegoutSigningRestartedEvent
+		err := json.Unmarshal(jsonStr, &ev)
+		return &ev, err
+	default:
+		return nil, fmt.Errorf("unknown event type with id %x", eventId)
+	}
+}
+
 func ParseDKGCompleteEvent(s *cell.Slice, raw *ton.RawEvent) (*DKGCompletedEvent, error) {
 	completedAt, err := s.LoadBigUInt(64)
 	if err != nil {
@@ -191,7 +270,12 @@ func ParseDKGCompleteEvent(s *cell.Slice, raw *ton.RawEvent) (*DKGCompletedEvent
 }
 
 func ParseDKGStartedEvent(s *cell.Slice, raw *ton.RawEvent) (*DKGStartedEvent, error) {
-	dkg, err := s.LoadRef()
+	dkgSlice, err := s.LoadRef()
+	if err != nil {
+		return nil, err
+	}
+
+	dkg, err := parseDGKSlice(dkgSlice)
 	if err != nil {
 		return nil, err
 	}
@@ -203,7 +287,12 @@ func ParseDKGStartedEvent(s *cell.Slice, raw *ton.RawEvent) (*DKGStartedEvent, e
 }
 
 func ParseDKGCompletedInfoEvent(s *cell.Slice, raw *ton.RawEvent) (*DKGCompletedInfoEvent, error) {
-	dkg, err := s.LoadRef()
+	dkgSlice, err := s.LoadRef()
+	if err != nil {
+		return nil, err
+	}
+
+	dkg, err := parseDGKSlice(dkgSlice)
 	if err != nil {
 		return nil, err
 	}
@@ -225,7 +314,12 @@ func ParseDKGRestartedEvent(s *cell.Slice, raw *ton.RawEvent) (*DKGRestartedEven
 		return nil, err
 	}
 
-	newDkg, err := s.LoadRef()
+	newDkgSlice, err := s.LoadRef()
+	if err != nil {
+		return nil, err
+	}
+
+	newDkg, err := parseDGKSlice(newDkgSlice)
 	if err != nil {
 		return nil, err
 	}
@@ -247,7 +341,7 @@ func ParseDKGRestartedEvent(s *cell.Slice, raw *ton.RawEvent) (*DKGRestartedEven
 
 	return &DKGRestartedEvent{
 		Raw:        raw,
-		Reason:     reason,
+		Reason:     DkgRestartReason(reason),
 		NewDkg:     newDkg,
 		Claims:     claims,
 		ClaimsMask: claimsMask,
@@ -271,7 +365,12 @@ func ParsePegoutSigningStartedEvent(s *cell.Slice, raw *ton.RawEvent) (*PegoutSi
 		return nil, err
 	}
 
-	pegout, err := s.LoadRef()
+	pegoutSlice, err := s.LoadRef()
+	if err != nil {
+		return nil, err
+	}
+
+	pegout, err := parsePegout(pegoutSlice, pegoutId)
 	if err != nil {
 		return nil, err
 	}
@@ -294,7 +393,12 @@ func ParsePegoutSigningCompletedEvent(s *cell.Slice, raw *ton.RawEvent) (*Pegout
 		return nil, err
 	}
 
-	pegout, err := s.LoadRef()
+	pegoutSlice, err := s.LoadRef()
+	if err != nil {
+		return nil, err
+	}
+
+	pegout, err := parsePegout(pegoutSlice, pegoutId)
 	if err != nil {
 		return nil, err
 	}
@@ -327,7 +431,12 @@ func ParsePegoutSigningRestartedEvent(s *cell.Slice, raw *ton.RawEvent) (*Pegout
 		return nil, err
 	}
 
-	pegout, err := s.LoadRef()
+	pegoutSlice, err := s.LoadRef()
+	if err != nil {
+		return nil, err
+	}
+
+	pegout, err := parsePegout(pegoutSlice, pegoutId)
 	if err != nil {
 		return nil, err
 	}

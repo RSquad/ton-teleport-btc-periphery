@@ -12,7 +12,6 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/data_models"
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/fetchers"
 	"github.com/xssnick/tonutils-go/address"
-	"github.com/xssnick/tonutils-go/tvm/cell"
 )
 
 type DataSourceDB struct {
@@ -347,7 +346,7 @@ func (dataSource *DataSourceDB) selectAsJsonObj(query string, args ...interface{
 }
 
 func (dataSource *DataSourceDB) Events_Last_DkgStarted() (*coordinator.DKGStartedEvent, error) {
-	rawEvents, err := dataSource.selectAsTonEvents(
+	events, err := dataSource.selectAsTonEvents(
 		"SELECT * FROM public.events_data WHERE event_id=$1 ORDER BY tx_lt DESC LIMIT 1",
 		coordinator.EventIdDKGStarted,
 	)
@@ -355,26 +354,44 @@ func (dataSource *DataSourceDB) Events_Last_DkgStarted() (*coordinator.DKGStarte
 		return nil, err
 	}
 
-	if len(rawEvents) == 0 {
+	if len(events) == 0 {
 		return nil, nil
 	}
 
-	raw := rawEvents[0]
-	s := raw.Body.BeginParse()
-	_, err = s.LoadUInt(32)
+	event := events[0]
+
+	dkgStartedEvent, ok := event.(*coordinator.DKGStartedEvent)
+	if !ok {
+		return nil, fmt.Errorf("event is not *coordinator.DKGStartedEvent, got %T", event)
+	}
+
+	return dkgStartedEvent, nil
+}
+
+func (dataSource *DataSourceDB) Events_AllFrom_DkgRestart(fromTxLT uint64) ([]*coordinator.DKGRestartedEvent, error) {
+	events, err := dataSource.selectAsTonEvents(
+		"SELECT * FROM public.events_data WHERE event_id=$1 AND tx_lt >= $2 ORDER BY tx_lt ASC",
+		coordinator.EventIdDKGRestarted,
+		fromTxLT,
+	)
 	if err != nil {
 		return nil, err
 	}
 
-	return coordinator.ParseDKGStartedEvent(s, raw)
+	dkgRestartedEvents := make([]*coordinator.DKGRestartedEvent, len(events))
+	for _, event := range events {
+		dkgRestartedEvent, ok := event.(*coordinator.DKGRestartedEvent)
+		if !ok {
+			return nil, fmt.Errorf("event is not *coordinator.DKGRestartedEvent, got %T", event)
+		}
+
+		dkgRestartedEvents = append(dkgRestartedEvents, dkgRestartedEvent)
+	}
+
+	return dkgRestartedEvents, nil
 }
 
-func (dataSource *DataSourceDB) Events_AllFrom_DkgRestart(fromTxLT uint64) ([]*coordinator.DKGRestartedEvent, error) {
-	//?
-	return nil, nil
-}
-
-func (dataSource *DataSourceDB) selectAsTonEvents(query string, args ...interface{}) ([]*ton.RawEvent, error) {
+func (dataSource *DataSourceDB) selectAsTonEvents(query string, args ...interface{}) ([]ton.EventInterface, error) {
 	logger.Log.Debug().Str("component", "DataSourceDB").Msgf("SQL: '%s'. ARGS: %#v", query, args)
 
 	rows, err := dataSource.db.Query(query, args...)
@@ -383,7 +400,7 @@ func (dataSource *DataSourceDB) selectAsTonEvents(query string, args ...interfac
 	}
 	defer rows.Close()
 
-	var result []*ton.RawEvent
+	var result []ton.EventInterface
 
 	for rows.Next() {
 		var id int64
@@ -393,7 +410,7 @@ func (dataSource *DataSourceDB) selectAsTonEvents(query string, args ...interfac
 		var txHash []byte
 		var txLT int64
 		var txUTime time.Time
-		var body []byte
+		var bodyData []byte
 
 		err := rows.Scan(
 			&id,
@@ -403,7 +420,7 @@ func (dataSource *DataSourceDB) selectAsTonEvents(query string, args ...interfac
 			&txHash,
 			&txLT,
 			&txUTime,
-			&body,
+			&bodyData,
 		)
 		if err != nil {
 			return nil, err
@@ -414,20 +431,22 @@ func (dataSource *DataSourceDB) selectAsTonEvents(query string, args ...interfac
 			return nil, err
 		}
 
-		bodyCell, err := cell.FromBOC(body)
+		event, err := (&coordinator.EventParser{}).ParseJson(bodyData, uint64(eventId))
 		if err != nil {
 			return nil, err
 		}
 
-		ev := &ton.RawEvent{
+		evRaw := &ton.RawEvent{
 			Addr:    addr,
 			TxHash:  txHash,
 			TxLT:    uint64(txLT),
 			TxUtime: txUTime,
-			Body:    bodyCell,
+			Body:    nil,
 		}
 
-		result = append(result, ev)
+		event.SetRaw(evRaw)
+
+		result = append(result, event)
 	}
 
 	if err := rows.Err(); err != nil {

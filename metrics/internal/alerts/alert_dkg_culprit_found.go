@@ -1,5 +1,6 @@
 package alerts
 
+/*
 import (
 	"fmt"
 	"sort"
@@ -137,3 +138,4 @@ func (alert *AlertDkgCulpritFound) MakeValues() Values {
 
 	return values
 }
+*/

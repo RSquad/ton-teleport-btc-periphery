@@ -1,5 +1,6 @@
 package alerts
 
+/*
 import (
 	"context"
 	"fmt"
@@ -97,3 +98,4 @@ func (alert *AlertDkgParticipants) GetSeverity(percentage uint) Severity {
 
 	return severity
 }
+*/

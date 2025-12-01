@@ -9,6 +9,22 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 )
 
+type MetricsPayloadTypeDB int
+
+const (
+	PayloadTypeDKG                   MetricsPayloadTypeDB = iota
+	PayloadTypePrevDKG               MetricsPayloadTypeDB = 1
+	PayloadTypeContractBitcoinClient MetricsPayloadTypeDB = 2
+	PayloadTypeBitcoinNetwork        MetricsPayloadTypeDB = 3
+	PayloadTypeContractTeleport      MetricsPayloadTypeDB = 4
+	PayloadTypeContractCoordinator   MetricsPayloadTypeDB = 5
+)
+
+type MetricsPayloadDB struct {
+	typeId  MetricsPayloadTypeDB
+	payload string
+}
+
 type MetricsWriterDB struct {
 	ch chan MetricsPayloadDB
 	db *sql.DB

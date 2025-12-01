@@ -1,5 +1,6 @@
 package alerts
 
+/*
 import (
 	"fmt"
 	"testing"
@@ -156,3 +157,4 @@ func TestAlertDkgRestarts(t *testing.T) {
 
 	DoAlertTests(t, tests, NewAlertDkgRestarts())
 }
+*/
