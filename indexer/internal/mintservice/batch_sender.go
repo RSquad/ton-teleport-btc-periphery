@@ -81,7 +81,13 @@ func (b *BatchSender) Send() ([]Message, error) {
 }
 
 func (b *BatchSender) EnqueueMessage(message Message) {
-	b.messagesForSending <- message
+	select {
+	case b.messagesForSending <- message:
+		return
+	default:
+		logger.Log.Debug().Str("component", "BatchSender").Int("queue_length", len(b.messagesForSending)).Msg("channel is full")
+		return
+	}
 }
 
 func (b *BatchSender) messageSize(message *wallet.Message) (int, error) {
