@@ -14,9 +14,6 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-// MockBitcoinClient is a mock implementation of bitcoin.Client
-// MockBitcoinClient implements bitcoin.Client interface for testing
-// MockBitcoinClient is a mock implementation of bitcoin.Client
 type MockBitcoinClient struct {
 	mock.Mock
 }
@@ -139,12 +136,10 @@ func (m *MockBitcoinClient) GetHTTPClient() *http.Client {
 	return args.Get(0).(*http.Client)
 }
 
-// ShutdownRPCClient shuts down the RPC client
 func (m *MockBitcoinClient) ShutdownRPCClient() {
 	m.Called()
 }
 
-// Now the test functions should work without interface assignment issues
 func TestBtcGetBestBlockHeight(t *testing.T) {
 	tests := []struct {
 		name           string

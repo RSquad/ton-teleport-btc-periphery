@@ -20,7 +20,6 @@ func BtcGetCPFPChainSize(bitcoinClient bitcoin.ClientInterface, txHash *chainhas
 	chainSize := 0
 	currentTxHash := txHash
 	visited := make(map[string]bool) // Prevent infinite loops
-	fmt.Println("currentTxHash", currentTxHash)
 	for {
 		if visited[currentTxHash.String()] {
 			break
