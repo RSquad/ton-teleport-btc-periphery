@@ -1,27 +1,23 @@
-name: Go CI/CD
+name: Go Tests
 
 on:
-  push:
-    branches: [ master, develop, sandbox ]
-  pull_request:
-    branches: [ master, develop, sandbox ]
-  paths:
-    - frost/**
-    - lib/**
-    - oracle/**
-    - relayer/**
-    - indexer/**
-    - metrics/**
+  workflow_call:
+    inputs:
+      APPS:
+        description: 'JSON array of app names to test'
+        required: true
+        type: string
 
 env:
   GO_VERSION: "1.21"
-  DOCKER_BUILDKIT: 1
-  COMPOSE_DOCKER_CLI_BUILD: 1
 
 jobs:
-  lint-and-verify:
-    name: Lint & Verify
+  lint-and-test:
+    name: Lint & Test
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        app: ${{ fromJson(inputs.APPS) }}
     
     steps:
     - name: Checkout code
@@ -34,76 +30,71 @@ jobs:
       with:
         go-version: ${{ env.GO_VERSION }}
         cache: true
-        cache-dependency-path: go.sum
+        cache-dependency-path: |
+          ${{ matrix.app }}/go.sum
+          lib/go.sum
     
-    - name: Verify Go modules
+    - name: Verify Go modules for ${{ matrix.app }}
+      working-directory: ${{ matrix.app }}
       run: |
         go mod verify
         go mod tidy -v
         git diff --exit-code go.mod go.sum || (echo "Go modules are not tidy" && exit 1)
     
-    - name: Run golangci-lint
+    - name: Run golangci-lint for ${{ matrix.app }}
       uses: golangci/golangci-lint-action@v3
       with:
         version: v1.55.2
-        args: --timeout=10m --config=.golangci.yml
+        working-directory: ${{ matrix.app }}
+        args: --timeout=10m
         skip-cache: true
     
-    - name: Run staticcheck
+    - name: Run staticcheck for ${{ matrix.app }}
+      working-directory: ${{ matrix.app }}
       run: |
         go install honnef.co/go/tools/cmd/staticcheck@latest
         staticcheck ./...
-
-  unit-tests:
-    name: Unit Tests
-    runs-on: ubuntu-latest
-    needs: lint-and-verify
     
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-    
-    - name: Setup Go
-      uses: actions/setup-go@v4
-      with:
-        go-version: ${{ env.GO_VERSION }}
-        cache: true
-        cache-dependency-path: go.sum
-    
-    - name: Install dependencies
+    - name: Install dependencies for ${{ matrix.app }}
+      working-directory: ${{ matrix.app }}
       run: |
         go mod download
     
-    - name: Run unit tests
+    - name: Run unit tests for ${{ matrix.app }}
+      working-directory: ${{ matrix.app }}
       run: |
         go test ./... -v -race -coverprofile=coverage.out -covermode=atomic -short 2>&1 | tee test_output.txt
     
-    - name: Generate coverage report
+    - name: Generate coverage report for ${{ matrix.app }}
+      working-directory: ${{ matrix.app }}
       run: |
-        echo "=== Test Coverage Summary ==="
+        echo "=== Test Coverage Summary for ${{ matrix.app }} ==="
         go tool cover -func=coverage.out | tail -1
         echo "============================"
     
-    - name: Upload coverage to Codecov
+    - name: Upload coverage to Codecov for ${{ matrix.app }}
       uses: codecov/codecov-action@v3
       with:
-        file: ./coverage.out
-        flags: unittests
-        name: codecov-umbrella
+        file: ./${{ matrix.app }}/coverage.out
+        flags: ${{ matrix.app }}
+        name: codecov-${{ matrix.app }}
     
-    - name: Upload test results
+    - name: Upload test results for ${{ matrix.app }}
       uses: actions/upload-artifact@v3
       if: always()
       with:
-        name: unit-test-results
+        name: ${{ matrix.app }}-test-results
         path: |
-          test_output.txt
-          coverage.out
+          ${{ matrix.app }}/test_output.txt
+          ${{ matrix.app }}/coverage.out
 
   security-scan:
     name: Security Scan
     runs-on: ubuntu-latest
-    needs: unit-tests
+    needs: lint-and-test
+    strategy:
+      matrix:
+        app: ${{ fromJson(inputs.APPS) }}
     
     steps:
     - name: Checkout code
@@ -114,42 +105,24 @@ jobs:
       with:
         go-version: ${{ env.GO_VERSION }}
     
-    - name: Run gosec
+    - name: Run gosec for ${{ matrix.app }}
+      working-directory: ${{ matrix.app }}
       run: |
         go install github.com/securego/gosec/v2/cmd/gosec@latest
         gosec -fmt=json -out=gosec.json ./... 2>/dev/null || true
         gosec ./...
     
-    - name: Run dependency check
+    - name: Run dependency check for ${{ matrix.app }}
+      working-directory: ${{ matrix.app }}
       run: |
         go install github.com/google/osv-scanner/cmd/osv-scanner@latest
         osv-scanner -r .
     
-    - name: Upload security reports
+    - name: Upload security reports for ${{ matrix.app }}
       uses: actions/upload-artifact@v3
       if: always()
       with:
-        name: security-reports
+        name: ${{ matrix.app }}-security-reports
         path: |
-          gosec.json
+          ${{ matrix.app }}/gosec.json
         retention-days: 30
-
-  notify:
-    name: Notify Status
-    runs-on: ubuntu-latest
-    needs: [lint-and-verify, unit-tests, security-scan]
-    if: always()
-    
-    steps:
-    - name: Check workflow status
-      run: |
-        echo "Workflow completed!"
-        echo "Summary of jobs:"
-        echo "- Lint & Verify: ${{ needs.lint-and-verify.result }}"
-        echo "- Unit Tests: ${{ needs.unit-tests.result }}"
-        echo "- Security Scan: ${{ needs.security-scan.result }}"
-        
-        if [[ "${{ needs.unit-tests.result }}" == "failure" ]]; then
-          echo "❌ Unit tests failed!"
-          exit 1
-        fi

@@ -1,17 +1,24 @@
-name: Build and Push
+name: CI/CD Pipeline
 
 on:
   push:
-    branches:
-      - develop
-      - sandbox
-      - master
+    paths-ignore:
+      - '**/*.md'
+  pull_request:
     paths-ignore:
       - '**/*.md'
 
 jobs:
+  tests:
+    name: Run Tests
+    uses: ./.github/workflows/go-test.yml
+    with:
+      APPS: '["indexer", "relayer", "oracle", "db-backup", "metrics"]'
+
   develop:
-    if: github.ref == 'refs/heads/develop'
+    name: Build & Push - Develop
+    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+    needs: tests
     uses: ./.github/workflows/build-and-push.yml
     with:
       APPS: '["indexer", "relayer", "oracle", "db-backup", "metrics"]'
@@ -20,8 +27,11 @@ jobs:
     secrets:
       DOCKER_REGISTRY_USERNAME: ${{ secrets.DOCR_USERNAME }}
       DOCKER_REGISTRY_PASSWORD: ${{ secrets.DOCR_PASSWORD }}
+
   sandbox:
-    if: github.ref == 'refs/heads/sandbox'
+    name: Build & Push - Sandbox
+    if: github.event_name == 'push' && github.ref == 'refs/heads/sandbox'
+    needs: tests
     uses: ./.github/workflows/build-and-push.yml
     with:
       APPS: '["indexer", "relayer", "db-backup", "metrics"]'
@@ -30,8 +40,11 @@ jobs:
     secrets:
       DOCKER_REGISTRY_USERNAME: ${{ secrets.DOCR_USERNAME }}
       DOCKER_REGISTRY_PASSWORD: ${{ secrets.DOCR_PASSWORD }}
+
   master:
-    if: github.ref == 'refs/heads/master'
+    name: Build & Push - Production
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    needs: tests
     uses: ./.github/workflows/build-and-push.yml
     with:
       APPS: '["indexer", "relayer", "oracle", "db-backup", "metrics"]'
