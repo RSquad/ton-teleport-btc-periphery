@@ -33,16 +33,6 @@ func NewAlertFactory(contractAddrs map[string]*address.Address, config *config.S
 		return NewAlertCpfpLength()
 	}
 
-	// alert_dkg_culprit_found (dkg.culprit.found)
-	//factories["alert_dkg_culprit_found"] = func() Alert {
-	//return NewAlertDkgCulpritFound()
-	//}
-
-	// alert_dkg_participants (dkg.participants)
-	//factories["alert_dkg_participants"] = func() Alert {
-	//	return NewAlertDkgParticipants()
-	//}
-
 	// alert_dkg_restarts (dkg.restarts)
 	factories["alert_dkg_restarts"] = func() Alert {
 		return NewAlertDkgRestarts()

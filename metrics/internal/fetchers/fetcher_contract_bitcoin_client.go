@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"sync"
 	"time"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
@@ -38,9 +37,7 @@ func NewFetcherContractBitcoinClient(
 	}
 }
 
-func (fetcher *FetcherContractBitcoinClient) Work(ctx context.Context, wg *sync.WaitGroup) {
-	defer wg.Done()
-
+func (fetcher *FetcherContractBitcoinClient) Work(ctx context.Context) {
 	defer logger.Log.Info().Msg("FetcherContractBitcoinClient: stopped")
 	logger.DefaultLogStartWork("FetcherContractBitcoinClient: starting...")
 

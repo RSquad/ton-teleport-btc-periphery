@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"sync"
 	"time"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
@@ -34,9 +33,7 @@ func NewFetcherBitcoinNetwork(
 	}
 }
 
-func (fetcher *FetcherBitcoinNetwork) Work(ctx context.Context, wg *sync.WaitGroup) {
-	defer wg.Done()
-
+func (fetcher *FetcherBitcoinNetwork) Work(ctx context.Context) {
 	defer logger.Log.Info().Msg("FetcherBitcoinNetwork: stopped")
 	logger.DefaultLogStartWork("FetcherBitcoinNetwork: starting...")
 

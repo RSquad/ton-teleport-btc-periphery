@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"sync"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton"
@@ -61,9 +60,7 @@ func (writer *EventsWriterDB) PrepareDB() error {
 	return nil
 }
 
-func (writer *EventsWriterDB) Work(ctx context.Context, wg *sync.WaitGroup) {
-	defer wg.Done()
-
+func (writer *EventsWriterDB) Work(ctx context.Context) {
 	defer logger.Log.Info().Msg("EventsWriterDB: stopped")
 	logger.DefaultLogStartWork("EventsWriterDB: starting...")
 

@@ -125,10 +125,10 @@ func (dataSource *AlertDataSourceLive) ActualContractBalance(name string) (int64
 	return dataSource.dataSourceDB.ActualContractBalance(name)
 }
 
-func (dataSource *AlertDataSourceLive) Events_Last_DkgStartedDB() (*coordinator.DKGStartedEvent, error) {
-	return dataSource.dataSourceDB.Events_Last_DkgStarted()
+func (dataSource *AlertDataSourceLive) EventsLastDkgStartedDB() (*coordinator.DKGStartedEvent, error) {
+	return dataSource.dataSourceDB.EventsLastDkgStarted()
 }
 
-func (dataSource *AlertDataSourceLive) Events_AllFrom_DkgRestartDB(fromTxLT uint64) ([]*coordinator.DKGRestartedEvent, error) {
-	return dataSource.dataSourceDB.Events_AllFrom_DkgRestart(fromTxLT)
+func (dataSource *AlertDataSourceLive) EventsAllFromDkgRestartDB(fromTxLT uint64) ([]*coordinator.DKGRestartedEvent, error) {
+	return dataSource.dataSourceDB.EventsAllFromDkgRestart(fromTxLT)
 }

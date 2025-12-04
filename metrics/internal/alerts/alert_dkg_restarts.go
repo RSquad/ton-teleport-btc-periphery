@@ -39,7 +39,7 @@ func NewAlertDkgRestarts() Alert {
 
 func (alert *AlertDkgRestarts) Check(dataSource AlertDataSource) (Severity, Description, Values, error) {
 	// Get last DKG Start event
-	eventDkgStarted, err := dataSource.Events_Last_DkgStartedDB()
+	eventDkgStarted, err := dataSource.EventsLastDkgStartedDB()
 	if err != nil {
 		return SEVERITY_CRITICAL, "", alert.makeValues(newInfo()), err
 	}
@@ -50,7 +50,7 @@ func (alert *AlertDkgRestarts) Check(dataSource AlertDataSource) (Severity, Desc
 	}
 
 	// Get all DKG Restart events after DKG Start event
-	eventDkgRestarts, err := dataSource.Events_AllFrom_DkgRestartDB(eventDkgStarted.GetRaw().TxLT)
+	eventDkgRestarts, err := dataSource.EventsAllFromDkgRestartDB(eventDkgStarted.GetRaw().TxLT)
 	if err != nil {
 		return SEVERITY_CRITICAL, "", alert.makeValues(newInfo()), err
 	}

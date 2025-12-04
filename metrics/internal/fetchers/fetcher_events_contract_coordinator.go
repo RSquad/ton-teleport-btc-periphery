@@ -13,14 +13,14 @@ import (
 )
 
 type FetcherEventsContractCoordinator struct {
-	chDB               chan ton.EventInterface
+	chDB               chan<- ton.EventInterface
 	parser             ton.EventParserInterface
 	tonClient          *tonclient.TonClient
 	coordinatorAddress *address.Address
 }
 
 func NewFetcherEventsContractCoordinator(
-	chDB chan ton.EventInterface,
+	chDB chan<- ton.EventInterface,
 	parser ton.EventParserInterface,
 	tonClient *tonclient.TonClient,
 	coordinatorAddress *address.Address,
@@ -34,7 +34,6 @@ func NewFetcherEventsContractCoordinator(
 }
 
 func (fetcher *FetcherEventsContractCoordinator) Work(ctx context.Context, wg *sync.WaitGroup) {
-	defer wg.Done()
 	logger.DefaultLogStartWork("FetcherEventsContractCoordinator: starting...")
 	defer logger.Log.Info().Msg("FetcherEventsContractCoordinator: stopped")
 
@@ -59,13 +58,13 @@ func (fetcher *FetcherEventsContractCoordinator) Work(ctx context.Context, wg *s
 				logger.Log.Info().Msg("FetcherEventsContractCoordinator: channel closed")
 				return
 			}
-			fetcher.Fetch(rawEvent)
+			fetcher.Write(rawEvent)
 			watchdog.Global().Heartbeat("FetcherEventsContractCoordinator")
 		}
 	}
 }
 
-func (fetcher *FetcherEventsContractCoordinator) Fetch(rawEvent *ton.RawEvent) {
+func (fetcher *FetcherEventsContractCoordinator) Write(rawEvent *ton.RawEvent) {
 	event, err := fetcher.parser.Parse(rawEvent)
 	if err != nil {
 		logger.Log.Error().Err(err).

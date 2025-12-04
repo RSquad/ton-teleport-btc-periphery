@@ -345,7 +345,7 @@ func (dataSource *DataSourceDB) selectAsJsonObj(query string, args ...interface{
 	return []byte(data), nil
 }
 
-func (dataSource *DataSourceDB) Events_Last_DkgStarted() (*coordinator.DKGStartedEvent, error) {
+func (dataSource *DataSourceDB) EventsLastDkgStarted() (*coordinator.DKGStartedEvent, error) {
 	events, err := dataSource.selectAsTonEvents(
 		"SELECT * FROM public.events_data WHERE event_id=$1 ORDER BY tx_lt DESC LIMIT 1",
 		coordinator.EventIdDKGStarted,
@@ -368,7 +368,7 @@ func (dataSource *DataSourceDB) Events_Last_DkgStarted() (*coordinator.DKGStarte
 	return dkgStartedEvent, nil
 }
 
-func (dataSource *DataSourceDB) Events_AllFrom_DkgRestart(fromTxLT uint64) ([]*coordinator.DKGRestartedEvent, error) {
+func (dataSource *DataSourceDB) EventsAllFromDkgRestart(fromTxLT uint64) ([]*coordinator.DKGRestartedEvent, error) {
 	events, err := dataSource.selectAsTonEvents(
 		"SELECT * FROM public.events_data WHERE event_id=$1 AND tx_lt >= $2 ORDER BY tx_lt ASC",
 		coordinator.EventIdDKGRestarted,

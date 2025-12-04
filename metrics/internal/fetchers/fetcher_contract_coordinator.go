@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"sync"
 	"time"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
@@ -30,9 +29,7 @@ func NewFetcherContractCoordinator(
 	}
 }
 
-func (fetcher *FetcherContractCoordinator) Work(ctx context.Context, wg *sync.WaitGroup) {
-	defer wg.Done()
-
+func (fetcher *FetcherContractCoordinator) Work(ctx context.Context) {
 	defer logger.Log.Info().Msg("FetcherContractCoordinator: stopped")
 	logger.DefaultLogStartWork("FetcherContractCoordinator: starting...")
 

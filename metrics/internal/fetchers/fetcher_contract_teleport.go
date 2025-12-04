@@ -3,7 +3,6 @@ package fetchers
 import (
 	"context"
 	"fmt"
-	"sync"
 	"time"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
@@ -30,9 +29,7 @@ func NewFetcherContractTeleport(
 	}
 }
 
-func (fetcher *FetcherContractTeleport) Work(ctx context.Context, wg *sync.WaitGroup) {
-	defer wg.Done()
-
+func (fetcher *FetcherContractTeleport) Work(ctx context.Context) {
 	defer logger.Log.Info().Msg("FetcherContractTeleport: stopped")
 	logger.DefaultLogStartWork("FetcherContractTeleport: starting...")
 

@@ -34,8 +34,8 @@ type (
 	TonMaxMainValidatorsFn                        func(ctx context.Context) (int, error)
 	ActualContractBalanceFn                       func(name string) (int64, error)
 	NowUnixTsFn                                   func() int64
-	Events_Last_DkgStartedDbFn                    func() (*coordinator.DKGStartedEvent, error)
-	Events_AllFrom_DkgRestartDbFn                 func(fromTxLT uint64) ([]*coordinator.DKGRestartedEvent, error)
+	EventsLastDkgStartedDbFn                      func() (*coordinator.DKGStartedEvent, error)
+	EventsAllFromDkgRestartDbFn                   func(fromTxLT uint64) ([]*coordinator.DKGRestartedEvent, error)
 )
 
 // Config holds optional function callbacks
@@ -60,8 +60,8 @@ type AlertDataSourceTestingConfig struct {
 	TonMaxMainValidatorsFn                        TonMaxMainValidatorsFn
 	ActualContractBalanceFn                       ActualContractBalanceFn
 	NowUnixTsFn                                   NowUnixTsFn
-	Events_Last_DkgStartedDbFn                    Events_Last_DkgStartedDbFn
-	Events_AllFrom_DkgRestartDbFn                 Events_AllFrom_DkgRestartDbFn
+	EventsLastDkgStartedDbFn                      EventsLastDkgStartedDbFn
+	EventsAllFromDkgRestartDbFn                   EventsAllFromDkgRestartDbFn
 }
 
 type AlertDataSourceTesting struct {
@@ -209,16 +209,16 @@ func (dataSource *AlertDataSourceTesting) NowUnixTs() int64 {
 	return dataSource.cfg.NowUnixTsFn()
 }
 
-func (dataSource *AlertDataSourceTesting) Events_Last_DkgStartedDB() (*coordinator.DKGStartedEvent, error) {
-	if dataSource.cfg.Events_Last_DkgStartedDbFn == nil {
-		return nil, errors.New("Events_Last_DkgStartedDbFn callback not set")
+func (dataSource *AlertDataSourceTesting) EventsLastDkgStartedDB() (*coordinator.DKGStartedEvent, error) {
+	if dataSource.cfg.EventsLastDkgStartedDbFn == nil {
+		return nil, errors.New("EventsLastDkgStartedDbFn callback not set")
 	}
-	return dataSource.cfg.Events_Last_DkgStartedDbFn()
+	return dataSource.cfg.EventsLastDkgStartedDbFn()
 }
 
-func (dataSource *AlertDataSourceTesting) Events_AllFrom_DkgRestartDB(fromTxLT uint64) ([]*coordinator.DKGRestartedEvent, error) {
-	if dataSource.cfg.Events_AllFrom_DkgRestartDbFn == nil {
-		return nil, errors.New("Events_AllFrom_DkgRestartDbFn callback not set")
+func (dataSource *AlertDataSourceTesting) EventsAllFromDkgRestartDB(fromTxLT uint64) ([]*coordinator.DKGRestartedEvent, error) {
+	if dataSource.cfg.EventsAllFromDkgRestartDbFn == nil {
+		return nil, errors.New("EventsAllFromDkgRestartDbFn callback not set")
 	}
-	return dataSource.cfg.Events_AllFrom_DkgRestartDbFn(fromTxLT)
+	return dataSource.cfg.EventsAllFromDkgRestartDbFn(fromTxLT)
 }

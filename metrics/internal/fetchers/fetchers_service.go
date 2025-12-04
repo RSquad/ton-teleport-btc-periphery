@@ -106,20 +106,23 @@ func (s *FetcherService) Work(ctx context.Context) {
 	// Metrics Writer DB
 	wg.Add(1)
 	go func() {
-		s.metricsWriterDB.Work(ctx, &wg)
+		defer wg.Done()
+		s.metricsWriterDB.Work(ctx)
 	}()
 
 	// Events Writer DB
 	wg.Add(1)
 	go func() {
-		s.eventsWriterDB.Work(ctx, &wg)
+		defer wg.Done()
+		s.eventsWriterDB.Work(ctx)
 	}()
 
 	// Fetcher DKG
 	if s.fetcherDKG != nil {
 		wg.Add(1)
 		go func() {
-			s.fetcherDKG.Work(ctx, &wg)
+			defer wg.Done()
+			s.fetcherDKG.Work(ctx)
 		}()
 	}
 
@@ -127,7 +130,8 @@ func (s *FetcherService) Work(ctx context.Context) {
 	for _, f := range s.fetcherContractBalances {
 		wg.Add(1)
 		go func() {
-			f.Work(ctx, &wg)
+			defer wg.Done()
+			f.Work(ctx)
 		}()
 	}
 
@@ -135,7 +139,8 @@ func (s *FetcherService) Work(ctx context.Context) {
 	if s.fetcherContractBitcoinClient != nil {
 		wg.Add(1)
 		go func() {
-			s.fetcherContractBitcoinClient.Work(ctx, &wg)
+			defer wg.Done()
+			s.fetcherContractBitcoinClient.Work(ctx)
 		}()
 	}
 
@@ -143,7 +148,8 @@ func (s *FetcherService) Work(ctx context.Context) {
 	if s.fetcherContractTeleport != nil {
 		wg.Add(1)
 		go func() {
-			s.fetcherContractTeleport.Work(ctx, &wg)
+			defer wg.Done()
+			s.fetcherContractTeleport.Work(ctx)
 		}()
 	}
 
@@ -151,7 +157,8 @@ func (s *FetcherService) Work(ctx context.Context) {
 	if s.fetcherContractCoordinator != nil {
 		wg.Add(1)
 		go func() {
-			s.fetcherContractCoordinator.Work(ctx, &wg)
+			defer wg.Done()
+			s.fetcherContractCoordinator.Work(ctx)
 		}()
 	}
 
@@ -167,7 +174,8 @@ func (s *FetcherService) Work(ctx context.Context) {
 	if s.fetcherBitcoinNetwork != nil {
 		wg.Add(1)
 		go func() {
-			s.fetcherBitcoinNetwork.Work(ctx, &wg)
+			defer wg.Done()
+			s.fetcherBitcoinNetwork.Work(ctx)
 		}()
 	}
 

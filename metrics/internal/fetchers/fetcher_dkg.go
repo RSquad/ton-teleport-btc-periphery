@@ -3,7 +3,6 @@ package fetchers
 import (
 	"context"
 	"encoding/json"
-	"sync"
 	"time"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
@@ -29,9 +28,7 @@ func NewFetcherDKG(
 	}
 }
 
-func (fetcher *FetcherDKG) Work(ctx context.Context, wg *sync.WaitGroup) {
-	defer wg.Done()
-
+func (fetcher *FetcherDKG) Work(ctx context.Context) {
 	defer logger.Log.Info().Msg("FetcherDKG: stopped")
 	logger.DefaultLogStartWork("FetcherDKG: starting...")
 

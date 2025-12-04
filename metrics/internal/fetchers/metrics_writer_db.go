@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"sync"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 )
@@ -143,9 +142,7 @@ func (writer *MetricsWriterDB) PrepareDB() error {
 	return nil
 }
 
-func (writer *MetricsWriterDB) Work(ctx context.Context, wg *sync.WaitGroup) {
-	defer wg.Done()
-
+func (writer *MetricsWriterDB) Work(ctx context.Context) {
 	defer logger.Log.Info().Msg("MetricsWriterDB: stopped")
 	logger.DefaultLogStartWork("MetricsWriterDB: starting...")
 
