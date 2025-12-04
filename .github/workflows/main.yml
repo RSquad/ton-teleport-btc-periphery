@@ -13,7 +13,7 @@ jobs:
     name: Run Tests
     uses: ./.github/workflows/go-test.yml
     with:
-      APPS: '["indexer", "relayer", "oracle", "db-backup", "metrics"]'
+      APPS: '["indexer", "relayer", "oracle", "metrics"]'
 
   develop:
     name: Build & Push - Develop
