@@ -5,6 +5,13 @@ on:
     branches: [ master, develop, sandbox ]
   pull_request:
     branches: [ master, develop, sandbox ]
+  paths:
+    - frost/**
+    - lib/**
+    - oracle/**
+    - relayer/**
+    - indexer/**
+    - metrics/**
 
 env:
   GO_VERSION: "1.21"
