@@ -33,4 +33,8 @@ type AlertDataSource interface {
 	ActualContractBalance(name string) (int64, error)
 
 	NowUnixTs() int64
+
+	// Events
+	EventsLastDkgStartedDB() (*coordinator.DKGStartedEvent, error)
+	EventsAllFromDkgRestartDB(fromTxLT uint64) ([]*coordinator.DKGRestartedEvent, error)
 }

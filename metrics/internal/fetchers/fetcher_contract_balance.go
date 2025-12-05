@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"sync"
 	"time"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
@@ -39,9 +38,7 @@ func NewFetcherContractBalance(
 	}
 }
 
-func (fetcher *FetcherContractBalance) Work(ctx context.Context, wg *sync.WaitGroup) (err error) {
-	defer wg.Done()
-
+func (fetcher *FetcherContractBalance) Work(ctx context.Context) (err error) {
 	defer logger.Log.Info().Msgf("FetcherContractBalance: '%s' stopped", fetcher.name)
 	logger.Log.Info().Msgf("FetcherContractBalance: '%s' starting...", fetcher.name)
 

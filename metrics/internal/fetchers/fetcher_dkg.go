@@ -3,7 +3,6 @@ package fetchers
 import (
 	"context"
 	"encoding/json"
-	"sync"
 	"time"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
@@ -12,13 +11,13 @@ import (
 )
 
 type FetcherDKG struct {
-	chDB                chan PayloadDB
+	chDB                chan MetricsPayloadDB
 	coordinatorContract coordinator.Coordinator
 	period              int64 // Fetch period (in seconds)
 }
 
 func NewFetcherDKG(
-	chDB chan PayloadDB,
+	chDB chan MetricsPayloadDB,
 	coordinatorContract coordinator.Coordinator,
 	period int64,
 ) *FetcherDKG {
@@ -29,9 +28,7 @@ func NewFetcherDKG(
 	}
 }
 
-func (fetcher *FetcherDKG) Work(ctx context.Context, wg *sync.WaitGroup) {
-	defer wg.Done()
-
+func (fetcher *FetcherDKG) Work(ctx context.Context) {
 	defer logger.Log.Info().Msg("FetcherDKG: stopped")
 	logger.DefaultLogStartWork("FetcherDKG: starting...")
 
@@ -90,7 +87,7 @@ func (fetcher *FetcherDKG) FetchDKG() {
 		return
 	}
 
-	fetcher.chDB <- PayloadDB{
+	fetcher.chDB <- MetricsPayloadDB{
 		typeId:  PayloadTypeDKG,
 		payload: string(jsonData),
 	}
@@ -131,7 +128,7 @@ func (fetcher *FetcherDKG) FetchPrevDKG() {
 		return
 	}
 
-	fetcher.chDB <- PayloadDB{
+	fetcher.chDB <- MetricsPayloadDB{
 		typeId:  PayloadTypePrevDKG,
 		payload: string(jsonData),
 	}

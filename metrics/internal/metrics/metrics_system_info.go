@@ -101,7 +101,7 @@ func (systemInfo *MetricsSystemInfo) SysDkgInfo(
 	return &SysDkgInfo{
 		State:            dkg.State,
 		StateName:        dkg.State.String(),
-		Restarts:         int(dkgRestartsAlertState.Values["restarts"].(int64)),
+		Restarts:         int(dkgRestartsAlertState.Values["restartsCount"].(int64)),
 		RestartsSeverity: dkgRestartsAlertState.Severity,
 		CulpritsIdx:      dkgCulpritsAlertState.Values["culprit_ids"].([]int),
 		CulpritsSeverity: dkgCulpritsAlertState.Severity,

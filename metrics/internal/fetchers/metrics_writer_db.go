@@ -4,22 +4,37 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"sync"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 )
 
-type WriterDB struct {
-	ch chan PayloadDB
+type MetricsPayloadTypeDB int
+
+const (
+	PayloadTypeDKG                   MetricsPayloadTypeDB = iota
+	PayloadTypePrevDKG               MetricsPayloadTypeDB = 1
+	PayloadTypeContractBitcoinClient MetricsPayloadTypeDB = 2
+	PayloadTypeBitcoinNetwork        MetricsPayloadTypeDB = 3
+	PayloadTypeContractTeleport      MetricsPayloadTypeDB = 4
+	PayloadTypeContractCoordinator   MetricsPayloadTypeDB = 5
+)
+
+type MetricsPayloadDB struct {
+	typeId  MetricsPayloadTypeDB
+	payload string
+}
+
+type MetricsWriterDB struct {
+	ch chan MetricsPayloadDB
 	db *sql.DB
 }
 
-func NewWriterDB(
-	ch chan PayloadDB,
+func NewMetricsWriterDB(
+	ch chan MetricsPayloadDB,
 	db *sql.DB,
-) (*WriterDB, error) {
+) (*MetricsWriterDB, error) {
 	// Create writer
-	writer := WriterDB{
+	writer := MetricsWriterDB{
 		ch: ch,
 		db: db,
 	}
@@ -34,7 +49,7 @@ func NewWriterDB(
 	return &writer, nil
 }
 
-func (writer *WriterDB) PrepareDB() error {
+func (writer *MetricsWriterDB) PrepareDB() error {
 	// Check if the table `metrics_data` exists
 	_, err := writer.db.Exec(`CREATE TABLE IF NOT EXISTS metrics_data (
     	id BIGSERIAL PRIMARY KEY,
@@ -127,11 +142,9 @@ func (writer *WriterDB) PrepareDB() error {
 	return nil
 }
 
-func (writer *WriterDB) Work(ctx context.Context, wg *sync.WaitGroup) {
-	defer wg.Done()
-
-	defer logger.Log.Info().Msg("WriterDB: stopped")
-	logger.DefaultLogStartWork("WriterDB: starting...")
+func (writer *MetricsWriterDB) Work(ctx context.Context) {
+	defer logger.Log.Info().Msg("MetricsWriterDB: stopped")
+	logger.DefaultLogStartWork("MetricsWriterDB: starting...")
 
 	// Wait for Payload
 	for {
@@ -147,13 +160,13 @@ func (writer *WriterDB) Work(ctx context.Context, wg *sync.WaitGroup) {
 
 			err := writer.Write(payload)
 			if err != nil {
-				logger.Log.Error().Msg(fmt.Sprintf("WriterDB: failed to retrieve CandidateBlockHashes, error: %v", err))
+				logger.Log.Error().Msg(fmt.Sprintf("MetricsWriterDB error: %v", err))
 			}
 		}
 	}
 }
 
-func (writer *WriterDB) Write(payload PayloadDB) error {
+func (writer *MetricsWriterDB) Write(payload MetricsPayloadDB) error {
 	_, err := writer.db.Exec(
 		`WITH last_record AS (
       SELECT md5(payload::text) AS payload_hash

@@ -15,6 +15,7 @@ type RawEventCollector struct {
 	tonClient *tonclient.TonClient
 	addr      *address.Address
 	outChan   chan<- *RawEvent
+	lastTxLT  uint64
 }
 
 func NewRawEventCollector(
@@ -26,6 +27,21 @@ func NewRawEventCollector(
 		tonClient: tonClient,
 		addr:      addr,
 		outChan:   outChan,
+		lastTxLT:  0,
+	}
+}
+
+func NewRawEventCollectorLT(
+	tonClient *tonclient.TonClient,
+	addr *address.Address,
+	outChan chan<- *RawEvent,
+	lastTxLT uint64,
+) *RawEventCollector {
+	return &RawEventCollector{
+		tonClient: tonClient,
+		addr:      addr,
+		outChan:   outChan,
+		lastTxLT:  lastTxLT,
 	}
 }
 
@@ -37,7 +53,14 @@ func (ec *RawEventCollector) Work(ctx context.Context, serverTimeout time.Durati
 
 	txChan := make(chan *tlb.Transaction, 128)
 	defer close(txChan)
-	txCollector, err := tonclient.NewTxCollector(ec.tonClient, ec.addr, txChan, serverTimeout)
+
+	var txCollector *tonclient.TxCollector = nil
+	if ec.lastTxLT > 0 {
+		txCollector, err = tonclient.NewTxCollectorLT(ec.tonClient, ec.addr, txChan, serverTimeout, ec.lastTxLT)
+	} else {
+		txCollector, err = tonclient.NewTxCollector(ec.tonClient, ec.addr, txChan, serverTimeout)
+	}
+
 	if err != nil {
 		return err
 	}

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/teleportcontract"
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/data_models"
@@ -342,4 +343,115 @@ func (dataSource *DataSourceDB) selectAsJsonObj(query string, args ...interface{
 	}
 
 	return []byte(data), nil
+}
+
+func (dataSource *DataSourceDB) EventsLastDkgStarted() (*coordinator.DKGStartedEvent, error) {
+	events, err := dataSource.selectAsTonEvents(
+		"SELECT * FROM public.events_data WHERE event_id=$1 ORDER BY tx_lt DESC LIMIT 1",
+		coordinator.EventIdDKGStarted,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(events) == 0 {
+		return nil, nil
+	}
+
+	event := events[0]
+
+	dkgStartedEvent, ok := event.(*coordinator.DKGStartedEvent)
+	if !ok {
+		return nil, fmt.Errorf("event is not *coordinator.DKGStartedEvent, got %T", event)
+	}
+
+	return dkgStartedEvent, nil
+}
+
+func (dataSource *DataSourceDB) EventsAllFromDkgRestart(fromTxLT uint64) ([]*coordinator.DKGRestartedEvent, error) {
+	events, err := dataSource.selectAsTonEvents(
+		"SELECT * FROM public.events_data WHERE event_id=$1 AND tx_lt >= $2 ORDER BY tx_lt ASC",
+		coordinator.EventIdDKGRestarted,
+		fromTxLT,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	dkgRestartedEvents := make([]*coordinator.DKGRestartedEvent, len(events))
+	for _, event := range events {
+		dkgRestartedEvent, ok := event.(*coordinator.DKGRestartedEvent)
+		if !ok {
+			return nil, fmt.Errorf("event is not *coordinator.DKGRestartedEvent, got %T", event)
+		}
+
+		dkgRestartedEvents = append(dkgRestartedEvents, dkgRestartedEvent)
+	}
+
+	return dkgRestartedEvents, nil
+}
+
+func (dataSource *DataSourceDB) selectAsTonEvents(query string, args ...interface{}) ([]ton.EventInterface, error) {
+	logger.Log.Debug().Str("component", "DataSourceDB").Msgf("SQL: '%s'. ARGS: %#v", query, args)
+
+	rows, err := dataSource.db.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var result []ton.EventInterface
+
+	for rows.Next() {
+		var id int64
+		var createAt time.Time
+		var eventId int64
+		var addrStr string
+		var txHash []byte
+		var txLT int64
+		var txUTime time.Time
+		var bodyData []byte
+
+		err := rows.Scan(
+			&id,
+			&createAt,
+			&eventId,
+			&addrStr,
+			&txHash,
+			&txLT,
+			&txUTime,
+			&bodyData,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		addr, err := address.ParseRawAddr(addrStr)
+		if err != nil {
+			return nil, err
+		}
+
+		event, err := (&coordinator.EventParser{}).ParseJson(bodyData, uint64(eventId))
+		if err != nil {
+			return nil, err
+		}
+
+		evRaw := &ton.RawEvent{
+			Addr:    addr,
+			TxHash:  txHash,
+			TxLT:    uint64(txLT),
+			TxUtime: txUTime,
+			Body:    nil,
+		}
+
+		event.SetRaw(evRaw)
+
+		result = append(result, event)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return result, nil
 }
