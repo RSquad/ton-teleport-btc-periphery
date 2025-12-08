@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/binary"
 	"encoding/hex"
+	"fmt"
 	"math/big"
 
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
@@ -24,6 +25,7 @@ import (
 
 const (
 	opCodeConfirmPegoutTx            = 0xbd0eaf09
+	opCodeTeleportTransferBtc        = 0x3f781d24
 	storageIndexId                   = 0
 	storageIndexBlockCode            = 1
 	storageIndexDeposits             = 2
@@ -123,34 +125,10 @@ func (c *TeleportContract) SendPegoutProof(
 	blockHashUInt := new(big.Int).SetBytes(blockHash.CloneBytes())
 	txIDUInt := new(big.Int).SetBytes(txID.CloneBytes())
 
-	const txCountLen = 4
-	txCount := make([]byte, txCountLen)
-	binary.LittleEndian.PutUint32(txCount, merkleBlock.Transactions)
-
-	hashesCountBuf := new(bytes.Buffer)
-	if err := wire.WriteVarInt(hashesCountBuf, 0, uint64(len(merkleBlock.Hashes))); err != nil {
-		return nil, nil, err
+	proofCell, err := c.buildProofCell(merkleBlock)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to build proof cell: %w", err)
 	}
-	hashesCount := hashesCountBuf.Bytes()
-
-	hashesBuilder := cell.BeginCell()
-	c.storeHashesToCell(merkleBlock.Hashes, hashesBuilder)
-	hashesCell := hashesBuilder.EndCell()
-
-	flagsLenBuf := new(bytes.Buffer)
-	if err := wire.WriteVarInt(flagsLenBuf, 0, uint64(len(merkleBlock.Flags))); err != nil {
-		return nil, nil, err
-	}
-	flagsLen := flagsLenBuf.Bytes()
-
-	flagsCell := cell.BeginCell().MustStoreBinarySnake(merkleBlock.Flags).EndCell()
-
-	proofCell := cell.BeginCell().
-		MustStoreSlice(txCount, txCountLen*8).
-		MustStoreSlice(hashesCount, uint(len(hashesCount))*8).
-		MustStoreRef(hashesCell).
-		MustStoreSlice(flagsLen, uint(len(flagsLen))*8).
-		MustStoreRef(flagsCell).EndCell()
 
 	payload := cell.BeginCell().
 		MustStoreUInt(opCodeConfirmPegoutTx, 32).
@@ -171,7 +149,6 @@ func (c *TeleportContract) GetAutoPegoutFee(block *tonutils.BlockIDExt) (*big.In
 		}
 	}
 	result, err := c.TonClient.API.RunGetMethod(c.ctx, block, c.Addr, "get_auto_pegout_fee")
-
 	if err != nil {
 		return nil, err
 	}
@@ -380,4 +357,97 @@ func loadUTXOset(utxoSetCell *cell.Cell) (map[string]UTXOData, error) {
 	}
 
 	return *utxoSet, nil
+}
+
+func (c *TeleportContract) decodeTxProof(txProof []byte) (*wire.MsgMerkleBlock, error) {
+	var merkleBlock wire.MsgMerkleBlock
+	buf := bytes.NewBuffer(txProof)
+	err := merkleBlock.BtcDecode(buf, wire.ProtocolVersion, wire.BaseEncoding)
+	if err != nil {
+		return nil, err
+	}
+
+	return &merkleBlock, nil
+}
+
+func (c *TeleportContract) buildProofCell(merkleBlock *wire.MsgMerkleBlock) (*cell.Cell, error) {
+	const txCountLen = 4
+	txCount := make([]byte, txCountLen)
+	binary.LittleEndian.PutUint32(txCount, merkleBlock.Transactions)
+
+	hashesCountBuf := new(bytes.Buffer)
+	if err := wire.WriteVarInt(hashesCountBuf, 0, uint64(len(merkleBlock.Hashes))); err != nil {
+		return nil, fmt.Errorf("failed to write hashes count: %w", err)
+	}
+	hashesCount := hashesCountBuf.Bytes()
+
+	hashesBuilder := cell.BeginCell()
+	c.storeHashesToCell(merkleBlock.Hashes, hashesBuilder)
+	hashesCell := hashesBuilder.EndCell()
+
+	flagsLenBuf := new(bytes.Buffer)
+	if err := wire.WriteVarInt(flagsLenBuf, 0, uint64(len(merkleBlock.Flags))); err != nil {
+		return nil, fmt.Errorf("failed to write flags count: %w", err)
+	}
+	flagsLen := flagsLenBuf.Bytes()
+
+	flagsCell := cell.BeginCell().MustStoreBinarySnake(merkleBlock.Flags).EndCell()
+
+	proofCell := cell.BeginCell().
+		MustStoreSlice(txCount, txCountLen*8).
+		MustStoreSlice(hashesCount, uint(len(hashesCount))*8).
+		MustStoreRef(hashesCell).
+		MustStoreSlice(flagsLen, uint(len(flagsLen))*8).
+		MustStoreRef(flagsCell).EndCell()
+
+	return proofCell, nil
+}
+
+func (c *TeleportContract) BuildSendDepositMessage(
+	ctx context.Context,
+	blockHash *chainhash.Hash,
+	receiverAddressStr string,
+	indexerAddressStr string,
+	recoveryKey string,
+	txHex string,
+	txProof []byte,
+	queryId uint64,
+) (*wallet.Message, error) {
+	destAddress := address.MustParseRawAddr(receiverAddressStr)
+	indexerAddress := address.MustParseAddr(indexerAddressStr)
+
+	decodedTxProof, err := c.decodeTxProof(txProof)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode tx proof: %w", err)
+	}
+
+	proofCell, err := c.buildProofCell(decodedTxProof)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build proof cell: %w", err)
+	}
+
+	recoveryKeyBytes, err := hex.DecodeString(recoveryKey)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode recovery key: %w", err)
+	}
+
+	serializedTransaction, err := utils.SerializeTransaction(txHex)
+	if err != nil {
+		return nil, fmt.Errorf("failed to serialize transaction: %w", err)
+	}
+
+	sendDepositBodyCell := cell.BeginCell().
+		MustStoreUInt(opCodeTeleportTransferBtc, 32).
+		MustStoreUInt(queryId, 64).
+		MustStoreSlice(blockHash[:], 256).
+		MustStoreRef(serializedTransaction).
+		MustStoreRef(proofCell).
+		MustStoreMaybeRef(cell.BeginCell().MustStoreBinarySnake(recoveryKeyBytes).EndCell()).
+		MustStoreAddr(destAddress).
+		MustStoreAddr(indexerAddress).
+		EndCell()
+
+	message := wallet.SimpleMessage(c.Addr, tlb.MustFromTON("1"), sendDepositBodyCell)
+
+	return message, nil
 }
