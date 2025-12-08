@@ -18,7 +18,7 @@
     "editable": true,
     "fiscalYearStartMonth": 0,
     "graphTooltip": 0,
-    "id": 13,
+    "id": 17,
     "links": [],
     "panels": [
         {
@@ -680,10 +680,6 @@
                             {
                                 "color": "dark-green",
                                 "value": null
-                            },
-                            {
-                                "color": "dark-red",
-                                "value": 20
                             }
                         ]
                     }
@@ -696,11 +692,14 @@
                         },
                         "properties": [
                             {
-                                "id": "decimals"
+                                "id": "displayName",
+                                "value": "Bitcoin Mempool Time"
                             },
                             {
-                                "id": "unit",
-                                "value": "ms"
+                                "id": "custom.cellOptions",
+                                "value": {
+                                    "type": "auto"
+                                }
                             }
                         ]
                     },
@@ -716,14 +715,17 @@
                                     {
                                         "options": {
                                             "0": {
+                                                "color": "dark-red",
                                                 "index": 0,
                                                 "text": "Tx not published"
                                             },
                                             "1": {
+                                                "color": "dark-green",
                                                 "index": 1,
                                                 "text": "Tx in mempool"
                                             },
                                             "2": {
+                                                "color": "dark-green",
                                                 "index": 2,
                                                 "text": "Tx in block"
                                             }
@@ -731,6 +733,38 @@
                                         "type": "value"
                                     }
                                 ]
+                            },
+                            {
+                                "id": "displayName",
+                                "value": "BTC Tx Status"
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "CPFP"
+                        },
+                        "properties": [
+                            {
+                                "id": "thresholds",
+                                "value": {
+                                    "mode": "absolute",
+                                    "steps": [
+                                        {
+                                            "color": "dark-green",
+                                            "value": null
+                                        },
+                                        {
+                                            "color": "dark-yellow",
+                                            "value": 10
+                                        },
+                                        {
+                                            "color": "dark-red",
+                                            "value": 20
+                                        }
+                                    ]
+                                }
                             }
                         ]
                     }
