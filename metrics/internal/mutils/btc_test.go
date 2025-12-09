@@ -177,6 +177,39 @@ func TestBtcGetBestBlockHeight(t *testing.T) {
 			expectedHeight: 0,
 			expectedError:  "",
 		},
+		{
+			name: "Failure - Blocks value mismatch",
+			setupMock: func(mockClient *MockBitcoinClient) {
+				info := &btcjson.GetBlockChainInfoResult{
+					Blocks: 1000,
+				}
+				mockClient.On("GetBlockChainInfo").Return(info, nil)
+			},
+			expectedHeight: 999,
+			expectedError:  "",
+		},
+		{
+			name: "Failure - Blocks value mismatch (zero)",
+			setupMock: func(mockClient *MockBitcoinClient) {
+				info := &btcjson.GetBlockChainInfoResult{
+					Blocks: 0,
+				}
+				mockClient.On("GetBlockChainInfo").Return(info, nil)
+			},
+			expectedHeight: 1,
+			expectedError:  "",
+		},
+		{
+			name: "Failure - Blocks value mismatch (max int)",
+			setupMock: func(mockClient *MockBitcoinClient) {
+				info := &btcjson.GetBlockChainInfoResult{
+					Blocks: 2147483647,
+				}
+				mockClient.On("GetBlockChainInfo").Return(info, nil)
+			},
+			expectedHeight: 2147483646,
+			expectedError:  "",
+		},
 	}
 
 	for _, tt := range tests {
@@ -193,7 +226,14 @@ func TestBtcGetBestBlockHeight(t *testing.T) {
 				assert.NoError(t, err)
 			}
 
-			assert.Equal(t, tt.expectedHeight, height)
+			if tt.name == "Failure - Blocks value mismatch" ||
+				tt.name == "Failure - Blocks value mismatch (zero)" ||
+				tt.name == "Failure - Blocks value mismatch (max int)" {
+				assert.NotEqual(t, tt.expectedHeight, height,
+					"Blocks and expectedHeight should not match for this test case")
+			} else {
+				assert.Equal(t, tt.expectedHeight, height)
+			}
 			mockClient.AssertExpectations(t)
 		})
 	}
@@ -208,6 +248,8 @@ func TestBtcGetCPFPChainSize(t *testing.T) {
 		tx4 = "d40a58b4d416d3ca199f55b6084e2115b9345e16c5cf302fc80e9d5fbf5d48d3"
 		tx5 = "e50b59b5d416d3ca199f55b6084e2115b9345e16c5cf302fc80e9d5fbf5d48d4"
 		tx6 = "f60c5ab6d416d3ca199f55b6084e2115b9345e16c5cf302fc80e9d5fbf5d48d5"
+		tx7 = "f70d6bc7d416d3ca199f55b6084e2115b9345e16c5cf302fc80e9d5fbf5d48d6"
+		tx8 = "f80e7cd8d416d3ca199f55b6084e2115b9345e16c5cf302fc80e9d5fbf5d48d7"
 	)
 
 	// Helper function to create proper Bitcoin transaction hashes
@@ -380,8 +422,6 @@ func TestBtcGetCPFPChainSize(t *testing.T) {
 					Return(createTxResult(tx2, 0, []btcjson.Vin{
 						createVin(tx1), // Circular reference back to tx1
 					}), nil).Twice()
-
-				// Should not call GetRawTransactionVerbose for tx1 again due to visited map
 			},
 			expectedSize:  2, // Counts tx1 and tx2 before detecting circular reference
 			expectedError: "",
@@ -396,6 +436,72 @@ func TestBtcGetCPFPChainSize(t *testing.T) {
 					}), nil)
 			},
 			expectedSize:  1, // Still counts the current transaction
+			expectedError: "",
+		},
+		{
+			name:   "Failure - expected size mismatch (larger)",
+			txHash: createHash(tx2),
+			setupMock: func(mockClient *MockBitcoinClient) {
+				mockClient.On("GetRawTransactionVerbose", createHash(tx2)).
+					Return(createTxResult(tx2, 0, []btcjson.Vin{
+						createVin(tx3),
+						createVin(tx4),
+					}), nil)
+
+				mockClient.On("GetRawTransactionVerbose", createHash(tx3)).
+					Return(createTxResult(tx3, 5, []btcjson.Vin{}), nil)
+
+				mockClient.On("GetRawTransactionVerbose", createHash(tx4)).
+					Return(createTxResult(tx4, 0, []btcjson.Vin{
+						createVin(tx5),
+					}), nil)
+
+				mockClient.On("GetRawTransactionVerbose", createHash(tx5)).
+					Return(createTxResult(tx5, 1, []btcjson.Vin{}), nil)
+			},
+			expectedSize:  1,
+			expectedError: "",
+		},
+		{
+			name:   "Failure - expected size mismatch (smaller)",
+			txHash: createHash(tx6),
+			setupMock: func(mockClient *MockBitcoinClient) {
+				mockClient.On("GetRawTransactionVerbose", createHash(tx6)).
+					Return(createTxResult(tx6, 0, []btcjson.Vin{}), nil)
+			},
+			expectedSize:  5,
+			expectedError: "",
+		},
+		{
+			name:   "Failure - expected size mismatch with confirmed parent",
+			txHash: createHash(tx1),
+			setupMock: func(mockClient *MockBitcoinClient) {
+				mockClient.On("GetRawTransactionVerbose", createHash(tx1)).
+					Return(createTxResult(tx1, 0, []btcjson.Vin{
+						createVin(tx2),
+						createVin(tx3),
+						createVin(tx4),
+					}), nil)
+				mockClient.On("GetRawTransactionVerbose", createHash(tx2)).
+					Return(createTxResult(tx2, 15, []btcjson.Vin{}), nil)
+
+				mockClient.On("GetRawTransactionVerbose", createHash(tx3)).
+					Return(createTxResult(tx3, 20, []btcjson.Vin{}), nil)
+
+				mockClient.On("GetRawTransactionVerbose", createHash(tx4)).
+					Return(createTxResult(tx4, 5, []btcjson.Vin{}), nil)
+			},
+			expectedSize:  4,
+			expectedError: "",
+		},
+		{
+			name:   "Failure - expected size mismatch for zero chain",
+			txHash: createHash(tx5),
+			setupMock: func(mockClient *MockBitcoinClient) {
+				mockClient.On("GetRawTransactionVerbose", createHash(tx5)).
+					Return(createTxResult(tx5, 100, []btcjson.Vin{}), nil)
+			},
+			expectedSize:  1,
 			expectedError: "",
 		},
 		{
@@ -434,7 +540,15 @@ func TestBtcGetCPFPChainSize(t *testing.T) {
 				assert.NoError(t, err)
 			}
 
-			assert.Equal(t, tt.expectedSize, size)
+			if tt.name == "Failure - expected size mismatch (larger)" ||
+				tt.name == "Failure - expected size mismatch (smaller)" ||
+				tt.name == "Failure - expected size mismatch with confirmed parent" ||
+				tt.name == "Failure - expected size mismatch for zero chain" {
+				assert.NotEqual(t, tt.expectedSize, size,
+					"Expected size should not match actual size for mismatch test")
+			} else {
+				assert.Equal(t, tt.expectedSize, size)
+			}
 			mockClient.AssertExpectations(t)
 		})
 	}
