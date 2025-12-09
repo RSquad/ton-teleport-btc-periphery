@@ -23,8 +23,8 @@ type (
 	LastSignedPegoutsDbFn                         func(limit uint) ([]*data_models.Pegout, error)
 	PegoutDbFn                                    func(address *address.Address) (*data_models.Pegout, error)
 	DkgDbFn                                       func() (*coordinator.DKG, error)
+	DkgUntilDbFn                                  func(dkgUntil time.Time) (*coordinator.DKG, error)
 	PrevDkgDbFn                                   func() (*coordinator.DKG, error)
-	DkgBeforeRestartDbFn                          func(t time.Time) (*coordinator.DKG, error)
 	BtcGetBlockHashByTxIdFn                       func(txID *chainhash.Hash) (*chainhash.Hash, error)
 	BtcGetBlockHeightByHashFn                     func(hash *chainhash.Hash) (int64, error)
 	BtcGetCpfpLengthFn                            func(hash *chainhash.Hash) (int, error)
@@ -34,6 +34,8 @@ type (
 	TonMaxMainValidatorsFn                        func(ctx context.Context) (int, error)
 	ActualContractBalanceFn                       func(name string) (int64, error)
 	NowUnixTsFn                                   func() int64
+	EventsLastDkgStartedDbFn                      func() (*coordinator.DKGStartedEvent, error)
+	EventsAllFromDkgRestartDbFn                   func(fromTxLT uint64) ([]*coordinator.DKGRestartedEvent, error)
 )
 
 // Config holds optional function callbacks
@@ -47,8 +49,8 @@ type AlertDataSourceTestingConfig struct {
 	LastSignedPegoutsDbFn                         LastSignedPegoutsDbFn
 	PegoutDbFn                                    PegoutDbFn
 	DkgDbFn                                       DkgDbFn
+	DkgUntilDbFn                                  DkgUntilDbFn
 	PrevDkgDbFn                                   PrevDkgDbFn
-	DkgBeforeRestartDbFn                          DkgBeforeRestartDbFn
 	BtcGetBlockHashByTxIdFn                       BtcGetBlockHashByTxIdFn
 	BtcGetBlockHeightByHashFn                     BtcGetBlockHeightByHashFn
 	BtcGetCpfpLengthFn                            BtcGetCpfpLengthFn
@@ -58,6 +60,8 @@ type AlertDataSourceTestingConfig struct {
 	TonMaxMainValidatorsFn                        TonMaxMainValidatorsFn
 	ActualContractBalanceFn                       ActualContractBalanceFn
 	NowUnixTsFn                                   NowUnixTsFn
+	EventsLastDkgStartedDbFn                      EventsLastDkgStartedDbFn
+	EventsAllFromDkgRestartDbFn                   EventsAllFromDkgRestartDbFn
 }
 
 type AlertDataSourceTesting struct {
@@ -124,18 +128,18 @@ func (dataSource *AlertDataSourceTesting) DkgDB() (*coordinator.DKG, error) {
 	return dataSource.cfg.DkgDbFn()
 }
 
+func (dataSource *AlertDataSourceTesting) DkgUntilDB(dkgUntil time.Time) (*coordinator.DKG, error) {
+	if dataSource.cfg.DkgUntilDbFn == nil {
+		return nil, errors.New("DkgUntilDbFn callback not set")
+	}
+	return dataSource.cfg.DkgUntilDbFn(dkgUntil)
+}
+
 func (dataSource *AlertDataSourceTesting) PrevDkgDB() (*coordinator.DKG, error) {
 	if dataSource.cfg.PrevDkgDbFn == nil {
 		return nil, errors.New("PrevDkgDbFn callback not set")
 	}
 	return dataSource.cfg.PrevDkgDbFn()
-}
-
-func (dataSource *AlertDataSourceTesting) DkgBeforeRestartDB(t time.Time) (*coordinator.DKG, error) {
-	if dataSource.cfg.DkgBeforeRestartDbFn == nil {
-		return nil, errors.New("DkgBeforeRestartDbFn callback not set")
-	}
-	return dataSource.cfg.DkgBeforeRestartDbFn(t)
 }
 
 func (dataSource *AlertDataSourceTesting) PegoutDB(address *address.Address) (*data_models.Pegout, error) {
@@ -203,4 +207,18 @@ func (dataSource *AlertDataSourceTesting) ActualContractBalance(name string) (in
 
 func (dataSource *AlertDataSourceTesting) NowUnixTs() int64 {
 	return dataSource.cfg.NowUnixTsFn()
+}
+
+func (dataSource *AlertDataSourceTesting) EventsLastDkgStartedDB() (*coordinator.DKGStartedEvent, error) {
+	if dataSource.cfg.EventsLastDkgStartedDbFn == nil {
+		return nil, errors.New("EventsLastDkgStartedDbFn callback not set")
+	}
+	return dataSource.cfg.EventsLastDkgStartedDbFn()
+}
+
+func (dataSource *AlertDataSourceTesting) EventsAllFromDkgRestartDB(fromTxLT uint64) ([]*coordinator.DKGRestartedEvent, error) {
+	if dataSource.cfg.EventsAllFromDkgRestartDbFn == nil {
+		return nil, errors.New("EventsAllFromDkgRestartDbFn callback not set")
+	}
+	return dataSource.cfg.EventsAllFromDkgRestartDbFn(fromTxLT)
 }

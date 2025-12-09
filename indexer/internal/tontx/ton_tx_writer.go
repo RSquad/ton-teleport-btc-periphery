@@ -3,9 +3,11 @@ package tontx
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	ent "github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated"
 	"github.com/rsquad/ton-teleport-btc-periphery/indexer/internal/ent/generated/tontx"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton"
 )
 
@@ -27,14 +29,21 @@ func NewTonTxWriter(
 func (ew *TonTxWriter) Write(
 	rawEvent *ton.RawEvent,
 ) (*ent.TonTx, error) {
-	tonTx, err := ew.repo.TonTx.Query().Where(tontx.Hash(fmt.Sprintf("%x", rawEvent.TxHash))).First(ew.ctx)
-	if ent.IsNotFound(err) {
-		return ew.repo.TonTx.Create().
-			SetHash(fmt.Sprintf("%x", rawEvent.TxHash)).
-			SetCreatedAt(rawEvent.TxUtime).
-			Save(ew.ctx)
+	hash := fmt.Sprintf("%x", rawEvent.TxHash)
+	logger.Log.Debug().Str("component", "TonTxWriter").Str("tx_hash", hash).Msg("write")
+	tonTx, err := ew.repo.TonTx.Create().
+		SetHash(hash).
+		SetCreatedAt(rawEvent.TxUtime).
+		Save(ew.ctx)
+	if err != nil {
+		if strings.Contains(err.Error(), "duplicate key value violates unique constraint \"ton_txes_hash_key\"") {
+			logger.Log.Warn().Str("component", "TonTxWriter").Str("tx_hash", hash).Msg("already exists")
+			return ew.repo.TonTx.Query().Where(tontx.Hash(hash)).First(ew.ctx)
+		}
+		logger.Log.Error().Str("component", "TonTxWriter").Err(err).Str("tx_hash", hash).Msg("failed to write")
+		return nil, err
 	}
-	return tonTx, err
+	return tonTx, nil
 }
 
 func (ew *TonTxWriter) GetTonTxWithoutRelationsByHash(hash string) (*ent.TonTx, error) {

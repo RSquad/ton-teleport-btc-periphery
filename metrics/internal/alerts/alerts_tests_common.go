@@ -5,9 +5,9 @@ import (
 )
 
 type TestResWant struct {
-	Severity Severity
-	Labels   Labels
-	Err      error
+	Severity    Severity
+	Description Description
+	Err         error
 }
 
 type TestDesc struct {
@@ -19,38 +19,24 @@ type TestDesc struct {
 func DoAlertTests(t *testing.T, tests []TestDesc, alert Alert) {
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			severity, labels, _, err := alert.Check(tt.DataSource)
+			severity, description, _, err := alert.Check(tt.DataSource)
 
 			// Assert
 			if tt.Expect.Err != nil {
 				if err == nil || err.Error() != tt.Expect.Err.Error() {
-					t.Fatalf("expected error %v, got %v", tt.Expect.Err, err)
+					t.Fatalf("expected error: `%v`, got: `%v`", tt.Expect.Err, err)
 				}
 			} else if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
 
 			if severity != tt.Expect.Severity {
-				t.Fatalf("expected severity %v, got %v", tt.Expect.Severity, severity)
+				t.Fatalf("expected severity %s, got %s", tt.Expect.Severity.String(), severity.String())
 			}
 
-			if !IsEqual(labels, tt.Expect.Labels) {
-				t.Fatalf("expected labels %v, got %v", tt.Expect.Labels, labels)
+			if description != tt.Expect.Description {
+				t.Fatalf("expected description: `%v`, got: `%v`", tt.Expect.Description, description)
 			}
 		})
 	}
-}
-
-func IsEqual(a, b Labels) bool {
-	if len(a) != len(b) {
-		return false
-	}
-
-	for k, v := range a {
-		if bv, ok := b[k]; !ok || bv != v {
-			return false
-		}
-	}
-
-	return true
 }

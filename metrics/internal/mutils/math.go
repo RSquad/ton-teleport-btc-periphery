@@ -35,3 +35,34 @@ func Popcnt(n *big.Int) int {
 	}
 	return count
 }
+
+func RemovedOneIds(from *big.Int, to *big.Int) []uint16 {
+	if from.Sign() < 0 || to.Sign() < 0 {
+		return nil
+	}
+
+	// bits that were 1 in from and are 0 in to
+	diff := new(big.Int).AndNot(from, to)
+
+	var ids []uint16
+
+	for bitIdx, bit := range diff.Bits() {
+		for bit != 0 {
+			ids = append(ids, uint16(bitIdx))
+		}
+	}
+
+	return ids
+}
+
+func ExtractValuesByIdx(keys []uint16, data map[uint16][]byte) map[uint16][]byte {
+	res := make(map[uint16][]byte, len(keys))
+
+	for _, k := range keys {
+		if v, ok := data[k]; ok {
+			res[k] = v
+		}
+	}
+
+	return res
+}

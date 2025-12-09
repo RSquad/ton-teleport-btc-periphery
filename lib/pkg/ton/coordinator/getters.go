@@ -281,88 +281,97 @@ func parseUnsignedPegouts(pegoutsCell *cell.Cell) ([]PegoutRecord, error) {
 	pegouts := make([]PegoutRecord, 0, len(entries))
 	for _, kv := range entries {
 
-		ID := kv.Key.MustLoadUInt(64)
+		id := kv.Key.MustLoadUInt(64)
 		value := kv.Value.MustLoadRef()
 
-		MaxSigners := uint16(value.MustLoadUInt(16))
-		ExpiredAt := time.Unix(int64(value.MustLoadUInt(32)), 0)
-		SigningMask := value.MustLoadBigUInt(256)
-
-		CommitmentsMaskAccepted := value.MustLoadBigUInt(128)
-		CommitmentsMaskOther := value.MustLoadBigUInt(128)
-		value.MustLoadUInt(16)
-		commitmentsDict := value.MustLoadDict(16)
-		commitmentsPtr, err := parseddict.ParseDict(
-			commitmentsDict,
-			parseddict.ParseKeyUI16,
-			readBuffer,
-		)
+		pegout, err := parsePegout(value, id)
 		if err != nil {
 			return nil, err
 		}
 
-		Commitments := *commitmentsPtr
-		SigningSharesMask := value.MustLoadSlice(256)
-		value.MustLoadUInt(16)
-		signingSharesDict := value.MustLoadDict(16)
-		signingSharesPtr, err := parseddict.ParseDict(
-			signingSharesDict,
-			parseddict.ParseKeyUI16,
-			loadSharesMap,
-		)
-		if err != nil {
-			return nil, err
-		}
-
-		SigningShares := *signingSharesPtr
-
-		sigSlice := value.MustLoadRef()
-		Signatures := PegoutSignatures{
-			Mask:  sigSlice.MustLoadBigUInt(256),
-			Count: uint16(sigSlice.MustLoadUInt(16)),
-			Hash:  sigSlice.MustLoadSlice(256),
-		}
-
-		refSlice := value.MustLoadRef()
-		claimsSlice := refSlice.MustLoadRef()
-		ClaimsMask := claimsSlice.MustLoadBigUInt(256)
-		ClaimsCount := uint16(claimsSlice.MustLoadUInt(16))
-		claimsCountersDict := claimsSlice.MustLoadDict(16)
-		claimsCountersPtr, err := parseddict.ParseDict(
-			claimsCountersDict,
-			parseddict.ParseKeyUI16,
-			loadUI16Map,
-		)
-		if err != nil {
-			return nil, err
-		}
-
-		ClaimsCounters := *claimsCountersPtr
-
-		InternalKey := refSlice.MustLoadSlice(256)
-		PegoutAddress := refSlice.MustLoadAddr()
-		IsAutopegout := refSlice.MustLoadInt(1) == -1
-
-		pegouts = append(pegouts, PegoutRecord{
-			ID,
-			PegoutAddress,
-			InternalKey,
-			IsAutopegout,
-			Commitments,
-			CommitmentsMaskAccepted,
-			CommitmentsMaskOther,
-			SigningShares,
-			SigningSharesMask,
-			Signatures,
-			ClaimsMask,
-			ClaimsCount,
-			ClaimsCounters,
-			MaxSigners,
-			ExpiredAt,
-			SigningMask,
-		})
+		pegouts = append(pegouts, *pegout)
 	}
 	return pegouts, nil
+}
+
+func parsePegout(pegoutSlice *cell.Slice, pegoutId uint64) (*PegoutRecord, error) {
+	signers := uint16(pegoutSlice.MustLoadUInt(16))
+	expiredAt := time.Unix(int64(pegoutSlice.MustLoadUInt(32)), 0)
+	signingMask := pegoutSlice.MustLoadBigUInt(256)
+
+	commitmentsMaskAccepted := pegoutSlice.MustLoadBigUInt(128)
+	commitmentsMaskOther := pegoutSlice.MustLoadBigUInt(128)
+	pegoutSlice.MustLoadUInt(16)
+	commitmentsDict := pegoutSlice.MustLoadDict(16)
+	commitmentsPtr, err := parseddict.ParseDict(
+		commitmentsDict,
+		parseddict.ParseKeyUI16,
+		readBuffer,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	commitments := *commitmentsPtr
+	signingSharesMask := pegoutSlice.MustLoadSlice(256)
+	pegoutSlice.MustLoadUInt(16)
+	signingSharesDict := pegoutSlice.MustLoadDict(16)
+	signingSharesPtr, err := parseddict.ParseDict(
+		signingSharesDict,
+		parseddict.ParseKeyUI16,
+		loadSharesMap,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	signingShares := *signingSharesPtr
+
+	sigSlice := pegoutSlice.MustLoadRef()
+	signatures := PegoutSignatures{
+		Mask:  sigSlice.MustLoadBigUInt(256),
+		Count: uint16(sigSlice.MustLoadUInt(16)),
+		Hash:  sigSlice.MustLoadSlice(256),
+	}
+
+	refSlice := pegoutSlice.MustLoadRef()
+	claimsSlice := refSlice.MustLoadRef()
+	claimsMask := claimsSlice.MustLoadBigUInt(256)
+	claimsCount := uint16(claimsSlice.MustLoadUInt(16))
+	claimsCountersDict := claimsSlice.MustLoadDict(16)
+	claimsCountersPtr, err := parseddict.ParseDict(
+		claimsCountersDict,
+		parseddict.ParseKeyUI16,
+		loadUI16Map,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	claimsCounters := *claimsCountersPtr
+
+	internalKey := refSlice.MustLoadSlice(256)
+	pegoutAddress := refSlice.MustLoadAddr()
+	isAutopegout := refSlice.MustLoadInt(1) == -1
+
+	return &PegoutRecord{
+		ID:                      pegoutId,
+		PegoutAddress:           pegoutAddress,
+		InternalKey:             internalKey,
+		IsAutopegout:            isAutopegout,
+		Commitments:             commitments,
+		CommitmentsMaskAccepted: commitmentsMaskAccepted,
+		CommitmentsMaskOther:    commitmentsMaskOther,
+		SigningShares:           signingShares,
+		SigningSharesMask:       signingSharesMask,
+		Signatures:              signatures,
+		ClaimsMask:              claimsMask,
+		ClaimsCount:             claimsCount,
+		ClaimsCounters:          claimsCounters,
+		Signers:                 signers,
+		ExpiredAt:               expiredAt,
+		SigningMask:             signingMask,
+	}, nil
 }
 
 func parseDGKSlice(dkgSlice *cell.Slice) (*DKG, error) {

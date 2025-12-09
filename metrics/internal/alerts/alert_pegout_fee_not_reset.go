@@ -2,6 +2,7 @@ package alerts
 
 import (
 	"encoding/hex"
+	"fmt"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/mutils"
 	"github.com/xssnick/tonutils-go/address"
@@ -13,27 +14,18 @@ func NewAlertPegoutFeeNotReset() Alert {
 	return &AlertPegoutFeeNotReset{}
 }
 
-func (alert *AlertPegoutFeeNotReset) NewLabels() Labels {
-	return Labels{
-		"bitcoin_tx_id": "",
-		"pegout_addr":   "",
-	}
-}
-
-func (alert *AlertPegoutFeeNotReset) Check(dataSource AlertDataSource) (Severity, Labels, Values, error) {
-	labels := alert.NewLabels()
-
+func (alert *AlertPegoutFeeNotReset) Check(dataSource AlertDataSource) (Severity, Description, Values, error) {
 	// Get last signed pegout
 	pegout, err := dataSource.LastSignedPegoutDB()
 	if err != nil {
-		return SEVERITY_UNKNOWN, labels, nil, err
+		return SEVERITY_CRITICAL, "", nil, err
 	}
 
 	if pegout == nil {
 
 		// TODO: add LastConfirmedPegout...
 
-		return SEVERITY_OK, labels, nil, nil
+		return SEVERITY_OK, "OK", nil, nil
 	}
 
 	pegoutBlockHeight := int64(0)
@@ -41,14 +33,14 @@ func (alert *AlertPegoutFeeNotReset) Check(dataSource AlertDataSource) (Severity
 	nextSvb := int64(0)
 
 	if pegout.BitcoinBlockHash == nil {
-		return SEVERITY_OK, labels, nil, nil
+		return SEVERITY_OK, "OK", nil, nil
 	}
 
 	// Get info from bitcoin network
 	{
 		blockHeight, err := dataSource.BtcGetBlockHeightByHash(mutils.BytesToBTCHash(pegout.BitcoinBlockHash))
 		if err != nil {
-			return SEVERITY_UNKNOWN, labels, nil, err
+			return SEVERITY_CRITICAL, "", nil, err
 		}
 
 		pegoutBlockHeight = blockHeight
@@ -58,7 +50,7 @@ func (alert *AlertPegoutFeeNotReset) Check(dataSource AlertDataSource) (Severity
 	{
 		bitcoinClientContractStorage, err := dataSource.BitcoinClientContractStorageDB()
 		if err != nil {
-			return SEVERITY_UNKNOWN, labels, nil, err
+			return SEVERITY_CRITICAL, "", nil, err
 		}
 
 		lastConfirmedBlockHeight = bitcoinClientContractStorage.LastConfirmedBlockHeight
@@ -68,22 +60,35 @@ func (alert *AlertPegoutFeeNotReset) Check(dataSource AlertDataSource) (Severity
 	{
 		storage, err := dataSource.TeleportContractStorageDB()
 		if err != nil {
-			return SEVERITY_UNKNOWN, labels, nil, err
+			return SEVERITY_CRITICAL, "", nil, err
 		}
 
 		nextSvb = int64(storage.NextSVB)
 	}
 
-	// Update labels
-	if pegout.BitcoinTxId != nil {
-		labels["bitcoin_tx_id"] = hex.EncodeToString(pegout.BitcoinTxId)
-	}
-	labels["pegout_addr"] = (*address.Address)(pegout.Addr).StringRaw()
-
 	// Calulate severity
 	severity := alert.GetSeverity(pegoutBlockHeight, lastConfirmedBlockHeight, nextSvb)
+	description := "OK"
 
-	return severity, labels, nil, nil
+	if severity > SEVERITY_OK {
+		bitcoinTxId := ""
+		if pegout.BitcoinTxId != nil {
+			bitcoinTxId = hex.EncodeToString(pegout.BitcoinTxId)
+		}
+
+		description = fmt.Sprintf(
+			"Pegout transaction already has %d (pegoutBlockHeight %d, lastConfirmedBlockHeight %d) confirmations but the fee has not been reset (nextSvb = %d).\n<b>Pegout:</b> %s.\n<b>Bitcoin TX:</b> %s.\n<b>Runbook url:</b> %s",
+			lastConfirmedBlockHeight-pegoutBlockHeight,
+			pegoutBlockHeight,
+			lastConfirmedBlockHeight,
+			nextSvb,
+			mutils.TonExplorerLink((*address.Address)(pegout.Addr).StringRaw()),
+			mutils.BtcExplorerLink(bitcoinTxId),
+			mutils.RunbookLink("PegoutFeeNotReset"),
+		)
+	}
+
+	return severity, Description(description), nil, nil
 }
 
 func (alert *AlertPegoutFeeNotReset) GetSeverity(

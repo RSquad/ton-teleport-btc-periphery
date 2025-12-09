@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/teleportcontract"
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/data_models"
@@ -148,18 +150,48 @@ func (dataSource *DataSourceDB) PrevDkg() (*coordinator.DKG, error) {
 	return data, nil
 }
 
-func (dataSource *DataSourceDB) DkgBeforeRestartJson(t time.Time) ([]byte, error) {
+func (dataSource *DataSourceDB) DkgUntilJson(until time.Time) ([]byte, error) {
 	return dataSource.selectAsJsonObj(
-		"SELECT payload FROM metrics_data WHERE type_id = $1 AND EXTRACT(EPOCH FROM (payload->>'Until')::timestamptz) = $2 ORDER BY id DESC LIMIT 1",
-		fetchers.PayloadTypePrevDKG,
-		t.Unix(),
+		"SELECT payload FROM metrics_data WHERE type_id = $1 AND dkg_until_ts = $2 ORDER BY id DESC LIMIT 1",
+		fetchers.PayloadTypeDKG,
+		time.Unix(until.Unix(), 0).UTC(),
 	)
 }
 
-func (dataSource *DataSourceDB) DkgBeforeRestart(t time.Time) (*coordinator.DKG, error) {
-	jsonData, err := dataSource.DkgBeforeRestartJson(t)
+func (dataSource *DataSourceDB) DkgUntil(until time.Time) (*coordinator.DKG, error) {
+	jsonData, err := dataSource.DkgUntilJson(until)
 	if err != nil {
 		return nil, err
+	}
+
+	if len(jsonData) == 0 {
+		return nil, nil
+	}
+
+	data, err := data_models.DeserializeDkg(jsonData)
+	if err != nil {
+		return nil, err
+	}
+
+	return data, nil
+}
+
+func (dataSource *DataSourceDB) DkgBeforeRestartJson(currentDkgUntil time.Time) ([]byte, error) {
+	return dataSource.selectAsJsonObj(
+		"SELECT payload FROM metrics_data WHERE type_id = $1 AND dkg_until_ts < $2 ORDER BY id DESC LIMIT 1",
+		fetchers.PayloadTypeDKG,
+		time.Unix(currentDkgUntil.Unix(), 0).UTC(),
+	)
+}
+
+func (dataSource *DataSourceDB) DkgBeforeRestart(currentDkgUntil time.Time) (*coordinator.DKG, error) {
+	jsonData, err := dataSource.DkgBeforeRestartJson(currentDkgUntil)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(jsonData) == 0 {
+		return nil, nil
 	}
 
 	data, err := data_models.DeserializeDkg(jsonData)
@@ -181,6 +213,10 @@ func (dataSource *DataSourceDB) Pegout(address *address.Address) (*data_models.P
 	jsonData, err := dataSource.PegoutJson(address)
 	if err != nil {
 		return nil, err
+	}
+
+	if jsonData == nil {
+		return nil, nil
 	}
 
 	pegout, err := data_models.DeserializePegoutDB(jsonData)
@@ -284,8 +320,10 @@ func (dataSource *DataSourceDB) ActualContractBalance(name string) (int64, error
 	return balance, nil
 }
 
-func (dataSource *DataSourceDB) selectAsJsonObj(sql string, args ...interface{}) ([]byte, error) {
-	rows, err := dataSource.db.Query(sql, args...)
+func (dataSource *DataSourceDB) selectAsJsonObj(query string, args ...interface{}) ([]byte, error) {
+	logger.Log.Debug().Str("component", "DataSourceDB").Msgf("SQL: '%s'. ARGS: %#v", query, args)
+
+	rows, err := dataSource.db.Query(query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -305,4 +343,115 @@ func (dataSource *DataSourceDB) selectAsJsonObj(sql string, args ...interface{})
 	}
 
 	return []byte(data), nil
+}
+
+func (dataSource *DataSourceDB) EventsLastDkgStarted() (*coordinator.DKGStartedEvent, error) {
+	events, err := dataSource.selectAsTonEvents(
+		"SELECT * FROM public.events_data WHERE event_id=$1 ORDER BY tx_lt DESC LIMIT 1",
+		coordinator.EventIdDKGStarted,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(events) == 0 {
+		return nil, nil
+	}
+
+	event := events[0]
+
+	dkgStartedEvent, ok := event.(*coordinator.DKGStartedEvent)
+	if !ok {
+		return nil, fmt.Errorf("event is not *coordinator.DKGStartedEvent, got %T", event)
+	}
+
+	return dkgStartedEvent, nil
+}
+
+func (dataSource *DataSourceDB) EventsAllFromDkgRestart(fromTxLT uint64) ([]*coordinator.DKGRestartedEvent, error) {
+	events, err := dataSource.selectAsTonEvents(
+		"SELECT * FROM public.events_data WHERE event_id=$1 AND tx_lt >= $2 ORDER BY tx_lt ASC",
+		coordinator.EventIdDKGRestarted,
+		fromTxLT,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	dkgRestartedEvents := make([]*coordinator.DKGRestartedEvent, len(events))
+	for _, event := range events {
+		dkgRestartedEvent, ok := event.(*coordinator.DKGRestartedEvent)
+		if !ok {
+			return nil, fmt.Errorf("event is not *coordinator.DKGRestartedEvent, got %T", event)
+		}
+
+		dkgRestartedEvents = append(dkgRestartedEvents, dkgRestartedEvent)
+	}
+
+	return dkgRestartedEvents, nil
+}
+
+func (dataSource *DataSourceDB) selectAsTonEvents(query string, args ...interface{}) ([]ton.EventInterface, error) {
+	logger.Log.Debug().Str("component", "DataSourceDB").Msgf("SQL: '%s'. ARGS: %#v", query, args)
+
+	rows, err := dataSource.db.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var result []ton.EventInterface
+
+	for rows.Next() {
+		var id int64
+		var createAt time.Time
+		var eventId int64
+		var addrStr string
+		var txHash []byte
+		var txLT int64
+		var txUTime time.Time
+		var bodyData []byte
+
+		err := rows.Scan(
+			&id,
+			&createAt,
+			&eventId,
+			&addrStr,
+			&txHash,
+			&txLT,
+			&txUTime,
+			&bodyData,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		addr, err := address.ParseRawAddr(addrStr)
+		if err != nil {
+			return nil, err
+		}
+
+		event, err := (&coordinator.EventParser{}).ParseJson(bodyData, uint64(eventId))
+		if err != nil {
+			return nil, err
+		}
+
+		evRaw := &ton.RawEvent{
+			Addr:    addr,
+			TxHash:  txHash,
+			TxLT:    uint64(txLT),
+			TxUtime: txUTime,
+			Body:    nil,
+		}
+
+		event.SetRaw(evRaw)
+
+		result = append(result, event)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return result, nil
 }

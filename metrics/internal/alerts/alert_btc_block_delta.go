@@ -1,82 +1,116 @@
 package alerts
 
+import (
+	"fmt"
+	"time"
+
+	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/config"
+	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/mutils"
+)
+
 type AlertBtcBlockDelta struct {
-	lastUpdateTs int64
-	severity     Severity
-	labels       Labels
-	values       Values
-	err          error
+	lastUpdateTs            int64
+	severity                Severity
+	description             Description
+	values                  Values
+	err                     error
+	btcBlockDeltaHeightWarn int
+	btcBlockDeltaHeightCrit int
 }
 
-func NewAlertBtcBlockDelta() Alert {
-	a := AlertBtcBlockDelta{}
-
+func NewAlertBtcBlockDelta(config *config.ServicesConfig) Alert {
 	return &AlertBtcBlockDelta{
-		lastUpdateTs: 0,
-		severity:     SEVERITY_UNKNOWN,
-		labels:       a.NewLabels(),
-		values:       nil,
-		err:          nil,
+		lastUpdateTs:            0,
+		severity:                SEVERITY_UNKNOWN,
+		description:             "",
+		values:                  nil,
+		err:                     nil,
+		btcBlockDeltaHeightWarn: config.AlertBtcBlockDeltaHeightWarn,
+		btcBlockDeltaHeightCrit: config.AlertBtcBlockDeltaHeightCrit,
 	}
 }
 
-func (alert *AlertBtcBlockDelta) NewLabels() Labels {
-	return Labels{
-		"blockHash": "",
-	}
-}
-
-func (alert *AlertBtcBlockDelta) Check(dataSource AlertDataSource) (Severity, Labels, Values, error) {
+func (alert *AlertBtcBlockDelta) Check(dataSource AlertDataSource) (Severity, Description, Values, error) {
 	nowTs := dataSource.NowUnixTs()
 
 	// No more often than every 2 minutes
-	if (nowTs - alert.lastUpdateTs) < (2 * 60) {
-		return alert.severity, alert.labels, alert.values, alert.err
+	if alert.err == nil {
+		if (nowTs - alert.lastUpdateTs) < (2 * 60) {
+			return alert.severity, alert.description, alert.values, alert.err
+		}
 	}
 
 	alert.lastUpdateTs = nowTs
-	alert.labels = alert.NewLabels()
+	alert.description = "OK"
 	alert.err = nil
 	alert.values = nil
 
 	storage, err := dataSource.BitcoinClientContractStorageDB()
-
 	if err != nil {
-		alert.severity = SEVERITY_UNKNOWN
+		alert.description = ""
+		alert.severity = SEVERITY_CRITICAL
 		alert.err = err
 
-		return alert.severity, alert.labels, alert.values, alert.err
+		return alert.severity, alert.description, alert.values, alert.err
 	}
 
 	blockHeightContract := int(storage.LastConfirmedBlockHeight + storage.ConfirmationsNeeded)
-	blockHeightNetwork, err := dataSource.BtcGetBestBlockHeight()
-
+	blockHeightBtcNetwork, err := alert.btcGetBestBlockHeight(dataSource)
 	if err != nil {
-		alert.severity = SEVERITY_UNKNOWN
+		alert.description = ""
+		alert.severity = SEVERITY_CRITICAL
 		alert.err = err
 
-		return alert.severity, alert.labels, alert.values, alert.err
+		return alert.severity, alert.description, alert.values, alert.err
 	}
 
-	delta := blockHeightNetwork - blockHeightContract
-
+	delta := blockHeightBtcNetwork - blockHeightContract
 	alert.severity = alert.GetSeverity(delta)
-	alert.labels["blockHash"] = storage.LastConfirmedBlockHash.String()
 	alert.err = nil
+	alert.description = "OK"
 
-	return alert.severity, alert.labels, alert.values, alert.err
+	if alert.severity > SEVERITY_OK {
+		alert.description = Description(
+			fmt.Sprintf(
+				"There is a block-height delta of %d between the BitcoinClient contract (height %d: %d blocks + %d confirmations) and the Bitcoin network (height %d).\n<b>Runbook url:</b> %s",
+				delta,
+				blockHeightContract,
+				storage.LastConfirmedBlockHeight,
+				storage.ConfirmationsNeeded,
+				blockHeightBtcNetwork,
+				mutils.RunbookLink("BtcBlockDelta"),
+			),
+		)
+	}
+
+	return alert.severity, alert.description, alert.values, alert.err
 }
 
 func (alert *AlertBtcBlockDelta) GetSeverity(delta int) Severity {
 	severity := SEVERITY_OK
 
-	if delta == 2 {
+	if delta >= alert.btcBlockDeltaHeightCrit {
+		severity = SEVERITY_CRITICAL
+	} else if delta >= alert.btcBlockDeltaHeightWarn {
 		severity = SEVERITY_WARNING
 	}
 
-	if delta >= 3 {
-		severity = SEVERITY_CRITICAL
+	return severity
+}
+
+func (alert *AlertBtcBlockDelta) btcGetBestBlockHeight(dataSource AlertDataSource) (int, error) {
+	var err error = nil
+	blockHeightBtcNetwork := 0
+
+	for tryId := 1; tryId <= 5; tryId++ {
+		blockHeightBtcNetwork, err = dataSource.BtcGetBestBlockHeight()
+
+		if err == nil {
+			return blockHeightBtcNetwork, nil
+		}
+
+		time.Sleep(2 * time.Second)
 	}
 
-	return severity
+	return 0, err
 }

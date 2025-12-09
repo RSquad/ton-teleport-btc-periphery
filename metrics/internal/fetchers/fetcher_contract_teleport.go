@@ -3,7 +3,6 @@ package fetchers
 import (
 	"context"
 	"fmt"
-	"sync"
 	"time"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
@@ -13,13 +12,13 @@ import (
 )
 
 type FetcherContractTeleport struct {
-	chDB             chan PayloadDB
+	chDB             chan MetricsPayloadDB
 	teleportContract *teleportcontract.TeleportContract
 	period           int64 // Fetch period (in seconds)
 }
 
 func NewFetcherContractTeleport(
-	chDB chan PayloadDB,
+	chDB chan MetricsPayloadDB,
 	teleportContract *teleportcontract.TeleportContract,
 	period int64,
 ) *FetcherContractTeleport {
@@ -30,9 +29,7 @@ func NewFetcherContractTeleport(
 	}
 }
 
-func (fetcher *FetcherContractTeleport) Work(ctx context.Context, wg *sync.WaitGroup) {
-	defer wg.Done()
-
+func (fetcher *FetcherContractTeleport) Work(ctx context.Context) {
 	defer logger.Log.Info().Msg("FetcherContractTeleport: stopped")
 	logger.DefaultLogStartWork("FetcherContractTeleport: starting...")
 
@@ -72,7 +69,7 @@ func (fetcher *FetcherContractTeleport) Fetch() {
 		return
 	}
 
-	fetcher.chDB <- PayloadDB{
+	fetcher.chDB <- MetricsPayloadDB{
 		typeId:  PayloadTypeContractTeleport,
 		payload: string(jsonData),
 	}

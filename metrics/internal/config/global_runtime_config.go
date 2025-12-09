@@ -9,19 +9,32 @@ import (
 )
 
 type GlobalRuntimeConfig struct {
-	tonClient *tonclient.TonClient
+	tonClient   *tonclient.TonClient
+	tonExplorer string
+	btcExplorer string
+	runbook     string
 
 	mu                   sync.RWMutex
 	tonMaxMainValidators int
 }
 
-func NewGlobalRuntimeConfig(
+var globalRuntimeConfigG *GlobalRuntimeConfig = nil
+
+func InitGlobalRuntimeConfig(
 	tonClient *tonclient.TonClient,
-) *GlobalRuntimeConfig {
-	return &GlobalRuntimeConfig{
+	cfg *ServicesConfig,
+) {
+	globalRuntimeConfigG = &GlobalRuntimeConfig{
 		tonClient:            tonClient,
 		tonMaxMainValidators: -1,
+		tonExplorer:          cfg.TonExplorer,
+		btcExplorer:          cfg.BtcExplorer,
+		runbook:              cfg.Runbook,
 	}
+}
+
+func GetGlobalRuntimeConfig() *GlobalRuntimeConfig {
+	return globalRuntimeConfigG
 }
 
 func (cfg *GlobalRuntimeConfig) TonMaxMainValidators(ctx context.Context) (int, error) {
@@ -46,4 +59,16 @@ func (cfg *GlobalRuntimeConfig) TonMaxMainValidators(ctx context.Context) (int, 
 	}
 
 	return cfg.tonMaxMainValidators, nil
+}
+
+func (cfg *GlobalRuntimeConfig) TonExplorer() string {
+	return cfg.tonExplorer
+}
+
+func (cfg *GlobalRuntimeConfig) BtcExplorer() string {
+	return cfg.btcExplorer
+}
+
+func (cfg *GlobalRuntimeConfig) RunbookUrl() string {
+	return cfg.runbook
 }

@@ -2,11 +2,13 @@ package alerts
 
 import (
 	"encoding/hex"
+	"fmt"
 	"math/big"
 	"testing"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/data_models"
+	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/mutils"
 	"github.com/xssnick/tonutils-go/address"
 )
 
@@ -14,26 +16,12 @@ func TestAlertPegoutCommintments(t *testing.T) {
 	pegoutAddress1, _ := address.ParseAddr("EQAPtQRffHrXATHokYMFQgupunwxfTe2Main1FYFUt-8eHn-")
 	pegoutAddress2, _ := address.ParseAddr("Ef8VjV6LGTyiNLzefOm1dpuCMLcoewhqfQubtgbWcPwt2Gwp")
 
-	pegoutLabels1 := Labels{
-		"bitcoin_tx_id": "f7df2a86684e500a3c6c7ca785b8500e4e3c89d1751edf86b6deb68e761a329b",
-		"pegout_addr":   pegoutAddress1.StringRaw(),
-		"threshold":     "",
-	}
+	bitcoin_tx_id_1, _ := hex.DecodeString("f7df2a86684e500a3c6c7ca785b8500e4e3c89d1751edf86b6deb68e761a329b")
+	bitcoin_tx_id_2, _ := hex.DecodeString("3d46303861d5336c3ebdea3a20883a1cb77f4f3a66a2fb5e6494d3a0ab878bd1")
 
-	pegoutLabels2 := Labels{
-		"bitcoin_tx_id": "3d46303861d5336c3ebdea3a20883a1cb77f4f3a66a2fb5e6494d3a0ab878bd1",
-		"pegout_addr":   pegoutAddress2.StringRaw(),
-		"threshold":     "",
-	}
-
-	bitcoin_tx_id_1, _ := hex.DecodeString(pegoutLabels1["bitcoin_tx_id"])
-	bitcoin_tx_id_2, _ := hex.DecodeString(pegoutLabels2["bitcoin_tx_id"])
-
-	pegoutLabelsEmpty := Labels{
-		"bitcoin_tx_id": "",
-		"pegout_addr":   "",
-		"threshold":     "",
-	}
+	tonUrl := mutils.CreateHTMLHyperlink("link", "http://ton/0:0fb5045f7c7ad70131e8918305420ba9ba7c317d37b631a8a7d4560552dfbc78")
+	btcUrl := mutils.CreateHTMLHyperlink("link", "http://btc/f7df2a86684e500a3c6c7ca785b8500e4e3c89d1751edf86b6deb68e761a329b")
+	runbookUrl := mutils.CreateHTMLHyperlink("link", "http://runbook/PegoutCommitments.md")
 
 	tests := []TestDesc{
 		{
@@ -58,7 +46,11 @@ func TestAlertPegoutCommintments(t *testing.T) {
 					}, nil
 				},
 			}),
-			Expect: TestResWant{Severity: SEVERITY_OK, Labels: pegoutLabels1, Err: nil},
+			Expect: TestResWant{
+				Severity:    SEVERITY_OK,
+				Description: "OK",
+				Err:         nil,
+			},
 		},
 		{
 			Name: "SEVERITY_OK (10 of 10 [100%])",
@@ -82,7 +74,11 @@ func TestAlertPegoutCommintments(t *testing.T) {
 					}, nil
 				},
 			}),
-			Expect: TestResWant{Severity: SEVERITY_OK, Labels: pegoutLabels1, Err: nil},
+			Expect: TestResWant{
+				Severity:    SEVERITY_OK,
+				Description: "OK",
+				Err:         nil,
+			},
 		},
 		{
 			Name: "SEVERITY_INFO (9 of 10 [90%])",
@@ -106,7 +102,11 @@ func TestAlertPegoutCommintments(t *testing.T) {
 					}, nil
 				},
 			}),
-			Expect: TestResWant{Severity: SEVERITY_INFO, Labels: pegoutLabels1, Err: nil},
+			Expect: TestResWant{
+				Severity:    SEVERITY_INFO,
+				Description: Description(fmt.Sprintf("The number of pegout commitments is 9 of 10 (90%%).\n<b>Pegout:</b> %s.\n<b>Bitcoin TX:</b> %s.\n<b>Runbook url:</b> %s", tonUrl, btcUrl, runbookUrl)),
+				Err:         nil,
+			},
 		},
 		{
 			Name: "SEVERITY_WARNING (8 of 10 [80%])",
@@ -130,7 +130,11 @@ func TestAlertPegoutCommintments(t *testing.T) {
 					}, nil
 				},
 			}),
-			Expect: TestResWant{Severity: SEVERITY_WARNING, Labels: pegoutLabels1, Err: nil},
+			Expect: TestResWant{
+				Severity:    SEVERITY_WARNING,
+				Description: Description(fmt.Sprintf("The number of pegout commitments is 8 of 10 (80%%).\n<b>Pegout:</b> %s.\n<b>Bitcoin TX:</b> %s.\n<b>Runbook url:</b> %s", tonUrl, btcUrl, runbookUrl)),
+				Err:         nil,
+			},
 		},
 		{
 			Name: "SEVERITY_CRITICAL (7 of 10 [70%])",
@@ -154,7 +158,11 @@ func TestAlertPegoutCommintments(t *testing.T) {
 					}, nil
 				},
 			}),
-			Expect: TestResWant{Severity: SEVERITY_CRITICAL, Labels: pegoutLabels1, Err: nil},
+			Expect: TestResWant{
+				Severity:    SEVERITY_CRITICAL,
+				Description: Description(fmt.Sprintf("The number of pegout commitments is 7 of 10 (70%%).\n<b>Pegout:</b> %s.\n<b>Bitcoin TX:</b> %s.\n<b>Runbook url:</b> %s", tonUrl, btcUrl, runbookUrl)),
+				Err:         nil,
+			},
 		},
 		{
 			Name: "SEVERITY_CRITICAL (6 of 10 [60%])",
@@ -178,7 +186,11 @@ func TestAlertPegoutCommintments(t *testing.T) {
 					}, nil
 				},
 			}),
-			Expect: TestResWant{Severity: SEVERITY_CRITICAL, Labels: pegoutLabels1, Err: nil},
+			Expect: TestResWant{
+				Severity:    SEVERITY_CRITICAL,
+				Description: Description(fmt.Sprintf("The number of pegout commitments is 6 of 10 (60%%).\n<b>Pegout:</b> %s.\n<b>Bitcoin TX:</b> %s.\n<b>Runbook url:</b> %s", tonUrl, btcUrl, runbookUrl)),
+				Err:         nil,
+			},
 		},
 		{
 			Name: "SEVERITY_OK (4 of 10 [40%], Commitment stage, new pegout)",
@@ -202,7 +214,11 @@ func TestAlertPegoutCommintments(t *testing.T) {
 					}, nil
 				},
 			}),
-			Expect: TestResWant{Severity: SEVERITY_OK, Labels: pegoutLabels2, Err: nil},
+			Expect: TestResWant{
+				Severity:    SEVERITY_OK,
+				Description: "OK",
+				Err:         nil,
+			},
 		},
 		{
 			Name: "SEVERITY_OK, no pegouts",
@@ -214,7 +230,11 @@ func TestAlertPegoutCommintments(t *testing.T) {
 					return nil, nil
 				},
 			}),
-			Expect: TestResWant{Severity: SEVERITY_OK, Labels: pegoutLabelsEmpty, Err: nil},
+			Expect: TestResWant{
+				Severity:    SEVERITY_OK,
+				Description: "OK",
+				Err:         nil,
+			},
 		},
 	}
 

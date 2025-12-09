@@ -3,10 +3,12 @@ package mutils
 import (
 	"bytes"
 	"fmt"
+	"html"
 	"slices"
 	"strings"
 
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
+	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/config"
 )
 
 func BytesToBTCHash(b []byte) *chainhash.Hash {
@@ -58,4 +60,62 @@ func JoinToStr[K ~string](keys []K) string {
 		strs[i] = string(k)
 	}
 	return strings.Join(strs, ",")
+}
+
+func CreateHTMLHyperlink(text, url string) string {
+	escapedText := html.EscapeString(text)
+	escapedURL := html.EscapeString(url)
+
+	return fmt.Sprintf("<a href=\"%s\">%s</a>", escapedURL, escapedText)
+}
+
+func BtcExplorerLink(address string) string {
+	cfg := config.GetGlobalRuntimeConfig()
+	explorerUrl := "http://btc"
+
+	if cfg != nil {
+		explorerUrl = cfg.BtcExplorer()
+	}
+
+	return CreateHTMLHyperlink("link",
+		fmt.Sprintf(
+			"%s/%s",
+			explorerUrl,
+			address,
+		),
+	)
+}
+
+func TonExplorerLink(address string) string {
+	cfg := config.GetGlobalRuntimeConfig()
+	explorerUrl := "http://ton"
+
+	if cfg != nil {
+		explorerUrl = cfg.TonExplorer()
+	}
+
+	return CreateHTMLHyperlink("link",
+		fmt.Sprintf(
+			"%s/%s",
+			explorerUrl,
+			address,
+		),
+	)
+}
+
+func RunbookLink(alertName string) string {
+	cfg := config.GetGlobalRuntimeConfig()
+	runbookUrl := "http://runbook"
+
+	if cfg != nil {
+		runbookUrl = cfg.RunbookUrl()
+	}
+
+	return CreateHTMLHyperlink("link",
+		fmt.Sprintf(
+			"%s/%s.md",
+			runbookUrl,
+			alertName,
+		),
+	)
 }

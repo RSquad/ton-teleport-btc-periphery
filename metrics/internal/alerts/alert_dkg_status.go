@@ -1,9 +1,11 @@
 package alerts
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
+	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/mutils"
 )
 
 type AlertDkgStatus struct {
@@ -13,26 +15,23 @@ func NewAlertDkgStatus() Alert {
 	return &AlertDkgStatus{}
 }
 
-func (alert *AlertDkgStatus) NewLabels() Labels {
-	return Labels{
-		"until": "",
-	}
-}
-
-func (alert *AlertDkgStatus) Check(dataSource AlertDataSource) (Severity, Labels, Values, error) {
-	labels := alert.NewLabels()
-
+func (alert *AlertDkgStatus) Check(dataSource AlertDataSource) (Severity, Description, Values, error) {
 	// Get DKG
 	dkg, err := dataSource.DkgDB()
 	if err != nil {
-		return SEVERITY_UNKNOWN, labels, nil, err
+		return SEVERITY_CRITICAL, "", nil, err
 	}
 
 	if dkg == nil {
-		return Severity(coordinator.DKGStateFinished), labels, nil, nil
+		return Severity(coordinator.DKGStateFinished), "", nil, nil
 	}
 
-	labels["until"] = dkg.Until.Format(time.RFC3339)
+	description := fmt.Sprintf(
+		"The DKG status has changed to %s. Until: %s\n<b>Runbook url:</b> %s",
+		dkg.State.String(),
+		dkg.Until.Format(time.RFC3339),
+		mutils.RunbookLink("DKGStatus"),
+	)
 
-	return Severity(dkg.State), labels, nil, nil
+	return Severity(dkg.State), Description(description), nil, nil
 }

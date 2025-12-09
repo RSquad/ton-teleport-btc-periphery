@@ -25,25 +25,16 @@ func NewAlertPegoutInMempool() Alert {
 	}
 }
 
-func (alert *AlertPegoutInMempool) NewLabels() Labels {
-	return Labels{
-		"bitcoin_tx_id": "",
-		"pegout_addr":   "",
-	}
-}
-
-func (alert *AlertPegoutInMempool) Check(dataSource AlertDataSource) (Severity, Labels, Values, error) {
-	labels := alert.NewLabels()
-
+func (alert *AlertPegoutInMempool) Check(dataSource AlertDataSource) (Severity, Description, Values, error) {
 	if alert.pegoutToCheck == nil {
 		// Get last signed pegouts
 		pegouts, err := dataSource.LastSignedPegoutsDB(25)
 		if err != nil {
-			return SEVERITY_UNKNOWN, labels, nil, err
+			return SEVERITY_CRITICAL, "", nil, err
 		}
 
 		if len(pegouts) == 0 {
-			return SEVERITY_OK, labels, nil, nil
+			return SEVERITY_OK, "OK", nil, nil
 		}
 
 		// Sort by ID asc
@@ -68,7 +59,7 @@ func (alert *AlertPegoutInMempool) Check(dataSource AlertDataSource) (Severity, 
 		}
 
 		if alert.pegoutToCheck == nil {
-			return SEVERITY_OK, labels, nil, nil
+			return SEVERITY_OK, "OK", nil, nil
 		}
 	}
 
@@ -76,8 +67,7 @@ func (alert *AlertPegoutInMempool) Check(dataSource AlertDataSource) (Severity, 
 
 	// Check alert.pegoutToCheck.BitcoinTxId
 	if len(alert.pegoutToCheck.BitcoinTxId) != 32 {
-		labels["bitcoin_tx_id"] = hex.EncodeToString(alert.pegoutToCheck.BitcoinTxId)
-		return SEVERITY_UNKNOWN, labels, nil, fmt.Errorf("wrong BitcoinTxId value '%s'", labels["bitcoin_tx_id"])
+		return SEVERITY_CRITICAL, "", nil, fmt.Errorf("wrong BitcoinTxId value '%s'", hex.EncodeToString(alert.pegoutToCheck.BitcoinTxId))
 	}
 
 	// Check mempool
@@ -100,10 +90,6 @@ func (alert *AlertPegoutInMempool) Check(dataSource AlertDataSource) (Severity, 
 		}
 	}
 
-	// Update labels
-	labels["bitcoin_tx_id"] = hex.EncodeToString(alert.pegoutToCheck.BitcoinTxId)
-	labels["pegout_addr"] = (*address.Address)(alert.pegoutToCheck.Addr).StringRaw()
-
 	// Calulate severity
 	severity := SEVERITY_OK
 
@@ -114,7 +100,24 @@ func (alert *AlertPegoutInMempool) Check(dataSource AlertDataSource) (Severity, 
 		alert.pegoutToCheck = nil
 	}
 
-	return severity, labels, nil, nil
+	description := "OK"
+
+	if severity > SEVERITY_OK {
+		timeout := 10
+		if severity == SEVERITY_CRITICAL {
+			timeout = 40
+		}
+
+		description = fmt.Sprintf(
+			"Pegout transaction has not been found in the mempool for more than %d minutes.\n<b>Pegout:</b> %s.\n<b>Bitcoin TX:</b> %s.\n<b>Runbook url:</b> %s",
+			timeout,
+			mutils.TonExplorerLink((*address.Address)(alert.pegoutToCheck.Addr).StringRaw()),
+			mutils.BtcExplorerLink(hex.EncodeToString(alert.pegoutToCheck.BitcoinTxId)),
+			mutils.RunbookLink("PegoutInMempool"),
+		)
+	}
+
+	return severity, Description(description), nil, nil
 }
 
 func (alert *AlertPegoutInMempool) GetSeverity(duration time.Duration) Severity {
