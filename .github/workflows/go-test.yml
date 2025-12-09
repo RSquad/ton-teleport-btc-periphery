@@ -33,6 +33,11 @@ jobs:
         cache-dependency-path: |
           ${{ matrix.app }}/go.sum
           lib/go.sum
+
+    - name: Generate Entities
+      working-directory: ${{ matrix.app }}
+      run: |
+        go generate
     
     - name: Verify Go modules for ${{ matrix.app }}
       working-directory: ${{ matrix.app }}
