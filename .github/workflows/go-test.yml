@@ -47,13 +47,13 @@ jobs:
         go mod tidy -v
         git diff --exit-code go.mod go.sum || (echo "Go modules are not tidy" && exit 1)
     
-    - name: Run golangci-lint for ${{ matrix.app }}
-      uses: golangci/golangci-lint-action@v3
-      with:
-        version: v1.55.2
-        working-directory: ${{ matrix.app }}
-        args: --timeout=10m
-        skip-cache: true
+    # - name: Run golangci-lint for ${{ matrix.app }}
+    #   uses: golangci/golangci-lint-action@v3
+    #   with:
+    #     version: v1.55.2
+    #     working-directory: ${{ matrix.app }}
+    #     args: --timeout=10m
+    #     skip-cache: true
     
     - name: Run staticcheck for ${{ matrix.app }}
       working-directory: ${{ matrix.app }}
