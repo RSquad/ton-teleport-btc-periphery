@@ -36,6 +36,7 @@ jobs:
 
     - name: Generate Entities
       working-directory: ${{ matrix.app }}
+      if: ${{ hashFiles(format('{0}/**/*.go', matrix.app)) != '' && (hashFiles(format('{0}/**/generate.go', matrix.app)) != '' || hashFiles(format('{0}/**/*.gotmpl', matrix.app)) != '') }}
       run: |
         go generate
     
