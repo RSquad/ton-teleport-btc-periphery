@@ -53,6 +53,9 @@ func (e *ReinitEvent) GetEventID() uint32                  { return eventIdReini
 func (e *MintEvent) GetRaw() *ton.RawEvent                 { return e.Raw }
 func (e *BurnEvent) GetRaw() *ton.RawEvent                 { return e.Raw }
 func (e *ReinitEvent) GetRaw() *ton.RawEvent               { return e.Raw }
+func (e *MintEvent) SetRaw(raw *ton.RawEvent)              { e.Raw = raw }
+func (e *BurnEvent) SetRaw(raw *ton.RawEvent)              { e.Raw = raw }
+func (e *ReinitEvent) SetRaw(raw *ton.RawEvent)            { e.Raw = raw }
 
 type EventParser struct{}
 

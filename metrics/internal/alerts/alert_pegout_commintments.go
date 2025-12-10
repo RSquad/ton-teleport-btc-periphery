@@ -8,8 +8,7 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/mutils"
 )
 
-type AlertPegoutCommintments struct {
-}
+type AlertPegoutCommintments struct{}
 
 func NewAlertPegoutCommintments() Alert {
 	return &AlertPegoutCommintments{}
@@ -31,6 +30,10 @@ func (alert *AlertPegoutCommintments) Check(dataSource AlertDataSource) (Severit
 	pegout, err := dataSource.PegoutDB(unsignedPegout.PegoutAddress)
 	if err != nil {
 		return SEVERITY_UNKNOWN, "", nil, err
+	}
+
+	if pegout == nil {
+		return SEVERITY_UNKNOWN, "", nil, fmt.Errorf("pegout not found: %s", unsignedPegout.PegoutAddress.String())
 	}
 
 	// Wait until the signing stage starts
@@ -66,12 +69,13 @@ func (alert *AlertPegoutCommintments) Check(dataSource AlertDataSource) (Severit
 		}
 
 		description = fmt.Sprintf(
-			"The number of pegout commitments is %d of %d (%d%%). Pegout: %s. Bitcoin TX: %s",
+			"The number of pegout commitments is %d of %d (%d%%).\n<b>Pegout:</b> %s.\n<b>Bitcoin TX:</b> %s.\n<b>Runbook url:</b> %s",
 			commitmentsCount,
 			maxSigners,
 			commitmentsPercentage,
 			mutils.TonExplorerLink(unsignedPegout.PegoutAddress.StringRaw()),
 			mutils.BtcExplorerLink(bitcoinTxId),
+			mutils.RunbookLink("PegoutCommitments"),
 		)
 	}
 

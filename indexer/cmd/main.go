@@ -5,8 +5,14 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"os"
+	"os/signal"
+	"strings"
 	"sync"
+	"syscall"
 	"time"
+
+	"github.com/xssnick/tonutils-go/ton/wallet"
 
 	"entgo.io/ent/dialect"
 
@@ -52,6 +58,31 @@ func main() {
 	if err := run(app); err != nil {
 		log.Fatalf("stopped with error: %v", err)
 	}
+}
+
+func openDB(connectionUrl string, maxOpenConns int, maxIdleConns int) (*ent.Client, error) {
+	db, err := sql.Open("postgres", connectionUrl)
+	if err != nil {
+		return nil, err
+	}
+
+	db.SetMaxOpenConns(maxOpenConns)
+	db.SetMaxIdleConns(maxIdleConns)
+	db.SetConnMaxLifetime(1 * time.Minute)
+	db.SetConnMaxIdleTime(1 * time.Minute)
+
+	drv := entsql.OpenDB(dialect.Postgres, db)
+	repo := ent.NewClient(ent.Driver(drv))
+
+	if err := repo.Schema.Create(
+		context.Background(),
+		migrate.WithGlobalUniqueID(true),
+		migrate.WithDropIndex(true),
+		migrate.WithDropColumn(true),
+	); err != nil {
+		return nil, fmt.Errorf("failed creating repos schema: %w", err)
+	}
+	return repo, nil
 }
 
 func initialize() (*App, error) {
@@ -106,6 +137,11 @@ func initialize() (*App, error) {
 		return nil, fmt.Errorf("FetcherContractCoordinator: failed to retrieve storage cell, error: %v", err)
 	}
 
+	highloadWalletV3, err := createTonHighloadWallet(tonClient, cfg.HighLoadWalletV3Seed)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create highload wallet v3: %w", err)
+	}
+
 	// Teleport contract
 	teleportContract := teleportcontract.New(
 		coordinatorContractStorage.TeleportAddr,
@@ -114,40 +150,31 @@ func initialize() (*App, error) {
 		context.Background(),
 	)
 
-	// Open DB connection
-	var dbConnPoolGraphql *sql.DB = nil
-	{
-		dbConnPoolGraphql, err = sql.Open("postgres", cfg.DatabaseUrl)
-		if err != nil {
-			return nil, err
-		}
-
-		// Setup DB pooling (graphql)
-		dbConnPoolGraphql.SetMaxOpenConns(cfg.DatabaseMaxConn)
-		dbConnPoolGraphql.SetMaxIdleConns(cfg.DatabaseMaxIdleConn)
-		dbConnPoolGraphql.SetConnMaxLifetime(1 * time.Minute)
-		dbConnPoolGraphql.SetConnMaxIdleTime(1 * time.Minute)
+	repo, err := openDB(cfg.DatabaseUrl, cfg.DatabaseMaxConn, cfg.DatabaseMaxIdleConn)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open database: %w", err)
 	}
 
-	drv := entsql.OpenDB(dialect.Postgres, dbConnPoolGraphql)
-	repo := ent.NewClient(ent.Driver(drv))
-
-	if err := repo.Schema.Create(
+	bitcoinClientContract := bitcoinclientcontract.NewBitcoinClientContract(
+		cfg.BitcoinClientContractAddr,
+		tonClient,
+		nil,
 		context.Background(),
-		migrate.WithGlobalUniqueID(true),
-		migrate.WithDropIndex(true),
-		migrate.WithDropColumn(true),
-	); err != nil {
-		log.Fatalf("failed creating repos schema: %v", err)
-	}
+	)
 
 	// Mint service
-	mintService := mintservice.New(
+	mintService, err := mintservice.New(
 		repo,
 		bitcoinClient,
 		tonClient,
 		teleportContract,
+		bitcoinClientContract,
+		mintservice.NewBatchSender(highloadWalletV3, tonClient),
+		highloadWalletV3.Address().String(),
 	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create mint service: %w", err)
+	}
 
 	// Pegout manager
 	pegoutManager, err := pegoutmanager.New(
@@ -183,19 +210,61 @@ func initialize() (*App, error) {
 		Msg("initialized")
 
 	return &App{
-		Repo:                repo,
-		TonClient:           tonClient,
-		BitcoinClient:       bitcoinClient,
-		CoordinatorContract: coordinatorContract,
-		PegoutManager:       pegoutManager,
-		MintService:         mintService,
-		EventService:        eventService,
-		HttpService:         httpService,
+		Repo:                  repo,
+		TonClient:             tonClient,
+		BitcoinClient:         bitcoinClient,
+		CoordinatorContract:   coordinatorContract,
+		PegoutManager:         pegoutManager,
+		MintService:           mintService,
+		EventService:          eventService,
+		HttpService:           httpService,
+		BitcoinClientContract: bitcoinClientContract,
 	}, nil
+}
+
+func createTonHighloadWallet(tonClient *tonclient.TonClient, seed string) (*wallet.Wallet, error) {
+	highloadWalletV3, err := wallet.FromSeed(tonClient.API, strings.Split(seed, " "), wallet.ConfigHighloadV3{
+		MessageTTL: 60 * 5,
+		MessageBuilder: func(ctx context.Context, subWalletId uint32) (id uint32, createdAt int64, err error) {
+			// Due to specific of externals emulation on liteserver,
+			// we need to take something less than or equals to block time, as message creation time,
+			// otherwise external message will be rejected, because time will be > than emulation time
+			// hope it will be fixed in the next LS versions
+			createdAt = time.Now().Unix() - 30
+
+			// example query id which will allow you to send 1 tx per second
+			// but you better to implement your own iterator in database, then you can send unlimited
+			// but make sure id is less than 1 << 23, when it is higher start from 0 again
+			return uint32(createdAt % (1 << 23)), createdAt, nil
+		},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create highload wallet v3: %w", err)
+	}
+
+	return highloadWalletV3, nil
 }
 
 func run(app *App) error {
 	defer app.Repo.Close()
+
+	// Create context that will be cancelled on SIGTERM/SIGINT
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// Set up signal handling
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+
+	// Start a goroutine to cancel context when signal is received
+	go func() {
+		sig := <-sigChan
+		logger.Log.Info().
+			Str("component", "main").
+			Str("signal", sig.String()).
+			Msg("received shutdown signal, initiating graceful shutdown")
+		cancel()
+	}()
 
 	var wg sync.WaitGroup
 
@@ -203,7 +272,7 @@ func run(app *App) error {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			app.EventService.Work(context.Background())
+			app.EventService.Work(ctx)
 		}()
 	}
 
@@ -219,7 +288,7 @@ func run(app *App) error {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			app.MintService.Work(context.Background())
+			app.MintService.Work(ctx)
 		}()
 	}
 
@@ -227,12 +296,14 @@ func run(app *App) error {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			app.HttpService.Work(context.Background())
+			app.HttpService.Work(ctx)
 		}()
 	}
 
 	wg.Wait()
 
-	log.Println("shutdown complete")
+	logger.Log.Info().
+		Str("component", "main").
+		Msg("shutdown complete")
 	return nil
 }

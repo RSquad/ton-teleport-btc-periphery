@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"sync"
 	"time"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
@@ -14,14 +13,14 @@ import (
 )
 
 type FetcherBitcoinNetwork struct {
-	chDB          chan PayloadDB
+	chDB          chan MetricsPayloadDB
 	db            *sql.DB
 	bitcoinClient *bitcoin.Client
 	period        int64 // Fetch period (in seconds)
 }
 
 func NewFetcherBitcoinNetwork(
-	chDB chan PayloadDB,
+	chDB chan MetricsPayloadDB,
 	db *sql.DB,
 	bitcoinClient *bitcoin.Client,
 	period int64,
@@ -34,9 +33,7 @@ func NewFetcherBitcoinNetwork(
 	}
 }
 
-func (fetcher *FetcherBitcoinNetwork) Work(ctx context.Context, wg *sync.WaitGroup) {
-	defer wg.Done()
-
+func (fetcher *FetcherBitcoinNetwork) Work(ctx context.Context) {
 	defer logger.Log.Info().Msg("FetcherBitcoinNetwork: stopped")
 	logger.DefaultLogStartWork("FetcherBitcoinNetwork: starting...")
 
@@ -83,7 +80,7 @@ func (fetcher *FetcherBitcoinNetwork) Fetch() {
 		return
 	}
 
-	fetcher.chDB <- PayloadDB{
+	fetcher.chDB <- MetricsPayloadDB{
 		typeId:  PayloadTypeBitcoinNetwork,
 		payload: string(jsonData),
 	}

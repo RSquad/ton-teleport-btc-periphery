@@ -164,6 +164,7 @@ func initialize() (*App, error) {
 		"bitclient":   cfg.BitcoinClientContractAddr,
 		"minter":      cfg.JettonMinterContractAddr,
 		"relayer":     cfg.RelayerWalletAddr,
+		"indexer":     cfg.IndexerWalletAddr,
 	}
 
 	// Fetcher service
@@ -187,6 +188,7 @@ func initialize() (*App, error) {
 		alerts.NewAlertDataSourceLive(dbConnPool, bitcoinClient, contractAddrs),
 		alerts.NewAlertDispatcherPrometheus(),
 		contractAddrs,
+		cfg,
 	)
 	if err != nil {
 		cancelFn()

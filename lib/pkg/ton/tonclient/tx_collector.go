@@ -2,6 +2,7 @@ package tonclient
 
 import (
 	"context"
+	"time"
 
 	"github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/tlb"
@@ -15,30 +16,59 @@ type TxCollector struct {
 	txSubscriber *TxSubscriber
 }
 
-func NewTxCollector(
+func newTxCollector(
 	tonClient *TonClient,
 	addr *address.Address,
 	outChan chan<- *tlb.Transaction,
-) (*TxCollector, error) {
-	acc, err := tonClient.FetchAcc(addr, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	txFetcher := NewTxFetcher(tonClient, addr, acc.LastTxLT, acc.LastTxHash, 64, outChan)
-	txSubscriber := NewTxSubscriber(tonClient, addr, acc.LastTxLT, outChan)
+	serverTimeout time.Duration,
+	lastTxLT uint64,
+	lastTxHash []byte,
+) *TxCollector {
+	txFetcher := NewTxFetcher(tonClient, addr, lastTxLT, lastTxHash, 16, outChan, serverTimeout)
+	txSubscriber := NewTxSubscriber(tonClient, addr, lastTxLT, outChan)
 
 	return &TxCollector{
 		tonClient:    tonClient,
 		addr:         addr,
 		txFetcher:    txFetcher,
 		txSubscriber: txSubscriber,
-	}, nil
+	}
+}
+
+func NewTxCollector(
+	tonClient *TonClient,
+	addr *address.Address,
+	outChan chan<- *tlb.Transaction,
+	serverTimeout time.Duration,
+) (*TxCollector, error) {
+	acc, err := tonClient.FetchAcc(addr, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return newTxCollector(tonClient, addr, outChan, serverTimeout, acc.LastTxLT, acc.LastTxHash), nil
+}
+
+func NewTxCollectorLT(
+	tonClient *TonClient,
+	addr *address.Address,
+	outChan chan<- *tlb.Transaction,
+	serverTimeout time.Duration,
+	lastTxLT uint64,
+) (*TxCollector, error) {
+	acc, err := tonClient.FetchAcc(addr, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return newTxCollector(tonClient, addr, outChan, serverTimeout, lastTxLT, acc.LastTxHash), nil
 }
 
 func (tc *TxCollector) Work(ctx context.Context) (err error) {
 	tc.logStartWork()
-	defer tc.logFinishWork(err)
+	defer func() {
+		tc.logFinishWork(err)
+	}()
 
 	g, ctx := errgroup.WithContext(ctx)
 

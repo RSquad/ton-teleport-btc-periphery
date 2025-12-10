@@ -91,6 +91,10 @@ func (alert *AlertPegoutSigningDuration) Check(dataSource AlertDataSource) (Seve
 		return SEVERITY_UNKNOWN, "", nil, err
 	}
 
+	if pegout == nil {
+		return SEVERITY_UNKNOWN, "", nil, fmt.Errorf("pegout not found: %s", unsignedPegout.PegoutAddress.String())
+	}
+
 	description := "OK"
 
 	if alert.severity > SEVERITY_OK {
@@ -100,10 +104,11 @@ func (alert *AlertPegoutSigningDuration) Check(dataSource AlertDataSource) (Seve
 		}
 
 		description = fmt.Sprintf(
-			"Pegout transaction was not signed within %d minutes. Pegout: %s. Bitcoin TX: %s",
+			"Pegout transaction was not signed within %d minutes.\n<b>Pegout:</b> %s.\n<b>Bitcoin TX:</b> %s.\n<b>Runbook url:</b> %s",
 			duration/time.Minute,
 			mutils.TonExplorerLink(unsignedPegout.PegoutAddress.StringRaw()),
 			mutils.BtcExplorerLink(bitcoinTxId),
+			mutils.RunbookLink("PegoutSigningDuration"),
 		)
 	}
 

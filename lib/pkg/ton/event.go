@@ -18,4 +18,5 @@ type RawEvent struct {
 type EventInterface interface {
 	GetEventID() uint32
 	GetRaw() *RawEvent
+	SetRaw(raw *RawEvent)
 }

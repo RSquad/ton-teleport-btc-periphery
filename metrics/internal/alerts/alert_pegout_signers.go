@@ -7,8 +7,7 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/mutils"
 )
 
-type AlertPegoutSigners struct {
-}
+type AlertPegoutSigners struct{}
 
 func NewAlertPegoutSigners() Alert {
 	return &AlertPegoutSigners{}
@@ -30,6 +29,10 @@ func (alert *AlertPegoutSigners) Check(dataSource AlertDataSource) (Severity, De
 	pegout, err := dataSource.PegoutDB(unsignedPegout.PegoutAddress)
 	if err != nil {
 		return SEVERITY_UNKNOWN, "", nil, err
+	}
+
+	if pegout == nil {
+		return SEVERITY_UNKNOWN, "", nil, fmt.Errorf("pegout not found: %s", unsignedPegout.PegoutAddress.String())
 	}
 
 	// Get Prev DKG
@@ -54,12 +57,13 @@ func (alert *AlertPegoutSigners) Check(dataSource AlertDataSource) (Severity, De
 		}
 
 		description = fmt.Sprintf(
-			"Number of validators allowed to sign pegout is %d of %d (%d%%). Pegout: %s. Bitcoin TX: %s",
+			"Number of validators allowed to sign pegout is %d of %d (%d%%).\n<b>Pegout:</b> %s.\n<b>Bitcoin TX:</b> %s.\n<b>Runbook url:</b> %s",
 			signersAllowedCount,
 			maxSigners,
 			signersAllowedPercentage,
 			mutils.TonExplorerLink(unsignedPegout.PegoutAddress.StringRaw()),
 			mutils.BtcExplorerLink(bitcoinTxId),
+			mutils.RunbookLink("PegoutSigners"),
 		)
 	}
 

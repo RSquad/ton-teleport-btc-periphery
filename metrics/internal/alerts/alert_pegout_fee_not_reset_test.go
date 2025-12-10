@@ -2,17 +2,23 @@ package alerts
 
 import (
 	"encoding/hex"
+	"fmt"
 	"testing"
 
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/teleportcontract"
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/data_models"
+	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/mutils"
 	"github.com/xssnick/tonutils-go/address"
 )
 
 func TestAlertPegoutFeeNotReset(t *testing.T) {
 	pegoutAddress, _ := address.ParseAddr("EQAPtQRffHrXATHokYMFQgupunwxfTe2Main1FYFUt-8eHn-")
 	bitcoin_tx_id, _ := hex.DecodeString("f7df2a86684e500a3c6c7ca785b8500e4e3c89d1751edf86b6deb68e761a329b")
+
+	tonUrl := mutils.CreateHTMLHyperlink("link", "http://ton/0:0fb5045f7c7ad70131e8918305420ba9ba7c317d37b631a8a7d4560552dfbc78")
+	btcUrl := mutils.CreateHTMLHyperlink("link", "http://btc/f7df2a86684e500a3c6c7ca785b8500e4e3c89d1751edf86b6deb68e761a329b")
+	runbookUrl := mutils.CreateHTMLHyperlink("link", "http://runbook/PegoutFeeNotReset.md")
 
 	tests := []TestDesc{
 		{
@@ -114,7 +120,7 @@ func TestAlertPegoutFeeNotReset(t *testing.T) {
 			}),
 			Expect: TestResWant{
 				Severity:    SEVERITY_CRITICAL,
-				Description: "Pegout transaction already has 1 (pegoutBlockHeight 1234567, lastConfirmedBlockHeight 1234568) confirmations but the fee has not been reset (nextSvb = 123). Pegout: http://ton/0:0fb5045f7c7ad70131e8918305420ba9ba7c317d37b631a8a7d4560552dfbc78. Bitcoin TX: http://btc/f7df2a86684e500a3c6c7ca785b8500e4e3c89d1751edf86b6deb68e761a329b",
+				Description: Description(fmt.Sprintf("Pegout transaction already has 1 (pegoutBlockHeight 1234567, lastConfirmedBlockHeight 1234568) confirmations but the fee has not been reset (nextSvb = 123).\n<b>Pegout:</b> %s.\n<b>Bitcoin TX:</b> %s.\n<b>Runbook url:</b> %s", tonUrl, btcUrl, runbookUrl)),
 				Err:         nil,
 			},
 		},

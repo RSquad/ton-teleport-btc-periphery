@@ -22,10 +22,7 @@
     "links": [],
     "panels": [
         {
-            "datasource": {
-                "type": "yesoreyeram-infinity-datasource",
-                "uid": "yesoreyeraminfinitydatasource"
-            },
+            "datasource": "yesoreyeram-infinity-datasource",
             "fieldConfig": {
                 "defaults": {
                     "color": {
@@ -401,10 +398,7 @@
             "type": "table"
         },
         {
-            "datasource": {
-                "type": "yesoreyeram-infinity-datasource",
-                "uid": "yesoreyeraminfinitydatasource"
-            },
+            "datasource": "yesoreyeram-infinity-datasource",
             "fieldConfig": {
                 "defaults": {
                     "color": {
@@ -491,10 +485,7 @@
             "type": "table"
         },
         {
-            "datasource": {
-                "type": "yesoreyeram-infinity-datasource",
-                "uid": "yesoreyeraminfinitydatasource"
-            },
+            "datasource": "yesoreyeram-infinity-datasource",
             "fieldConfig": {
                 "defaults": {
                     "color": {
@@ -581,10 +572,7 @@
             "type": "table"
         },
         {
-            "datasource": {
-                "type": "yesoreyeram-infinity-datasource",
-                "uid": "yesoreyeraminfinitydatasource"
-            },
+            "datasource": "yesoreyeram-infinity-datasource",
             "fieldConfig": {
                 "defaults": {
                     "color": {
@@ -671,10 +659,7 @@
             "type": "table"
         },
         {
-            "datasource": {
-                "type": "yesoreyeram-infinity-datasource",
-                "uid": "yesoreyeraminfinitydatasource"
-            },
+            "datasource": "yesoreyeram-infinity-datasource",
             "fieldConfig": {
                 "defaults": {
                     "color": {
@@ -798,10 +783,7 @@
             "type": "table"
         },
         {
-            "datasource": {
-                "type": "yesoreyeram-infinity-datasource",
-                "uid": "yesoreyeraminfinitydatasource"
-            },
+            "datasource": "yesoreyeram-infinity-datasource",
             "fieldConfig": {
                 "defaults": {
                     "color": {
@@ -1004,10 +986,7 @@
             "type": "table"
         },
         {
-            "datasource": {
-                "type": "yesoreyeram-infinity-datasource",
-                "uid": "yesoreyeraminfinitydatasource"
-            },
+            "datasource": "yesoreyeram-infinity-datasource",
             "fieldConfig": {
                 "defaults": {
                     "color": {
@@ -1185,10 +1164,7 @@
             "type": "table"
         },
         {
-            "datasource": {
-                "type": "yesoreyeram-infinity-datasource",
-                "uid": "yesoreyeraminfinitydatasource"
-            },
+            "datasource": "yesoreyeram-infinity-datasource",
             "fieldConfig": {
                 "defaults": {
                     "color": {
@@ -1482,10 +1458,7 @@
             "type": "table"
         },
         {
-            "datasource": {
-                "type": "yesoreyeram-infinity-datasource",
-                "uid": "yesoreyeraminfinitydatasource"
-            },
+            "datasource": "yesoreyeram-infinity-datasource",
             "fieldConfig": {
                 "defaults": {
                     "color": {
@@ -1590,10 +1563,7 @@
             "type": "table"
         },
         {
-            "datasource": {
-                "type": "yesoreyeram-infinity-datasource",
-                "uid": "yesoreyeraminfinitydatasource"
-            },
+            "datasource": "yesoreyeram-infinity-datasource",
             "fieldConfig": {
                 "defaults": {
                     "color": {
@@ -1696,10 +1666,7 @@
             "type": "table"
         },
         {
-            "datasource": {
-                "type": "yesoreyeram-infinity-datasource",
-                "uid": "yesoreyeraminfinitydatasource"
-            },
+            "datasource": "yesoreyeram-infinity-datasource",
             "fieldConfig": {
                 "defaults": {
                     "color": {
@@ -1789,10 +1756,7 @@
             "type": "table"
         },
         {
-            "datasource": {
-                "type": "yesoreyeram-infinity-datasource",
-                "uid": "yesoreyeraminfinitydatasource"
-            },
+            "datasource": "yesoreyeram-infinity-datasource",
             "fieldConfig": {
                 "defaults": {
                     "color": {
@@ -1883,10 +1847,7 @@
             "type": "table"
         },
         {
-            "datasource": {
-                "type": "yesoreyeram-infinity-datasource",
-                "uid": "yesoreyeraminfinitydatasource"
-            },
+            "datasource": "yesoreyeram-infinity-datasource",
             "fieldConfig": {
                 "defaults": {
                     "color": {
@@ -2083,10 +2044,7 @@
             "type": "table"
         },
         {
-            "datasource": {
-                "type": "yesoreyeram-infinity-datasource",
-                "uid": "yesoreyeraminfinitydatasource"
-            },
+            "datasource": "yesoreyeram-infinity-datasource",
             "fieldConfig": {
                 "defaults": {
                     "color": {
@@ -2285,10 +2243,7 @@
             "type": "table"
         },
         {
-            "datasource": {
-                "type": "yesoreyeram-infinity-datasource",
-                "uid": "yesoreyeraminfinitydatasource"
-            },
+            "datasource": "yesoreyeram-infinity-datasource",
             "fieldConfig": {
                 "defaults": {
                     "color": {
@@ -2489,10 +2444,7 @@
             "type": "table"
         },
         {
-            "datasource": {
-                "type": "yesoreyeram-infinity-datasource",
-                "uid": "yesoreyeraminfinitydatasource"
-            },
+            "datasource": "yesoreyeram-infinity-datasource",
             "fieldConfig": {
                 "defaults": {
                     "color": {
@@ -2695,10 +2647,7 @@
             "type": "table"
         },
         {
-            "datasource": {
-                "type": "yesoreyeram-infinity-datasource",
-                "uid": "yesoreyeraminfinitydatasource"
-            },
+            "datasource": "yesoreyeram-infinity-datasource",
             "fieldConfig": {
                 "defaults": {
                     "color": {

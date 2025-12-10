@@ -124,3 +124,11 @@ func (dataSource *AlertDataSourceLive) TonMaxMainValidators(ctx context.Context)
 func (dataSource *AlertDataSourceLive) ActualContractBalance(name string) (int64, error) {
 	return dataSource.dataSourceDB.ActualContractBalance(name)
 }
+
+func (dataSource *AlertDataSourceLive) EventsLastDkgStartedDB() (*coordinator.DKGStartedEvent, error) {
+	return dataSource.dataSourceDB.EventsLastDkgStarted()
+}
+
+func (dataSource *AlertDataSourceLive) EventsAllFromDkgRestartDB(fromTxLT uint64) ([]*coordinator.DKGRestartedEvent, error) {
+	return dataSource.dataSourceDB.EventsAllFromDkgRestart(fromTxLT)
+}

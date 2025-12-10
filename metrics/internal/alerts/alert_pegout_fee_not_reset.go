@@ -77,13 +77,14 @@ func (alert *AlertPegoutFeeNotReset) Check(dataSource AlertDataSource) (Severity
 		}
 
 		description = fmt.Sprintf(
-			"Pegout transaction already has %d (pegoutBlockHeight %d, lastConfirmedBlockHeight %d) confirmations but the fee has not been reset (nextSvb = %d). Pegout: %s. Bitcoin TX: %s",
+			"Pegout transaction already has %d (pegoutBlockHeight %d, lastConfirmedBlockHeight %d) confirmations but the fee has not been reset (nextSvb = %d).\n<b>Pegout:</b> %s.\n<b>Bitcoin TX:</b> %s.\n<b>Runbook url:</b> %s",
 			lastConfirmedBlockHeight-pegoutBlockHeight,
 			pegoutBlockHeight,
 			lastConfirmedBlockHeight,
 			nextSvb,
 			mutils.TonExplorerLink((*address.Address)(pegout.Addr).StringRaw()),
 			mutils.BtcExplorerLink(bitcoinTxId),
+			mutils.RunbookLink("PegoutFeeNotReset"),
 		)
 	}
 

@@ -3,23 +3,30 @@ package alerts
 import (
 	"fmt"
 	"time"
+
+	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/config"
+	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/mutils"
 )
 
 type AlertBtcBlockDelta struct {
-	lastUpdateTs int64
-	severity     Severity
-	description  Description
-	values       Values
-	err          error
+	lastUpdateTs            int64
+	severity                Severity
+	description             Description
+	values                  Values
+	err                     error
+	btcBlockDeltaHeightWarn int
+	btcBlockDeltaHeightCrit int
 }
 
-func NewAlertBtcBlockDelta() Alert {
+func NewAlertBtcBlockDelta(config *config.ServicesConfig) Alert {
 	return &AlertBtcBlockDelta{
-		lastUpdateTs: 0,
-		severity:     SEVERITY_UNKNOWN,
-		description:  "",
-		values:       nil,
-		err:          nil,
+		lastUpdateTs:            0,
+		severity:                SEVERITY_UNKNOWN,
+		description:             "",
+		values:                  nil,
+		err:                     nil,
+		btcBlockDeltaHeightWarn: config.AlertBtcBlockDeltaHeightWarn,
+		btcBlockDeltaHeightCrit: config.AlertBtcBlockDeltaHeightCrit,
 	}
 }
 
@@ -65,12 +72,13 @@ func (alert *AlertBtcBlockDelta) Check(dataSource AlertDataSource) (Severity, De
 	if alert.severity > SEVERITY_OK {
 		alert.description = Description(
 			fmt.Sprintf(
-				"There is a block-height delta of %d between the BitcoinClient contract (height %d: %d blocks + %d confirmations) and the Bitcoin network (height %d).",
+				"There is a block-height delta of %d between the BitcoinClient contract (height %d: %d blocks + %d confirmations) and the Bitcoin network (height %d).\n<b>Runbook url:</b> %s",
 				delta,
 				blockHeightContract,
 				storage.LastConfirmedBlockHeight,
 				storage.ConfirmationsNeeded,
 				blockHeightBtcNetwork,
+				mutils.RunbookLink("BtcBlockDelta"),
 			),
 		)
 	}
@@ -81,9 +89,9 @@ func (alert *AlertBtcBlockDelta) Check(dataSource AlertDataSource) (Severity, De
 func (alert *AlertBtcBlockDelta) GetSeverity(delta int) Severity {
 	severity := SEVERITY_OK
 
-	if delta >= 3 {
+	if delta >= alert.btcBlockDeltaHeightCrit {
 		severity = SEVERITY_CRITICAL
-	} else if delta >= 2 {
+	} else if delta >= alert.btcBlockDeltaHeightWarn {
 		severity = SEVERITY_WARNING
 	}
 
