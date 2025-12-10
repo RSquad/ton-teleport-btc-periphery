@@ -1,6 +1,7 @@
 package alerts
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/coordinator"
@@ -80,6 +81,18 @@ func (alert *AlertDkgRestarts) getInfo(eventDkgRestarts []*coordinator.DKGRestar
 	nowVSetMaskPopcnt := prevVSetMaskPopcnt
 
 	for _, restartEvent := range eventDkgRestarts {
+		if restartEvent == nil {
+			return nil, errors.New("restartEvent is nil")
+		}
+
+		if restartEvent.NewDkg == nil {
+			return nil, errors.New("restartEvent.NewDkg is nil")
+		}
+
+		if restartEvent.NewDkg.VSetMask == nil {
+			return nil, errors.New("restartEvent.NewDkg.VSetMask is nil")
+		}
+
 		nowVSetMask := restartEvent.NewDkg.VSetMask
 		nowVSetMaskPopcnt = mutils.Popcnt(nowVSetMask)
 		evictedCount := prevVSetMaskPopcnt - nowVSetMaskPopcnt
