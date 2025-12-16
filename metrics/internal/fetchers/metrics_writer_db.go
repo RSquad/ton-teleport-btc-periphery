@@ -29,6 +29,14 @@ type MetricsWriterDB struct {
 	db *sql.DB
 }
 
+func (m *MetricsPayloadDB) GetTypeId() MetricsPayloadTypeDB {
+	return m.typeId
+}
+
+func (m *MetricsPayloadDB) GetPayload() string {
+	return m.payload
+}
+
 func NewMetricsWriterDB(
 	ch chan MetricsPayloadDB,
 	db *sql.DB,
