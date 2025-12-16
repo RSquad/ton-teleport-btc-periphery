@@ -67,7 +67,6 @@ func (fetcher *FetcherContractCoordinator) Fetch() {
 		logger.Log.Error().Err(err).
 			Str("component", "FetcherContractCoordinator").
 			Msg("failed to serialize FetcherContractCoordinator->json")
-
 		return
 	}
 
