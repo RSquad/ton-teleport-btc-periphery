@@ -125,11 +125,11 @@ func (s PegoutStatus) MarshalJSON() ([]byte, error) {
 	return json.Marshal(string(txt))
 }
 
-func DeserializePegoutDB(jsonData []byte) (*Pegout, error) {
+func DeserializePegoutDB(jsonData []byte, address string) (*Pegout, error) {
 	var pegoutJson PegoutJSON
 	err := json.Unmarshal(jsonData, &pegoutJson)
 	if err != nil {
-		return nil, fmt.Errorf("failed to call `DeserializePegoutDB`, json '%s': %w", string(jsonData), err)
+		return nil, fmt.Errorf("failed to call `DeserializePegoutDB`, json '%s':  pegout address '%s': %w", string(jsonData), address, err)
 	}
 
 	return PegoutJsonToPegout(&pegoutJson)

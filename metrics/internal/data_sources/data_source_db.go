@@ -219,7 +219,7 @@ func (dataSource *DataSourceDB) Pegout(address *address.Address) (*data_models.P
 		return nil, nil
 	}
 
-	pegout, err := data_models.DeserializePegoutDB(jsonData)
+	pegout, err := data_models.DeserializePegoutDB(jsonData, address.StringRaw())
 	if err != nil {
 		return nil, err
 	}
@@ -243,7 +243,7 @@ func (dataSource *DataSourceDB) LastConfirmedPegout() (*data_models.Pegout, erro
 		return nil, nil
 	}
 
-	pegout, err := data_models.DeserializePegoutDB(jsonData)
+	pegout, err := data_models.DeserializePegoutDB(jsonData, "")
 	if err != nil {
 		return nil, err
 	}
@@ -267,7 +267,7 @@ func (dataSource *DataSourceDB) LastSignedPegout() (*data_models.Pegout, error) 
 		return nil, nil
 	}
 
-	pegout, err := data_models.DeserializePegoutDB(jsonData)
+	pegout, err := data_models.DeserializePegoutDB(jsonData, "")
 	if err != nil {
 		return nil, err
 	}
@@ -288,7 +288,7 @@ func (dataSource *DataSourceDB) LastSignedPegouts(limit uint) ([]*data_models.Pe
 		return nil, err
 	}
 
-	pegouts, err := data_models.DeserializePegoutsDB(jsonData)
+	pegouts, err := data_models.DeserializePegoutsDB(jsonData, "")
 	if err != nil {
 		return nil, err
 	}
