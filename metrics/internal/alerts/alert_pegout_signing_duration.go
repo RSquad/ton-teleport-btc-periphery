@@ -1,8 +1,3 @@
-// The alert checks the pegout signing duration. If the signing duration exceeds the limit, the alert fires.
-// When the pegout is signed, the alert, if it was fired, keeps firing until there are no unsigned pegouts left
-// or the pegout duration falls below the time limit. Severity can increase during the signing process,
-// but it can only change after signing. Restarting the signing does not reset the duration timer.
-
 package alerts
 
 import (
@@ -31,14 +26,18 @@ func NewAlertPegoutSigningDuration() Alert {
 }
 
 func (alert *AlertPegoutSigningDuration) Check(dataSource AlertDataSource) (Severity, Description, Values, error) {
+	component := "AlertPegoutSigningDuration"
+
 	// Get first unsigned pegout
 	unsignedPegout, err := dataSource.FirstUnsignedPegoutDB()
 	if err != nil {
+		logUnsignedPegoutFetchError(component, err)
 		return SEVERITY_UNKNOWN, "", nil, err
 	}
 
 	// No unsigned pegouts
 	if unsignedPegout == nil {
+		logNoUnsignedPegouts(component)
 		alert.severity = SEVERITY_OK
 		alert.currentUnsignedPegout = nil
 		return SEVERITY_OK, "OK", nil, nil
@@ -48,9 +47,11 @@ func (alert *AlertPegoutSigningDuration) Check(dataSource AlertDataSource) (Seve
 	if alert.signingTimeout == 0 {
 		coordinatorData, err := dataSource.CoordinatorContractStorageDB()
 		if err != nil {
+			logCoordinatorStorageFetchError(component, err)
 			return SEVERITY_UNKNOWN, "", nil, err
 		}
 		alert.signingTimeout = coordinatorData.SigningTimeout
+		logSigningTimeoutLoaded(component, alert.signingTimeout)
 	}
 
 	// Check if pegout is new: current is null or new PegoutAddress
@@ -71,38 +72,45 @@ func (alert *AlertPegoutSigningDuration) Check(dataSource AlertDataSource) (Seve
 		}
 
 		if beginTimestamp <= 0 {
+			err := fmt.Errorf("invalid begin timestamp: %d", beginTimestamp)
+			logInvalidBeginTimestamp(component, unsignedPegout, expiredAt, alert.signingTimeout, beginTimestamp, err)
 			return SEVERITY_UNKNOWN, "", nil, err
 		}
 
 		alert.beginTimestamp = beginTimestamp
+		logNewPegoutMonitoringStarted(component, unsignedPegout, expiredAt, beginTimestamp, alert.signingTimeout)
 	} else {
-		// Calulate severity
+		// Calculate severity
 		duration = time.Duration(dataSource.NowUnixTs()-alert.beginTimestamp) * time.Second
 		currentSeverity := alert.GetSeverity(duration)
 
 		if currentSeverity > alert.severity {
 			alert.severity = currentSeverity
+			logSigningDurationIncreased(component, unsignedPegout, duration, currentSeverity, alert.severity)
 		}
 	}
 
 	// Get pegout record from DB
 	pegout, err := dataSource.PegoutDB(alert.currentUnsignedPegout.PegoutAddress)
 	if err != nil {
+		logPegoutFetchError(component, err)
 		return SEVERITY_UNKNOWN, "", nil, err
 	}
 
 	if pegout == nil {
-		return SEVERITY_UNKNOWN, "", nil, fmt.Errorf("pegout not found: %s", unsignedPegout.PegoutAddress.String())
+		err := fmt.Errorf("pegout not found: %s", unsignedPegout.PegoutAddress.String())
+		logPegoutNotFound(component, unsignedPegout.PegoutAddress, err)
+		return SEVERITY_UNKNOWN, "", nil, err
 	}
 
 	description := "OK"
 
-	if alert.severity > SEVERITY_OK {
-		bitcoinTxId := ""
-		if pegout.BitcoinTxId != nil {
-			bitcoinTxId = hex.EncodeToString(pegout.BitcoinTxId)
-		}
+	bitcoinTxId := ""
+	if pegout.BitcoinTxId != nil {
+		bitcoinTxId = hex.EncodeToString(pegout.BitcoinTxId)
+	}
 
+	if alert.severity > SEVERITY_OK {
 		description = fmt.Sprintf(
 			"Pegout transaction was not signed within %d minutes.\n<b>Pegout:</b> %s.\n<b>Bitcoin TX:</b> %s.\n<b>Runbook url:</b> %s",
 			duration/time.Minute,

@@ -29,6 +29,7 @@ func (alert *AlertContractBalance) Check(dataSource AlertDataSource) (Severity, 
 	// Get current balance
 	balance, err := dataSource.ActualContractBalance(alert.BalanceName)
 	if err != nil {
+		logBalanceFetchError(alert, err)
 		return SEVERITY_CRITICAL, "", nil, err
 	}
 
@@ -43,6 +44,10 @@ func (alert *AlertContractBalance) Check(dataSource AlertDataSource) (Severity, 
 			mutils.NanoIntToString(balance),
 			mutils.RunbookLink("ContractBalances"),
 		)
+
+		logLowBalanceAlert(alert, severity, balance)
+	} else {
+		logBalanceCheckPassed(alert, balance)
 	}
 
 	return severity, Description(description), nil, nil

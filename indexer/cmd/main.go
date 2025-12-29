@@ -50,22 +50,14 @@ type App struct {
 func main() {
 	log.SetFlags(0)
 
-	if err := logger.Init("", logger.DebugLevel, 0, 0, 0); err != nil {
-		log.Fatalf("failed to initialize logger: %v", err)
-	}
-
 	app, err := initialize()
 	if err != nil {
-		logger.Log.Fatal().
-			Str("component", "main").
-			Err(err).
-			Msg("Failed to initialize")
+		log.Fatalf("failed to initialize: %v", err)
 	}
 
 	if err := run(app); err != nil {
 		log.Fatalf("stopped with error: %v", err)
 	}
-	return repo, nil
 }
 
 func openDB(connectionUrl string, maxOpenConns int, maxIdleConns int) (*ent.Client, error) {
@@ -94,6 +86,9 @@ func openDB(connectionUrl string, maxOpenConns int, maxIdleConns int) (*ent.Clie
 }
 
 func initialize() (*App, error) {
+	if err := logger.Init("", logger.DebugLevel, 0, 0, 0); err != nil {
+		return nil, fmt.Errorf("failed to initialize logger: %w", err)
+	}
 
 	logger.Log.Info().
 		Str("component", "main").
@@ -165,15 +160,6 @@ func initialize() (*App, error) {
 		tonClient,
 		nil,
 		context.Background(),
-		migrate.WithGlobalUniqueID(true),
-		migrate.WithDropIndex(true),
-		migrate.WithDropColumn(true),
-	); err != nil {
-		logger.Log.Fatal().
-			Str("component", "main").
-			Err(err).
-			Msg("failed creating repos schema")
-	}
 	)
 
 	// Mint service

@@ -41,29 +41,39 @@ func (alert *AlertDkgRestarts) Check(dataSource AlertDataSource) (Severity, Desc
 	// Get last DKG Start event
 	eventDkgStarted, err := dataSource.EventsLastDkgStartedDB()
 	if err != nil {
+		logDkgStartFetchError(err)
 		return SEVERITY_CRITICAL, "", alert.makeValues(newInfo()), err
 	}
 
-	// Chec if no start events
+	// Check if no start events
 	if eventDkgStarted == nil {
+		logNoDkgStartEvents()
 		return SEVERITY_OK, "OK", alert.makeValues(newInfo()), nil
 	}
 
 	// Get all DKG Restart events after DKG Start event
 	eventDkgRestarts, err := dataSource.EventsAllFromDkgRestartDB(eventDkgStarted.GetRaw().TxLT)
 	if err != nil {
+		logDkgRestartsFetchError(eventDkgStarted.GetRaw().TxLT, err)
 		return SEVERITY_CRITICAL, "", alert.makeValues(newInfo()), err
 	}
 
 	// Update alert status
 	info, err := alert.getInfo(eventDkgRestarts, eventDkgStarted)
 	if err != nil {
+		logInfoProcessingError(err)
 		return SEVERITY_CRITICAL, "", alert.makeValues(newInfo()), err
 	}
 
 	severity := alert.getSeverity(info)
 	description := alert.getDescription(severity, info)
 	values := alert.makeValues(info)
+
+	if severity > SEVERITY_OK {
+		logDkgRestartsAlert(severity, info)
+	} else {
+		logDkgCheckPassed(info)
+	}
 
 	return severity, description, values, nil
 }
@@ -147,7 +157,7 @@ func (alert *AlertDkgRestarts) getDescription(severity Severity, inf *info) Desc
 }
 
 func (alert *AlertDkgRestarts) makeValues(inf *info) Values {
-	values := make(Values, 3)
+	values := make(Values, 9)
 	values["restartsCount"] = int64(inf.restartsCount)
 	values["culpritsCount"] = int64(inf.culpritsCount)
 	values["timeoutEvictedCount"] = int64(inf.timeoutEvictedCount)

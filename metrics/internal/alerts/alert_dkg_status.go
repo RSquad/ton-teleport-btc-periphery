@@ -8,8 +8,7 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/mutils"
 )
 
-type AlertDkgStatus struct {
-}
+type AlertDkgStatus struct{}
 
 func NewAlertDkgStatus() Alert {
 	return &AlertDkgStatus{}
@@ -19,10 +18,12 @@ func (alert *AlertDkgStatus) Check(dataSource AlertDataSource) (Severity, Descri
 	// Get DKG
 	dkg, err := dataSource.DkgDB()
 	if err != nil {
+		logDkgFetchError(err)
 		return SEVERITY_CRITICAL, "", nil, err
 	}
 
 	if dkg == nil {
+		logNoDkgFound()
 		return Severity(coordinator.DKGStateFinished), "", nil, nil
 	}
 
@@ -33,5 +34,7 @@ func (alert *AlertDkgStatus) Check(dataSource AlertDataSource) (Severity, Descri
 		mutils.RunbookLink("DKGStatus"),
 	)
 
-	return Severity(dkg.State), Description(description), nil, nil
+	severity := Severity(dkg.State)
+
+	return severity, Description(description), nil, nil
 }
