@@ -22,14 +22,18 @@ func NewAlertPegoutRestarts() Alert {
 }
 
 func (alert *AlertPegoutRestarts) Check(dataSource AlertDataSource) (Severity, Description, Values, error) {
+	component := "AlertPegoutRestarts"
+
 	// Get first unsigned pegout
 	unsignedPegout, err := dataSource.FirstUnsignedPegoutDB()
 	if err != nil {
+		logUnsignedPegoutFetchError(component, err)
 		return SEVERITY_CRITICAL, "", alert.MakeValues(), err
 	}
 
 	// No unsigned pegouts
 	if unsignedPegout == nil {
+		logNoUnsignedPegouts(component)
 		alert.restartsCounter = 0
 		return SEVERITY_OK, "OK", alert.MakeValues(), nil
 	}
@@ -37,11 +41,14 @@ func (alert *AlertPegoutRestarts) Check(dataSource AlertDataSource) (Severity, D
 	// Get pegout record from DB
 	pegout, err := dataSource.PegoutDB(unsignedPegout.PegoutAddress)
 	if err != nil {
+		logPegoutRestartsFetchError(component, unsignedPegout.PegoutAddress, err)
 		return SEVERITY_CRITICAL, "", alert.MakeValues(), err
 	}
 
 	if pegout == nil {
-		return SEVERITY_UNKNOWN, "", nil, fmt.Errorf("pegout not found: %s", unsignedPegout.PegoutAddress.String())
+		err := fmt.Errorf("pegout not found: %s", unsignedPegout.PegoutAddress.String())
+		logPegoutNotFound(component, unsignedPegout.PegoutAddress, err)
+		return SEVERITY_UNKNOWN, "", nil, err
 	}
 
 	// Check if pegout is new: current is null or new PegoutAddress
@@ -51,6 +58,7 @@ func (alert *AlertPegoutRestarts) Check(dataSource AlertDataSource) (Severity, D
 		alert.currentUnsignedPegout = unsignedPegout
 		alert.restartsCounter = 0
 
+		logNewPegoutSelected(component, unsignedPegout.PegoutAddress, pegout)
 		return SEVERITY_OK, "OK", alert.MakeValues(), nil
 	}
 
@@ -58,21 +66,23 @@ func (alert *AlertPegoutRestarts) Check(dataSource AlertDataSource) (Severity, D
 	if !alert.currentUnsignedPegout.ExpiredAt.Equal(unsignedPegout.ExpiredAt) {
 		if !alert.currentUnsignedPegout.ExpiredAt.Equal(time.Unix(0, 0)) {
 			alert.restartsCounter++
+			logPegoutRestartDetected(component, unsignedPegout.PegoutAddress, alert.restartsCounter,
+				alert.currentUnsignedPegout.ExpiredAt, unsignedPegout.ExpiredAt)
 		}
 
 		alert.currentUnsignedPegout = unsignedPegout
 	}
 
-	// Calulate severity
+	// Calculate severity
 	severity := alert.GetSeverity()
 	description := "OK"
 
-	if severity > SEVERITY_OK {
-		bitcoinTxId := ""
-		if pegout.BitcoinTxId != nil {
-			bitcoinTxId = hex.EncodeToString(pegout.BitcoinTxId)
-		}
+	bitcoinTxId := ""
+	if pegout.BitcoinTxId != nil {
+		bitcoinTxId = hex.EncodeToString(pegout.BitcoinTxId)
+	}
 
+	if severity > SEVERITY_OK {
 		description = fmt.Sprintf(
 			"The pegout signing was restarted %d times.\n<b>Pegout:</b> %s.\n<b>Bitcoin TX:</b> %s.\n<b>Runbook url:</b> %s",
 			alert.restartsCounter,
@@ -80,6 +90,10 @@ func (alert *AlertPegoutRestarts) Check(dataSource AlertDataSource) (Severity, D
 			mutils.BtcExplorerLink(bitcoinTxId),
 			mutils.RunbookLink("PegoutRestarts"),
 		)
+
+		logPegoutRestartsAlert(component, severity, unsignedPegout.PegoutAddress, bitcoinTxId, alert.restartsCounter)
+	} else {
+		logPegoutCheckPassed(component, unsignedPegout.PegoutAddress, bitcoinTxId, alert.restartsCounter)
 	}
 
 	return severity, Description(description), alert.MakeValues(), nil

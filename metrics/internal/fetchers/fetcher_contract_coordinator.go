@@ -3,7 +3,6 @@ package fetchers
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"time"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
@@ -30,44 +29,57 @@ func NewFetcherContractCoordinator(
 }
 
 func (fetcher *FetcherContractCoordinator) Work(ctx context.Context) {
-	defer logger.Log.Info().Msg("FetcherContractCoordinator: stopped")
-	logger.DefaultLogStartWork("FetcherContractCoordinator: starting...")
+	component := "FetcherContractCoordinator"
+
+	logger.Log.Info().
+		Str("component", component).
+		Msg("started")
+
+	defer func() {
+		logger.Log.Info().
+			Str("component", component).
+			Msg("finished")
+	}()
 
 	ticker := time.NewTicker(time.Duration(fetcher.period) * time.Second)
 	defer ticker.Stop()
 
 	// Setup watchdog
-	watchdog.Global().Watch("FetcherContractCoordinator", time.Duration(fetcher.period*2)*time.Second)
-	defer watchdog.Global().Unwatch("FetcherContractCoordinator")
+	watchdog.Global().Watch(component, time.Duration(fetcher.period*2)*time.Second)
+	defer watchdog.Global().Unwatch(component)
 
 	for {
 		select {
 		case <-ctx.Done():
-			logger.Log.Info().Msg("FetcherContractCoordinator received shutdown signal...")
+			logger.Log.Info().
+				Str("component", component).
+				Msg("received shutdown signal")
 			return
 		case <-ticker.C:
 			fetcher.Fetch()
-			watchdog.Global().Heartbeat("FetcherContractCoordinator")
+			watchdog.Global().Heartbeat(component)
 		}
 	}
 }
 
 func (fetcher *FetcherContractCoordinator) Fetch() {
+	component := "FetcherContractCoordinator"
+
 	storage, err := fetcher.coordinatorContract.GetStorage(nil)
 	if err != nil {
-		logger.Log.Error().Msg(fmt.Sprintf("FetcherContractCoordinator: failed to retrieve storage cell, error: %v", err))
+		logStorageFetchError(component, "coordinator", err)
 		return
 	}
 
+	// Clear DKG data as it's fetched separately
 	storage.Dkg = nil
 	storage.PrevDkg = nil
 
+	logFetchSuccess(component, "coordinator")
+
 	jsonData, err := json.Marshal(storage)
 	if err != nil {
-		logger.Log.Error().Err(err).
-			Str("component", "FetcherContractCoordinator").
-			Msg("failed to serialize FetcherContractCoordinator->json")
-
+		logSerializationError(component, "coordinator", err)
 		return
 	}
 
@@ -75,4 +87,6 @@ func (fetcher *FetcherContractCoordinator) Fetch() {
 		typeId:  PayloadTypeContractCoordinator,
 		payload: string(jsonData),
 	}
+
+	logDataSent(component, "coordinator")
 }

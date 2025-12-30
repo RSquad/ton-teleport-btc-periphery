@@ -2,7 +2,6 @@ package fetchers
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
@@ -30,42 +29,58 @@ func NewFetcherContractTeleport(
 }
 
 func (fetcher *FetcherContractTeleport) Work(ctx context.Context) {
-	defer logger.Log.Info().Msg("FetcherContractTeleport: stopped")
-	logger.DefaultLogStartWork("FetcherContractTeleport: starting...")
+	component := "FetcherContractTeleport"
+
+	logger.Log.Info().
+		Str("component", component).
+		Msg("started")
+
+	defer func() {
+		logger.Log.Info().
+			Str("component", component).
+			Msg("finished")
+	}()
 
 	ticker := time.NewTicker(time.Duration(fetcher.period) * time.Second)
 	defer ticker.Stop()
 
 	// Setup watchdog
-	watchdog.Global().Watch("FetcherContractTeleport", time.Duration(fetcher.period*2)*time.Second)
-	defer watchdog.Global().Unwatch("FetcherContractTeleport")
+	watchdog.Global().Watch(component, time.Duration(fetcher.period*2)*time.Second)
+	defer watchdog.Global().Unwatch(component)
 
 	for {
 		select {
 		case <-ctx.Done():
-			logger.Log.Info().Msg("DKG Fetcher received shutdown signal...")
+			logger.Log.Info().
+				Str("component", component).
+				Msg("received shutdown signal")
 			return
 		case <-ticker.C:
 			fetcher.Fetch()
-			watchdog.Global().Heartbeat("FetcherContractTeleport")
+			watchdog.Global().Heartbeat(component)
 		}
 	}
 }
 
 func (fetcher *FetcherContractTeleport) Fetch() {
+	component := "FetcherContractTeleport"
+
 	storage, err := fetcher.teleportContract.GetStorage(nil)
 	if err != nil {
-		logger.Log.Error().Msg(fmt.Sprintf("FetcherContractTeleport: failed to retrieve storage cell, error: %v", err))
+		logStorageFetchError(component, "teleport", err)
 		return
 	}
 
+	// Clear code data as it's not needed for metrics
 	storage.BlockCode = nil
 	storage.PegoutContractCode = nil
 	storage.PeginContractCode = nil
 
+	logFetchSuccess(component, "teleport")
+
 	jsonData, err := data_models.SerializeTeleportContractStorage(&storage)
 	if err != nil {
-		logger.Log.Error().Msg(fmt.Sprintf("FetcherContractTeleport: failed to SerializeTeleportContractStorage: %v", err))
+		logSerializationError(component, "teleport", err)
 		return
 	}
 
@@ -73,4 +88,6 @@ func (fetcher *FetcherContractTeleport) Fetch() {
 		typeId:  PayloadTypeContractTeleport,
 		payload: string(jsonData),
 	}
+
+	logDataSent(component, "teleport")
 }

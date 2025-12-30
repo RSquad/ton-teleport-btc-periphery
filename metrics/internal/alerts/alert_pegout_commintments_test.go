@@ -238,5 +238,5 @@ func TestAlertPegoutCommintments(t *testing.T) {
 		},
 	}
 
-	DoAlertTests(t, tests, NewAlertPegoutCommintments())
+	DoAlertTests(t, tests, NewAlertPegoutCommitments())
 }

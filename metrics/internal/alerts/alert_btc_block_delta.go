@@ -51,6 +51,7 @@ func (alert *AlertBtcBlockDelta) Check(dataSource AlertDataSource) (Severity, De
 		alert.severity = SEVERITY_CRITICAL
 		alert.err = err
 
+		logStorageReadError(err)
 		return alert.severity, alert.description, alert.values, alert.err
 	}
 
@@ -61,6 +62,7 @@ func (alert *AlertBtcBlockDelta) Check(dataSource AlertDataSource) (Severity, De
 		alert.severity = SEVERITY_CRITICAL
 		alert.err = err
 
+		logBtcHeightFetchError(err)
 		return alert.severity, alert.description, alert.values, alert.err
 	}
 
@@ -81,6 +83,13 @@ func (alert *AlertBtcBlockDelta) Check(dataSource AlertDataSource) (Severity, De
 				mutils.RunbookLink("BtcBlockDelta"),
 			),
 		)
+
+		logAlertTriggered(alert.severity, delta,
+			blockHeightContract, storage.LastConfirmedBlockHeight,
+			storage.ConfirmationsNeeded, blockHeightBtcNetwork)
+	} else {
+		logAlertCheckPassed(delta,
+			blockHeightContract, blockHeightBtcNetwork)
 	}
 
 	return alert.severity, alert.description, alert.values, alert.err
@@ -109,8 +118,10 @@ func (alert *AlertBtcBlockDelta) btcGetBestBlockHeight(dataSource AlertDataSourc
 			return blockHeightBtcNetwork, nil
 		}
 
+		logBtcHeightRetry(tryId, err)
 		time.Sleep(2 * time.Second)
 	}
 
+	logBtcHeightMaxRetriesExceeded(err)
 	return 0, err
 }

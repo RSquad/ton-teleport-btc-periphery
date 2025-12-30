@@ -14,48 +14,56 @@ func NewAlertPegoutSigners() Alert {
 }
 
 func (alert *AlertPegoutSigners) Check(dataSource AlertDataSource) (Severity, Description, Values, error) {
+	component := "AlertPegoutSigners"
+
 	// Get first unsigned pegout
 	unsignedPegout, err := dataSource.FirstUnsignedPegoutDB()
 	if err != nil {
+		logUnsignedPegoutFetchError(component, err)
 		return SEVERITY_UNKNOWN, "", nil, err
 	}
 
 	// No unsigned pegouts
 	if unsignedPegout == nil {
+		logNoUnsignedPegouts(component)
 		return SEVERITY_OK, "OK", nil, nil
 	}
 
 	// Get pegout record from DB
 	pegout, err := dataSource.PegoutDB(unsignedPegout.PegoutAddress)
 	if err != nil {
+		logPegoutFetchError(component, err)
 		return SEVERITY_UNKNOWN, "", nil, err
 	}
 
 	if pegout == nil {
-		return SEVERITY_UNKNOWN, "", nil, fmt.Errorf("pegout not found: %s", unsignedPegout.PegoutAddress.String())
+		err := fmt.Errorf("pegout not found: %s", unsignedPegout.PegoutAddress.String())
+		logPegoutNotFound(component, unsignedPegout.PegoutAddress, err)
+		return SEVERITY_UNKNOWN, "", nil, err
 	}
 
 	// Get Prev DKG
 	prevDkg, err := dataSource.PrevDkgDB()
 	if err != nil {
+		logPrevDkgFetchError(component, err)
 		return SEVERITY_UNKNOWN, "", nil, err
 	}
 
-	// Calulate signersAllowedPercentage
+	// Calculate signersAllowedPercentage
 	maxSigners := prevDkg.MaxSigners
 	signersAllowedCount := mutils.Popcnt(unsignedPegout.SigningMask)
 	signersAllowedPercentage := mutils.MulDivCeil(uint(signersAllowedCount), 100, uint(maxSigners))
 
-	// Calulate severity
+	// Calculate severity
 	severity := alert.GetSeverity(signersAllowedPercentage)
 	description := "OK"
 
-	if severity > SEVERITY_OK {
-		bitcoinTxId := ""
-		if pegout.BitcoinTxId != nil {
-			bitcoinTxId = hex.EncodeToString(pegout.BitcoinTxId)
-		}
+	bitcoinTxId := ""
+	if pegout.BitcoinTxId != nil {
+		bitcoinTxId = hex.EncodeToString(pegout.BitcoinTxId)
+	}
 
+	if severity > SEVERITY_OK {
 		description = fmt.Sprintf(
 			"Number of validators allowed to sign pegout is %d of %d (%d%%).\n<b>Pegout:</b> %s.\n<b>Bitcoin TX:</b> %s.\n<b>Runbook url:</b> %s",
 			signersAllowedCount,

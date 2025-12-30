@@ -46,7 +46,7 @@ func (es *EventService) Work(ctx context.Context) (err error) {
 
 	teleportContractStorage, err := es.teleportContract.GetStorage(nil)
 	if err != nil {
-		return err
+		return ctx.Err()
 	}
 
 	rawEventChan := make(chan *ton.RawEvent, 64)

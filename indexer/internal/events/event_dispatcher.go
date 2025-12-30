@@ -64,6 +64,7 @@ func (ed *EventDispatcher) Work(ctx context.Context) (err error) {
 func (ed *EventDispatcher) handleEvent(rawEvent *ton.RawEvent) error {
 	parser, exists := ed.parsers[rawEvent.Addr.String()]
 	if !exists {
+		logParserNotFoundError(rawEvent.Addr)
 		return ed.formatParserNotFoundError(rawEvent.Addr)
 	}
 
@@ -75,8 +76,10 @@ func (ed *EventDispatcher) handleEvent(rawEvent *ton.RawEvent) error {
 	event, err := parser.Parse(rawEvent)
 	if err != nil {
 		if strings.Contains(err.Error(), "unknown event type") {
+			logUnknownEventTypeError(rawEvent)
 			return nil
 		}
+
 		return err
 	}
 

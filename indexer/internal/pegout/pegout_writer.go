@@ -51,5 +51,9 @@ func (ew *PegoutWriter) WriteFromEvent(
 		}()).
 		Save(ew.ctx)
 
+	if err != nil {
+		logPegoutCreateError(err, event)
+	}
+
 	return pegout, err
 }

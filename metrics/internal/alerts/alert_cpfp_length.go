@@ -28,6 +28,7 @@ func NewAlertCpfpLength() Alert {
 
 func (alert *AlertCpfpLength) Check(dataSource AlertDataSource) (Severity, Description, Values, error) {
 	nowTs := dataSource.NowUnixTs()
+	component := "AlertCpfpLength"
 
 	if alert.err == nil {
 		// Not more often than once every 2 minutes
@@ -45,25 +46,34 @@ func (alert *AlertCpfpLength) Check(dataSource AlertDataSource) (Severity, Descr
 	if err != nil {
 		alert.severity = SEVERITY_CRITICAL
 		alert.err = err
+
+		logPegoutFetchError(component, err)
 		return alert.severity, "", alert.values, alert.err
 	}
 
 	if pegout == nil {
 		alert.severity = SEVERITY_OK
 		alert.err = nil
+
+		logNoPegoutsFound(component)
 		return alert.severity, alert.description, alert.values, alert.err
 	}
 
 	if pegout.BitcoinTxId == nil {
 		alert.severity = SEVERITY_CRITICAL
 		alert.err = fmt.Errorf("bitcoin TxId is null")
+
+		logNullBitcoinTxId(pegout)
 		return alert.severity, "", alert.values, alert.err
 	}
 
+	btcTxIdHex := hex.EncodeToString(pegout.BitcoinTxId)
 	chainSize, err := dataSource.BtcGetCpfpLength(mutils.BytesToBTCHash(pegout.BitcoinTxId))
 	if err != nil {
 		alert.severity = SEVERITY_CRITICAL
 		alert.err = err
+
+		logCpfpLengthFetchError(btcTxIdHex, err)
 		return alert.severity, "", alert.values, alert.err
 	}
 

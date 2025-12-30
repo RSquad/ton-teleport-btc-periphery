@@ -13,18 +13,23 @@ func NewAlertTotalServiceFee() Alert {
 }
 
 func (alert *AlertTotalServiceFee) Check(dataSource AlertDataSource) (Severity, Description, Values, error) {
+	component := "AlertTotalServiceFee"
+
 	// Get last signed pegout
 	teleportContractStorage, err := dataSource.TeleportContractStorageDB()
 	if err != nil {
+		logTeleportStorageFetchError(component, err)
 		return SEVERITY_CRITICAL, "", nil, err
 	}
 
 	if teleportContractStorage == nil {
+		logNoTeleportStorage(component)
 		return SEVERITY_OK, "OK", nil, nil
 	}
 
-	// Calulate severity
-	severity := alert.GetSeverity(teleportContractStorage.TotalServiceFee)
+	// Calculate severity
+	totalServiceFee := teleportContractStorage.TotalServiceFee
+	severity := alert.GetSeverity(totalServiceFee)
 	description := "OK"
 
 	if severity > SEVERITY_OK {
@@ -38,6 +43,7 @@ func (alert *AlertTotalServiceFee) Check(dataSource AlertDataSource) (Severity, 
 			limit,
 			mutils.RunbookLink("TotalServiceFee"),
 		)
+
 	}
 
 	return severity, Description(description), nil, nil

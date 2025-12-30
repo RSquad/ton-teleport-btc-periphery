@@ -8,46 +8,54 @@ import (
 	"github.com/rsquad/ton-teleport-btc-periphery/metrics/internal/mutils"
 )
 
-type AlertPegoutCommintments struct{}
+type AlertPegoutCommitments struct{}
 
-func NewAlertPegoutCommintments() Alert {
-	return &AlertPegoutCommintments{}
+func NewAlertPegoutCommitments() Alert {
+	return &AlertPegoutCommitments{}
 }
 
-func (alert *AlertPegoutCommintments) Check(dataSource AlertDataSource) (Severity, Description, Values, error) {
+func (alert *AlertPegoutCommitments) Check(dataSource AlertDataSource) (Severity, Description, Values, error) {
+	component := "AlertPegoutCommitments"
 	// Get first unsigned pegout
 	unsignedPegout, err := dataSource.FirstUnsignedPegoutDB()
 	if err != nil {
+		logUnsignedPegoutFetchError(component, err)
 		return SEVERITY_UNKNOWN, "", nil, err
 	}
 
 	// No unsigned pegouts
 	if unsignedPegout == nil {
+		logNoUnsignedPegouts(component)
 		return SEVERITY_OK, "OK", nil, nil
 	}
 
 	// Get pegout record from DB
 	pegout, err := dataSource.PegoutDB(unsignedPegout.PegoutAddress)
 	if err != nil {
+		logPegoutCommitmentsFetchError(unsignedPegout.PegoutAddress, err)
 		return SEVERITY_UNKNOWN, "", nil, err
 	}
 
 	if pegout == nil {
-		return SEVERITY_UNKNOWN, "", nil, fmt.Errorf("pegout not found: %s", unsignedPegout.PegoutAddress.String())
+		err := fmt.Errorf("pegout not found: %s", unsignedPegout.PegoutAddress.String())
+		logPegoutNotFound(component, unsignedPegout.PegoutAddress, err)
+		return SEVERITY_UNKNOWN, "", nil, err
 	}
 
 	// Wait until the signing stage starts
 	if unsignedPegout.Signatures.Count == 0 {
+		logSigningNotStarted(unsignedPegout.PegoutAddress)
 		return SEVERITY_OK, "OK", nil, nil
 	}
 
 	// Get Prev DKG
 	prevDkg, err := dataSource.PrevDkgDB()
 	if err != nil {
+		logPrevDkgFetchError(component, err)
 		return SEVERITY_UNKNOWN, "", nil, err
 	}
 
-	// Calulate commitmentsPercentage
+	// Calculate commitmentsPercentage
 	maxSigners := prevDkg.MaxSigners
 	commitmentsMask := new(big.Int).Or(
 		unsignedPegout.CommitmentsMaskAccepted,
@@ -56,18 +64,18 @@ func (alert *AlertPegoutCommintments) Check(dataSource AlertDataSource) (Severit
 	commitmentsCount := mutils.Popcnt(commitmentsMask)
 	commitmentsPercentage := mutils.MulDivCeil(uint(commitmentsCount), 100, uint(maxSigners))
 
-	// Calulate severity
+	// Calculate severity
 	severity := alert.GetSeverity(commitmentsPercentage)
 
 	// Update description
 	description := "OK"
 
-	if severity > SEVERITY_OK {
-		bitcoinTxId := ""
-		if pegout.BitcoinTxId != nil {
-			bitcoinTxId = hex.EncodeToString(pegout.BitcoinTxId)
-		}
+	bitcoinTxId := ""
+	if pegout.BitcoinTxId != nil {
+		bitcoinTxId = hex.EncodeToString(pegout.BitcoinTxId)
+	}
 
+	if severity > SEVERITY_OK {
 		description = fmt.Sprintf(
 			"The number of pegout commitments is %d of %d (%d%%).\n<b>Pegout:</b> %s.\n<b>Bitcoin TX:</b> %s.\n<b>Runbook url:</b> %s",
 			commitmentsCount,
@@ -82,7 +90,7 @@ func (alert *AlertPegoutCommintments) Check(dataSource AlertDataSource) (Severit
 	return severity, Description(description), nil, nil
 }
 
-func (alert *AlertPegoutCommintments) GetSeverity(commitmentsPercentage uint) Severity {
+func (alert *AlertPegoutCommitments) GetSeverity(commitmentsPercentage uint) Severity {
 	severity := SEVERITY_OK
 
 	if commitmentsPercentage <= 70 {

@@ -265,3 +265,11 @@ func logCouldNotDeterminePegoutAge(pegoutID int, btcTxID string, queryError erro
 		Str("bitcoin_tx_id", btcTxID).
 		Msg("Could not determine pegout age for exclusion; age check skipped for this attempt.")
 }
+
+func logFailedGetMasterchainInfo(err error) {
+	logger.Log.Error().
+		Err(err).
+		Str("component", "PegoutManager").
+		Str("process", "SignedPegouts").
+		Msg("Failed to get masterchain info")
+}

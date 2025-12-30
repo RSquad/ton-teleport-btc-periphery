@@ -40,7 +40,7 @@ func NewAlertFactory(contractAddrs map[string]*address.Address, config *config.S
 
 	// alert_pegout_commitments_count (pegout.commitments)
 	factories["alert_pegout_commitments_count"] = func() Alert {
-		return NewAlertPegoutCommintments()
+		return NewAlertPegoutCommitments()
 	}
 
 	// alert_pegout_fee_not_reset (pegout.fee.not.reset)

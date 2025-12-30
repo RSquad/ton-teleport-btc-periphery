@@ -26,14 +26,18 @@ func NewAlertPegoutInMempool() Alert {
 }
 
 func (alert *AlertPegoutInMempool) Check(dataSource AlertDataSource) (Severity, Description, Values, error) {
+	component := "AlertPegoutInMempool"
+
 	if alert.pegoutToCheck == nil {
 		// Get last signed pegouts
 		pegouts, err := dataSource.LastSignedPegoutsDB(25)
 		if err != nil {
+			logSignedPegoutsFetchError(component, err)
 			return SEVERITY_CRITICAL, "", nil, err
 		}
 
 		if len(pegouts) == 0 {
+			logNoSignedPegoutsFound(component)
 			return SEVERITY_OK, "OK", nil, nil
 		}
 
@@ -55,10 +59,13 @@ func (alert *AlertPegoutInMempool) Check(dataSource AlertDataSource) (Severity, 
 			alert.pegoutToCheck = pegout
 			alert.lastCheckedPegoutId = pegout.Id
 			alert.beginTimestamp = dataSource.NowUnixTs()
+
+			logNewPegoutToCheck(component, pegout)
 			break
 		}
 
 		if alert.pegoutToCheck == nil {
+			logNoNewPegoutsToCheck(component, alert.lastCheckedPegoutId)
 			return SEVERITY_OK, "OK", nil, nil
 		}
 	}
@@ -67,8 +74,12 @@ func (alert *AlertPegoutInMempool) Check(dataSource AlertDataSource) (Severity, 
 
 	// Check alert.pegoutToCheck.BitcoinTxId
 	if len(alert.pegoutToCheck.BitcoinTxId) != 32 {
-		return SEVERITY_CRITICAL, "", nil, fmt.Errorf("wrong BitcoinTxId value '%s'", hex.EncodeToString(alert.pegoutToCheck.BitcoinTxId))
+		err := fmt.Errorf("wrong BitcoinTxId value '%s'", hex.EncodeToString(alert.pegoutToCheck.BitcoinTxId))
+		logInvalidBitcoinTxId(component, alert.pegoutToCheck, err)
+		return SEVERITY_CRITICAL, "", nil, err
 	}
+
+	btcTxIdHex := hex.EncodeToString(alert.pegoutToCheck.BitcoinTxId)
 
 	// Check mempool
 	{
@@ -76,7 +87,10 @@ func (alert *AlertPegoutInMempool) Check(dataSource AlertDataSource) (Severity, 
 		if err == nil {
 			if btcMempoolEntry != nil {
 				isInMempoolOrBlock = true
+				logFoundInMempool(component, alert.pegoutToCheck, btcTxIdHex)
 			}
+		} else {
+			logMempoolCheckError(component, alert.pegoutToCheck, btcTxIdHex, err)
 		}
 	}
 
@@ -86,16 +100,22 @@ func (alert *AlertPegoutInMempool) Check(dataSource AlertDataSource) (Severity, 
 		if err == nil {
 			if btcBlockHash != nil {
 				isInMempoolOrBlock = true
+				logFoundInBlock(component, alert.pegoutToCheck, btcTxIdHex, btcBlockHash.String())
 			}
+		} else {
+			logBlockCheckError(component, alert.pegoutToCheck, btcTxIdHex, err)
 		}
 	}
 
-	// Calulate severity
+	// Calculate severity
 	severity := SEVERITY_OK
+	var duration time.Duration
 
 	if !isInMempoolOrBlock {
-		duration := time.Duration(dataSource.NowUnixTs()-alert.beginTimestamp) * time.Second
+		duration = time.Duration(dataSource.NowUnixTs()-alert.beginTimestamp) * time.Second
 		severity = alert.GetSeverity(duration)
+
+		logPegoutMissingDuration(component, alert.pegoutToCheck, btcTxIdHex, duration)
 	} else {
 		alert.pegoutToCheck = nil
 	}
@@ -115,6 +135,10 @@ func (alert *AlertPegoutInMempool) Check(dataSource AlertDataSource) (Severity, 
 			mutils.BtcExplorerLink(hex.EncodeToString(alert.pegoutToCheck.BitcoinTxId)),
 			mutils.RunbookLink("PegoutInMempool"),
 		)
+
+		logPegoutMissingAlert(component, severity, alert.pegoutToCheck, btcTxIdHex, duration)
+	} else if isInMempoolOrBlock {
+		logPegoutFoundSuccessfully(component, btcTxIdHex)
 	}
 
 	return severity, Description(description), nil, nil
