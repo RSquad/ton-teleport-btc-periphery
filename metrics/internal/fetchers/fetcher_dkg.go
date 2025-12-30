@@ -29,41 +29,51 @@ func NewFetcherDKG(
 }
 
 func (fetcher *FetcherDKG) Work(ctx context.Context) {
-	defer logger.Log.Info().Msg("FetcherDKG: stopped")
-	logger.DefaultLogStartWork("FetcherDKG: starting...")
+	component := "FetcherDKG"
+
+	logger.Log.Info().
+		Str("component", component).
+		Msg("started")
+
+	defer func() {
+		logger.Log.Info().
+			Str("component", component).
+			Msg("finished")
+	}()
 
 	ticker := time.NewTicker(time.Duration(fetcher.period) * time.Second)
 	defer ticker.Stop()
 
 	// Setup watchdog
-	watchdog.Global().Watch("FetcherDKG", time.Duration(fetcher.period*2)*time.Second)
-	defer watchdog.Global().Unwatch("FetcherDKG")
+	watchdog.Global().Watch(component, time.Duration(fetcher.period*2)*time.Second)
+	defer watchdog.Global().Unwatch(component)
 
 	for {
 		select {
 		case <-ctx.Done():
-			logger.Log.Info().Msg("DKG Fetcher received shutdown signal...")
+			logger.Log.Info().
+				Str("component", component).
+				Msg("received shutdown signal")
 			return
 		case <-ticker.C:
 			fetcher.FetchDKG()
 			fetcher.FetchPrevDKG()
-			watchdog.Global().Heartbeat("FetcherDKG")
+			watchdog.Global().Heartbeat(component)
 		}
 	}
 }
 
 func (fetcher *FetcherDKG) FetchDKG() {
+	component := "FetcherDKG"
+
 	dkg, err := fetcher.coordinatorContract.GetDkg(nil)
 	if err != nil {
-		logger.Log.Error().Err(err).
-			Str("component", "FetcherDKG").
-			Msg("fetch failed")
-
+		logDkgFetchError(component, err)
 		return
 	}
 
 	if dkg == nil {
-		logger.Log.Debug().Msg("FetcherDKG: Contract returns dkg==null")
+		logNoDkgFound(component)
 		return
 	}
 
@@ -76,14 +86,12 @@ func (fetcher *FetcherDKG) FetchDKG() {
 		dkg.R2.Packages = make(map[uint16][]byte)
 	}
 
+	logFetchSuccess(component, "dkg")
+
 	// Serialize
 	jsonData, err := json.Marshal(dkg)
 	if err != nil {
-		logger.Log.Error().
-			Err(err).
-			Str("component", "FetcherDKG").
-			Msg("failed to serialize DKG->json")
-
+		logSerializationError(component, "dkg", err)
 		return
 	}
 
@@ -91,21 +99,21 @@ func (fetcher *FetcherDKG) FetchDKG() {
 		typeId:  PayloadTypeDKG,
 		payload: string(jsonData),
 	}
+
+	logDataSent(component, "dkg")
 }
 
 func (fetcher *FetcherDKG) FetchPrevDKG() {
+	component := "FetcherPrevDKG"
+
 	prevDkg, err := fetcher.coordinatorContract.GetPrevDKG()
 	if err != nil {
-		logger.Log.Error().
-			Err(err).
-			Str("component", "FetcherPrevDKG").
-			Msg("fetch failed")
-
+		logDkgFetchError(component, err)
 		return
 	}
 
 	if prevDkg == nil {
-		logger.Log.Debug().Msg("FetcherPrevDKG: Contract returns prevDkg==null")
+		logNoPrevDkgFound(component)
 		return
 	}
 
@@ -118,13 +126,12 @@ func (fetcher *FetcherDKG) FetchPrevDKG() {
 		prevDkg.R2.Packages = make(map[uint16][]byte)
 	}
 
+	logFetchSuccess(component, "previous_dkg")
+
 	// Serialize
 	jsonData, err := json.Marshal(prevDkg)
 	if err != nil {
-		logger.Log.Error().Err(err).
-			Str("component", "FetcherPrevDKG").
-			Msg("failed to serialize DKG->json")
-
+		logSerializationError(component, "previous_dkg", err)
 		return
 	}
 
@@ -132,4 +139,6 @@ func (fetcher *FetcherDKG) FetchPrevDKG() {
 		typeId:  PayloadTypePrevDKG,
 		payload: string(jsonData),
 	}
+
+	logDataSent(component, "previous_dkg")
 }

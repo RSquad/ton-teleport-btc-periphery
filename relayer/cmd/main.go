@@ -5,13 +5,13 @@ import (
 	"encoding/hex"
 	"fmt"
 	"log"
-	"net"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
+	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/logger"
 	jwv4r2contract "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/jw_v4r2_contract"
 	tonclient "github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/ton/tonclient"
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/utils"
@@ -32,41 +32,66 @@ func main() {
 
 	app, err := initialize()
 	if err != nil {
-		log.Fatalf("[App] failed to initialize: %v", err)
+		log.Fatalf("failed to initialize: %v", err)
 	}
 
-	go startTCPHealthCheck(":3000")
-
 	if err := run(app); err != nil {
-		log.Fatalf("[App] stopped with error: %v", err)
+		log.Fatalf("stopped with error: %v", err)
 	}
 }
 
 func initialize() (*App, error) {
-	log.Println("[App] initializing...")
+	// Initialize logger
+	if err := logger.Init("", logger.DebugLevel, 0, 0, 0); err != nil {
+		return nil, fmt.Errorf("failed to initialize logger: %w", err)
+	}
 
+	logger.Log.Info().
+		Str("component", "main").
+		Msg("initializing")
+
+	// Load configuration
 	relayerConfig, err := utils.LoadCfg[config.RelayerConfig]()
 	if err != nil {
-		log.Fatalf("[App] Failed to load env: %v", err)
+		logger.Log.Error().
+			Str("component", "main").
+			Err(err).
+			Msg("Failed to load configuration")
+		return nil, fmt.Errorf("failed to load configuration: %w", err)
 	}
 
+	// Initialize TON client
 	tonClient, err := tonclient.New(relayerConfig.TonConfigUrl)
 	if err != nil {
-		return nil, fmt.Errorf("[App] failed to create ton client: %w", err)
+		logger.Log.Error().
+			Str("component", "main").
+			Err(err).
+			Msg("Failed to initialize TON client")
+		return nil, fmt.Errorf("failed to create ton client: %w", err)
 	}
 
+	// Initialize Bitcoin client
 	bitcoinClient, err := bitcoin.NewClient(
 		relayerConfig.BitcoinRpcHost,
 		relayerConfig.BitcoinRpcUser,
 		relayerConfig.BitcoinRpcPass,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("[App] failed to create bitcoin client: %w", err)
+		logger.Log.Error().
+			Str("component", "main").
+			Err(err).
+			Msg("Failed to initialize Bitcoin client")
+		return nil, fmt.Errorf("failed to create bitcoin client: %w", err)
 	}
 
+	// Initialize JWV4R2 contract
 	jwV4R2Secret, err := hex.DecodeString(relayerConfig.RelayerWallerV4Secret)
 	if err != nil {
-		return nil, fmt.Errorf("[App] failed to decode jwv4r2 secret: %w", err)
+		logger.Log.Error().
+			Str("component", "main").
+			Err(err).
+			Msg("Failed to decode JWV4R2 secret")
+		return nil, fmt.Errorf("failed to decode jwv4r2 secret: %w", err)
 	}
 
 	jwV4R2Contract, err := jwv4r2contract.NewJWV4R2Contract(
@@ -75,43 +100,82 @@ func initialize() (*App, error) {
 		context.Background(),
 	)
 	if err != nil {
-		return nil, fmt.Errorf("[App] failed to create jwv4r2 contract: %w", err)
+		logger.Log.Error().
+			Str("component", "main").
+			Err(err).
+			Msg("Failed to initialize JWV4R2 contract")
+		return nil, fmt.Errorf("failed to create jwv4r2 contract: %w", err)
 	}
 
-	log.Printf("[App] Relayer wallet: %s", jwV4R2Contract.Address().StringRaw())
+	logger.Log.Info().
+		Str("component", "main").
+		Str("relayer_wallet", jwV4R2Contract.Address().StringRaw()).
+		Msg("Relayer wallet initialized")
 
+	// Initialize Relayer factory
 	relayerFactory := relayerfactory.NewRelayerFactory(bitcoinClient, tonClient)
 
-	log.Println("[App] initialized")
+	logger.Log.Info().
+		Str("component", "main").
+		Msg("initialized")
 
 	return &App{
-		Config: relayerConfig, TonClient: tonClient, BitcoinClient: bitcoinClient, JWV4R2Contract: jwV4R2Contract, RelayerFactory: relayerFactory,
+		Config:         relayerConfig,
+		TonClient:      tonClient,
+		BitcoinClient:  bitcoinClient,
+		JWV4R2Contract: jwV4R2Contract,
+		RelayerFactory: relayerFactory,
 	}, nil
 }
 
 func run(app *App) error {
-	log.Println("[App] running...")
+	logger.Log.Info().
+		Str("component", "main").
+		Msg("running")
 
+	// Setup context and signal handling
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
 
+	// Start block relayer
 	if err := startRelayer(app, "block", 10*time.Second, ctx); err != nil {
-		return fmt.Errorf("[App] failed to start block relayer: %w", err)
+		logger.Log.Error().
+			Str("component", "main").
+			Str("relayer_name", "block").
+			Err(err).
+			Msg("Failed to start relayer")
+		return fmt.Errorf("failed to start block relayer: %w", err)
 	}
 
+	// Wait before starting pegout relayer
 	time.Sleep(5 * time.Second)
+
+	// Start pegout relayer
 	if err := startRelayer(app, "pegout", 10*time.Second, ctx); err != nil {
-		return fmt.Errorf("[App] failed to start pegout relayer: %w", err)
+		logger.Log.Error().
+			Str("component", "main").
+			Str("relayer_name", "pegout").
+			Err(err).
+			Msg("Failed to start relayer")
+		return fmt.Errorf("failed to start pegout relayer: %w", err)
 	}
 
+	// Wait for shutdown signal
 	sig := <-sigCh
-	log.Printf("[App] received signal: %v. initiating shutdown...", sig)
+	logger.Log.Info().
+		Str("component", "main").
+		Str("signal", sig.String()).
+		Msg("Received signal, initiating shutdown")
+
 	cancel()
 
-	log.Println("[App] shutdown complete")
+	logger.Log.Info().
+		Str("component", "main").
+		Msg("shutdown complete")
+
 	return nil
 }
 
@@ -121,6 +185,13 @@ func startRelayer(
 	interval time.Duration,
 	ctx context.Context,
 ) error {
+	component := fmt.Sprintf("Relayer-%s", relayerName)
+
+	logger.Log.Info().
+		Str("component", component).
+		Dur("interval", interval).
+		Msg("Creating relayer")
+
 	relayer, err := app.RelayerFactory.CreateRelayer(
 		relayerName,
 		app.JWV4R2Contract,
@@ -128,45 +199,47 @@ func startRelayer(
 		app.Config.TeleportContractAddr,
 	)
 	if err != nil {
-		return fmt.Errorf("[App] failed to create %v relayer: %w", relayerName, err)
+		logger.Log.Error().
+			Str("component", "main").
+			Err(err).
+			Msg("Failed to create relayer")
+		return fmt.Errorf("failed to create %s relayer: %w", relayerName, err)
 	}
 
 	ticker := time.NewTicker(interval)
 
 	go func() {
 		defer ticker.Stop()
-		log.Printf("[App] %v relayer started", relayerName)
+
+		logger.Log.Info().
+			Str("component", component).
+			Msg("Started")
+
 		for {
 			select {
 			case <-ctx.Done():
-				log.Printf("[App] shutting down %v relayer", relayerName)
+				logger.Log.Info().
+					Str("component", component).
+					Msg("Shutting down")
 				return
 			case <-ticker.C:
 				if err := relayer.Relay(); err != nil {
-					log.Printf("[App] failed to relay %v: %v", relayerName, err)
+					logger.Log.Error().
+						Str("component", component).
+						Err(err).
+						Msg("Failed to relay")
+				} else {
+					logger.Log.Debug().
+						Str("component", component).
+						Msg("Relay completed successfully")
 				}
 			}
 		}
 	}()
 
+	logger.Log.Info().
+		Str("component", component).
+		Msg("Created successfully")
+
 	return nil
-}
-
-func startTCPHealthCheck(address string) {
-	listener, err := net.Listen("tcp", address)
-	if err != nil {
-		log.Fatalf("[App] failed to start healthcheck server: %v", err)
-	}
-	defer listener.Close()
-
-	for {
-		conn, err := listener.Accept()
-		if err != nil {
-			log.Printf("[App] failed to accept healthcheck ping: %v", err)
-			continue
-		}
-
-		log.Println("[App] healthcheck pong")
-		conn.Close()
-	}
 }

@@ -3,7 +3,6 @@ package fetchers
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"time"
 
 	"github.com/rsquad/ton-teleport-btc-periphery/lib/pkg/bitcoin"
@@ -38,39 +37,52 @@ func NewFetcherContractBitcoinClient(
 }
 
 func (fetcher *FetcherContractBitcoinClient) Work(ctx context.Context) {
-	defer logger.Log.Info().Msg("FetcherContractBitcoinClient: stopped")
-	logger.DefaultLogStartWork("FetcherContractBitcoinClient: starting...")
+	component := "FetcherContractBitcoinClient"
+
+	logger.Log.Info().
+		Str("component", component).
+		Msg("started")
+
+	defer func() {
+		logger.Log.Info().
+			Str("component", component).
+			Msg("finished")
+	}()
 
 	ticker := time.NewTicker(time.Duration(fetcher.period) * time.Second)
 	defer ticker.Stop()
 
 	// Setup watchdog
-	watchdog.Global().Watch("FetcherContractBitcoinClient", time.Duration(fetcher.period*2)*time.Second)
-	defer watchdog.Global().Unwatch("FetcherContractBitcoinClient")
+	watchdog.Global().Watch(component, time.Duration(fetcher.period*2)*time.Second)
+	defer watchdog.Global().Unwatch(component)
 
 	for {
 		select {
 		case <-ctx.Done():
-			logger.Log.Info().Msg("DKG Fetcher received shutdown signal...")
+			logger.Log.Info().
+				Str("component", component).
+				Msg("received shutdown signal")
 			return
 		case <-ticker.C:
 			fetcher.Fetch()
-			watchdog.Global().Heartbeat("FetcherContractBitcoinClient")
+			watchdog.Global().Heartbeat(component)
 		}
 	}
 }
 
 func (fetcher *FetcherContractBitcoinClient) Fetch() {
+	component := "FetcherContractBitcoinClient"
+
 	storageCell, err := fetcher.bitcoinClientContract.GetStorageCell()
 	if err != nil {
-		logger.Log.Error().Msg(fmt.Sprintf("FetcherContractBitcoinClient: failed to retrieve storage cell, error: %v", err))
+		logStorageCellError(component, err)
 		return
 	}
 
 	// CandidateBlockHashes
 	candidateBlockHashes, err := fetcher.bitcoinClientContract.GetCandidateBlockHashesFromCell(storageCell)
 	if err != nil {
-		logger.Log.Error().Msg(fmt.Sprintf("FetcherContractBitcoinClient: failed to retrieve CandidateBlockHashes, error: %v", err))
+		logCandidateBlockHashesError(component, err)
 		return
 	}
 
@@ -80,14 +92,14 @@ func (fetcher *FetcherContractBitcoinClient) Fetch() {
 	// LastConfirmedBlockHash
 	lastConfirmedBlockHash, err := fetcher.bitcoinClientContract.GetLastConfirmedBlockHashFromCell(storageCell)
 	if err != nil {
-		logger.Log.Error().Msg(fmt.Sprintf("FetcherContractBitcoinClient: failed to retrieve LastConfirmedBlockHash, error: %v", err))
+		logLastConfirmedBlockHashError(component, err)
 		return
 	}
 
 	// LastConfirmedBlockHeight
 	lastConfirmedBlockHeight, err := fetcher.bitcoinClient.GetBlockHeightByHash(lastConfirmedBlockHash)
 	if err != nil {
-		logger.Log.Error().Msg(fmt.Sprintf("FetcherContractBitcoinClient: failed to retrieve LastConfirmedBlockHeight, error: %v", err))
+		logBlockHeightError(component, lastConfirmedBlockHash.String(), err)
 		return
 	}
 
@@ -98,13 +110,12 @@ func (fetcher *FetcherContractBitcoinClient) Fetch() {
 		LastConfirmedBlockHeight: lastConfirmedBlockHeight,
 	}
 
+	logFetchSuccess(component, "bitcoin_client")
+
 	// Serialize
 	jsonData, err := data_models.SerializeBitcoinContractStorageDB(storage)
 	if err != nil {
-		logger.Log.Error().Err(err).
-			Str("component", "FetcherContractBitcoinClient").
-			Msg("failed to serialize ContractBitcoinClientData->json")
-
+		logSerializationError(component, "bitcoin_client", err)
 		return
 	}
 
@@ -112,4 +123,6 @@ func (fetcher *FetcherContractBitcoinClient) Fetch() {
 		typeId:  PayloadTypeContractBitcoinClient,
 		payload: string(jsonData),
 	}
+
+	logDataSent(component, "bitcoin_client")
 }
