@@ -378,7 +378,7 @@ func (dataSource *DataSourceDB) EventsAllFromDkgRestart(fromTxLT uint64) ([]*coo
 		return nil, err
 	}
 
-	dkgRestartedEvents := make([]*coordinator.DKGRestartedEvent, len(events))
+	dkgRestartedEvents := make([]*coordinator.DKGRestartedEvent, 0, len(events))
 	for _, event := range events {
 		dkgRestartedEvent, ok := event.(*coordinator.DKGRestartedEvent)
 		if !ok {
