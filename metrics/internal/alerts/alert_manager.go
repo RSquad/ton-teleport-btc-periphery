@@ -13,8 +13,10 @@ import (
 )
 
 type AlertManager struct {
+	telegramClient  *TelegramAlerter
 	alertsFactory   *AlertFactory
 	alerts          map[string]Alert
+	activeAlerts    map[string]AlertState
 	dataSource      AlertDataSource
 	alertDispatcher AlertDispatcher
 	contractAddrs   map[string]*address.Address
