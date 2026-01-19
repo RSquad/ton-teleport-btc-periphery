@@ -45,44 +45,42 @@ func NewTelegramAlerter(token string, chatID int64, cooldown time.Duration) (*Te
 	}, nil
 }
 
-func (ta *TelegramAlerter) SendAlert(alertName, description string, severity int) error {
-	hash := ta.createAlertHash(alertName, description)
+func (ta *TelegramAlerter) SendAlert(state *AlertState) error {
+	hash := ta.createAlertHash(state.Name, state.Description)
 	currentTime := time.Now()
 
-	if state, exists := ta.activeAlerts[alertName]; exists {
+	if state, exists := ta.activeAlerts[state.Name]; exists {
 
-		if state.Hash == hash && state.IsActive {
+		if ta.activeAlerts[state.Name].Hash == hash && state.IsActive { // TODO: check comparison
 
 			if currentTime.Sub(state.LastUpdateTs) < ta.cooldownPeriod {
 
 				state.LastUpdateTs = currentTime
 				state.RepeatCount++
-				ta.activeAlerts[alertName] = state
+				ta.activeAlerts[state.Name] = state
 				return nil
 			}
 
 			state.RepeatCount++
 			state.LastUpdateTs = currentTime
-			ta.activeAlerts[alertName] = state
+			ta.activeAlerts[state.Name] = state
 
 			updateMsg := fmt.Sprintf("🔁 [%s] %s (Active %s, repeats #%d)",
-				severity, description,
+				state.Severity, state.Description,
 				formatDuration(currentTime.Sub(state.FirstSeen)),
 				state.RepeatCount)
 			return ta.sendTelegramMessage(updateMsg)
 		}
 
 		if state.IsActive {
-			ta.sendResolution(alertName, "changed",
-				fmt.Sprintf("Issue changed: %s -> %s", state.Description, description))
+			ta.sendResolution(state.Name, "changed",
+				fmt.Sprintf("Issue changed: %s -> %s", ta.activeAlerts[state.Name].Description, state.Description))
 		}
 	}
 
-	state := NewAlertState(alertName, Severity(severity), Description(description), nil, false, nil)
+	ta.activeAlerts[state.Name] = *state
 
-	ta.activeAlerts[alertName] = *state
-
-	alertMsg := fmt.Sprintf("🚨 [%s] %s", severity, description)
+	alertMsg := fmt.Sprintf("🚨 [%s] %s", state.Severity, state.Description)
 	return ta.sendTelegramMessage(alertMsg)
 }
 
@@ -133,7 +131,7 @@ func (ta *TelegramAlerter) GetActiveAlerts() []AlertState {
 	return result
 }
 
-func (ta *TelegramAlerter) createAlertHash(alertName, description string) string {
+func (ta *TelegramAlerter) createAlertHash(alertName string, description Description) string {
 	// normalized := normalizeMessage(message)
 	hashInput := fmt.Sprintf("%s::%s", alertName, description)
 	return fmt.Sprintf("%d", len(hashInput))
