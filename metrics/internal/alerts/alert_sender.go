@@ -11,7 +11,7 @@ import (
 
 type TelegramAlerter struct {
 	bot            *tgbotapi.BotAPI
-	chatID         int64
+	chatID         int
 	activeAlerts   map[string]AlertState
 	cooldownPeriod time.Duration
 }
@@ -26,7 +26,7 @@ func removeNumbers(text string) string {
 	return re.ReplaceAllString(text, "")
 }
 
-func NewTelegramAlerter(token string, chatID int64, cooldown time.Duration) (*TelegramAlerter, error) {
+func NewTelegramAlerter(token string, chatID int, cooldown time.Duration) (*TelegramAlerter, error) {
 	bot, err := tgbotapi.NewBotAPI(token)
 	if err != nil {
 		return nil, err
@@ -142,7 +142,7 @@ func (ta *TelegramAlerter) createAlertHash(alertName string, description Descrip
 }
 
 func (ta *TelegramAlerter) sendTelegramMessage(message string) error {
-	msg := tgbotapi.NewMessage(ta.chatID, message)
+	msg := tgbotapi.NewMessage(int64(ta.chatID), message)
 	_, err := ta.bot.Send(msg)
 	if err != nil {
 		logger.Log.Error().Str("component", "TelegramAlerter").Err(err).Msg("Failed to send Telegram message")
