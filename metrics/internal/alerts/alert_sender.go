@@ -2,7 +2,6 @@ package alerts
 
 import (
 	"fmt"
-	"log"
 	"regexp"
 	"time"
 
@@ -102,7 +101,12 @@ func (ta *TelegramAlerter) sendResolution(alertID, resolution, details string) e
 	state.IsActive = false
 	ta.activeAlerts[alertID] = state
 
-	log.Printf("Alert %s resolved after %v", alertID, duration)
+	logger.Log.Info().
+		Str("component", "TelegramAlerter").
+		Str("alertID", alertID).
+		Str("resolution", resolution).
+		Str("details", details).
+		Msg("Alert resolved")
 	return nil
 }
 
@@ -141,10 +145,10 @@ func (ta *TelegramAlerter) sendTelegramMessage(message string) error {
 	msg := tgbotapi.NewMessage(ta.chatID, message)
 	_, err := ta.bot.Send(msg)
 	if err != nil {
-		log.Printf("Failed to send Telegram message: %v", err)
+		logger.Log.Error().Str("component", "TelegramAlerter").Err(err).Msg("Failed to send Telegram message")
 		return err
 	}
-	log.Printf("Sent Telegram message: %s", message)
+	logger.Log.Info().Str("component", "TelegramAlerter").Msg("Message sent")
 	return nil
 }
 
