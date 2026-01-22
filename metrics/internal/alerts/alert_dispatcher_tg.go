@@ -18,7 +18,9 @@ type AlertDispatcherTg struct {
 
 func NewAlertDispatcherTg(telegramAlerter *TelegramAlerter) *AlertDispatcherTg {
 	if telegramAlerter == nil {
-		panic("telegramAlerter cannot be nil")
+		logger.Log.Panic().
+			Str("component", "AlertDispatcherTg").
+			Msg("telegramAlerter cannot be nil")
 	}
 
 	dispatcher := &AlertDispatcherTg{
