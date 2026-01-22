@@ -82,7 +82,7 @@ func (d *AlertDispatcherTg) ResolveAlert(alertID, resolutionDetails string) erro
 		return nil
 	}
 
-	return d.telegramAlerter.ResolveAlert(alertID, resolutionDetails)
+	return d.telegramAlerter.resolveAlert(alertID, resolutionDetails)
 }
 
 func (d *AlertDispatcherTg) GetActiveAlerts() []AlertState {
