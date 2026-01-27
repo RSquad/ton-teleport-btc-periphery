@@ -30,4 +30,8 @@ type EnvConfig struct {
 	AlertsCheckPeriod                string `env:"ALERTS_CHECK_PERIOD"`
 	AlertBtcBlockDeltaHeightWarn     string `env:"ALERT_BTC_BLOCK_DELTA_HEIGHT_WARN"`
 	AlertBtcBlockDeltaHeightCrit     string `env:"ALERT_BTC_BLOCK_DELTA_HEIGHT_CRIT"`
+	AlertCooldownPeriod              string `env:"ALERT_COOLDOWN_PERIOD"`
+	AlertInactivePeriod              string `env:"ALERT_INACTIVE_PERIOD"`
+	TgBotToken                       string `env:"METRICS_TELEGRAM_BOT_TOKEN"`
+	TgChatId                         string `env:"METRICS_TELEGRAM_CHAT_ID"`
 }

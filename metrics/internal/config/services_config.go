@@ -37,6 +37,10 @@ type ServicesConfig struct {
 	AlertsCheckPeriod                int
 	AlertBtcBlockDeltaHeightWarn     int
 	AlertBtcBlockDeltaHeightCrit     int
+	AlertCooldownPeriod              int
+	AlertInactivePeriod              int
+	TgBotToken                       string
+	TgChatId                         int64
 }
 
 func NewServicesConfig(config *EnvConfig) (*ServicesConfig, error) {
@@ -55,6 +59,10 @@ func NewServicesConfig(config *EnvConfig) (*ServicesConfig, error) {
 	alertsCheckPeriod := 15
 	alertBtcBlockDeltaHeightWarn := 3
 	alertBtcBlockDeltaHeightCrit := 4
+	alertCooldownPeriod := 10
+	alertInactivePeriod := 10
+	tgBotToken := ""
+	tgChatId := int64(0)
 
 	if len(config.DatabaseMaxConn) > 0 {
 		value, err := ParseInt(config.DatabaseMaxConn, "DatabaseMaxConn")
@@ -221,6 +229,42 @@ func NewServicesConfig(config *EnvConfig) (*ServicesConfig, error) {
 		alertBtcBlockDeltaHeightCrit = value
 	}
 
+	if len(config.AlertCooldownPeriod) > 0 {
+		value, err := ParseInt(config.AlertCooldownPeriod, "AlertCooldownPeriod")
+		if err != nil {
+			return nil, fmt.Errorf("wrong `ALERT_COOLDOWN_PERIOD` .env argument value '%s'. %w", config.AlertCooldownPeriod, err)
+		}
+
+		alertCooldownPeriod = value
+	}
+
+	if len(config.AlertInactivePeriod) > 0 {
+		value, err := ParseInt(config.AlertInactivePeriod, "AlertInactivePeriod")
+		if err != nil {
+			return nil, fmt.Errorf("wrong `ALERT_INACTIVE_PERIOD` .env argument value '%s'. %w", config.AlertInactivePeriod, err)
+		}
+
+		alertInactivePeriod = value
+	}
+
+	if len(config.TgChatId) > 0 {
+		value, err := ParseInt64(config.TgChatId, "TgChatId")
+		if err != nil {
+			return nil, fmt.Errorf("wrong `METRICS_TELEGRAM_CHAT_ID` .env argument value '%s'. %w", config.TgChatId, err)
+		}
+
+		tgChatId = value
+	}
+
+	if len(config.TgBotToken) > 0 {
+		value, err := ParseString(config.TgBotToken, "TgBotToken")
+		if err != nil {
+			return nil, fmt.Errorf("wrong `METRICS_TELEGRAM_BOT_TOKEN` .env argument value '%s'. %w", config.TgBotToken, err)
+		}
+
+		tgBotToken = value
+	}
+
 	servicesConfig := &ServicesConfig{
 		BitcoinRpcHost:                   config.BitcoinRpcHost,
 		BitcoinRpcUser:                   config.BitcoinRpcUser,
@@ -251,6 +295,10 @@ func NewServicesConfig(config *EnvConfig) (*ServicesConfig, error) {
 		AlertsCheckPeriod:                alertsCheckPeriod,
 		AlertBtcBlockDeltaHeightWarn:     alertBtcBlockDeltaHeightWarn,
 		AlertBtcBlockDeltaHeightCrit:     alertBtcBlockDeltaHeightCrit,
+		AlertCooldownPeriod:              alertCooldownPeriod,
+		AlertInactivePeriod:              alertInactivePeriod,
+		TgChatId:                         tgChatId,
+		TgBotToken:                       tgBotToken,
 	}
 
 	return servicesConfig, nil
@@ -281,6 +329,8 @@ AlertsTestApiEnable: %t
 AlertsCheckPeriod: %d sec.
 AlertBtcBlockDeltaHeightWarn: %d
 AlertBtcBlockDeltaHeightCrit: %d
+AlertCooldownPeriod: %d sec.
+AlertInactivePeriod: %d sec.
 `,
 		config.BitcoinRpcHost,
 		config.TonConfigUrl,
@@ -305,6 +355,8 @@ AlertBtcBlockDeltaHeightCrit: %d
 		config.AlertsCheckPeriod,
 		config.AlertBtcBlockDeltaHeightWarn,
 		config.AlertBtcBlockDeltaHeightCrit,
+		config.AlertCooldownPeriod,
+		config.AlertInactivePeriod,
 	)
 }
 
@@ -317,6 +369,15 @@ func ParseInt(value string, name string) (int, error) {
 	return int(val), nil
 }
 
+func ParseInt64(value string, name string) (int64, error) {
+	val, err := strconv.ParseInt(value, 10, 64)
+	if err != nil {
+		return 0, fmt.Errorf("incorrect int value '%s' assigned to %s", value, name)
+	}
+
+	return int64(val), nil
+}
+
 func ParseBool(value string, name string) (bool, error) {
 	val, err := strconv.ParseBool(value)
 	if err != nil {
@@ -324,4 +385,11 @@ func ParseBool(value string, name string) (bool, error) {
 	}
 
 	return val, nil
+}
+
+func ParseString(value string, name string) (string, error) {
+	if value == "" {
+		return "", fmt.Errorf("incorrect string value '%s' assigned to %s", value, name)
+	}
+	return value, nil
 }

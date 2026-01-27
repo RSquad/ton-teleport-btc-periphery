@@ -183,10 +183,18 @@ func initialize() (*App, error) {
 		return nil, fmt.Errorf("failed to create fetchers: %w", err)
 	}
 
+	alerter, _ := alerts.NewTelegramAlerter(
+		cfg.TgBotToken,
+		int(cfg.TgChatId),
+		time.Duration(cfg.AlertCooldownPeriod)*time.Second,
+		time.Duration(cfg.AlertInactivePeriod)*time.Second,
+	)
+
 	// Alert manager
 	alertManager, err := alerts.NewAlertManager(
 		alerts.NewAlertDataSourceLive(dbConnPool, bitcoinClient, contractAddrs),
-		alerts.NewAlertDispatcherPrometheus(),
+		alerts.NewAlertDispatcherTg(alerter),
+		// alerts.NewAlertDispatcherPrometheus(alerter),
 		contractAddrs,
 		cfg,
 	)

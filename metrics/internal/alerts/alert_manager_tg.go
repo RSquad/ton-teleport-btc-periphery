@@ -12,13 +12,13 @@ import (
 	"github.com/xssnick/tonutils-go/address"
 )
 
-type AlertManager struct {
+type AlertManagerTg struct {
 	telegramClient  *TelegramAlerter
 	alertsFactory   *AlertFactory
 	alerts          map[string]Alert
 	activeAlerts    map[string]AlertState
 	dataSource      AlertDataSource
-	alertDispatcher AlertDispatcher
+	alertDispatcher *AlertDispatcherTg
 	contractAddrs   map[string]*address.Address
 
 	mu                  sync.RWMutex
@@ -26,18 +26,18 @@ type AlertManager struct {
 	alertStatesEnforced map[string]*AlertState // for test purpose only
 }
 
-func NewAlertManager(
+func NewAlertManagerTg(
 	dataSource AlertDataSource,
-	alertDispatcher AlertDispatcher,
+	alertDispatcher *AlertDispatcherTg,
 	contractAddrs map[string]*address.Address,
 	config *config.ServicesConfig,
-) (*AlertManager, error) {
+) (*AlertManagerTg, error) {
 	alertFactory := NewAlertFactory(contractAddrs, config)
 
 	// Setup watchdog
 	watchdog.Global().Watch("AlertManager", time.Duration(300)*time.Second)
 
-	alertManager := AlertManager{
+	alertManager := AlertManagerTg{
 		alertsFactory:       alertFactory,
 		alerts:              make(map[string]Alert),
 		dataSource:          dataSource,
@@ -54,7 +54,7 @@ func NewAlertManager(
 	return &alertManager, nil
 }
 
-func (manager *AlertManager) RegisterAlert(name string, alert Alert) error {
+func (manager *AlertManagerTg) RegisterAlert(name string, alert Alert) error {
 	if _, exists := manager.alerts[name]; exists {
 		return fmt.Errorf("Alert with name `%s` already exists", name)
 	}
@@ -64,7 +64,7 @@ func (manager *AlertManager) RegisterAlert(name string, alert Alert) error {
 	return nil
 }
 
-func (manager *AlertManager) CheckAll() {
+func (manager *AlertManagerTg) CheckAll() {
 	for alertName, alert := range manager.alerts {
 		var state *AlertState = nil
 		// Check enforced state
@@ -104,7 +104,7 @@ func (manager *AlertManager) CheckAll() {
 	watchdog.Global().Heartbeat("AlertManager")
 }
 
-func (manager *AlertManager) LogAlert(state *AlertState, extErr error) {
+func (manager *AlertManagerTg) LogAlert(state *AlertState, extErr error) {
 	if state.LastErr != nil {
 		logger.Log.Error().
 			Str("Alert", state.Name).
@@ -124,7 +124,7 @@ func (manager *AlertManager) LogAlert(state *AlertState, extErr error) {
 	}
 }
 
-func (manager *AlertManager) GetAlertState(name string) (AlertState, error) {
+func (manager *AlertManagerTg) GetAlertState(name string) (AlertState, error) {
 	manager.mu.RLock()
 	defer manager.mu.RUnlock()
 
@@ -136,7 +136,7 @@ func (manager *AlertManager) GetAlertState(name string) (AlertState, error) {
 	return alertState.DeepCopy(), nil
 }
 
-func (manager *AlertManager) GetInfoJson() (string, error) {
+func (manager *AlertManagerTg) GetInfoJson() (string, error) {
 	manager.mu.RLock()
 	defer manager.mu.RUnlock()
 
@@ -148,7 +148,7 @@ func (manager *AlertManager) GetInfoJson() (string, error) {
 	return string(jsonData), nil
 }
 
-func (manager *AlertManager) GetEnforceInfoJsonStr() (string, error) {
+func (manager *AlertManagerTg) GetEnforceInfoJsonStr() (string, error) {
 	manager.mu.RLock()
 	defer manager.mu.RUnlock()
 
@@ -160,13 +160,13 @@ func (manager *AlertManager) GetEnforceInfoJsonStr() (string, error) {
 	return string(jsonData), nil
 }
 
-func (manager *AlertManager) UpdateState(state *AlertState) {
+func (manager *AlertManagerTg) UpdateState(state *AlertState) {
 	manager.mu.Lock()
 	manager.alertStates[state.Name] = state
 	manager.mu.Unlock()
 }
 
-func (manager *AlertManager) EnforceState(state *AlertState) error {
+func (manager *AlertManagerTg) EnforceState(state *AlertState) error {
 	manager.mu.Lock()
 	defer manager.mu.Unlock()
 
@@ -182,7 +182,7 @@ func (manager *AlertManager) EnforceState(state *AlertState) error {
 	return nil
 }
 
-func (manager *AlertManager) ResetEnforceState(name string) error {
+func (manager *AlertManagerTg) ResetEnforceState(name string) error {
 	manager.mu.Lock()
 	defer manager.mu.Unlock()
 
