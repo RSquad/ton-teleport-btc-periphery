@@ -2,6 +2,7 @@ package alerts
 
 import (
 	"fmt"
+	"html"
 	"regexp"
 	"strings"
 	"time"
@@ -13,10 +14,11 @@ import (
 const timeLayout = "Mon 2 Jan 15:04:05 MST 2006"
 
 type TelegramAlerter struct {
-	bot            *tgbotapi.BotAPI
-	chatID         int
-	activeAlerts   map[string]AlertState
-	cooldownPeriod time.Duration
+	bot                 *tgbotapi.BotAPI
+	chatID              int
+	activeAlerts        map[string]AlertState
+	cooldownPeriod      time.Duration
+	inactiveAlertPeriod time.Duration
 }
 
 func removeTimestamps(text string) string {
@@ -29,7 +31,7 @@ func removeNumbers(text string) string {
 	return re.ReplaceAllString(text, "")
 }
 
-func NewTelegramAlerter(token string, chatID int, cooldown time.Duration) (*TelegramAlerter, error) {
+func NewTelegramAlerter(token string, chatID int, cooldown time.Duration, inactiveAlertPeriod time.Duration) (*TelegramAlerter, error) {
 	bot, err := tgbotapi.NewBotAPI(token)
 	if err != nil {
 		return nil, err
@@ -40,14 +42,25 @@ func NewTelegramAlerter(token string, chatID int, cooldown time.Duration) (*Tele
 		Msg(fmt.Sprintf("Authorized on account %s", bot.Self.UserName))
 
 	return &TelegramAlerter{
-		bot:            bot,
-		chatID:         chatID,
-		activeAlerts:   make(map[string]AlertState),
-		cooldownPeriod: cooldown,
+		bot:                 bot,
+		chatID:              chatID,
+		activeAlerts:        make(map[string]AlertState),
+		cooldownPeriod:      cooldown,
+		inactiveAlertPeriod: inactiveAlertPeriod,
 	}, nil
 }
 
 func (ta *TelegramAlerter) SendAlert(state *AlertState) error {
+	if state.Severity == SEVERITY_OK {
+		if existingState, exists := ta.activeAlerts[state.Name]; exists {
+			if existingState.IsActive && existingState.Severity != SEVERITY_OK {
+				return ta.sendResolution(state.Name, "resolved",
+					fmt.Sprintf("Issue resolved: %s", state.Description))
+			}
+		}
+		return nil
+	}
+
 	if state.Severity == 1 { // skipping INFO alerts
 		return nil
 	}
@@ -84,8 +97,10 @@ func (ta *TelegramAlerter) SendAlert(state *AlertState) error {
 			}
 		} else {
 			if existingState.IsActive {
-				ta.sendResolution(state.Name, "changed",
-					fmt.Sprintf("Issue changed: %s -> %s", existingState.Description, state.Description))
+				if existingState.Severity != SEVERITY_OK {
+					ta.sendResolution(state.Name, "changed",
+						fmt.Sprintf("Issue changed: %s -> %s", existingState.Description, state.Description))
+				}
 			}
 
 			state.FirstSeen = currentTime
@@ -116,18 +131,17 @@ func (ta *TelegramAlerter) formatAlertMessage(state *AlertState) string {
 
 	icon := ta.choseIcon(state.Severity)
 
-	name := escapeMarkdownV2(state.Name)
-	date := escapeMarkdownV2(currentTime.Format(timeLayout))
-	description := escapeMarkdownV2(fmt.Sprintf("%v", state.Description))
+	name := html.EscapeString(state.Name)
+	date := html.EscapeString(currentTime.Format(timeLayout))
+	description := ensureHTMLLinks(fmt.Sprintf("%v", state.Description))
 
-	return fmt.Sprintf(`%s *FIRING*
-*%s*
-%s
-*Date:* %s
-*Description:* %s`,
+	return fmt.Sprintf(`%s <b>FIRING</b>
+<b>%s</b>
+-----
+<b>Date:</b> %s
+<b>Description:</b> %s`,
 		icon,
 		name,
-		"\\-\\-\\-\\-\\-",
 		date,
 		description,
 	)
@@ -140,6 +154,8 @@ func (ta *TelegramAlerter) choseIcon(severity Severity) string {
 		icon = "🔴"
 	case SEVERITY_WARNING:
 		icon = "⚠️"
+	case SEVERITY_OK:
+		icon = "✅"
 	default:
 		icon = "ℹ️"
 	}
@@ -153,21 +169,20 @@ func (ta *TelegramAlerter) formatUpdateMessage(state *AlertState) string {
 
 	icon := ta.choseIcon(state.Severity)
 
-	name := escapeMarkdownV2(state.Name)
-	date := escapeMarkdownV2(currentTime.Format(timeLayout))
-	durationStr := escapeMarkdownV2(formatDuration(duration))
-	description := escapeMarkdownV2(fmt.Sprintf("%v", state.Description))
+	name := html.EscapeString(state.Name)
+	date := html.EscapeString(currentTime.Format(timeLayout))
+	durationStr := html.EscapeString(formatDuration(duration))
+	description := ensureHTMLLinks(fmt.Sprintf("%v", state.Description))
 
-	return fmt.Sprintf(`%s *STILL FIRING* \\(#%d\\)
-*%s*
-%s
-*Date:* %s
-*Duration:* %s
-*Description:* %s`,
+	return fmt.Sprintf(`%s <b>STILL FIRING</b> (#%d)
+<b>%s</b>
+-----
+<b>Date:</b> %s
+<b>Duration:</b> %s
+<b>Description:</b> %s`,
 		icon,
 		state.RepeatCount,
 		name,
-		"\\-\\-\\-\\-\\-",
 		date,
 		durationStr,
 		description,
@@ -183,24 +198,23 @@ func (ta *TelegramAlerter) sendResolution(alertID, resolution, details string) e
 	duration := time.Since(state.FirstSeen)
 	currentTime := time.Now().UTC()
 
-	icon := ta.choseIcon(state.Severity)
+	icon := "✅"
 
-	name := escapeMarkdownV2(state.Name)
-	date := escapeMarkdownV2(currentTime.Format(timeLayout))
-	resolutionEscaped := escapeMarkdownV2(resolution)
-	durationStr := escapeMarkdownV2(formatDuration(duration))
-	detailsEscaped := escapeMarkdownV2(details)
+	name := html.EscapeString(state.Name)
+	date := html.EscapeString(currentTime.Format(timeLayout))
+	resolutionEscaped := html.EscapeString(resolution)
+	durationStr := html.EscapeString(formatDuration(duration))
+	detailsEscaped := ensureHTMLLinks(details)
 
-	resolutionMsg := fmt.Sprintf(`✅ *%s RESOLVED*
-*%s*
-%s
-*Date:* %s
-*Resolution:* %s
-*Duration:* %s
-*Details:* %s`,
+	resolutionMsg := fmt.Sprintf(`%s <b>RESOLVED</b>
+<b>%s</b>
+-----
+<b>Date:</b> %s
+<b>Resolution:</b> %s
+<b>Duration:</b> %s
+<b>Details:</b> %s`,
 		icon,
 		name,
-		"\\-\\-\\-\\-\\-",
 		date,
 		resolutionEscaped,
 		durationStr,
@@ -213,6 +227,7 @@ func (ta *TelegramAlerter) sendResolution(alertID, resolution, details string) e
 	}
 
 	state.IsActive = false
+	state.LastUpdateTs = currentTime
 	ta.activeAlerts[alertID] = state
 
 	logger.Log.Info().
@@ -224,27 +239,33 @@ func (ta *TelegramAlerter) sendResolution(alertID, resolution, details string) e
 	return nil
 }
 
-func escapeMarkdownV2(text string) string {
-	result := strings.Builder{}
-
-	for _, r := range text {
-		char := string(r)
-		switch char {
-		case "_", "*", "[", "]", "(", ")", "~", "`", ">",
-			"#", "+", "-", "=", "|", "{", "}", ".", "!":
-			result.WriteString("\\" + char)
-		case "\\":
-			result.WriteString("\\\\")
-		default:
-			result.WriteString(char)
-		}
+func ensureHTMLLinks(text string) string {
+	if strings.Contains(text, "<a ") || strings.Contains(text, "href=") {
+		return text
 	}
 
-	return result.String()
+	text = html.EscapeString(text)
+
+	urlRegex := regexp.MustCompile(`(https?://[^\s<]+)`)
+
+	result := urlRegex.ReplaceAllStringFunc(text, func(url string) string {
+		cleanURL := strings.TrimRight(url, ".,;!?)")
+		return fmt.Sprintf(`<a href="%s">%s</a>`, cleanURL, cleanURL)
+	})
+
+	return result
 }
 
-func (ta *TelegramAlerter) ResolveAlert(alertID, resolutionDetails string) error {
-	return ta.sendResolution(alertID, "resolved", resolutionDetails)
+func (ta *TelegramAlerter) ResolveAlert(alertID string, description string) error {
+	if state, exists := ta.activeAlerts[alertID]; exists && state.IsActive {
+		resolvedState := &AlertState{
+			Name:        alertID,
+			Description: Description(fmt.Sprintf("Resolved: %s", description)),
+			Severity:    SEVERITY_OK,
+		}
+		return ta.SendAlert(resolvedState)
+	}
+	return nil
 }
 
 func (ta *TelegramAlerter) AutoResolveStaleAlerts(staleDuration time.Duration) {
@@ -252,8 +273,14 @@ func (ta *TelegramAlerter) AutoResolveStaleAlerts(staleDuration time.Duration) {
 
 	for alertID, state := range ta.activeAlerts {
 		if state.IsActive && state.LastUpdateTs.Before(cutoff) {
-			ta.sendResolution(alertID, "autoresolved",
-				fmt.Sprintf("Inactive for %v", staleDuration))
+			if state.Severity != SEVERITY_OK {
+				resolvedState := &AlertState{
+					Name:        alertID,
+					Description: Description(fmt.Sprintf("Inactive for %v", staleDuration)),
+					Severity:    SEVERITY_OK,
+				}
+				ta.SendAlert(resolvedState)
+			}
 		}
 	}
 }
@@ -282,7 +309,7 @@ func normalizeMessage(d Description) string {
 
 func (ta *TelegramAlerter) sendTelegramMessage(message string) error {
 	msg := tgbotapi.NewMessage(int64(ta.chatID), message)
-	msg.ParseMode = "MarkdownV2"
+	msg.ParseMode = "HTML" // Используем HTML разметку
 	msg.DisableWebPagePreview = false
 	_, err := ta.bot.Send(msg)
 	if err != nil {
@@ -306,16 +333,18 @@ func formatDuration(d time.Duration) string {
 }
 
 func (ta *TelegramAlerter) RunCleanup() {
-	ticker := time.NewTicker(1 * time.Hour) // TODO: make configurable
+	ticker := time.NewTicker(10 * time.Second)
 
 	for range ticker.C {
 		ta.cleanupOldAlerts()
-		ta.AutoResolveStaleAlerts(ta.cooldownPeriod * time.Hour) // Autoresolve alerts inactive for N hours
+		if ta.inactiveAlertPeriod > 0 {
+			ta.AutoResolveStaleAlerts(ta.inactiveAlertPeriod * time.Hour)
+		}
 	}
 }
 
 func (ta *TelegramAlerter) cleanupOldAlerts() {
-	cutoff := time.Now().Add(-7 * 24 * time.Hour) // TODO: make configurable
+	cutoff := time.Now().Add(-7 * ta.inactiveAlertPeriod * time.Hour)
 
 	for alertID, state := range ta.activeAlerts {
 		if !state.IsActive && state.LastUpdateTs.Before(cutoff) {

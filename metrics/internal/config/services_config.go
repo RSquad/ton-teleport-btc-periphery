@@ -38,6 +38,7 @@ type ServicesConfig struct {
 	AlertBtcBlockDeltaHeightWarn     int
 	AlertBtcBlockDeltaHeightCrit     int
 	AlertCooldownPeriod              int
+	AlertInactivePeriod              int
 	TgBotToken                       string
 	TgChatId                         int64
 }
@@ -59,6 +60,7 @@ func NewServicesConfig(config *EnvConfig) (*ServicesConfig, error) {
 	alertBtcBlockDeltaHeightWarn := 3
 	alertBtcBlockDeltaHeightCrit := 4
 	alertCooldownPeriod := 10
+	alertInactivePeriod := 10
 	tgBotToken := ""
 	tgChatId := int64(0)
 
@@ -236,6 +238,15 @@ func NewServicesConfig(config *EnvConfig) (*ServicesConfig, error) {
 		alertCooldownPeriod = value
 	}
 
+	if len(config.AlertInactivePeriod) > 0 {
+		value, err := ParseInt(config.AlertInactivePeriod, "AlertInactivePeriod")
+		if err != nil {
+			return nil, fmt.Errorf("wrong `ALERT_INACTIVE_PERIOD` .env argument value '%s'. %w", config.AlertInactivePeriod, err)
+		}
+
+		alertInactivePeriod = value
+	}
+
 	if len(config.TgChatId) > 0 {
 		value, err := ParseInt64(config.TgChatId, "TgChatId")
 		if err != nil {
@@ -285,6 +296,7 @@ func NewServicesConfig(config *EnvConfig) (*ServicesConfig, error) {
 		AlertBtcBlockDeltaHeightWarn:     alertBtcBlockDeltaHeightWarn,
 		AlertBtcBlockDeltaHeightCrit:     alertBtcBlockDeltaHeightCrit,
 		AlertCooldownPeriod:              alertCooldownPeriod,
+		AlertInactivePeriod:              alertInactivePeriod,
 		TgChatId:                         tgChatId,
 		TgBotToken:                       tgBotToken,
 	}
@@ -318,6 +330,7 @@ AlertsCheckPeriod: %d sec.
 AlertBtcBlockDeltaHeightWarn: %d
 AlertBtcBlockDeltaHeightCrit: %d
 AlertCooldownPeriod: %d sec.
+AlertInactivePeriod: %d sec.
 `,
 		config.BitcoinRpcHost,
 		config.TonConfigUrl,
@@ -343,6 +356,7 @@ AlertCooldownPeriod: %d sec.
 		config.AlertBtcBlockDeltaHeightWarn,
 		config.AlertBtcBlockDeltaHeightCrit,
 		config.AlertCooldownPeriod,
+		config.AlertInactivePeriod,
 	)
 }
 
