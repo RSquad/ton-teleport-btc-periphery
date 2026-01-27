@@ -3,6 +3,7 @@ package alerts
 import (
 	"fmt"
 	"regexp"
+	"strings"
 	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -50,36 +51,60 @@ func (ta *TelegramAlerter) SendAlert(state *AlertState) error {
 	if state.Severity == 1 { // skipping INFO alerts
 		return nil
 	}
+
 	hash := ta.createAlertHash(state.Name, state.Description)
 	currentTime := time.Now()
 
 	if existingState, exists := ta.activeAlerts[state.Name]; exists {
-		if existingState.Hash == hash && existingState.IsActive {
-			if currentTime.Sub(existingState.LastUpdateTs) < ta.cooldownPeriod {
-				existingState.LastUpdateTs = currentTime
+		if existingState.Hash == hash {
+			if existingState.IsActive {
+				if currentTime.Sub(existingState.LastUpdateTs) < ta.cooldownPeriod {
+					existingState.LastUpdateTs = currentTime
+					existingState.RepeatCount++
+					ta.activeAlerts[state.Name] = existingState
+					return nil
+				}
+
 				existingState.RepeatCount++
+				existingState.LastUpdateTs = currentTime
 				ta.activeAlerts[state.Name] = existingState
-				return nil
+
+				updateMsg := ta.formatUpdateMessage(&existingState)
+				return ta.sendTelegramMessage(updateMsg)
+			} else {
+				state.FirstSeen = currentTime
+				state.LastUpdateTs = currentTime
+				state.IsActive = true
+				state.Hash = hash
+				state.RepeatCount = 1
+				ta.activeAlerts[state.Name] = *state
+
+				alertMsg := ta.formatAlertMessage(state)
+				return ta.sendTelegramMessage(alertMsg)
+			}
+		} else {
+			if existingState.IsActive {
+				ta.sendResolution(state.Name, "changed",
+					fmt.Sprintf("Issue changed: %s -> %s", existingState.Description, state.Description))
 			}
 
-			existingState.RepeatCount++
-			existingState.LastUpdateTs = currentTime
-			ta.activeAlerts[state.Name] = existingState
+			state.FirstSeen = currentTime
+			state.LastUpdateTs = currentTime
+			state.IsActive = true
+			state.Hash = hash
+			state.RepeatCount = 1
+			ta.activeAlerts[state.Name] = *state
 
-			updateMsg := ta.formatUpdateMessage(&existingState)
-			fmt.Println("MESSAGE: ", updateMsg)
-			return ta.sendTelegramMessage(updateMsg)
-		}
-
-		if existingState.IsActive {
-			ta.sendResolution(state.Name, "changed",
-				fmt.Sprintf("Issue changed: %s -> %s", existingState.Description, state.Description))
+			alertMsg := ta.formatAlertMessage(state)
+			return ta.sendTelegramMessage(alertMsg)
 		}
 	}
 
 	state.FirstSeen = currentTime
 	state.LastUpdateTs = currentTime
 	state.IsActive = true
+	state.Hash = hash
+	state.RepeatCount = 1
 	ta.activeAlerts[state.Name] = *state
 
 	alertMsg := ta.formatAlertMessage(state)
@@ -89,25 +114,22 @@ func (ta *TelegramAlerter) SendAlert(state *AlertState) error {
 func (ta *TelegramAlerter) formatAlertMessage(state *AlertState) string {
 	currentTime := time.Now().UTC()
 
-	var icon string
-	switch state.Severity {
-	case 2:
-		icon = "🔴"
-	case 3:
-		icon = "⚠️"
-	default:
-		icon = "ℹ️"
-	}
+	icon := ta.choseIcon(state.Severity)
 
-	return fmt.Sprintf(`%s FIRING
+	name := escapeMarkdownV2(state.Name)
+	date := escapeMarkdownV2(currentTime.Format(timeLayout))
+	description := escapeMarkdownV2(fmt.Sprintf("%v", state.Description))
+
+	return fmt.Sprintf(`%s *FIRING*
+*%s*
 %s
------
-Date: %s
-Description: %s`,
+*Date:* %s
+*Description:* %s`,
 		icon,
-		state.Name,
-		currentTime.Format(timeLayout),
-		state.Description,
+		name,
+		"\\-\\-\\-\\-\\-",
+		date,
+		description,
 	)
 }
 
@@ -131,18 +153,24 @@ func (ta *TelegramAlerter) formatUpdateMessage(state *AlertState) string {
 
 	icon := ta.choseIcon(state.Severity)
 
-	return fmt.Sprintf(`%s STILL FIRING (#%d)
+	name := escapeMarkdownV2(state.Name)
+	date := escapeMarkdownV2(currentTime.Format(timeLayout))
+	durationStr := escapeMarkdownV2(formatDuration(duration))
+	description := escapeMarkdownV2(fmt.Sprintf("%v", state.Description))
+
+	return fmt.Sprintf(`%s *STILL FIRING* \\(#%d\\)
+*%s*
 %s
------
-Date: %s
-Duration: %s
-Description: %s`,
+*Date:* %s
+*Duration:* %s
+*Description:* %s`,
 		icon,
-		state.RepeatCount+1,
-		state.Name,
-		currentTime.Format(timeLayout),
-		formatDuration(duration),
-		state.Description,
+		state.RepeatCount,
+		name,
+		"\\-\\-\\-\\-\\-",
+		date,
+		durationStr,
+		description,
 	)
 }
 
@@ -157,19 +185,26 @@ func (ta *TelegramAlerter) sendResolution(alertID, resolution, details string) e
 
 	icon := ta.choseIcon(state.Severity)
 
-	resolutionMsg := fmt.Sprintf(`✅ %s RESOLVED
+	name := escapeMarkdownV2(state.Name)
+	date := escapeMarkdownV2(currentTime.Format(timeLayout))
+	resolutionEscaped := escapeMarkdownV2(resolution)
+	durationStr := escapeMarkdownV2(formatDuration(duration))
+	detailsEscaped := escapeMarkdownV2(details)
+
+	resolutionMsg := fmt.Sprintf(`✅ *%s RESOLVED*
+*%s*
 %s
------
-Date: %s
-Resolution: %s
-Duration: %s
-Details: %s`,
+*Date:* %s
+*Resolution:* %s
+*Duration:* %s
+*Details:* %s`,
 		icon,
-		state.Name,
-		currentTime.Format(timeLayout),
-		resolution,
-		formatDuration(duration),
-		details,
+		name,
+		"\\-\\-\\-\\-\\-",
+		date,
+		resolutionEscaped,
+		durationStr,
+		detailsEscaped,
 	)
 
 	err := ta.sendTelegramMessage(resolutionMsg)
@@ -189,7 +224,26 @@ Details: %s`,
 	return nil
 }
 
-func (ta *TelegramAlerter) resolveAlert(alertID, resolutionDetails string) error {
+func escapeMarkdownV2(text string) string {
+	result := strings.Builder{}
+
+	for _, r := range text {
+		char := string(r)
+		switch char {
+		case "_", "*", "[", "]", "(", ")", "~", "`", ">",
+			"#", "+", "-", "=", "|", "{", "}", ".", "!":
+			result.WriteString("\\" + char)
+		case "\\":
+			result.WriteString("\\\\")
+		default:
+			result.WriteString(char)
+		}
+	}
+
+	return result.String()
+}
+
+func (ta *TelegramAlerter) ResolveAlert(alertID, resolutionDetails string) error {
 	return ta.sendResolution(alertID, "resolved", resolutionDetails)
 }
 
@@ -215,13 +269,21 @@ func (ta *TelegramAlerter) GetActiveAlerts() []AlertState {
 }
 
 func (ta *TelegramAlerter) createAlertHash(alertName string, description Description) string {
-	// normalized := normalizeMessage(message)
-	hashInput := fmt.Sprintf("%s::%s", alertName, description)
-	return fmt.Sprintf("%d", len(hashInput))
+	normalized := normalizeMessage(description)
+	return fmt.Sprintf("%s::%s", alertName, normalized)
+}
+
+func normalizeMessage(d Description) string {
+	s := fmt.Sprintf("%v", d)
+	s = removeTimestamps(s)
+	s = removeNumbers(s)
+	return s
 }
 
 func (ta *TelegramAlerter) sendTelegramMessage(message string) error {
 	msg := tgbotapi.NewMessage(int64(ta.chatID), message)
+	msg.ParseMode = "MarkdownV2"
+	msg.DisableWebPagePreview = false
 	_, err := ta.bot.Send(msg)
 	if err != nil {
 		logger.Log.Error().Str("component", "TelegramAlerter").Err(err).Msg("Failed to send Telegram message")
